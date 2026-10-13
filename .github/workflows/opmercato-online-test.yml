@@ -92,17 +92,20 @@ jobs:
                 await request({action:"haki",roomId,token:tokens[a.turnId]},400);
               }
               const min=BigInt(a.highBid)>0n?BigInt(a.highBid)+BigInt(current.bidStep):BigInt(current.baseBid);
+              const royal=e?.type==="reverie";
+              const offered=royal?BigInt(current.initialBudget)/2n:min;
               const bidder=a.turnId;
               const before=BigInt(current.players[bidder].budget);
-              current=await act(bidder,"bid",{amount:min.toString()});
+              current=await act(bidder,"bid",{amount:offered.toString()});
               if(current.auction.outcome===null){
+                if(royal)throw Error("Taxed bid should exhaust the other bidder's ability to raise");
                 current=await act(current.auction.turnId,"pass");
               }
               if(current.auction.outcome!=="sold")throw Error("Auction failed to settle");
               const winner=current.auction.leader;
               if(winner!==bidder)throw Error("Wrong auction winner");
               const charged=before-BigInt(current.players[bidder].budget);
-              const expected=min*(e?.type==="reverie"?2n:1n);
+              const expected=offered*(royal?2n:1n);
               if(charged!==expected)throw Error("Incorrect paid amount "+charged+" expected "+expected);
               paid++;
             }
