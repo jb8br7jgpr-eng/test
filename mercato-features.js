@@ -17,8 +17,9 @@
       name,count,points:affiliationBonus(count)
     })).filter(b=>b.points>0).sort((a,b)=>b.points-a.points||a.name.localeCompare(b.name,'fr'));
   };
+  function effectivePower(p,id){return Math.max(0,Math.min(100,(CARDS[id]?.power||0)+(p.smileModifiers?.[id]||0)));}
   const getBreakdown=p=>{
-    const base=(p.roster||[]).reduce((sum,id)=>sum+(CARDS[id]?.power||0),0);
+    const base=(p.roster||[]).reduce((sum,id)=>sum+effectivePower(p,id),0);
     const armament=p.armamentId&&p.roster.includes(p.armamentId)?5:0;
     const synergyItems=getPlayerBonuses(p);
     const synergy=synergyItems.reduce((sum,x)=>sum+x.points,0);
@@ -26,27 +27,38 @@
   };
   getScore=function(p){return getBreakdown(p).total;};
 
-  // Chaque nouvelle partie tire independamment le tour de l'evenement special
-  // et celui de l'enchere mystere. Une Guerre au sommet occupe deux tours,
-  // qui ne peuvent donc jamais accueillir le personnage mystere.
-  function scheduleSurprises(playerCount,teamSize,requestedType){
-    const slots=Math.max(2,playerCount*teamSize);
-    const last=Math.min(slots,12,Math.max(3,Math.ceil(slots*0.75)));
-    const earliest=slots>=4?2:1;
-    const rounds=Array.from({length:last-earliest+1},(_,i)=>earliest+i);
-    let type=requestedType;
-    if(type==='war'&&slots<3)type='marine';
-    const events=type==='war'?rounds.filter(n=>n<last):rounds;
-    const eventRound=events[Math.floor(Math.random()*events.length)];
-    const excluded=new Set([eventRound]);
-    if(type==='war')excluded.add(eventRound+1);
-    const mysteries=rounds.filter(n=>!excluded.has(n));
-    // Rare partie tres courte : le premier tour reste utilisable pour le mystere.
-    if(!mysteries.length){
-      for(let n=1;n<=slots;n++)if(!excluded.has(n))mysteries.push(n);
+
+  // Le meme catalogue d'evenements que le serveur.
+  const V2_TYPES=['war','marine','mystery','black','god','smile','reverie'];
+  const V2_INFO={
+    war:['⚔️','GUERRE AU SOMMET','Deux légendes de rang S se présentent à la suite.'],
+    marine:['🎲','PRIME DE LA MARINE','Chaque joueur gagne une prime en lançant son dé.'],
+    mystery:['❔','PERSONNAGE MYSTÈRE','Seul le rang du personnage sera révélé.'],
+    black:['🏴‍☠️','MARCHÉ NOIR','Trois personnages apparaissent, un seul sera mis aux enchères.'],
+    god:['💥','INCIDENT DE GOD VALLEY','Chaque joueur peut éliminer une recrue adverse.'],
+    smile:['🍎','SMILE','Le personnage le plus faible mange un fruit SMILE : pile ou face ?'],
+    reverie:['👑','LA RÊVERIE','Taxe royale : enchère ×2, refus et Haki des Rois interdits.']
+  };
+  function chooseSchedule(players,recruits){
+    const total=players*recruits,qty=recruits<=5?1:recruits<=10?2:3;
+    const types=V2_TYPES.filter(t=>(t!=='smile'&&t!=='god')||total>=players*2+2);
+    const picks=[];
+    while(picks.length<qty)picks.push(types.splice(Math.floor(Math.random()*types.length),1)[0]);
+    const plan=[],busy=new Set();
+    for(const type of picks){
+      const earliest=type==='smile'?Math.max(players+1,Math.floor(total/2)+1):
+        type==='god'?players+1:recruits===1?1:2;
+      const last=Math.max(earliest,Math.min(total-1,Math.ceil(total*.9)));
+      const positions=[];
+      for(let n=earliest;n<=last;n++){
+        if(busy.has(n)||(type==='war'&&(busy.has(n+1)||n>=total)))continue;
+        positions.push(n);
+      }
+      if(!positions.length)continue;
+      const round=positions[Math.floor(Math.random()*positions.length)];
+      plan.push({type,round});busy.add(round);if(type==='war')busy.add(round+1);
     }
-    const mysteryRound=mysteries[Math.floor(Math.random()*mysteries.length)];
-    return {type,eventRound,mysteryRound};
+    return plan.sort((a,b)=>a.round-b.round);
   }
   function normalized() {
     if(!state)return;
@@ -57,16 +69,9 @@
       if(typeof p.marineAward!=='string')p.marineAward='0';
     }
     if(!state.initialBudget)state.initialBudget=String(state.players[0]?.budget||'1000');
-    if(!state.featureConfig) {
-      const planned=scheduleSurprises(state.players.length,TEAM_SIZE,Math.random()<.5?'war':'marine');
-      const eventAt=state.round+planned.eventRound, mysteryAt=state.round+planned.mysteryRound;
-      state.featureConfig={version,eventType:planned.type,eventRound:eventAt,mysteryRound:mysteryAt,
-        eventUsed:false,mysteryUsed:false,warRounds:[]};
-      // Si les 2 legendaires ne sont pas disponibles, on remplace uniquement
-      // la Guerre par la Prime de la Marine. Le tour mystere reste inchange.
-      if(planned.type==='war'&&!prepareWarCards(eventAt)){
-        state.featureConfig.eventType='marine';
-      }
+    if(!state.featureConfig){
+      state.featureConfig={version:4,plan:chooseSchedule(state.players.length,TEAM_SIZE),
+        active:null,warRounds:[],eventUsed:false,mysteryUsed:false};
     }
   }
   function prepareWarCards(eventRound) {
@@ -143,6 +148,30 @@
     if(state.phase==='finished'||isComplete()||state.drawIndex>=state.drawPile.length)
       return oldDrawNext();
     const f=state.featureConfig;
+    if(f.plan){
+      f.active=null;
+      const upcoming=state.round+1;
+      const scheduled=f.plan.find(e=>e.round===upcoming);
+      let selected=scheduled?.type||null;
+      if(selected==='war'&&!prepareWarCards(upcoming))selected='marine';
+      if(selected==='war')f.warRounds=[upcoming,upcoming+1];
+      oldDrawNext();
+      if(state.phase!=='auction'||!state.auction)return;
+      const a=state.auction;
+      a.mystery=selected==='mystery';
+      a.warGuaranteed=f.warRounds.includes(state.round);
+      if(selected){
+        f.active={type:selected,round:state.round,stage:'intro',step:0,removed:[],ready:[],flips:[]};
+        if(selected==='black'){
+          const extras=state.drawPile.slice(state.drawIndex,state.drawIndex+2);
+          state.drawIndex+=extras.length;
+          f.active.choices=[a.charId,...extras];
+        }
+        if(selected==='marine'){f.rolls=[];f.rollIndex=0;f.awaitingRolls=false;}
+        f.eventUsed=true;f.activatedRound=state.round;f.eventType=selected;
+      }
+      save();render();return;
+    }
     const nextRound=state.round+1;
     const isEvent=!f.eventUsed&&nextRound>=f.eventRound;
     const mystery=!f.mysteryUsed&&nextRound>=f.mysteryRound;
@@ -172,7 +201,9 @@
     const upcoming=state.drawPile.slice(state.drawIndex,state.drawIndex+3);
     const content=upcoming.map((id,i)=>{
       const c=CARDS[id];
-      const hidden=state.featureConfig?.mysteryRound===state.round+i+1 && !state.featureConfig?.mysteryUsed;
+      const f=state.featureConfig;
+      const hidden=f?.plan?f.plan.some(e=>e.type==='mystery'&&e.round===state.round+i+1):
+        f?.mysteryRound===state.round+i+1&&!f?.mysteryUsed;
       return '<li>'+(i+1)+'. '+(hidden?'🔒 Enchère mystère, classe '+tierOf(c.power).tier:esc(c.name)+' · classe '+tierOf(c.power).tier)+'</li>';
     }).join('')||'<li>Aucun personnage restant.</li>';
     modal.innerHTML='<section class="card modal-content"><span class="eyebrow">👁 Haki de l’Observation</span><h2>Les 3 prochaines cartes</h2><p>Regarde discrètement, puis ferme la fenêtre avant de passer le téléphone.</p><ul>'+content+'</ul><p>Ce pouvoir est maintenant consommé pour '+esc(p.name)+'.</p><button class="primary" data-action="close-modal">Refermer les visions</button></section>';
