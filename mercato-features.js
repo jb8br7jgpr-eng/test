@@ -1,15 +1,21 @@
 (function enhanceMercato() {
   'use strict';
   const version = 3;
-  const synergies = [
-    {id:'trio-monstre',name:'Trio monstrueux',ids:['luffy','zoro','sanji'],points:15},
-    {id:'roger-crew',name:'Légendes de Roger',ids:['roger','rayleigh','gaban'],points:20},
-    {id:'beasts',name:'Trois calamités',ids:['kaido','king','queen'],points:15},
-    {id:'brothers',name:'Frères de fraternité',ids:['ace','sabo','luffy'],points:20}
-  ];
+  // Nouvelle synergie : elle depend exclusivement de l'affiliation du catalogue.
+  // Plusieurs groupes differents sont cumulables. Les anciennes combinaisons
+  // fixes (trio monstrueux, Roger, etc.) ne donnent plus de bonus.
+  function affiliationBonus(count){
+    return count>=5?50:count>=2?(count-1)*10:0;
+  }
   const getPlayerBonuses=p=>{
-    const owned=new Set(p?.roster||[]);
-    return synergies.filter(x=>x.ids.every(id=>owned.has(id)));
+    const affiliations=new Map();
+    for(const id of p?.roster||[]){
+      const crew=window.MERCATO_EXPANSION?.details?.[id]?.crew?.trim();
+      if(crew)affiliations.set(crew,(affiliations.get(crew)||0)+1);
+    }
+    return [...affiliations].map(([name,count])=>({
+      name,count,points:affiliationBonus(count)
+    })).filter(b=>b.points>0).sort((a,b)=>b.points-a.points||a.name.localeCompare(b.name,'fr'));
   };
   const getBreakdown=p=>{
     const base=(p.roster||[]).reduce((sum,id)=>sum+(CARDS[id]?.power||0),0);
@@ -238,7 +244,7 @@
       const p=state.players[i++];
       const d=getBreakdown(p);
       const powers='<span>👁 '+(p.observationUsed?'Utilisé':'Prêt')+'</span><span>🛡 '+(p.armamentUsed?'Utilisé':'Prêt')+'</span>';
-      const synergiesHtml=d.synergyItems.length?'<span class="active-synergy">🤝 '+d.synergyItems.map(s=>esc(s.name)+' +'+s.points).join(' · ')+'</span>':'';
+      const synergiesHtml=d.synergyItems.length?'<span class="active-synergy">🤝 '+d.synergyItems.map(s=>esc(s.name)+' ('+s.count+') +'+s.points).join(' · ')+'</span>':'';
       return '<div class="power-breakdown">Base '+d.base+(d.armament?' + '+d.armament+' Armement':'')+(d.synergy?' + '+d.synergy+' synergies':'')+' = <strong>'+d.total+' points</strong></div>'+
         (safeBig(p.marineAward)>0n?'<div class="power-breakdown">🎲 Prime de la Marine : +'+currency(p.marineAward)+'</div>':'')+
         '<div class="special-stats">'+powers+synergiesHtml;
@@ -303,7 +309,7 @@
       if(ul)ul.insertAdjacentHTML('beforeend',
         '<li>Haki de l’Observation : consulter discrètement les <b>3 prochains personnages</b>, une fois par joueur.</li>'+
         '<li>Haki de l’Armement : donner <b>+5 points</b> à une recrue, une fois par joueur.</li>'+
-        '<li>Synergies : Luffy/Zoro/Sanji +15 ; Roger/Rayleigh/Gaban +20 ; Kaido/King/Queen +15 ; Ace/Sabo/Luffy +20 points.</li>'+
+        '<li>Synergies par affiliation : 1 personnage = 0 point ; 2 = +10 ; 3 = +20 ; 4 = +30 ; 5 ou plus = +50. Chaque affiliation donne son propre bonus, cumulable avec les autres. Les anciennes synergies par combinaison ont été supprimées.</li>'+
         '<li>Une enchère mystère apparaît à un tour aléatoire indépendant de l’événement. Son rang reste seul visible jusqu’à la révélation du personnage.</li>'+
         '<li>Un seul événement par partie : Guerre au sommet (2 cartes S consécutives) OU Prime de la Marine (chaque joueur lance un dé et reçoit 5 à 30 % de son budget initial).</li>');
     }
