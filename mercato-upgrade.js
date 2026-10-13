@@ -179,35 +179,53 @@
     try {localStorage.setItem('mercato-portraits-v3',JSON.stringify([...portraits]));}catch(e){}
     refreshImages();
   }
+  // Illustrations officielles du jeu de cartes, associées à chaque personnage hors ligne.
+  // Les <img> n'ont pas besoin de CORS. Les sources externes ne sont pas garanties à 100 %.
+  const imageCandidates = new Map();
+  function candidatesFor(id){
+    if(imageCandidates.has(id))return imageCandidates.get(id);
+    const cards=window.MERCATO_IMAGE_CARDS?.[id]||[];
+    const out=[];
+    for(const cardId of cards.slice(0,4)){
+      if(!/^(OP|EB|ST)\\d{2}-\\d{3}$/.test(cardId))continue;
+      out.push('https://optcg-api.arjunbansal-ai.workers.dev/images/'+cardId);
+      out.push('https://en.onepiece-cardgame.com/images/cardlist/card/'+cardId+'.png');
+    }
+    imageCandidates.set(id,out);
+    return out;
+  }
   function refreshImages(){
     document.querySelectorAll('img[data-portrait-id]').forEach(img=>{
-      const url=portraits.get(img.dataset.portraitId);
-      if(!url||img.dataset.current===url)return;
-      img.dataset.current=url;img.onload=()=>{img.classList.add('loaded');};
-      img.onerror=()=>{img.classList.remove('loaded');img.removeAttribute('src');};
-      img.src=url;
+      if(img.dataset.photoState)return;
+      const id=img.dataset.portraitId;
+      const urls=candidatesFor(id);
+      const fallback=img.previousElementSibling;
+      if(!urls.length){
+        img.dataset.photoState='missing';
+        if(fallback)fallback.textContent='🏴‍☠️';
+        return;
+      }
+      let index=0;
+      const loadNext=()=>{
+        if(index>=urls.length){
+          img.dataset.photoState='missing';
+          img.classList.remove('loaded');
+          img.removeAttribute('src');
+          if(fallback)fallback.textContent='🏴‍☠️';
+          return;
+        }
+        img.src=urls[index++];
+      };
+      img.dataset.photoState='loading';
+      img.onload=()=>{
+        if(img.naturalWidth>0){
+          img.classList.add('loaded');
+          img.dataset.photoState='ready';
+        }else loadNext();
+      };
+      img.onerror=()=>{img.classList.remove('loaded');loadNext();};
+      loadNext();
     });
-  }
-  async function fetchPortraits(){
-    try{
-      const saved=JSON.parse(localStorage.getItem('mercato-portraits-v3')||'[]');
-      for(const [k,v] of saved)if(typeof v==='string'&&/^https:\/\//.test(v))portraits.set(k,v);
-      refreshImages();
-    }catch(e){}
-    const get=async url=>{
-      const response=await fetch(url,{mode:'cors',cache:'force-cache'});
-      if(!response.ok)throw Error('Images non disponibles');
-      return response.json();
-    };
-    const sources=[
-      get('https://api.jikan.moe/v4/anime/21/characters').then(j=>{
-        setPortraits((j.data||[]).map(x=>({name:x.character?.name,url:x.character?.images?.jpg?.image_url||x.character?.images?.webp?.image_url})), 'Jikan');
-      }),
-      get('https://gist.githubusercontent.com/Wazazaby/ce623e220f4db2b4d72df70e4538c9d2/raw/one-piece-characters.json').then(j=>{
-        setPortraits((j.characters||[]).map(x=>({name:x.name?.en,url:x.image_path})), 'WT100');
-      })
-    ];
-    await Promise.allSettled(sources);
   }
   function cardEntry(c){
     const d=getDetails(c.id), t=tierOf(c.power);
@@ -310,6 +328,10 @@
     .image-credit{font-size:10px !important;margin-bottom:0}
     @media(max-width:390px){.catalog-grid{grid-template-columns:1fr}.catalog-controls{grid-template-columns:1fr 115px}.portrait-large{height:135px;top:69px}.character-name{max-width:58%;font-size:27px}}
   `;
+  style.textContent += `
+    .portrait-photo { object-fit: cover; object-position: center top; }
+    .portrait-large .portrait-photo, .portrait-detail .portrait-photo { object-position: center 10%; }
+  `;
   document.head.appendChild(style);
   document.addEventListener('change',e=>{
     if(e.target.id==='manga-allowed'){
@@ -343,5 +365,4 @@
     }
   },true);
   render();
-  fetchPortraits();
 })();
