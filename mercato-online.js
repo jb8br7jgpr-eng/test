@@ -246,7 +246,7 @@
       '<div class="online-room-bar"><span>Salon <strong>'+escOnline(view.code)+'</strong></span><span>🌐 Synchronisation active</span></div>'+
       (view.status==="finished"?scoreboardEnd():auction())+gameScore()+
       (view.host&&view.status==="playing"?button("finish","Terminer cette partie","online-text"):"");
-    shell(main+(onlineDetailId?detail(onlineDetailId):""));
+    shell(main+(view?'<div class="online-back">'+button("leave-online","Quitter ce salon et créer une nouvelle partie","online-text")+'</div>':"")+(onlineDetailId?detail(onlineDetailId):""));
   }
   function hydratePortraits(){
     root.querySelectorAll("img[data-portrait-id]").forEach(img=>{
@@ -279,6 +279,7 @@
     const a=b.dataset.online;
     if(a==="open"){mode="choose";show();if(session)refresh();return;}
     if(a==="local"||a==="back"){hide();return;}
+    if(a==="leave-online"){if(confirm("Quitter ce salon sur ce téléphone ? Les autres joueurs pourront continuer leur partie.")){forget();show();}return;}
     if(a==="create-form"){mode="create";paint();return;}
     if(a==="join-form"){mode="join";paint();return;}
     if(a==="copy-code"||a==="copy-link"){
