@@ -93,7 +93,8 @@
     root.innerHTML='<div class="online-shell"><div class="online-head"><div><div class="online-eyebrow">🏴‍☠️ OPMERCATO EN DIRECT</div><h1>Mercato multijoueur</h1></div>'+
       button("back","✕ Fermer","online-text")+'</div>'+content+
       '<div class="online-notice" id="online-notice" role="status">'+escOnline(copyMessage)+'</div></div>';
-    hydratePortraits();
+    // Reutiliser exactement la meme chaine de portraits que le mode local.
+    window.OPMERCATO_SHARED?.refreshImages?.();
   }
   function landing(){
     const prefill=new URLSearchParams(location.search).get("room");
@@ -128,8 +129,14 @@
     return '<section class="online-teams"><h2>⚓ Vos équipages</h2>'+
       view.players.map(p=>'<div class="online-team"><div class="online-team-top"><b>'+label(p)+'</b><strong>'+p.score+' pts</strong></div>'+
         '<div class="online-team-meta">'+berrys(p.budget)+' restants · '+p.roster.length+'/'+view.teamSize+' recrues · '+p.passesUsed+'/5 refus</div>'+
-        '<div class="online-roster">'+(p.roster.length?p.roster.map(id=>'<span>'+escOnline(CARDS[id]?.name||id)+'</span>').join(""):
+        '<div class="online-roster">'+(p.roster.length?p.roster.map(id=>'<button type="button" data-action="details" data-char-id="'+escOnline(id)+'" class="online-roster-character">'+
+          '<span class="portrait portrait-tiny"><span class="portrait-fallback">☠️</span><img class="portrait-photo" data-portrait-id="'+escOnline(id)+'" alt="" loading="lazy"></span>'+
+          '<span>'+escOnline(CARDS[id]?.name||id)+'</span></button>').join(""):
         '<span>Équipage vide</span>')+'</div>'+
+        '<div class="online-small">Base '+p.roster.reduce((v,id)=>v+(CARDS[id]?.power||0),0)+
+          (p.armamentId?' · Armement +5':'')+
+          (p.bonuses?.length?' · Synergies +'+p.bonuses.reduce((v,x)=>v+x.points,0):'')+'</div>'+
+        (p.marineAward&&BigInt(p.marineAward)>0n?'<div class="online-small">🎲 Prime Marine : +'+berrys(p.marineAward)+'</div>':'')+
         '<div class="online-small">👑 '+(p.hakiUsed?'Haki des Rois utilisé':'Disponible')+
         ' · 👁 '+(p.observationUsed?'Utilisé':'Disponible')+' · 🛡 '+(p.armamentUsed?'Utilisé':'Disponible')+'</div>'+
         (p.bonuses?.length?'<div class="online-synergy">🤝 '+p.bonuses.map(x=>escOnline(x.name)+' +'+x.points).join(", ")+'</div>':'')+
@@ -139,7 +146,7 @@
     if(!id)return '<div class="online-mystery"><div>❔</div><h2>Enchère mystère</h2><p>Son rang est connu, mais pas son identité.</p></div>';
     const c=CARDS[id];
     if(!c)return '<div class="online-mystery">Personnage inconnu</div>';
-    return charCard(c).replaceAll('data-action="details"','data-online="details"');
+    return charCard(c);
   }
   function eventBox(){
     const e=view.event||{};
@@ -219,8 +226,12 @@
     const bonus=p=>(p.armamentId?5:0)+(p.bonuses||[]).reduce((s,b)=>s+b.points,0);
     const tactician=[...view.players].sort((a,b)=>bonus(b)-bonus(a))[0];
     const award=(icon,title,content)=>'<div class="online-award">'+icon+' <strong>'+title+'</strong> : '+content+'</div>';
-    return '<section class="online-card online-final"><div class="online-cup">🏆</div><h2>Victoire de '+label(sorted[0])+' !</h2>'+
-      '<p>'+sorted[0].score+' points — meilleur équipage des mers !</p><h3>Classement final</h3>'+
+    const tied=sorted.filter(p=>p.score===sorted[0].score&&p.budget===sorted[0].budget);
+    return '<section class="online-card online-final"><div class="online-cup">🏆</div><h2>'+(tied.length>1?'Égalité !':'Victoire de '+label(sorted[0])+' !')+'</h2>'+
+      '<p>'+sorted[0].score+' points — '+(tied.length>1?'vainqueurs ex aequo : '+tied.map(p=>label(p)).join(', '):'meilleur équipage des mers !')+'</p>'+
+      '<div class="online-champion-roster">'+sorted[0].roster.map(id=>'<button type="button" data-action="details" data-char-id="'+escOnline(id)+'">'+
+        '<span class="portrait portrait-medium"><span class="portrait-fallback">☠️</span><img class="portrait-photo" data-portrait-id="'+escOnline(id)+'" alt="" loading="lazy"></span>'+
+        '<span>'+escOnline(CARDS[id]?.name||id)+'</span></button>').join("")+'</div><h3>Classement final</h3>'+
       sorted.map((p,i)=>'<div class="online-rankrow"><strong>'+(i===0?'🥇':i===1?'🥈':'🥉')+' '+label(p)+'</strong>'+
         '<span>'+p.score+' pts · '+berrys(p.budget)+' restants</span></div>').join("")+
       '<h3>🏅 Trophées du mercato</h3>'+
@@ -240,30 +251,38 @@
       '<p><strong>Taille :</strong> '+escOnline(d.height||"Non renseignée")+'</p>'+
       '<p>'+escOnline(d.description||"")+'</p></div></div>';
   }
+  function onlineRules(){
+    const num=view?.teamSize||5;
+    const initial=view?.baseBid||"20",increment=view?.bidStep||"10";
+    const rules=[
+      'Chaque joueur commence avec le meme budget et doit recruter <b>'+num+' personnages</b>.',
+      'La mise de depart est de <b>'+berrys(initial)+'</b>, puis chaque surenchere monte d’au moins <b>'+berrys(increment)+'</b>.',
+      'Les offres personnalisees et les budgets eleves sont autorises.',
+      'Refuser une carte avant toute enchere consomme un de tes <b>5 refus</b>. Se retirer apres une offre est gratuit.',
+      'Haki des Rois : recruter gratuitement une fois, seulement si tu joues en premier et avant toute enchere.',
+      'Haki de l’Observation : consulter secretement les trois prochaines cartes une fois par joueur.',
+      'Haki de l’Armement : renforcer une de tes recrues de <b>+5 points</b>, une fois par joueur.',
+      'Synergies : Luffy/Zoro/Sanji +15 ; Roger/Rayleigh/Gaban +20 ; Kaido/King/Queen +15 ; Ace/Sabo/Luffy +20.',
+      'Une enchere mystere revele uniquement la classe tant que l’enchere n’est pas terminee.',
+      'Un evenement se declenche : Guerre au Sommet (deux classes S) ou Prime de la Marine (de 5 % a 30 % du budget initial).',
+      'Le score total additionne les puissances des recrues, les synergies et le Haki de l’Armement. Le budget restant departage une egalite de points.',
+      'Les personnages ne peuvent etre recrutes qu’une seule fois dans chaque partie.'
+    ];
+    modal.innerHTML='<section class="card modal-content"><span class="eyebrow">OPMercato en ligne</span><h2>Regles du mercato</h2><ul>'+
+      rules.map(x=>'<li>'+x+'</li>').join('')+'</ul><button class="primary" data-action="close-modal">Compris !</button></section>';
+    modal.classList.remove("hidden");
+  }
   function paint(){
     if(!showing)return;
     if(!view){landing();return;}
     const main=view.status==="lobby"?waiting():
       '<div class="online-room-bar"><span>Salon <strong>'+escOnline(view.code)+'</strong></span><span>🌐 Synchronisation active</span></div>'+
+      '<div class="online-nav">'+button("catalog","📚 Catalogue ("+CHARACTERS.length+" personnages)","btn-ghost")+button("rules","📖 Règles","btn-ghost")+'</div>'+
       (view.status==="finished"?scoreboardEnd():auction())+gameScore()+
       (view.host&&view.status==="playing"?button("finish","Terminer cette partie","online-text"):"");
     shell(main+(view?'<div class="online-back">'+button("leave-online","Quitter ce salon et créer une nouvelle partie","online-text")+'</div>':"")+(onlineDetailId?detail(onlineDetailId):""));
   }
-  function hydratePortraits(){
-    root.querySelectorAll("img[data-portrait-id]").forEach(img=>{
-      if(img.dataset.current)return;
-      const id=img.dataset.portraitId,custom=window.MERCATO_CUSTOM_PORTRAITS?.[id];
-      const cards=window.MERCATO_IMAGE_CARDS?.[id]||[];
-      const urls=[];
-      if(typeof custom==="string"&&custom.length>100)urls.push(custom.startsWith("data:")?custom:"data:image/webp;base64,"+custom);
-      cards.slice(0,3).forEach(card=>{urls.push("https://en.onepiece-cardgame.com/images/cardlist/card/"+card+".png");});
-      let pos=0;img.dataset.current="loading";
-      const load=()=>{if(pos>=urls.length){img.dataset.current="missing";return;}img.src=urls[pos++];};
-      img.onload=()=>{img.dataset.current="ready";img.classList.add("loaded");};
-      img.onerror=()=>{img.classList.remove("loaded");load();};
-      load();
-    });
-  }
+  // Les portraits sont charges par OPMERCATO_SHARED.refreshImages (mode local).
   const originalRender=render;
   render=function(){
     originalRender();
@@ -304,7 +323,9 @@
       return;
     }
     if(a==="detail-close"){onlineDetailId=null;paint();return;}
-    if(a==="details"){onlineDetailId=b.dataset.charId;paint();return;}
+    if(a==="details"){window.OPMERCATO_SHARED?.openDetail?.(b.dataset.charId);return;}
+    if(a==="catalog"){window.OPMERCATO_SHARED?.openCatalog?.();return;}
+    if(a==="rules"){onlineRules();return;}
     if(a==="observation"&&view.players[view.yourSeat].observationUsed){peekOpen=!peekOpen;paint();return;}
     if(a==="armament"){
       const p=view.players[view.yourSeat];
@@ -320,6 +341,12 @@
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&showing)refresh();});
   const css=document.createElement("style");
   css.textContent=`
+    .online-open #modal{z-index:1600}
+    .online-nav{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+    .online-nav .btn-ghost{color:#ffdf98;border-color:#a17f4b;font-size:12px}
+    .online-roster .online-roster-character{display:flex;align-items:center;gap:6px;color:#f4f8fa;background:#275061;border:1px solid #446d79;border-radius:9px;padding:5px 8px;max-width:100%;text-align:left;font-size:11px}
+    .online-roster .online-roster-character>span:last-child{overflow-wrap:anywhere}
+    .online-roster .portrait-tiny{width:24px;height:24px;min-width:24px}
     .online-entry{border:1px solid #d8ad60;border-radius:12px;background:#143847;color:#ffe1a0;
       padding:10px;font-size:12px;font-weight:900;white-space:nowrap}
     body.online-open{overflow:hidden}
@@ -388,6 +415,9 @@
     .online-roster{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
     .online-roster span{font-size:11px;padding:5px 8px;background:#275061;border-radius:16px}
     .online-synergy{color:#f5c275;font-size:11px;margin-top:10px}
+    .online-champion-roster{display:flex;gap:8px;overflow-x:auto;padding:8px 0 12px}
+    .online-champion-roster button{min-width:89px;max-width:105px;display:grid;gap:6px;justify-items:center;border:1px solid #aa8649;border-radius:10px;background:#173a4b;color:#fff;padding:8px;font-size:11px}
+    .online-champion-roster .portrait-medium{width:66px;height:88px}
     .online-cup{font-size:54px;text-align:center}
     .online-final{text-align:center}
     .online-final h2{font-size:26px}
