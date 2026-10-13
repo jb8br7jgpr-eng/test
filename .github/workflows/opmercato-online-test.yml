@@ -79,7 +79,7 @@ jobs:
           const sold=await duoCall(second,"pass");
           if(sold.room.auction.outcome!=="sold")throw Error("Bid didn't settle");
           const winner=sold.room.players[starter];
-          if(winner.roster.length!==1||BigInt(winner.budget)!==2000n-BigInt(min))
+          if(winner.roster.length!==1||BigInt(winner.budget)!==2000n+BigInt(winner.marineAward||"0")-BigInt(min))
             throw Error("Budget or recruitment incorrect");
           if(sold.room.players[1-starter].passesUsed!==0)
             throw Error("Passing after bid incorrectly consumed limited pass");
