@@ -67,6 +67,23 @@ jobs:
             await host.locator('[data-online="start"]').click();
             await Promise.all([host.locator(".online-round").waitFor({timeout:30000}),
               guest.locator(".online-round").waitFor({timeout:30000})]);
+            // The affiliation bonuses must use the same progressive scale in local games.
+            const localBonuses=await host.evaluate(()=>{
+              const points=ids=>getScore({roster:ids})-ids.reduce((sum,id)=>sum+(CARDS[id]?.power||0),0);
+              return {
+                one:points(["luffy"]),
+                two:points(["luffy","zoro"]),
+                three:points(["luffy","zoro","sanji"]),
+                four:points(["luffy","zoro","sanji","robin"]),
+                five:points(["luffy","zoro","sanji","robin","nami"]),
+                six:points(["luffy","zoro","sanji","robin","nami","usopp"]),
+                mixed:points(["luffy","zoro","sanji","akainu","kizaru"]),
+                legendary:points(["roger","rayleigh","gaban"])
+              };
+            });
+            const expectedBonuses={one:0,two:10,three:20,four:30,five:50,six:50,mixed:30,legendary:20};
+            if(JSON.stringify(localBonuses)!==JSON.stringify(expectedBonuses))
+              throw Error("Local affiliation score mismatched: "+JSON.stringify(localBonuses));
             // Real local-vs-online parity: same catalogue, personalized art, and detail modal.
             await host.locator('[data-online="catalog"]').click();
             await host.locator('#catalog-search').fill('Joy Boy');
