@@ -61,8 +61,8 @@ function sevenSchedule(players:number,teamSize:number){
  const plan:{type:Special,round:number}[]=[];const busy=new Set<number>();
  for(const type of picks){
    const earliest=type==="smile"?Math.max(players+1,Math.floor(total/2)+1):
-     type==="god"?players+1:2;
-   const end=Math.max(earliest,Math.min(total-1,Math.ceil(total*.9)));
+     type==="god"?players+1:total<=2?1:2;
+   const end=Math.max(earliest,Math.min(type==="war"?total-1:total,Math.ceil(total*.9)));
    const choices:number[]=[];
    for(let n=earliest;n<=end;n++){
      if(busy.has(n)||(type==="war"&&busy.has(n+1)))continue;
@@ -163,6 +163,13 @@ function nextSeven(s:any){
  if(isComplete(s)||s.drawIndex>=s.drawPile.length){s.status="finished";s.auction=null;return;}
  s.event.active=null;s.round++;
  const spec=scheduledAt(s,s.round);
+ if(spec&&["smile","god"].includes(spec.type)&&s.players.some((p:any)=>p.roster.length===0)){
+   // Les équipages vides rendent SMILE et God Valley impossibles.
+   // Choisir un autre événement non prévu plutôt que bloquer la partie.
+   const reserved=new Set(s.event.schedule.map((e:any)=>e.type));
+   const alternatives=(["mystery","marine","black","reverie"] as Special[]).filter(t=>!reserved.has(t));
+   spec.type=alternatives[randomIndex(alternatives.length)]||"marine";
+ }
  if(spec?.type==="war"&&!prepareWar(s))spec.type="marine";
  const charId=s.drawPile[s.drawIndex++];
  const e=spec?{type:spec.type,round:s.round,stage:"intro",ready:[] as number[],step:0,
