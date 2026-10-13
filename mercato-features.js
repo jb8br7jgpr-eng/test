@@ -17,7 +17,7 @@
       name,count,points:affiliationBonus(count)
     })).filter(b=>b.points>0).sort((a,b)=>b.points-a.points||a.name.localeCompare(b.name,'fr'));
   };
-  function effectivePower(p,id){return Math.max(0,Math.min(100,(CARDS[id]?.power||0)+(p.smileModifiers?.[id]||0)));}
+  function effectivePower(p,id){const base=CARDS[id]?.power||0;return p.smileModifiers?.[id]===undefined?base:Math.max(0,Math.min(100,base+p.smileModifiers[id]));}
   const getBreakdown=p=>{
     const base=(p.roster||[]).reduce((sum,id)=>sum+effectivePower(p,id),0);
     const armament=p.armamentId&&p.roster.includes(p.armamentId)?5:0;
