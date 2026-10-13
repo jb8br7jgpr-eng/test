@@ -76,14 +76,23 @@
         (canParticipate(p,BigInt(state.baseBid??20)) || hasHaki(p)));
   };
 
+  // Seul le refus d'un personnage AVANT la première mise utilise une des 5 passes.
+  // Se retirer d'une enchère qui a déjà reçu une offre est toujours gratuit.
+  function isUnbid(a){
+    return !!a && a.leader===null && BigInt(a.highBid||0)===0n;
+  }
   const beforePass=pass;
   pass=function(){
     const a=state?.auction;
     if(!a||a.outcome!==null||a.turnId===null)return;
     const p=player(a.turnId);
     if(!p)return;
-    if(passUsed(p)>=MAX_PASSES){showToast('Tu as déjà utilisé tes 5 passes. Il faut enchérir ou utiliser le Haki disponible.');return;}
-    p.passesUsed=passUsed(p)+1;
+    const skipWithoutBid=isUnbid(a);
+    if(skipWithoutBid && passUsed(p)>=MAX_PASSES){
+      showToast('5 refus sans enchère utilisés. Tu dois miser ou utiliser ton Haki des Rois si disponible.');
+      return;
+    }
+    if(skipWithoutBid)p.passesUsed=passUsed(p)+1;
     beforePass();
   };
 
@@ -116,11 +125,17 @@
     const powerButton=canPower?
       '<button class="haki-btn" data-action="haki">👑 Haki des Rois — recruter gratuitement !'+
       '<small>Utilisable une seule fois, seulement en jouant en premier.</small></button>':'';
+    const freeWithdrawal=!isUnbid(a);
+    const unavailable=!freeWithdrawal && remaining===0;
     html=html.replace('<button class="pass-btn" data-action="pass">Passer mon tour</button>',
-      powerButton+'<button class="pass-btn" data-action="pass" '+(remaining===0?'disabled':'')+'>'+
-      (remaining===0?'⛔ Plus de passes disponibles':'Passer mon tour · '+remaining+'/'+MAX_PASSES+' restantes')+'</button>');
+      powerButton+'<button class="pass-btn" data-action="pass" '+(unavailable?'disabled':'')+'>'+
+      (freeWithdrawal?'Arrêter d’enchérir (gratuit)':unavailable?
+        '⛔ Plus de refus sans enchère disponibles':
+        'Refuser ce personnage · '+remaining+'/'+MAX_PASSES+' restants')+'</button>');
     html=html.replace("Passer t'exclut uniquement des enchères pour ce personnage.",
-      'Chaque joueur dispose de '+MAX_PASSES+' passes au total sur toute la partie.');
+      freeWithdrawal?
+      'Se retirer d’une enchère déjà commencée ne consomme aucune de tes 5 passes.':
+      'Seul un refus avant la première enchère consomme une passe sur les '+MAX_PASSES+'.');
     return html;
   };
 
@@ -132,7 +147,7 @@
     return html.replace(/<div class="roster">/g,()=>{
       const p=state.players[i++];
       if(!p)return '<div class="roster">';
-      return '<div class="special-stats"><span>⏭️ Passes : '+passUsed(p)+'/'+MAX_PASSES+'</span>'+
+      return '<div class="special-stats"><span>⏭️ Refus sans enchère : '+passUsed(p)+'/'+MAX_PASSES+'</span>'+
         '<span class="'+(p.hakiUsed?'power-spent':'power-ready')+'">'+
         (p.hakiUsed?'👑 Haki utilisé':'👑 Haki disponible')+'</span></div><div class="roster">';
     });
@@ -163,7 +178,7 @@
       const list=modal.querySelector('ul');
       if(list)list.insertAdjacentHTML('beforeend',
         '<li>Les joueurs recrutent chacun <b>'+TEAM_SIZE+' personnages</b>, nombre choisi avant la partie (de 1 à 30).</li>'+
-        '<li>Chacun peut <b>passer son tour au maximum '+MAX_PASSES+' fois</b> sur l’ensemble de la partie.</li>'+
+        '<li>Chacun dispose de <b>'+MAX_PASSES+' refus sans enchère</b> par partie. Ils sont consommés seulement lorsqu’aucun joueur n’a encore misé pour le personnage. <b>Se retirer d’une enchère déjà commencée est gratuit et illimité</b>.</li>'+
         '<li>Le <b>Haki des Rois</b> s’utilise <b>une seule fois par joueur</b> : uniquement lorsqu’il est le premier à jouer pour un personnage, avant toute enchère. Il le recrute immédiatement et <b>gratuitement</b>, sans opposition possible.</li>');
     }
   };
