@@ -158,7 +158,11 @@
         const pool=['mystery','marine','black','reverie'].filter(x=>!reserved.has(x));
         selected=pool[Math.floor(Math.random()*pool.length)]||'marine';
       }
-      if(selected==='war'&&!prepareWarCards(upcoming))selected='marine';
+      if(selected==='war'&&!prepareWarCards(upcoming)){
+        const reserved=new Set(f.plan.map(x=>x.type));
+        const pool=['marine','mystery','black','reverie'].filter(x=>!reserved.has(x));
+        selected=pool[Math.floor(Math.random()*pool.length)]||'marine';
+      }
       if(selected==='war')f.warRounds=[upcoming,upcoming+1];
       oldDrawNext();
       if(state.phase!=='auction'||!state.auction)return;
