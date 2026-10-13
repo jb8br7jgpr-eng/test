@@ -6,7 +6,7 @@
   const KEY="opmercato-online-session-v1";
   const escOnline=x=>String(x??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
   const berrys=x=>{try{return BigInt(String(x??0)).toLocaleString("fr-FR")+" ฿";}catch{return "0 ฿";}};
-  let session=null,view=null,showing=false,loading=false,channel=null,poll=null,topic="",onlineDetailId=null;
+  let session=null,view=null,showing=undefined,loading=false,channel=null,poll=null,topic="",onlineDetailId=null;
   let mode="choose",client=null,busy=false,loaded=false,copyMessage="",peekOpen=false,fx=null;
   const root=document.createElement("section");root.id="opmercato-online";
   root.style.display="none";document.body.appendChild(root);
@@ -134,7 +134,7 @@
       '<label>Ton pseudo<input id="online-name" maxlength="25" value="Pirate 2" autocomplete="nickname"></label>'+
       button("join-go","Rejoindre le salon →"):
       '<h2>Jouez de 2 à 6 sur vos téléphones !</h2><p>Un pirate crée le salon, les autres le rejoignent avec un code. Les enchères et les pouvoirs se synchronisent automatiquement.</p>'+
-      button("create-form","⚓ Créer une partie")+button("join-form","🔑 Rejoindre une partie","btn-ghost");
+      button("create-form","⚓ Créer une partie")+button("join-form","🔑 Rejoindre une partie","btn-ghost")+button("archive","📜 Archives des Pirates","btn-ghost");
     shell('<section class="online-card">'+form+'</section><div class="online-back">'+button("local","← Mode classique sur un seul téléphone","online-text")+'</div>');
   }
   function waiting(){
@@ -409,6 +409,7 @@
     if(a==="open"){mode="choose";show();if(session)refresh();return;}
     if(a==="local"||a==="back"){hide();return;}
     if(a==="leave-online"){if(confirm("Quitter ce salon sur ce téléphone ? Les autres joueurs pourront continuer leur partie.")){forget();show();}return;}
+    if(a==="archive"){window.OP21_HISTORY?.open();return;}
     if(a==="create-form"){mode="create";paint();return;}
     if(a==="join-form"){mode="join";paint();return;}
     if(a==="copy-code"||a==="copy-link"){
@@ -425,7 +426,7 @@
           teamSize:Number(root.querySelector("#online-team").value),maxPlayers:Number(root.querySelector("#online-players").value),
           spoilers:root.querySelector("#online-spoilers").checked}):
           await call("join",{name:root.querySelector("#online-name").value.trim(),code:root.querySelector("#online-code").value.trim()});
-        session={roomId:data.room.id,token:data.token};localStorage.setItem(KEY,JSON.stringify(session));
+        session={roomId:data.room.id,token:data.token};localStorage.setItem(KEY,JSON.stringify(session));window.OP21_HISTORY?.track(session);
         copyMessage="";apply(data,true);
       }catch(e){note(e.message);}
       finally{busy=false;b.disabled=false;}
