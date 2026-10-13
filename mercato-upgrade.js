@@ -186,6 +186,9 @@
     if(imageCandidates.has(id))return imageCandidates.get(id);
     const cards=window.MERCATO_IMAGE_CARDS?.[id]||[];
     const out=[];
+    // Portraits approuvés par le créateur du jeu : priorité absolue.
+    const custom=window.MERCATO_CUSTOM_PORTRAITS?.[id];
+    if(typeof custom==='string' && /^data:image\/webp;base64,[A-Za-z0-9+/]+=*$/.test(custom)) out.push(custom);
     for(const cardId of cards.slice(0,4)){
       if(!/^(OP|EB|ST)\d{2}-\d{3}$/.test(cardId))continue;
       out.push('https://optcg-api.arjunbansal-ai.workers.dev/images/'+cardId);
