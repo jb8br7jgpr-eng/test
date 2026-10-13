@@ -112,9 +112,17 @@ jobs:
               if(await host.locator('[data-online="next"]').isEnabled())
                 throw Error("The next round should wait for Armament decision");
               await first.locator('[data-online="armament-skip"]').click();
-              await host.locator('[data-online="next"]').waitFor({state:'visible'});
+              await host.waitForFunction(()=>{
+                const b=document.querySelector('[data-online="next"]');
+                return b && !b.disabled;
+              },null,{timeout:30000});
             }
             await host.locator('[data-online="next"]').click();
+            // La réponse réseau est asynchrone : attendre le nouveau tour avant de vérifier les étapes.
+            await host.waitForFunction(()=>
+              !!document.querySelector('.v2-special')||
+              (document.querySelector('.online-round')?.textContent||'').includes('ENCHÈRE N° 2')
+              ,null,{timeout:30000});
             // Si un événement est annoncé, les deux joueurs doivent le valider.
             if(await host.locator('.v2-special').count()){
               await guest.locator('.v2-special').waitFor({timeout:30000});
@@ -158,8 +166,17 @@ jobs:
                 throw Error("Unknown event state: "+next.slice(0,300)+" "+eventType);
               }
             }
-            await host.locator('.online-round').getByText("ENCHÈRE N° 2").waitFor({timeout:30000});
-            await guest.locator('.online-round').getByText("ENCHÈRE N° 2").waitFor({timeout:30000});
+            try {
+              await host.locator('.online-round').getByText("ENCHÈRE N° 2").waitFor({timeout:30000});
+              await guest.locator('.online-round').getByText("ENCHÈRE N° 2").waitFor({timeout:30000});
+            } catch(e) {
+              console.error("NEXT DEBUG",{
+                host:(await host.locator('#opmercato-online').innerText()).slice(0,1000),
+                guest:(await guest.locator('#opmercato-online').innerText()).slice(0,1000),
+                errors
+              });
+              throw e;
+            }
             const hostMystery=await host.locator('.online-rank').count();
             const guestMystery=await guest.locator('.online-rank').count();
             if(Boolean(hostMystery)!==Boolean(guestMystery))
