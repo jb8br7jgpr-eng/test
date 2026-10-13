@@ -57,9 +57,31 @@
   function apply(result,force=false){
     const next=result?.room;if(!next)return;
     if(!force&&view?.id===next.id&&Number(next.version)<=Number(view.version))return;
+    const previous=view;
     view=next;
     if(showing)paint();
     addSync();
+    // Les deux iPhone voient le même lancer, même si l'autre joueur l'a déclenché.
+    const oldEvent=previous?.event?.active,newEvent=next.event?.active;
+    if(showing&&previous?.id===next.id&&oldEvent&&newEvent&&
+       oldEvent.round===newEvent.round&&oldEvent.type===newEvent.type){
+      if(newEvent.type==="marine"){
+        const added=(next.event.rolls||[]).slice((previous.event.rolls||[]).length);
+        const latest=added.at(-1);
+        if(latest){
+          const name=next.players[latest.id]?.name||"Pirate";
+          window.OPMERCATO_EVENT_FX?.("die",name+" : 🎲 "+latest.roll+" → +"+latest.percent+" % · "+berrys(latest.amount),latest.roll);
+        }
+      }else if(newEvent.type==="smile"){
+        const added=(newEvent.flips||[]).slice((oldEvent.flips||[]).length);
+        const latest=added.at(-1);
+        if(latest){
+          const name=next.players[latest.id]?.name||"Pirate";
+          window.OPMERCATO_EVENT_FX?.("coin",name+" : "+(latest.pile?"PILE · +25":"FACE · −25")+
+            " · "+latest.before+" → "+latest.after+" pts",latest.pile);
+        }
+      }
+    }
   }
   async function refresh(){
     if(!session||loading)return;
@@ -80,18 +102,7 @@
       if(action==="observation")peekOpen=true;
       copyMessage="";
       paint();
-      if(["roll","coin"].includes(action)){
-        const e=res.room?.event?.active,seat=res.room.yourSeat;
-        const outcome=action==="roll"?res.room?.event?.rolls?.find(x=>x.id===seat):
-          e?.flips?.find(x=>x.id===seat);
-        if(outcome){
-          const name=res.room?.players?.[seat]?.name||"Pirate";
-          const desc=action==="roll"?
-            name+" : 🎲 "+outcome.roll+" → +"+outcome.percent+" % · "+berrys(outcome.amount):
-            name+" : "+(outcome.pile?"PILE · +25":"FACE · −25")+" · "+outcome.before+" → "+outcome.after+" pts";
-          window.OPMERCATO_EVENT_FX?.(action==="roll"?"die":"coin",desc,action==="roll"?outcome.roll:outcome.pile);
-        }
-      }
+
     }catch(e){
       note(e.message);
       if(String(e.message).includes("évolué"))await refresh();
