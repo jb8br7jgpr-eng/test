@@ -1,6 +1,6 @@
 (function enhanceMercato() {
   'use strict';
-  const version = 2;
+  const version = 3;
   const synergies = [
     {id:'trio-monstre',name:'Trio monstrueux',ids:['luffy','zoro','sanji'],points:15},
     {id:'roger-crew',name:'Légendes de Roger',ids:['roger','rayleigh','gaban'],points:20},
@@ -20,6 +20,28 @@
   };
   getScore=function(p){return getBreakdown(p).total;};
 
+  // Chaque nouvelle partie tire independamment le tour de l'evenement special
+  // et celui de l'enchere mystere. Une Guerre au sommet occupe deux tours,
+  // qui ne peuvent donc jamais accueillir le personnage mystere.
+  function scheduleSurprises(playerCount,teamSize,requestedType){
+    const slots=Math.max(2,playerCount*teamSize);
+    const last=Math.min(slots,12,Math.max(3,Math.ceil(slots*0.75)));
+    const earliest=slots>=4?2:1;
+    const rounds=Array.from({length:last-earliest+1},(_,i)=>earliest+i);
+    let type=requestedType;
+    if(type==='war'&&slots<3)type='marine';
+    const events=type==='war'?rounds.filter(n=>n<last):rounds;
+    const eventRound=events[Math.floor(Math.random()*events.length)];
+    const excluded=new Set([eventRound]);
+    if(type==='war')excluded.add(eventRound+1);
+    const mysteries=rounds.filter(n=>!excluded.has(n));
+    // Rare partie tres courte : le premier tour reste utilisable pour le mystere.
+    if(!mysteries.length){
+      for(let n=1;n<=slots;n++)if(!excluded.has(n))mysteries.push(n);
+    }
+    const mysteryRound=mysteries[Math.floor(Math.random()*mysteries.length)];
+    return {type,eventRound,mysteryRound};
+  }
   function normalized() {
     if(!state)return;
     for(const p of state.players) {
@@ -30,16 +52,14 @@
     }
     if(!state.initialBudget)state.initialBudget=String(state.players[0]?.budget||'1000');
     if(!state.featureConfig) {
-      const remaining=Math.max(1,state.players.length*TEAM_SIZE);
-      // Déclenchement tôt pour que les petites équipes puissent vivre les événements.
-      const mysteryAt=state.round+Math.min(2,Math.max(1,Math.floor(remaining/3)));
-      const eventAt=state.round+Math.min(2,Math.max(1,Math.floor(remaining/4)));
-      const plan=Math.random()<.5?'war':'marine';
-      state.featureConfig={version,eventType:plan,eventRound:eventAt,mysteryRound:mysteryAt,eventUsed:false,mysteryUsed:false,warRounds:[]};
-      if(plan==='war') {
-        if(!prepareWarCards(eventAt)){
-          state.featureConfig.eventType='marine';
-        }
+      const planned=scheduleSurprises(state.players.length,TEAM_SIZE,Math.random()<.5?'war':'marine');
+      const eventAt=state.round+planned.eventRound, mysteryAt=state.round+planned.mysteryRound;
+      state.featureConfig={version,eventType:planned.type,eventRound:eventAt,mysteryRound:mysteryAt,
+        eventUsed:false,mysteryUsed:false,warRounds:[]};
+      // Si les 2 legendaires ne sont pas disponibles, on remplace uniquement
+      // la Guerre par la Prime de la Marine. Le tour mystere reste inchange.
+      if(planned.type==='war'&&!prepareWarCards(eventAt)){
+        state.featureConfig.eventType='marine';
       }
     }
   }
