@@ -170,7 +170,11 @@ function nextSeven(s:any){
    const alternatives=(["mystery","marine","black","reverie"] as Special[]).filter(t=>!reserved.has(t));
    spec.type=alternatives[randomIndex(alternatives.length)]||"marine";
  }
- if(spec?.type==="war"&&!prepareWar(s))spec.type="marine";
+ if(spec?.type==="war"&&!prepareWar(s)){
+   const reserved=new Set(s.event.schedule.map((e:any)=>e.type));
+   const alternatives=(["marine","mystery","black","reverie"] as Special[]).filter(x=>!reserved.has(x));
+   spec.type=alternatives[randomIndex(alternatives.length)]||"marine";
+ }
  const charId=s.drawPile[s.drawIndex++];
  const e=spec?{type:spec.type,round:s.round,stage:"intro",ready:[] as number[],step:0,
    choices:[] as string[],removed:[] as any[],flips:[] as any[]}:null;
