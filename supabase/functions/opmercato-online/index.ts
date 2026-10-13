@@ -431,7 +431,45 @@ Deno.serve(async(req:Request)=>{
      await notify(room,doc,data.version);
      return json({token:guestToken,room:snapshot(doc,newSeat,data.version,data)});
    }
-   const roomId=String(arg.roomId||""),access=String(arg.token||"");
+  
+  if(arg.action==="history"){
+    const entries=Array.isArray(arg.entries)?arg.entries.slice(0,50):[];
+    const candidates=entries.filter((x:any)=>x&&/^[0-9a-f-]{36}$/.test(String(x.roomId||""))&&/^[0-9a-f]{64}$/.test(String(x.token||"")));
+    if(!candidates.length)return json({matches:[]});
+    const ids=[...new Set(candidates.map((x:any)=>String(x.roomId)))];
+    const {data:rows,error:err}=await db.from("op_mercato_rooms").select("id,code,host_token_hash,guest_token_hash,doc,updated_at").in("id",ids).limit(50);
+    if(err)throw Error("Historique indisponible.");
+    const digests=await Promise.all(candidates.map(async(x:any)=>({id:String(x.roomId),digest:await hash(String(x.token))})));
+    const matches:any[]=[];
+    for(const room of rows||[]){
+      const game=room.doc;
+      if(game?.status!=="finished"||!Array.isArray(game.players))continue;
+      let seat=-1;
+      for(const entry of digests.filter(x=>x.id===room.id)){
+        const other=Array.isArray(game.extraTokenHashes)?game.extraTokenHashes.indexOf(entry.digest):-1;
+        const candidate=entry.digest===room.host_token_hash?0:entry.digest===room.guest_token_hash?1:other>=0?other+2:-1;
+        if(candidate>=0){seat=candidate;break;}
+      }
+      if(seat<0)continue;
+      await ensureAffiliations(game);
+      const players=game.players.map((p:any)=>{
+        const roster=(p.roster||[]).map((id:string)=>({id,name:String(game.catalog[id]?.name||id),
+          power:effectivePower(game,p,id),price:String(p.purchases?.[id]||"0")}));
+        const basePower=roster.reduce((n:number,c:any)=>n+c.power,0);
+        const spent=Object.values(p.purchases||{}).reduce((n:bigint,v:any)=>n+BigInt(String(v||0)),0n);
+        const synergy=affiliationBonuses(game,p).reduce((n,b)=>n+b.points,0);
+        const strongest=roster.slice().sort((a:any,b:any)=>b.power-a.power)[0]||null;
+        return {id:p.id,name:p.name,score:score(game,p),budget:p.budget,basePower,
+          averagePower:roster.length?Math.round(basePower*10/roster.length)/10:0,roster,
+          spent:spent.toString(),synergy,armamentBonus:armamentBonus(p),strongest};
+      });
+      matches.push({id:room.id,code:room.code,finishedAt:room.updated_at,
+        round:game.round,teamSize:game.teamSize,initialBudget:game.initialBudget,seat,players});
+    }
+    matches.sort((a,b)=>Date.parse(b.finishedAt)-Date.parse(a.finishedAt));
+    return json({matches});
+  }
+ const roomId=String(arg.roomId||""),access=String(arg.token||"");
    if(!/^[0-9a-f-]{36}$/.test(roomId)||!/^[0-9a-f]{64}$/.test(access))throw Error("Session non reconnue.");
    const {data:room,error}=await db.from("op_mercato_rooms").select("*").eq("id",roomId).maybeSingle();
    if(error||!room)throw Error("Salon introuvable.");
