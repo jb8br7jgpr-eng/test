@@ -190,7 +190,10 @@ function nextSeven(s:any){
  const from=(s.round-2+s.players.length)%s.players.length;
  const first=nextBidder(s,from);
  s.auction.turnId=first;s.auction.firstTurnId=first;
- if(first===null){s.status="finished";s.auction=null;}
+ if(first===null){
+   if(e?.type==="reverie"){s.auction.outcome="unsold";s.auction.turnId=null;}
+   else{s.status="finished";s.auction=null;}
+ }
 }
 function next(s:any){if(s.event.schedule)return nextSeven(s);return legacyNext(s);}
 function checkActor(s:any,seat:number){
