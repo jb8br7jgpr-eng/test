@@ -160,13 +160,18 @@
           '<span>'+escOnline(CARDS[id]?.name||id)+(p.smileModifiers?.[id]!==undefined?'<small class="online-smile-buff">🍎 '+powerFor(p,id)+' pts (rang '+classFor(powerFor(p,id))+')</small>':'')+'</span></button>').join(""):
         '<span>Équipage vide</span>')+'</div>'+
         '<div class="online-small">Base '+p.roster.reduce((v,id)=>v+powerFor(p,id),0)+
-          (p.armamentId?' · Armement +5':'')+
+          (p.armamentId?' · Armement +'+(p.armamentBonus??5):'')+
           (p.bonuses?.length?' · Synergies +'+p.bonuses.reduce((v,x)=>v+x.points,0):'')+'</div>'+
         (p.marineAward&&BigInt(p.marineAward)>0n?'<div class="online-small">🎲 Prime Marine : +'+berrys(p.marineAward)+'</div>':'')+
         '<div class="online-small">👑 '+(p.hakiUsed?'Haki des Rois utilisé':'Disponible')+
         ' · 👁 '+(p.observationUsed?'Utilisé':'Disponible')+' · 🛡 '+(p.armamentUsed?'Utilisé':'Disponible')+'</div>'+
         (p.bonuses?.length?'<div class="online-synergy">🤝 '+p.bonuses.map(x=>escOnline(x.name)+' ('+x.count+') +'+x.points).join(", ")+'</div>':'')+
       '</div>').join("")+'</section>';
+  }
+  function liveHud(){
+    if(!view||view.status!=="playing")return "";
+    return '<div class="op21-live-hud" aria-label="Budgets et scores en direct">'+view.players.map(p=>
+      '<div class="op21-hud-player" title="'+label(p)+'"><span>'+label(p)+'</span><b>'+berrys(p.budget)+'</b><small>⭐ '+p.score+' pts · '+p.roster.length+'/'+view.teamSize+'</small></div>').join('')+'</div>';
   }
   function portraitCard(id){
     if(!id)return '<div class="online-mystery"><div>❔</div><h2>Enchère mystère</h2><p>Son rang est connu, mais pas son identité.</p></div>';
@@ -201,6 +206,10 @@
       });
       content='<div class="v2-results">'+items.join("")+'</div>'+
         button("event-ready",myReady?"✓ En attente des autres pirates…":"Continuer →","primary",myReady);
+    }else if(e.stage==="god-result"){
+      content='<p>💥 Voici les personnages perdus par chaque pirate :</p><div class="op21-god-result">'+view.players.map(p=>
+        '<div class="op21-god-player"><strong>'+label(p)+'</strong>'+
+        ((e.removed||[]).filter(x=>x.from===p.id).map(x=>'<div class="op21-god-victim"><span class="portrait portrait-tiny"><span class="portrait-fallback">☠️</span><img class="portrait-photo" data-portrait-id="'+escOnline(x.id)+'" alt="" loading="lazy"></span><span>💥 '+escOnline(CARDS[x.id]?.name||x.id)+' · '+(CARDS[x.id]?.power||0)+' pts</span></div>').join('')||'<p>Équipage épargné</p>')+'</div>').join('')+'</div>'+button("event-ready",myReady?"✓ En attente des autres pirates…":"Continuer →","primary",myReady);
     }else if(e.stage==="roll"){
       const owner=view.players[e.step],myTurn=e.step===mine;
       content='<p>🎲 '+(myTurn?"À toi de lancer le dé !":"Au tour de "+label(owner))+'</p>'+
@@ -258,6 +267,7 @@
     const royal=view.event?.active?.type==="reverie";
     const canAfford=BigInt(me.budget)>=minimum*(royal?2n:1n)&&me.roster.length<view.teamSize;
     const canHaki=!royal&&turn&&!me.hakiUsed&&a.firstTurnId===me.id&&a.leader===null&&a.highBid==="0"&&a.passed.length===0;
+    const armamentPending=a.outcome==="sold"&&leader&&!leader.armamentUsed&&Number(CARDS[a.charId]?.power??100)<55&&!a.armamentChoice;
     const roll=view.event.awaitingRolls;
     let actionHtml="";
     if(roll){
@@ -270,7 +280,10 @@
          (a.hakiWinner===leader.id?' gratuitement grâce au Haki des Rois':" pour "+berrys(royal?BigInt(a.highBid)*2n:a.highBid)) :
          "🌊 Personnage invendu";
       actionHtml='<div class="online-turn online-winner">'+winner+'</div>'+
-        (view.host?button("next","Personnage suivant →"): '<div class="online-hint">L’hôte passe au prochain personnage…</div>');
+        (armamentPending?(leader.id===me.id?
+          '<div class="op21-armament-online"><strong>🛡 Haki de l’Armement</strong><p>'+escOnline(CARDS[a.charId]?.name||a.charId)+' : '+CARDS[a.charId].power+' → '+(CARDS[a.charId].power+20)+' points. Utiliser ton Haki maintenant ?</p>'+button("armament-use","🛡 Renforcer de +20 points")+button("armament-skip","Conserver mon Haki","btn-ghost")+'</div>':
+          '<div class="op21-armament-online">🛡 '+label(leader)+' choisit d’utiliser ou non son Haki de l’Armement…</div>'):'')+
+        (view.host?button("next","Personnage suivant →","primary",Boolean(armamentPending)): '<div class="online-hint">L’hôte passe au prochain personnage…</div>');
     }else{
       const offerChoices=[0n,1n,5n,10n].map((factor)=>{
         const val=minimum+factor*BigInt(view.bidStep);
@@ -289,7 +302,7 @@
           "online-pass",royal||!turn||(a.leader===null&&me.passesUsed>=5))+
         '<div class="online-powers">'+
         button("observation",me.observationUsed?'👁 Revoir mes visions':'👁 Observation', "btn-ghost",!turn&&!me.observationUsed)+
-        button("armament",me.armamentUsed?'🛡 Déjà utilisé':'🛡 Armement +5',"btn-ghost",!turn||me.armamentUsed||me.roster.length===0)+'</div>'+
+        '<span class="op21-haki-hint">🛡 '+(me.armamentUsed?'Armement utilisé':'Armement : +20 proposé sur une recrue &lt;55')+'</span></div>'+
         (peekOpen&&me.observationUsed?peekPanel():"");
     }
     return '<div class="online-round"><strong>ENCHÈRE N° '+view.round+'</strong><span>'+view.remaining+' cartes restantes</span></div>'+
@@ -314,7 +327,7 @@
     })[0];
     const spent=p=>Object.values(p.purchases||{}).reduce((sum,v)=>sum+BigInt(String(v)),0n);
     const spender=[...view.players].sort((a,b)=>spent(a)>spent(b)?-1:spent(a)<spent(b)?1:0)[0];
-    const bonus=p=>(p.armamentId?5:0)+(p.bonuses||[]).reduce((s,b)=>s+b.points,0);
+    const bonus=p=>(p.armamentId?(p.armamentBonus??5):0)+(p.bonuses||[]).reduce((s,b)=>s+b.points,0);
     const tactician=[...view.players].sort((a,b)=>bonus(b)-bonus(a))[0];
     const award=(icon,title,content)=>'<div class="online-award">'+icon+' <strong>'+title+'</strong> : '+content+'</div>';
     const tied=sorted.filter(p=>p.score===sorted[0].score&&p.budget===sorted[0].budget);
@@ -352,7 +365,7 @@
       'Refuser une carte avant toute enchere consomme un de tes <b>5 refus</b>. Se retirer apres une offre est gratuit.',
       'Haki des Rois : recruter gratuitement une fois, seulement si tu joues en premier et avant toute enchere.',
       'Haki de l’Observation : consulter secretement les trois prochaines cartes une fois par joueur.',
-      'Haki de l’Armement : renforcer une de tes recrues de <b>+5 points</b>, une fois par joueur.',
+      'Haki de l’Armement : après une recrue de <b>moins de 55 points</b>, tu peux lui donner <b>+20 points définitifs</b> ou conserver ton Haki. Une seule utilisation.',
       'Synergies par affiliation : 1 personnage = 0 point ; 2 = +10 ; 3 = +20 ; 4 = +30 ; 5 ou plus = +50. Les bonus de plusieurs affiliations se cumulent. Les anciens trios spéciaux ne comptent plus.',
       '7 evenements independants : Guerre au sommet, Prime de la Marine, Personnage mystere, Marche noir, God Valley, SMILE et Reverie.',
       '1 evenement pour 1 a 5 recrues, 2 pour 6 a 10, 3 pour 11 a 30. Les joueurs confirment chaque annonce avec Continuer.',
@@ -371,7 +384,7 @@
     if(!view){landing();return;}
     const main=view.status==="lobby"?waiting():
       '<div class="online-room-bar"><span>Salon <strong>'+escOnline(view.code)+'</strong></span><span>🌐 Synchronisation active</span></div>'+
-      '<div class="online-nav">'+button("catalog","📚 Catalogue ("+CHARACTERS.length+" personnages)","btn-ghost")+button("rules","📖 Règles","btn-ghost")+'</div>'+
+      liveHud()+'<div class="online-nav">'+button("catalog","📚 Catalogue ("+CHARACTERS.length+" personnages)","btn-ghost")+button("rules","📖 Règles","btn-ghost")+'</div>'+
       (view.status==="finished"?scoreboardEnd():auction())+gameScore()+
       (view.host&&view.status==="playing"?button("finish","Terminer cette partie","online-text"):"");
     shell(main+(fx?'<div class="v2-fx"><div class="v2-fx-icon">'+(fx.type==="roll"?"🎲":"🪙")+'</div><strong>'+
@@ -423,12 +436,8 @@
     if(a==="catalog"){window.OPMERCATO_SHARED?.openCatalog?.();return;}
     if(a==="rules"){onlineRules();return;}
     if(a==="observation"&&view.players[view.yourSeat].observationUsed){peekOpen=!peekOpen;paint();return;}
-    if(a==="armament"){
-      const p=view.players[view.yourSeat];
-      root.querySelector(".online-actions-area")?.insertAdjacentHTML("beforeend",
-        '<div class="online-peek"><h3>🛡 Renforcer un personnage (+5 pts)</h3>'+p.roster.map(id=>button("arm-"+id,escOnline(CARDS[id]?.name||id),"btn-ghost")).join("")+'</div>');
-      return;
-    }
+    if(a==="armament-use"){await action("armament",{charId:view.auction?.charId});return;}
+    if(a==="armament-skip"){await action("armament-skip");return;}
     if(a==="event-ready"){await action("event-ready");return;}
     if(a==="coin"){await action("coin");return;}
     if(a==="event-skip"){await action("event-eliminate",{charId:""});return;}
@@ -436,13 +445,26 @@
     if(a.startsWith("delete-")){await action("event-eliminate",{charId:a.slice(7)});return;}
     if(a==="custom-bid"){const val=root.querySelector("#online-custom-amount")?.value.replace(/[\s._]/g,"");await action("bid",{amount:val});return;}
     if(a.startsWith("bid-")){await action("bid",{amount:a.slice(4)});return;}
-    if(a.startsWith("arm-")){await action("armament",{charId:a.slice(4)});return;}
     if(["start","bid","pass","haki","observation","next","roll","finish"].includes(a)){await action(a);return;}
   },true);
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&showing)refresh();});
   const css=document.createElement("style");
   css.textContent=`
     .online-smile-buff{display:block;font-size:10px;color:#f2cc7a;font-weight:800;margin-top:2px}
+    .op21-live-hud{position:sticky;top:0;z-index:80;display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:5px;background:#081b29f5;border:1px solid #9e7d48;border-radius:14px;padding:8px 5px;box-shadow:0 7px 17px #0015;backdrop-filter:blur(13px)}
+    .op21-hud-player{min-width:0;display:grid;gap:3px;text-align:center;padding:3px}
+    .op21-hud-player:not(:last-child){border-right:1px solid #ffffff2b}
+    .op21-hud-player span{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:850;color:#dae7ec}
+    .op21-hud-player b{font-size:clamp(10px,2.8vw,15px);color:#f8d18a;overflow-wrap:anywhere;line-height:1.25}
+    .op21-hud-player small{font-size:10px;color:#c9dee1}
+    .op21-god-result{display:grid;gap:10px;text-align:left}
+    .op21-god-player{border:1px solid #b87968;background:#25212e;padding:12px;border-radius:12px}
+    .op21-god-player>strong{display:block;color:#ffdcaa;margin-bottom:8px}
+    .op21-god-victim{display:flex;gap:9px;align-items:center;font-size:12px}
+    .op21-god-victim .portrait-tiny{height:35px;width:28px;min-width:28px}
+    .op21-armament-online{padding:15px;border:1px solid #d4ad64;border-radius:15px;background:#2e3745;color:#ffdb91;margin:10px 0;text-align:center}
+    .op21-armament-online button{width:100%;margin-top:10px}
+    .op21-haki-hint{display:block;text-align:center;padding:9px;border:1px solid #537180;border-radius:10px;font-size:11px;color:#b8d2dc}
 
     .v2-special{margin:14px 0;border:2px solid #c8a369;background:radial-gradient(circle at 50% 10%,#344d60,#102332 75%);border-radius:23px;padding:28px 16px;color:#fff4d4;text-align:center;box-shadow:0 10px 32px #0008}
     .v2-war,.v2-god{border-color:#df685a;background:linear-gradient(130deg,#4b242a,#101c2c)}
