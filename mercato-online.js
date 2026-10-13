@@ -356,7 +356,9 @@
       'Synergies par affiliation : 1 personnage = 0 point ; 2 = +10 ; 3 = +20 ; 4 = +30 ; 5 ou plus = +50. Les bonus de plusieurs affiliations se cumulent. Les anciens trios spéciaux ne comptent plus.',
       '7 evenements independants : Guerre au sommet, Prime de la Marine, Personnage mystere, Marche noir, God Valley, SMILE et Reverie.',
       '1 evenement pour 1 a 5 recrues, 2 pour 6 a 10, 3 pour 11 a 30. Les joueurs confirment chaque annonce avec Continuer.',
-      'Un evenement se declenche : Guerre au Sommet (deux classes S) ou Prime de la Marine (de 5 % a 30 % du budget initial).',
+      'Evenements sans doublon, sans chevauchement et a des tours aleatoires. SMILE arrive exclusivement dans la seconde moitie de la partie.',
+      'La Reverie impose un prix double, interdit le refus volontaire et desactive le Haki des Rois pour son enchere.',
+      'SMILE modifie uniquement les puissances dans la partie en cours et ne change jamais le catalogue.',
       'Le score total additionne les puissances des recrues, les synergies et le Haki de l’Armement. Le budget restant departage une egalite de points.',
       'Les personnages ne peuvent etre recrutes qu’une seule fois dans chaque partie.'
     ];
