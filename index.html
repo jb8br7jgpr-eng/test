@@ -10,7 +10,7 @@
   <meta name="description" content="Un jeu d'enchères de personnages One Piece, à plusieurs sur un téléphone." />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="icon-192.png" />
-  <title>Mercato des Pirates</title>
+  <title>OPMercato — Mercato des Pirates</title>
   <style>
     :root { --bg: #081823; --panel: #112a38; --panel2: #173342; --outline: rgba(191,219,227,.13); --text: #f5f7f3; --muted: #a6bcc6; --gold: #f7ca72; --goldDark: #dfaa4d; --aqua: #7de3d3; --red: #fc938e; --shadow: 0 14px 38px rgba(0,0,0,.19); font-family: ui-rounded, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
     * { box-sizing: border-box; }
@@ -24,6 +24,24 @@
     .brand-symbol { height:47px; width:47px; flex-shrink:0; display:grid; place-items:center; border:1px solid rgba(247,202,114,.48); background:linear-gradient(140deg,#354c4c,#142b37); border-radius:15px; font-size:25px; box-shadow:0 4px 18px #051018; }
     .brand b { font-size:18px; letter-spacing:.035em; display:block; line-height:1.1; }
     .brand small { font-size:10px; letter-spacing:.19em; color:var(--gold); font-weight:800; }
+
+    /* OPMercato : logo marin validé, recadré par CSS sans modifier l'image source */
+    .op-logo-frame {
+      display:block; overflow:hidden; flex-shrink:0;
+      background:#fffefa; border:1px solid rgba(247,202,114,.65);
+      border-radius:13px; box-shadow:0 7px 24px rgba(0,0,0,.26);
+    }
+    .op-logo-frame img {display:block; width:100%; height:100%; object-fit:cover; object-position:center center;}
+    .op-logo-header {width:clamp(170px,51vw,250px); aspect-ratio:2.5/1;}
+    .op-logo-home {width:100%; max-width:660px; aspect-ratio:2.5/1; border-radius:18px; border-color:rgba(247,202,114,.75); box-shadow:0 15px 38px rgba(0,0,0,.27);}
+    .op-logo-home-wrap {display:flex; justify-content:center; margin:0 auto 24px;}
+    .topbar.home-header {justify-content:flex-end; margin-bottom:5px;}
+    .topbar.home-header .brand {display:none;}
+    @media (max-width:420px) {
+      .op-logo-header {width:clamp(168px,49vw,212px);}
+      .op-logo-home {border-radius:12px;}
+    }
+
     .btn-ghost { border:1px solid var(--outline); background:rgba(255,255,255,.05); color:var(--text); border-radius:13px; min-height:41px; padding:9px 12px; font-size:12px; font-weight:750; }
     .btn-ghost:hover { background:rgba(255,255,255,.12); }
     .eyebrow { color:var(--gold); font-size:11px; font-weight:900; letter-spacing:.19em; text-transform:uppercase; }
@@ -202,9 +220,9 @@
   function getScore(p) {return [...p.roster].sort((a,b)=>CARDS[b].power-CARDS[a].power).slice(0,TEAM_SIZE).reduce((s,id)=>s+CARDS[id].power,0);}
   function ranking() {return [...state.players].sort((a,b)=>getScore(b)-getScore(a)||b.budget-a.budget||a.id-b.id);}
   function isComplete(){return state.players.every(p=>p.roster.length===TEAM_SIZE) || !state.players.some(p=>canParticipate(p,OPEN_BID));}
-  function header(){return `<div class="topbar"><div class="brand"><div class="brand-symbol" aria-hidden="true">🏴‍☠️</div><div><small>ONE PIECE • FAN GAME</small><b>MERCATO DES PIRATES</b></div></div><button class="btn-ghost" data-action="rules" aria-label="Afficher les règles">Règles ?</button></div>`;}
+  function header(){return `<div class="topbar${!state?' home-header':''}"><div class="brand"><div class="op-logo-frame op-logo-header"><img src="./opmercato-logo.jpg?v=1" alt="OPMercato, la boussole des pirates" /></div></div><button class="btn-ghost" data-action="rules" aria-label="Afficher les règles">Règles ?</button></div>`;}
   function setupScreen(){
-    return `${header()}<section class="intro"><span class="eyebrow">Le jeu d'enchères des mers</span><h1>Forme l'équipage<br/>le plus puissant.</h1><p>Recrute des personnages One Piece aux enchères, gère ton budget et affronte tes amis. Celui qui a le plus de points avec ses <strong>5 personnages</strong> remporte la partie.</p></section>
+    return `${header()}<section class="intro"><div class="op-logo-home-wrap"><div class="op-logo-frame op-logo-home"><img src="./opmercato-logo.jpg?v=1" alt="Logo OPMercato" /></div></div><span class="eyebrow">Le jeu d'enchères des mers</span><h1>Forme l'équipage<br/>le plus puissant.</h1><p>Recrute des personnages One Piece aux enchères, gère ton budget et affronte tes amis. Celui qui a le plus de points avec ses <strong>5 personnages</strong> remporte la partie.</p></section>
       <section class="card settings"><span class="section-label">Combien de pirates ?</span><div class="settings-row"><span class="hint" style="margin:0">De 2 à 6 joueurs</span><div class="counter"><button class="round-button" data-action="less" aria-label="Moins de joueurs">−</button><span id="numPlayers" class="count">${playerCount}</span><button class="round-button" data-action="more" aria-label="Plus de joueurs">+</button></div></div>
       <span class="section-label">Noms des joueurs</span><div id="names" class="players-inputs">${names.slice(0,playerCount).map((n,i)=>`<div class="field"><label for="name-${i}">Joueur ${i+1}</label><input id="name-${i}" type="text" data-player-input="${i}" maxlength="25" value="${esc(n)}" autocomplete="off" /></div>`).join('')}</div>
       <div class="field field-budget"><label for="budget">Budget de départ (฿)</label><input id="budget" type="number" min="100" max="100000" step="100" value="${startingBudget}" inputmode="numeric" /></div>
