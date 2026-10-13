@@ -91,21 +91,29 @@ jobs:
                 await request({action:"pass",roomId,token:tokens[a.turnId]},400);
                 await request({action:"haki",roomId,token:tokens[a.turnId]},400);
               }
-              const min=BigInt(a.highBid)>0n?BigInt(a.highBid)+BigInt(current.bidStep):BigInt(current.baseBid);
               const royal=e?.type==="reverie";
-              const offered=royal?BigInt(current.initialBudget)/2n:min;
-              const bidder=a.turnId;
-              const before=BigInt(current.players[bidder].budget);
-              current=await act(bidder,"bid",{amount:offered.toString()});
-              if(current.auction.outcome===null){
-                if(royal)throw Error("Taxed bid should exhaust the other bidder's ability to raise");
-                current=await act(current.auction.turnId,"pass");
+              const previousBudgets=current.players.map(x=>BigInt(x.budget));
+              const min=BigInt(a.highBid)>0n?BigInt(a.highBid)+BigInt(current.bidStep):BigInt(current.baseBid);
+              if(!royal&&previousBudgets[a.turnId]<min){
+                // Avec un budget épuisé, un pirate peut encore utiliser son Haki des Rois.
+                current=await act(a.turnId,"haki");
+                if(current.auction.outcome!=="sold"||current.auction.highBid!=="0")
+                  throw Error("Haki-only bidder could not recruit for free");
+                continue;
+              }
+              for(let n=0;current.auction.outcome===null&&n<4;n++){
+                const turn=current.auction.turnId;
+                if(n===1&&!royal){current=await act(turn,"pass");continue;}
+                const minimum=BigInt(current.auction.highBid)>0n?
+                  BigInt(current.auction.highBid)+BigInt(current.bidStep):BigInt(current.baseBid);
+                const offer=royal?BigInt(current.players[turn].budget)/2n:minimum;
+                if(offer<minimum)throw Error("No affordable auction bid despite assigned turn");
+                current=await act(turn,"bid",{amount:offer.toString()});
               }
               if(current.auction.outcome!=="sold")throw Error("Auction failed to settle");
               const winner=current.auction.leader;
-              if(winner!==bidder)throw Error("Wrong auction winner");
-              const charged=before-BigInt(current.players[bidder].budget);
-              const expected=offered*(royal?2n:1n);
+              const charged=previousBudgets[winner]-BigInt(current.players[winner].budget);
+              const expected=BigInt(current.auction.highBid)*(royal?2n:1n);
               if(charged!==expected)throw Error("Incorrect paid amount "+charged+" expected "+expected);
               paid++;
             }
