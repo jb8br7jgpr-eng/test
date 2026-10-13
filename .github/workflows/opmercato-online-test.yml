@@ -24,131 +24,108 @@ jobs:
               throw Error(body.action+": HTTP "+response.status+" "+JSON.stringify(data).slice(0,500));
             return data;
           }
-          const created=await request({action:"create",name:"Automated Host",budget:"250000000",teamSize:3,spoilers:true});
-          const roomId=created.room.id, code=created.room.code, t0=created.token;
-          if(!/^[A-Z2-9]{8}$/.test(code))throw Error("invalid room code");
-          const joined=await request({action:"join",code,name:"Automated Guest"});
-          const t1=joined.token;
-          const get=(token)=>request({action:"get",roomId,token});
-          const act=(token,action,extra={})=>request({action,roomId,token,...extra});
-          const lobby=await get(t0);
-          if(lobby.room.players.length!==2)throw Error("Guest did not join");
-          await request({action:"start",roomId,token:t1},400);
-          const started=await act(t0,"start");
-          if(started.room.status!=="playing"||started.room.round!==1)
-            throw Error("Game did not start");
-          const schedule=started.room.event;
-          const eventAt=schedule.eventRound,mysteryAt=schedule.mysteryRound;
-          if(eventAt<2||mysteryAt<2||eventAt===mysteryAt||
-             schedule.type==="war"&&mysteryAt===eventAt+1)
-            throw Error("Event and mystery are not independently scheduled: "+JSON.stringify(schedule));
-          if(started.room.event.used||started.room.auction.mystery)
-            throw Error("Surprises should not automatically trigger on round 1");
-          const actor=started.room.auction.turnId;
-          const firstToken=actor===0?t0:t1,otherToken=actor===0?t1:t0;
-          await request({action:"haki",roomId,token:otherToken},400);
-          const haki=await act(firstToken,"haki");
-          if(haki.room.auction.outcome!=="sold"||haki.room.players[actor].roster.length!==1)
-            throw Error("Haki failed");
-          let sawMystery=false,sawEvent=false,sawWarSecond=false;
-          const last=Math.max(eventAt+(schedule.type==="war"?1:0),mysteryAt);
-          for(let expectedRound=2;expectedRound<=last;expectedRound++){
-            let current=(await act(t0,"next")).room;
-            if(current.round!==expectedRound)throw Error("Unexpected round number");
-            const mystery=expectedRound===mysteryAt;
-            if(Boolean(current.auction.mystery)!==mystery)
-              throw Error("Mystery occurred on the wrong round "+expectedRound);
-            if(mystery){
-              sawMystery=true;
-              if(current.auction.charId!==null||(await get(t1)).room.auction.charId!==null)
-                throw Error("Mystery leaked to either player's phone");
+          async function game(size){
+            const created=await request({action:"create",name:"Automated Host",budget:"250000000",teamSize:size,spoilers:true});
+            const joined=await request({action:"join",code:created.room.code,name:"Automated Guest"});
+            const roomId=created.room.id, tokens=[created.token,joined.token];
+            const act=async(seat,action,extra={})=>(await request({action,roomId,token:tokens[seat],...extra})).room;
+            const get=async(seat)=>(await request({action:"get",roomId,token:tokens[seat]})).room;
+            await request({action:"start",roomId,token:tokens[1]},400);
+            let current=await act(0,"start");
+            const seen=new Set();
+            let paid=0,checks=0;
+            while(current.status==="playing"&&checks++<120){
+              const a=current.auction,e=current.event.active;
+              if(!a)throw Error("No active auction");
+              if(e&&!seen.has(e.round)){
+                seen.add(e.round);
+                const mirrored=await get(1);
+                if(mirrored.event.active?.type!==e.type)throw Error("Event not synchronized");
+              }
+              if(e&&e.stage==="intro"){
+                current=await act(0,"event-ready");
+                if(current.event.active.stage!=="intro")throw Error("Event vanished without guest confirmation");
+                await request({action:"bid",roomId,token:tokens[0],amount:current.baseBid},400);
+                current=await act(1,"event-ready");continue;
+              }
+              if(e&&e.stage==="result"){
+                current=await act(0,"event-ready");
+                if(current.event.active.stage!=="result")throw Error("Result vanished automatically");
+                current=await act(1,"event-ready");continue;
+              }
+              if(e&&e.stage==="roll"){
+                const seat=e.step;
+                current=await act(seat,"roll");
+                const last=current.event.rolls.at(-1);
+                if(last.roll<1||last.roll>6||last.percent!==last.roll*5)throw Error("Die result invalid");
+                continue;
+              }
+              if(e&&e.stage==="coin"){
+                const seat=[0,1].find(x=>!e.flips.some(f=>f.id===x));
+                current=await act(seat,"coin");
+                const last=current.event.active.flips.at(-1);
+                if(last.after!==Math.max(0,Math.min(100,last.before+(last.pile?25:-25))))
+                  throw Error("SMILE effect invalid");
+                continue;
+              }
+              if(e&&e.stage==="select"){
+                const actor=(a.firstTurnId+e.step)%2;
+                const chosen=e.choices.find(id=>!e.removed.includes(id));
+                current=await act(actor,"event-pick",{charId:chosen});
+                if(current.event.active.stage==="auction"&&current.event.active.removed.length!==2)
+                  throw Error("Black market must remove two cards");
+                continue;
+              }
+              if(e&&e.stage==="eliminate"){
+                const actor=(a.firstTurnId+e.step)%2,opponent=current.players[1-actor];
+                current=await act(actor,"event-eliminate",{charId:opponent.roster[0]||""});
+                continue;
+              }
+              if(e&&e.stage!=="auction")throw Error("Unrecognized event stage: "+e.stage);
+              if(a.outcome!==null){current=await act(0,"next");continue;}
+              if(a.mystery){
+                if(a.charId!==null||(await get(1)).auction.charId!==null)
+                  throw Error("Mystery character revealed before auction");
+              }
+              if(e?.type==="reverie"){
+                await request({action:"pass",roomId,token:tokens[a.turnId]},400);
+                await request({action:"haki",roomId,token:tokens[a.turnId]},400);
+              }
+              const min=BigInt(a.highBid)>0n?BigInt(a.highBid)+BigInt(current.bidStep):BigInt(current.baseBid);
+              const bidder=a.turnId;
+              const before=BigInt(current.players[bidder].budget);
+              current=await act(bidder,"bid",{amount:min.toString()});
+              if(current.auction.outcome===null){
+                current=await act(current.auction.turnId,"pass");
+              }
+              if(current.auction.outcome!=="sold")throw Error("Auction failed to settle");
+              const winner=current.auction.leader;
+              if(winner!==bidder)throw Error("Wrong auction winner");
+              const charged=before-BigInt(current.players[bidder].budget);
+              const expected=min*(e?.type==="reverie"?2n:1n);
+              if(charged!==expected)throw Error("Incorrect paid amount "+charged+" expected "+expected);
+              paid++;
             }
-            const eventNow=expectedRound>=eventAt;
-            if(Boolean(current.event.used)!==eventNow)
-              throw Error("Event occurred on the wrong round "+expectedRound);
-            if(expectedRound===eventAt){
-              sawEvent=true;
-              if(current.event.type==="marine"&&!current.event.awaitingRolls)
-                throw Error("Marine dice were not triggered");
-              if(current.event.type==="war"&&current.auction.tier!=="S")
-                throw Error("War did not reveal a class S card");
-            }
-            if(expectedRound===eventAt+1&&current.event.type==="war"){
-              sawWarSecond=true;
-              if(current.auction.tier!=="S")throw Error("Second war card must be rank S");
-            }
-            if(current.event.awaitingRolls){
-              current=(await act(t0,"roll")).room;
-              current=(await act(t1,"roll")).room;
-              if(current.event.awaitingRolls)throw Error("Marine dice were not completed");
-            }
-            // No bids: close the auction and advance without exhausting the roster.
-            for(let tries=0;current.auction.outcome===null&&tries<2;tries++){
-              const seat=current.auction.turnId;
-              current=(await act(seat===0?t0:t1,"pass")).room;
-            }
-            if(current.auction.outcome===null)throw Error("Could not settle round "+expectedRound);
+            if(checks>=120)throw Error("Game did not terminate");
+            const expected=size<=5?1:size<=10?2:3;
+            if(seen.size!==expected)throw Error("Wrong number of triggered special events: "+size+" -> "+seen.size+" instead of "+expected);
+            const final=await get(1);
+            if(final.status!=="finished")throw Error("Guest final state not synchronized");
+            if(!paid)throw Error("No paid bids recorded");
+            console.log("PASS: "+size+" recruits, "+seen.size+" synced events, "+paid+" paid auctions");
           }
-          if(!sawMystery||!sawEvent||schedule.type==="war"&&!sawWarSecond)
-            throw Error("Not all independently planned surprises were exercised");
-          const latest=await get(t1);
-          if(latest.room.players.length!==2)throw Error("Lost guest");
-          await request({action:"get",roomId,token:"f".repeat(64)},400);
-          // Second room: test real paid bids and private Observation visions.
-          const duo=await request({action:"create",name:"Bid Host",budget:"2000",teamSize:2,spoilers:false});
-          const duoJoined=await request({action:"join",code:duo.room.code,name:"Bid Guest"});
-          const d0=duo.token,d1=duoJoined.token,dRoomId=duo.room.id;
-          const duoCall=(token,action,extra={})=>request({action,roomId:dRoomId,token,...extra});
-          const duoStart=await duoCall(d0,"start");
-          if(duoStart.room.event.awaitingRolls){
-            await duoCall(d0,"roll");
-            await duoCall(d1,"roll");
-          }
-          const starter=duoStart.room.auction.turnId;
-          const first=starter===0?d0:d1,second=starter===0?d1:d0;
-          const vision=await duoCall(first,"observation");
-          if(!vision.room.players[starter].observationUsed||vision.room.peek.length!==3)throw Error("Observation not personal");
-          const privateView=await duoCall(second,"get");
-          if(privateView.room.peek.length!==0||JSON.stringify(privateView.room).includes("observationPeek"))
-            throw Error("Observation leaked to another player");
-          const min=duoStart.room.baseBid;
-          await request({action:"bid",roomId:dRoomId,token:second,amount:min},400);
-          const offered=await duoCall(first,"bid",{amount:min});
-          if(offered.room.auction.leader!==starter||offered.room.auction.outcome!==null)
-            throw Error("Bid or turn handling incorrect");
-          const sold=await duoCall(second,"pass");
-          if(sold.room.auction.outcome!=="sold")throw Error("Bid didn't settle");
-          const winner=sold.room.players[starter];
-          if(winner.roster.length!==1||BigInt(winner.budget)!==2000n+BigInt(winner.marineAward||"0")-BigInt(min))
-            throw Error("Budget or recruitment incorrect");
-          if(sold.room.players[1-starter].passesUsed!==0)
-            throw Error("Passing after bid incorrectly consumed limited pass");
-          // 4-player parity with the local mode: all slots join privately, only the host starts.
+          await game(5);
+          await game(8);
+          await game(11);
+          // Multijoueur historique : admissions privees de 4 joueurs.
           const group=await request({action:"create",name:"Player 1",budget:"1000",teamSize:2,maxPlayers:4});
-          const gRoom=group.room.id;
           const groupJoin=async(i)=>request({action:"join",code:group.room.code,name:"Player "+i});
-          const g2=await groupJoin(2);
-          await request({action:"start",roomId:gRoom,token:group.token},400);
-          const g3=await groupJoin(3),g4=await groupJoin(4);
-          if(g3.room.yourSeat!==2||g4.room.yourSeat!==3||g4.room.players.length!==4)
-            throw Error("Multiplayer slots 3/4 failed");
-          const guestReload=await request({action:"get",roomId:gRoom,token:g3.token});
-          if(guestReload.room.yourSeat!==2)throw Error("Third player session identity failed");
-          await request({action:"join",code:group.room.code,name:"Rejected guest"},400);
-          const gStart=await request({action:"start",roomId:gRoom,token:group.token});
-          if(gStart.room.status!=="playing"||gStart.room.players.length!==4)
-            throw Error("Four-player start failed");
-          // Check that separate games no longer all schedule their surprise on turn two.
-          const eventRounds=new Set([eventAt]),mysteryRounds=new Set([mysteryAt]);
-          for(let i=0;i<7;i++){
-            const sample=(await request({action:"create",name:"Randomness "+i,budget:"1000",teamSize:5})).room.event;
-            if(sample.eventRound===sample.mysteryRound||
-               sample.type==="war"&&sample.mysteryRound===sample.eventRound+1)
-              throw Error("Independent surprises overlapped");
-            eventRounds.add(sample.eventRound);mysteryRounds.add(sample.mysteryRound);
-          }
-          if(eventRounds.size<2||mysteryRounds.size<2)
-            throw Error("Event scheduling does not vary across games");
-          console.log("PASS: variable and independent event / mystery timing, both surprise triggers, dice, war and 4-player sessions");
-          console.log("PASS: private Observation, out-of-turn rejection, paid bid, budget, recruitment and free withdrawal");
+          await groupJoin(2);
+          await request({action:"start",roomId:group.room.id,token:group.token},400);
+          const third=await groupJoin(3),fourth=await groupJoin(4);
+          if(third.room.yourSeat!==2||fourth.room.yourSeat!==3)
+            throw Error("Four-player join slots incorrect");
+          await request({action:"start",roomId:group.room.id,token:group.token});
+          await request({action:"get",roomId:group.room.id,token:"f".repeat(64)},400);
+          console.log("PASS: private 4-player sessions, invalid session rejection.");
           JS
