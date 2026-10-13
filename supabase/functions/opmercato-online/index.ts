@@ -158,6 +158,34 @@ function legacyNext(s:any){
  s.auction.turnId=first;s.auction.firstTurnId=first;
  if(first===null){s.status="finished";s.auction=null;}
 }
+
+function nextSeven(s:any){
+ if(isComplete(s)||s.drawIndex>=s.drawPile.length){s.status="finished";s.auction=null;return;}
+ s.event.active=null;s.round++;
+ const spec=scheduledAt(s,s.round);
+ if(spec?.type==="war"&&!prepareWar(s))spec.type="marine";
+ const charId=s.drawPile[s.drawIndex++];
+ const e=spec?{type:spec.type,round:s.round,stage:"intro",ready:[] as number[],step:0,
+   choices:[] as string[],removed:[] as any[],flips:[] as any[]}:null;
+ if(e){
+   s.event.active=e;s.event.used=true;s.event.type=e.type;s.event.activatedRound=s.round;
+   if(e.type==="war")s.event.warRounds=[s.round,s.round+1];
+   if(e.type==="black"){
+     e.choices=[charId,...s.drawPile.slice(s.drawIndex,s.drawIndex+2)];
+     s.drawIndex+=e.choices.length-1;
+   }
+   if(e.type==="marine")s.event.rolls=[];
+ }
+ const mystery=e?.type==="mystery";
+ if(mystery)s.event.mysteryUsed=true;
+ s.auction={charId,highBid:"0",leader:null,passed:[],turnId:null,firstTurnId:null,outcome:null,
+   mystery,warGuaranteed:s.event.warRounds.includes(s.round),hakiWinner:null};
+ const from=(s.round-2+s.players.length)%s.players.length;
+ const first=nextBidder(s,from);
+ s.auction.turnId=first;s.auction.firstTurnId=first;
+ if(first===null){s.status="finished";s.auction=null;}
+}
+function next(s:any){if(s.event.schedule)return nextSeven(s);return legacyNext(s);}
 function checkActor(s:any,seat:number){
  const a=s.auction;
  if(s.status!=="playing"||!a||a.outcome!==null)throw Error("Aucune enchère active.");
@@ -174,7 +202,68 @@ function takeAction(s:any,seat:number,action:string,payload:any){
    s.status="playing";next(s);return;
  }
  if(action==="finish"){if(seat!==0)throw Error("Seul l'hôte peut terminer la partie.");s.status="finished";s.auction=null;return;}
+
+ if(action==="event-ready"){
+   if(!s.event.schedule||s.status!=="playing")throw Error("Événement indisponible.");
+   eventReady(s,seat);return;
+ }
+ if(action==="event-pick"){
+   const e=s.event.active;
+   if(!s.event.schedule||e?.type!=="black"||e.stage!=="select")throw Error("Marché Noir indisponible.");
+   const first=s.auction.firstTurnId??0,acting=(first+e.step)%s.players.length;
+   if(seat!==acting||e.step>=2)throw Error("Ce n'est pas ton choix.");
+   const id=String(payload.charId||"");
+   if(!e.choices.includes(id)||e.removed.includes(id))throw Error("Personnage non disponible.");
+   e.removed.push(id);e.step++;
+   if(e.step===2){
+     const selected=e.choices.find((v:string)=>!e.removed.includes(v));
+     s.auction.charId=selected;
+     for(const returned of e.removed){
+       const pos=s.drawIndex+randomIndex(s.drawPile.length-s.drawIndex+1);
+       s.drawPile.splice(pos,0,returned);
+     }
+     e.stage="auction";
+   }
+   return;
+ }
+ if(action==="event-eliminate"){
+   const e=s.event.active;
+   if(!s.event.schedule||e?.type!=="god"||e.stage!=="eliminate")throw Error("God Valley indisponible.");
+   const first=s.auction.firstTurnId??0,acting=(first+e.step)%s.players.length;
+   if(seat!==acting)throw Error("Ce n'est pas ton choix.");
+   const target=s.players[(acting+1)%s.players.length],id=String(payload.charId||"");
+   if(id&&!target.roster.includes(id))throw Error("Ce personnage n'appartient pas à l'équipage adverse.");
+   if(id){target.roster=target.roster.filter((x:string)=>x!==id);e.removed.push({from:target.id,id});}
+   e.step++;
+   if(e.step===s.players.length)e.stage="auction";
+   return;
+ }
+ if(action==="coin"){
+   const e=s.event.active;
+   if(!s.event.schedule||e?.type!=="smile"||e.stage!=="coin"||e.flips.some((x:any)=>x.id===seat))
+     throw Error("Lancer SMILE indisponible.");
+   const id=p.roster.slice().sort((a:string,b:string)=>effectivePower(s,p,a)-effectivePower(s,p,b))[0];
+   if(!id)throw Error("Aucun personnage à transformer.");
+   const before=effectivePower(s,p,id),pile=randomIndex(2)===0,after=Math.max(0,Math.min(100,before+(pile?25:-25)));
+   p.smileModifiers=p.smileModifiers||{};
+   p.smileModifiers[id]=after-power(s,id);
+   e.flips.push({id:seat,charId:id,pile,before,after});
+   if(e.flips.length===s.players.length){e.stage="result";e.ready=[];}
+   return;
+ }
  if(action==="roll"){
+   if(s.event.schedule){
+     const e=s.event.active;
+     if(s.status!=="playing"||e?.type!=="marine"||e.stage!=="roll"||e.step!==seat)
+       throw Error("Ce n'est pas ton lancer.");
+     const roll=randomIndex(6)+1,percent=roll*5;
+     const prize=BigInt(s.initialBudget)*BigInt(percent)/100n;
+     p.budget=(BigInt(p.budget)+prize).toString();p.marineAward=prize.toString();p.marineRoll=roll;
+     s.event.rolls=s.event.rolls||[];s.event.rolls.push({id:seat,roll,percent,amount:prize.toString()});
+     e.step++;
+     if(e.step>=s.players.length){e.stage="result";e.ready=[];}
+     return;
+   }
    if(s.status!=="playing"||!s.event.awaitingRolls||s.event.rollIndex!==seat)throw Error("Ce n'est pas ton lancer.");
    const roll=rand(1)[0]%6+1,percent=roll*5;
    const prize=BigInt(s.initialBudget)*BigInt(percent)/100n;
