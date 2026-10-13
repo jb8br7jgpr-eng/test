@@ -1,7 +1,7 @@
 (function upgradeMercato(){
   'use strict';
   const portraits = new Map();
-  const blocked = new Set(['higuma','fullbody','pearl','mohji','cabaji','jango','ginrummy','numbers-giant','speed','stronger','shachi','penguin','or-lumbus','conis','satori','gedatsu','shura','ohm','hokback','chaka','koza','heat','wire','richie']);
+  const blocked = new Set(['higuma','fullbody','pearl','mohji','cabaji','jango','ginrummy','numbers-giant','speed','stronger','shachi','penguin','or-lumbus','conis','satori','gedatsu','shura','ohm','hokback','chaka','koza','heat','wire','richie','cabaji2','dragon-kuma','daz-bones','galdino','helmeppo2','shisilian']);
   const aliases = {
     'prime-wb':'Edward Newgate','prime-garp':'Monkey D. Garp','sengoku':'Sengoku',
     'luffy':'Monkey D. Luffy','teach':'Marshall D. Teach','bigmom':'Charlotte Linlin',
@@ -244,6 +244,13 @@
   openModal=function(kind){
     prevModal(kind);
     if(kind==='rules'){
+      const list=modal.querySelector('ul');
+      if(list){
+        list.innerHTML=list.innerHTML.replace(
+          'La mise de départ est de <b>'+currency(OPEN_BID)+'</b>, puis une nouvelle offre doit augmenter d\'au moins <b>'+currency(BID_STEP)+'</b>.',
+          'La mise de départ est de <b>'+currency(baseBid())+'</b>, puis toute surenchère doit augmenter d\'au moins <b>'+currency(bidStep())+'</b>.'
+        );
+      }
       const x=modal.querySelector('ul');
       if(x)x.insertAdjacentHTML('beforeend','<li>Les budgets sont illimités. La mise de départ et les paliers augmentent avec le budget initial : '+currency(baseBid())+' au départ, puis +'+currency(bidStep())+' par palier.</li><li>Une enchère personnalisée est possible.</li><li>Le catalogue contient des spoilers des arcs récents si leur affichage est activé.</li>');
     }
