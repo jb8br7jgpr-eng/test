@@ -1,0 +1,72 @@
+name: OPMercato Two-Phone Browser Test
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/opmercato-browser-test.yml'
+      - 'mercato-online.js'
+      - 'index.html'
+jobs:
+  two-phones:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+      - name: Install test browser client
+        run: npm install --no-save playwright-core@1.57.0
+      - name: Exercise both simulated phones
+        env:
+          CHROME_BINARY: ${{ steps.chrome.outputs.chrome-path }}
+        run: |
+          node --input-type=module <<'JS'
+          import { chromium } from "playwright-core";
+          const browser=await chromium.launch({executablePath:process.env.CHROME_BINARY,headless:true,args:["--no-sandbox"]});
+          const errors=[];
+          function listen(page,title){
+            page.on("pageerror",e=>errors.push(title+": "+String(e)));
+            page.on("console",m=>{if(m.type()==="error"&&/mercato-online|Uncaught/i.test(m.text())) errors.push(title+": "+m.text());});
+          }
+          const ctx1=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:2});
+          const ctx2=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:2});
+          const host=await ctx1.newPage(),guest=await ctx2.newPage();
+          listen(host,"host");listen(guest,"guest");
+          const home="https://jb8br7jgpr-eng.github.io/test/?v=online-browser";
+          try {
+            await host.goto(home,{waitUntil:"domcontentloaded",timeout:60000});
+            await host.locator('[data-online="open"]').waitFor({timeout:45000});
+            await host.locator('[data-online="open"]').click();
+            await host.locator('[data-online="create-form"]').click();
+            await host.locator('#online-name').fill("Capitaine Test");
+            await host.locator('#online-team').fill("3");
+            await host.locator('[data-online="create-go"]').click();
+            await host.locator('.online-code').waitFor({timeout:30000});
+            const code=(await host.locator(".online-code").innerText()).trim();
+            if(!/^[A-Z2-9]{8}$/.test(code))throw Error("Code is malformed: "+code);
+            await guest.goto(home+"&room="+code,{waitUntil:"domcontentloaded",timeout:60000});
+            await guest.locator('[data-online="join-go"]').waitFor({timeout:30000});
+            await guest.locator('#online-name').fill("Navigatrice Test");
+            await guest.locator('[data-online="join-go"]').click();
+            await guest.locator(".online-people").getByText("Capitaine Test").waitFor({timeout:30000});
+            await host.locator(".online-people").getByText("Navigatrice Test").waitFor({timeout:30000});
+            await host.locator('[data-online="start"]').click();
+            await Promise.all([host.locator(".online-round").waitFor({timeout:30000}),
+              guest.locator(".online-round").waitFor({timeout:30000})]);
+            if(!await host.locator('.online-rank').count())throw Error("Mystery first round not visible");
+            const turn=(await host.locator(".online-turn b").first().innerText()).trim();
+            const first=turn==="Capitaine Test"?host:guest,other=turn==="Capitaine Test"?guest:host;
+            await first.locator('[data-online="haki"]').click();
+            await host.locator(".online-winner").waitFor({timeout:30000});
+            await guest.locator(".online-winner").waitFor({timeout:30000});
+            if(await other.locator('[data-online="haki"]').count())throw Error("Haki is still active on other phone");
+            await host.locator('[data-online="next"]').click();
+            await host.locator('.online-round').getByText("ENCHÈRE N° 2").waitFor({timeout:30000});
+            await guest.locator('.online-round').getByText("ENCHÈRE N° 2").waitFor({timeout:30000});
+            if(errors.length)throw Error("Browser script errors: "+errors.slice(0,3).join("; "));
+            console.log("PASS two phones: create, join, realtime, mystery, haki, next event.");
+          } finally {await browser.close();}
+          JS
