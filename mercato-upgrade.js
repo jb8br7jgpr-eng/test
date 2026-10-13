@@ -187,7 +187,7 @@
     const cards=window.MERCATO_IMAGE_CARDS?.[id]||[];
     const out=[];
     for(const cardId of cards.slice(0,4)){
-      if(!/^(OP|EB|ST)\\d{2}-\\d{3}$/.test(cardId))continue;
+      if(!/^(OP|EB|ST)\d{2}-\d{3}$/.test(cardId))continue;
       out.push('https://optcg-api.arjunbansal-ai.workers.dev/images/'+cardId);
       out.push('https://en.onepiece-cardgame.com/images/cardlist/card/'+cardId+'.png');
     }
