@@ -16,6 +16,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Check JavaScript syntax
+        run: node --check mercato-features.js && node --check mercato-online.js && node --check mercato-rules.js
       - uses: browser-actions/setup-chrome@v1
         id: chrome
       - name: Install test browser client
@@ -83,7 +85,7 @@ jobs:
             });
             const expectedBonuses={one:0,two:10,three:20,four:30,five:50,six:50,mixed:30,legendary:20};
             if(JSON.stringify(localBonuses)!==JSON.stringify(expectedBonuses))
-              throw Error("Local affiliation score mismatched: "+JSON.stringify(localBonuses));
+              throw Error("Local affiliation score mismatched: "+JSON.stringify(localBonuses)+" errors: "+errors.join("; "));
             // Real local-vs-online parity: same catalogue, personalized art, and detail modal.
             await host.locator('[data-online="catalog"]').click();
             await host.locator('#catalog-search').fill('Joy Boy');
