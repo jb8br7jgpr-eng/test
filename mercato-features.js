@@ -367,16 +367,27 @@
   const oldAuction=auctionScreen;
   auctionScreen=function(){
     if(!state||state.phase!=='auction')return oldAuction();
+    if(v2Active()&&v2Active().stage!=='auction')return v2Screen();
     const a=state.auction;
     let html=oldAuction();
     const f=state.featureConfig;
-    if(f) {
+    if(f&&!f.plan) {
       const banner=f.eventUsed&&f.activatedRound===state.round
         ? f.eventType==='war'
           ?'<div class="event-banner">⚔️ GUERRE AU SOMMET ! Les 2 personnages de rang S se présentent à la suite.</div>'
           :'<div class="event-banner">🎲 PRIME DE LA MARINE ! '+(f.rolls||[]).map(r=>esc(player(r.id)?.name||'')+' : dé '+r.roll+' → +'+r.percent+' % ('+currency(r.amount)+')').join(' · ')+'</div>'
         :a?.warGuaranteed?'<div class="event-banner">⚔️ Guerre au sommet — deuxième personnage légendaire !</div>':'';
       html=html.replace('<section class="card auction">',banner+'<section class="card auction">');
+    }
+    if(v2Active()&&v2Active().stage==='auction'){
+      const label=V2_INFO[v2Active().type];
+      html=html.replace('<section class="card auction">',
+        '<div class="event-banner">✦ '+esc(label[1])+' ✦ '+esc(label[2])+'</div><section class="card auction">');
+      if(v2Royal()){
+        html=html.replace(/<button class="haki-btn"[\\s\\S]*?<\\/button>/,'');
+        html=html.replace(/<button class="pass-btn"[^>]*>[\\s\\S]*?<\\/button>/,
+          '<button class="pass-btn" disabled>👑 Taxe royale : refus interdit</button>');
+      }
     }
     if(a?.mystery&&a.outcome===null){
       const c=CARDS[a.charId];
@@ -481,13 +492,46 @@
         '<li>Haki de l’Observation : consulter discrètement les <b>3 prochains personnages</b>, une fois par joueur.</li>'+
         '<li>Haki de l’Armement : donner <b>+5 points</b> à une recrue, une fois par joueur.</li>'+
         '<li>Synergies par affiliation : 1 personnage = 0 point ; 2 = +10 ; 3 = +20 ; 4 = +30 ; 5 ou plus = +50. Chaque affiliation donne son propre bonus, cumulable avec les autres. Les anciennes synergies par combinaison ont été supprimées.</li>'+
-        '<li>Une enchère mystère apparaît à un tour aléatoire indépendant de l’événement. Son rang reste seul visible jusqu’à la révélation du personnage.</li>'+
-        '<li>Un seul événement par partie : Guerre au sommet (2 cartes S consécutives) OU Prime de la Marine (chaque joueur lance un dé et reçoit 5 à 30 % de son budget initial).</li>');
+        '<li>Sept événements possibles : Guerre au sommet, Prime de la Marine, Personnage mystère, Marché Noir, God Valley, SMILE et Rêverie. 1 événement pour 1 à 5 recrues, 2 pour 6 à 10, 3 au-delà. Chaque annonce reste affichée jusqu’à Continuer.</li>'+
+        '<li>Rêverie : enchère obligatoire, coût final doublé, Haki des Rois interdit. SMILE : chaque joueur lance une pièce (+25 ou −25 sur le personnage le plus faible, dans les limites 0 à 100).</li>');
     }
   };
 
+  document.addEventListener('click',event=>{
+    const b=event.target.closest('button[data-action^="v2-"]');
+    if(!b||b.disabled||!state?.featureConfig?.plan)return;
+    event.preventDefault();event.stopImmediatePropagation();
+    const action=b.dataset.action;
+    if(action==='v2-ready')v2Ready();
+    else if(action==='v2-roll')v2Roll();
+    else if(action==='v2-coin')v2Coin();
+    else if(action==='v2-pick')v2Pick(b.dataset.id);
+    else if(action==='v2-delete')v2Eliminate(b.dataset.id);
+    else if(action==='v2-skip')v2Eliminate('');
+  },true);
   const style=document.createElement('style');
   style.textContent=`
+    .v2-local-special{margin:22px 0 8px;background:radial-gradient(circle at top,#355369,#122637 70%);
+      border:2px solid #d0ab70;border-radius:23px;padding:30px 15px;text-align:center;color:#f8e8cb}
+    .v2-local-special.v2-god,.v2-local-special.v2-war{background:linear-gradient(145deg,#4d2730,#102132);border-color:#dd7664}
+    .v2-local-special.v2-black,.v2-local-special.v2-mystery{background:linear-gradient(145deg,#483358,#162734);border-color:#ae9bda}
+    .v2-local-special.v2-smile{background:linear-gradient(145deg,#5d3926,#132836);border-color:#f1be63}
+    .v2-local-special small{letter-spacing:.12em;color:#f5d69a}
+    .v2-local-special h1{font-size:27px;color:#ffdb8f;margin:8px 0 25px}
+    .v2-local-special p{font-size:14px;line-height:1.6}
+    .v2-local-symbol{font-size:70px;animation:v2LocalBounce .85s infinite alternate;margin:18px auto}
+    .v2-local-special button.primary{margin:20px auto 6px;max-width:360px}
+    .v2-local-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px;margin:18px 0}
+    .v2-local-choices>div{display:grid;align-content:space-between;gap:8px;background:#234154;padding:13px 8px;border:1px solid #b69a6b;border-radius:14px}
+    .v2-local-choices button{background:#e5bd77;color:#152635;border:none;border-radius:10px;padding:10px}
+    .v2-local-hint{text-align:center;font-size:11px;color:#b7ced9;padding:14px}
+    .v2-local-die{font-size:88px;animation:v2LocalBounce .7s infinite alternate}
+    .v2-local-results p{background:#274456;border:1px solid #866e45;border-radius:9px;padding:10px}
+    .v2-local-fx{position:fixed;z-index:3000;inset:0;background:#091e2bf0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fbe8b1;font-size:22px;text-align:center;padding:16px}
+    .v2-local-fx-symbol{font-size:120px;animation:v2LocalSpin .23s linear infinite alternate;margin-bottom:20px}
+    @keyframes v2LocalSpin{to{transform:rotateY(180deg) rotateZ(30deg) scale(1.2)}}
+    @keyframes v2LocalBounce{to{transform:scale(1.15) rotate(7deg)}}
+
     .marine-roll-content{text-align:center;padding:8px 0 3px}
     .marine-roll-content h2{margin:14px 0;font-size:23px}
     .marine-roll-content p{font-size:13px}
