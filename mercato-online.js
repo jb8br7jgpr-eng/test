@@ -115,14 +115,14 @@
   function waiting(){
     const players=view.players.map((p,i)=>'<div class="online-person"><span>'+ (i===0?'👑':'🏴‍☠️')+
       '</span><strong>'+label(p)+'</strong><small>'+ (i===0?'Hôte':'Invité')+'</small></div>').join("");
-    shell('<section class="online-card"><h2>Salon prêt à accueillir les pirates</h2><div class="online-code">'+escOnline(view.code)+'</div>'+
+    return '<section class="online-card"><h2>Salon prêt à accueillir les pirates</h2><div class="online-code">'+escOnline(view.code)+'</div>'+
       '<p class="online-hint">Transmets ce code à ta femme ou partage directement le lien.</p>'+
       '<div class="online-actions">'+button("copy-code","Copier le code","btn-ghost")+button("copy-link","Partager le lien","btn-ghost")+'</div>'+
       '<div class="online-people">'+players+(view.players.length<2?'<div class="online-person online-wait">⏳ En attente du second joueur…</div>':'')+'</div>'+
       '<p>Budget : <strong>'+berrys(view.initialBudget)+'</strong> · '+view.teamSize+' personnages chacun.</p>'+
       (view.host?button("start","🏴‍☠️ Lancer la partie", "primary",view.players.length<2):
         '<p class="online-hint">L’hôte lancera le mercato dès que tout le monde sera prêt.</p>')+
-      '</section>');
+      '</section>';
   }
   function gameScore(){
     return '<section class="online-teams"><h2>⚓ Vos équipages</h2>'+
