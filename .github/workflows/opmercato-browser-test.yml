@@ -19,6 +19,10 @@ jobs:
         id: chrome
       - name: Install test browser client
         run: npm install --no-save playwright-core@1.57.0
+      - name: Serve checked-out OPMercato locally
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/opmercato-static.log 2>&1 &
+          sleep 2
       - name: Exercise both simulated phones
         env:
           CHROME_BINARY: ${{ steps.chrome.outputs.chrome-path }}
@@ -35,7 +39,7 @@ jobs:
           const ctx2=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:2});
           const host=await ctx1.newPage(),guest=await ctx2.newPage();
           listen(host,"host");listen(guest,"guest");
-          const home="https://jb8br7jgpr-eng.github.io/test/?v=online-browser";
+          const home="http://127.0.0.1:8765/?v=online-browser";
           try {
             await host.goto(home,{waitUntil:"domcontentloaded",timeout:60000});
             await host.locator('[data-online="open"]').waitFor({timeout:45000});
