@@ -79,7 +79,13 @@ jobs:
             await host.locator('[data-online="rules"]').click();
             if(!await host.locator('.modal-content').getByText('Regles du mercato').count())throw Error("Online rules inaccessible");
             await host.locator('.modal-content [data-action="close-modal"]').click();
-            if(!await host.locator('.online-rank').count())throw Error("Mystery first round not visible");
+            // The local rules trigger the Marine bonus in round 1 for two pirates / three recruits.
+            const diceVisible=await host.locator('[data-online="roll"]').count();
+            if(diceVisible){
+              await host.locator('[data-online="roll"]').click();
+              await guest.locator('[data-online="roll"]').click();
+              await host.locator('.online-turn').getByText("AU TOUR DE").waitFor({timeout:30000});
+            }
             const turn=(await host.locator(".online-turn b").first().innerText()).trim();
             const first=turn==="Capitaine Test"?host:guest,other=turn==="Capitaine Test"?guest:host;
             await first.locator('[data-online="haki"]').click();
@@ -89,6 +95,8 @@ jobs:
             await host.locator('[data-online="next"]').click();
             await host.locator('.online-round').getByText("ENCHÈRE N° 2").waitFor({timeout:30000});
             await guest.locator('.online-round').getByText("ENCHÈRE N° 2").waitFor({timeout:30000});
+            if(!await host.locator('.online-rank').count())throw Error("Mystery round 2 not visible");
+            if(!await guest.locator('.online-rank').count())throw Error("Guest mystery round 2 not visible");
             if(errors.length)throw Error("Browser script errors: "+errors.slice(0,3).join("; "));
             console.log("PASS two phones: create, join, realtime, mystery, haki, next event.");
           } finally {await browser.close();}
