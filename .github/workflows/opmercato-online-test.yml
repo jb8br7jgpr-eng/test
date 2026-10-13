@@ -35,22 +35,22 @@ jobs:
           if(lobby.room.players.length!==2)throw Error("Guest did not join");
           await request({action:"start",roomId,token:t1},400);
           const started=await act(t0,"start");
-          if(started.room.status!=="playing"||!started.room.auction.mystery)throw Error("Start or mystery failed");
-          const room0=started.room;const actor=room0.auction.turnId;
+          if(started.room.status!=="playing"||!started.room.event.used)throw Error("Start or event failed");
+          if(started.room.event.type==="marine"){
+            await act(t0,"roll");const lastRoll=await act(t1,"roll");
+            if(lastRoll.room.event.awaitingRolls)throw Error("Dice did not finish");
+          }else if(started.room.auction.tier!=="S")throw Error("War event not S");
+          const room0=(await get(t0)).room,actor=room0.auction.turnId;
           const firstToken=actor===0?t0:t1,otherToken=actor===0?t1:t0;
           await request({action:"haki",roomId,token:otherToken},400);
           const secured=await get(otherToken);
-          if(secured.room.auction.charId!==null)throw Error("Mystery leaked");
+          if(room0.auction.mystery&&secured.room.auction.charId!==null)throw Error("Mystery leaked");
           const haki=await act(firstToken,"haki");
           if(haki.room.auction.outcome!=="sold"||haki.room.players[actor].roster.length!==1)throw Error("Haki failed");
           const next=await act(t0,"next");
-          if(next.room.round!==2||!next.room.event.used)throw Error("Event failed");
-          if(next.room.event.type==="marine"){
-            const roll1=await act(t0,"roll");const roll2=await act(t1,"roll");
-            if(roll2.room.event.awaitingRolls)throw Error("Dice did not finish");
-          }else{
-            if(next.room.auction.tier!=="S")throw Error("War event not S");
-          }
+          if(next.room.round!==2||!next.room.event.used)throw Error("Event did not persist");
+          if(!next.room.auction.mystery||next.room.auction.charId!==null)
+            throw Error("Mystery should be revealed only after the second auction settles");
           const latest=await get(t1);
           if(latest.room.players.length!==2)throw Error("Lost guest");
           await request({action:"get",roomId,token:"f".repeat(64)},400);
@@ -60,6 +60,10 @@ jobs:
           const d0=duo.token,d1=duoJoined.token,dRoomId=duo.room.id;
           const duoCall=(token,action,extra={})=>request({action,roomId:dRoomId,token,...extra});
           const duoStart=await duoCall(d0,"start");
+          if(duoStart.room.event.awaitingRolls){
+            await duoCall(d0,"roll");
+            await duoCall(d1,"roll");
+          }
           const starter=duoStart.room.auction.turnId;
           const first=starter===0?d0:d1,second=starter===0?d1:d0;
           const vision=await duoCall(first,"observation");
@@ -79,6 +83,21 @@ jobs:
             throw Error("Budget or recruitment incorrect");
           if(sold.room.players[1-starter].passesUsed!==0)
             throw Error("Passing after bid incorrectly consumed limited pass");
-          console.log("PASS: create/join/reconnect/role checks/mystery/haki/event/roll/security");
+          // 4-player parity with the local mode: all slots join privately, only the host starts.
+          const group=await request({action:"create",name:"Player 1",budget:"1000",teamSize:2,maxPlayers:4});
+          const gRoom=group.room.id;
+          const groupJoin=async(i)=>request({action:"join",code:group.room.code,name:"Player "+i});
+          const g2=await groupJoin(2);
+          await request({action:"start",roomId:gRoom,token:group.token},400);
+          const g3=await groupJoin(3),g4=await groupJoin(4);
+          if(g3.room.yourSeat!==2||g4.room.yourSeat!==3||g4.room.players.length!==4)
+            throw Error("Multiplayer slots 3/4 failed");
+          const guestReload=await request({action:"get",roomId:gRoom,token:g3.token});
+          if(guestReload.room.yourSeat!==2)throw Error("Third player session identity failed");
+          await request({action:"join",code:group.room.code,name:"Rejected guest"},400);
+          const gStart=await request({action:"start",roomId:gRoom,token:group.token});
+          if(gStart.room.status!=="playing"||gStart.room.players.length!==4)
+            throw Error("Four-player start failed");
+          console.log("PASS: create/join/reconnect/roles/mystery/Haki/event/roll/security + 4 players");
           console.log("PASS: private Observation, out-of-turn rejection, paid bid, budget, recruitment and free withdrawal");
           JS
