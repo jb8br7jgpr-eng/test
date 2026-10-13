@@ -153,6 +153,11 @@
       const upcoming=state.round+1;
       const scheduled=f.plan.find(e=>e.round===upcoming);
       let selected=scheduled?.type||null;
+      if(['smile','god'].includes(selected)&&state.players.some(p=>p.roster.length===0)){
+        const reserved=new Set(f.plan.map(x=>x.type));
+        const pool=['mystery','marine','black','reverie'].filter(x=>!reserved.has(x));
+        selected=pool[Math.floor(Math.random()*pool.length)]||'marine';
+      }
       if(selected==='war'&&!prepareWarCards(upcoming))selected='marine';
       if(selected==='war')f.warRounds=[upcoming,upcoming+1];
       oldDrawNext();
