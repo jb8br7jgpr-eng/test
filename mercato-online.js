@@ -105,12 +105,12 @@
       '<label>Personnages à recruter chacun<input id="online-team" inputmode="numeric" type="number" min="1" max="30" value="5"></label>'+
       '<label class="online-check"><input id="online-spoilers" type="checkbox" checked> Inclure les personnages manga récents (spoilers)</label>'+
       button("create-go","Créer le salon →")+
-      '<p class="online-hint">Tu recevras un code à partager. La partie démarre quand vous êtes deux.</p>':
+      '<p class="online-hint">Tu recevras un code à partager. La partie démarre quand tous les pirates sont dans le salon.</p>':
       mode==="join"?
       '<h2>🏴‍☠️ Rejoindre une partie</h2><label>Code du salon<input id="online-code" type="text" maxlength="8" autocapitalize="characters" value="'+escOnline(prefill||"")+'" placeholder="EX. PIRATE42"></label>'+
       '<label>Ton pseudo<input id="online-name" maxlength="25" value="Pirate 2" autocomplete="nickname"></label>'+
       button("join-go","Rejoindre le salon →"):
-      '<h2>Vous jouez sur deux téléphones !</h2><p>Un pirate crée le salon, l’autre le rejoint avec un code. Les enchères et les pouvoirs se synchronisent automatiquement.</p>'+
+      '<h2>Jouez de 2 à 6 sur vos téléphones !</h2><p>Un pirate crée le salon, les autres le rejoignent avec un code. Les enchères et les pouvoirs se synchronisent automatiquement.</p>'+
       button("create-form","⚓ Créer une partie")+button("join-form","🔑 Rejoindre une partie","btn-ghost");
     shell('<section class="online-card">'+form+'</section><div class="online-back">'+button("local","← Mode classique sur un seul téléphone","online-text")+'</div>');
   }
@@ -233,7 +233,7 @@
       '<div class="online-champion-roster">'+sorted[0].roster.map(id=>'<button type="button" data-action="details" data-char-id="'+escOnline(id)+'">'+
         '<span class="portrait portrait-medium"><span class="portrait-fallback">☠️</span><img class="portrait-photo" data-portrait-id="'+escOnline(id)+'" alt="" loading="lazy"></span>'+
         '<span>'+escOnline(CARDS[id]?.name||id)+'</span></button>').join("")+'</div><h3>Classement final</h3>'+
-      sorted.map((p,i)=>'<div class="online-rankrow"><strong>'+(i===0?'🥇':i===1?'🥈':'🥉')+' '+label(p)+'</strong>'+
+      sorted.map((p,i)=>'<div class="online-rankrow"><strong>'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1))+' '+label(p)+'</strong>'+
         '<span>'+p.score+' pts · '+berrys(p.budget)+' restants</span></div>').join("")+
       '<h3>🏅 Trophées du mercato</h3>'+
       (best?award('💥','Meilleure recrue',escOnline(CARDS[best.id]?.name||best.id)+' ('+best.power+' pts)'):'')+
