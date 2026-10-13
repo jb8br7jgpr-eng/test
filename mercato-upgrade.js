@@ -1,7 +1,7 @@
 (function upgradeMercato(){
   'use strict';
   const portraits = new Map();
-  const blocked = new Set(['higuma','fullbody','pearl','mohji','cabaji','jango','ginrummy','numbers-giant','speed','stronger','shachi','penguin','or-lumbus','conis','satori','gedatsu','shura','ohm','hokback','chaka','koza','heat','wire','richie','cabaji2','dragon-kuma','daz-bones','galdino','helmeppo2','shisilian']);
+  const blocked = new Set(['higuma','fullbody','pearl','mohji','cabaji','jango','ginrummy','numbers-giant','speed','stronger','shachi','penguin','or-lumbus','conis','satori','gedatsu','shura','ohm','hogback','chaka','koza','heat','wire','richie','cabaji2','dragon-kuma','daz-bones','galdino','helmeppo2','shishilian']);
   const aliases = {
     'prime-wb':'Edward Newgate','prime-garp':'Monkey D. Garp','sengoku':'Sengoku',
     'luffy':'Monkey D. Luffy','teach':'Marshall D. Teach','bigmom':'Charlotte Linlin',
