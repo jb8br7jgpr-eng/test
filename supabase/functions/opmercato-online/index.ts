@@ -24,6 +24,25 @@ const hasHaki=(s:any,p:any)=>p&&!p.hakiUsed&&p.roster.length<s.teamSize;
 const power=(s:any,id:string)=>s.catalog[id]?.power??0;
 const rank=(n:number)=>n>=95?"S":n>=80?"A":n>=65?"B":n>=50?"C":n>=35?"D":n>=20?"E":"F";
 const shuffle=(xs:any[])=>{const a=[...xs];for(let i=a.length-1;i>0;i--){const j=rand(1)[0]%(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;};
+// Meme planification qu'en mode local. Les deux surprises ont des tirages
+// distincts, sans jamais superposer le mystere aux deux cartes de la Guerre.
+function scheduleSurprises(playerCount:number,teamSize:number,requestedType:"war"|"marine"){
+ const slots=Math.max(2,playerCount*teamSize);
+ const last=Math.min(slots,12,Math.max(3,Math.ceil(slots*0.75)));
+ const earliest=slots>=4?2:1;
+ const rounds=Array.from({length:last-earliest+1},(_,i)=>earliest+i);
+ const type=requestedType==="war"&&slots<3?"marine":requestedType;
+ const events=type==="war"?rounds.filter(n=>n<last):rounds;
+ const eventRound=events[rand(1)[0]%events.length];
+ const excluded=new Set([eventRound]);
+ if(type==="war")excluded.add(eventRound+1);
+ const mysteries=rounds.filter(n=>!excluded.has(n));
+ if(!mysteries.length){
+   for(let n=1;n<=slots;n++)if(!excluded.has(n))mysteries.push(n);
+ }
+ const mysteryRound=mysteries[rand(1)[0]%mysteries.length];
+ return {type,eventRound,mysteryRound};
+}
 const score=(s:any,p:any)=>p.roster.reduce((n:number,id:string)=>n+power(s,id),0)+
   (p.armamentId&&p.roster.includes(p.armamentId)?5:0)+
   SYNERGIES.filter(b=>b.ids.every(x=>p.roster.includes(x))).reduce((n,b)=>n+b.points,0);
@@ -194,14 +213,14 @@ Deno.serve(async(req:Request)=>{
      const byId=Object.fromEntries(available.map((c:any)=>[c.id,{power:c.power,name:c.name}]));
      const hostToken=token(),roomCode=code();
      const eventType=rand(1)[0]%2===0?"war":"marine";
+     const schedule=scheduleSurprises(maxPlayers,teamSize,eventType);
      const baseBid=starting>=1000n?starting/50n:20n;
      const bidStep=starting>=1000n?starting/100n:10n;
      const doc={status:"lobby",channelSecret:token(),maxPlayers,extraTokenHashes:[],players:[{id:0,name,budget:starting.toString(),roster:[],passesUsed:0,hakiUsed:false,
        observationUsed:false,armamentUsed:false,armamentId:null,observationPeek:[],marineAward:"0",marineRoll:null,purchases:{}}],
        teamSize,initialBudget:starting.toString(),baseBid:baseBid.toString(),bidStep:bidStep.toString(),
        catalog:byId,drawPile:shuffle(available.map((c:any)=>c.id)),drawIndex:0,round:0,auction:null,
-       event:{type:eventType,eventRound:Math.min(2,Math.max(1,Math.floor(maxPlayers*teamSize/4))),
-         mysteryRound:Math.min(2,Math.max(1,Math.floor(maxPlayers*teamSize/3))),
+       event:{type:schedule.type,eventRound:schedule.eventRound,mysteryRound:schedule.mysteryRound,
          mysteryUsed:false,used:false,activatedRound:null,
          warRounds:[],awaitingRolls:false,rolls:[],rollIndex:0}};
      const {data,error}=await db.from("op_mercato_rooms").insert({code:roomCode,host_token_hash:await hash(hostToken),doc}).select("id,code,version").single();
