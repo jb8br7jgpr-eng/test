@@ -20,7 +20,7 @@
   function effectivePower(p,id){const base=CARDS[id]?.power||0;return p.smileModifiers?.[id]===undefined?base:Math.max(0,Math.min(100,base+p.smileModifiers[id]));}
   const getBreakdown=p=>{
     const base=(p.roster||[]).reduce((sum,id)=>sum+effectivePower(p,id),0);
-    const armament=p.armamentId&&p.roster.includes(p.armamentId)?5:0;
+    const armament=p.armamentId&&p.roster.includes(p.armamentId)?(p.armamentBonus??5):0;
     const synergyItems=getPlayerBonuses(p);
     const synergy=synergyItems.reduce((sum,x)=>sum+x.points,0);
     return {base,armament,synergy,synergyItems,total:base+armament+synergy};
@@ -237,8 +237,8 @@
   function v2Active(){return state?.featureConfig?.plan?state.featureConfig.active:null;}
   function v2Royal(){return v2Active()?.type==='reverie';}
   function v2Ready(){
-    const e=v2Active();if(!e||!['intro','result'].includes(e.stage))return;
-    if(e.stage==='result'){e.stage='auction';save();render();return;}
+    const e=v2Active();if(!e||!['intro','result','god-result'].includes(e.stage))return;
+    if(e.stage==='result'||e.stage==='god-result'){e.stage='auction';save();render();return;}
     e.stage=e.type==='marine'?'roll':e.type==='smile'?'coin':
       e.type==='black'?'select':e.type==='god'?'eliminate':'auction';
     e.step=0;
@@ -313,7 +313,7 @@
       opponent=state.players[(actor+1)%state.players.length];
     if(id&&!opponent.roster.includes(id))return;
     if(id){opponent.roster=opponent.roster.filter(x=>x!==id);e.removed.push({from:opponent.id,id});}
-    e.step++;if(e.step===state.players.length)e.stage='auction';
+    e.step++;if(e.step===state.players.length){e.stage='god-result';e.ready=[];}
     save();render();
   }
   const beforeRoyalBid=bid,beforeRoyalPass=pass,beforeRoyalSettle=settle,beforeRoyalBidder=findNextBidder;
@@ -361,6 +361,10 @@
         e.flips.map(x=>esc(player(x.id)?.name)+' : '+(x.charId?esc(CARDS[x.charId]?.name||x.charId)+' · '+(x.pile?'Pile +25':'Face −25')+' · '+x.before+' → '+x.after:'Aucune recrue à transformer'));
       content='<div class="v2-local-results">'+rows.map(x=>'<p>'+x+'</p>').join('')+'</div>'+
         '<button class="primary" data-action="v2-ready">Continuer →</button>';
+    }else if(e.stage==='god-result'){
+      content='<p>Les pertes de chaque équipage</p><div class="v2-god-results">'+
+        my.map(p=>'<div class="v2-god-player"><strong>'+esc(p.name)+'</strong>'+
+          (e.removed.filter(x=>x.from===p.id).map(x=>'<div class="v2-god-lost"><span class="portrait portrait-tiny"><span class="portrait-fallback">☠️</span><img class="portrait-photo" data-portrait-id="'+esc(x.id)+'" alt="" loading="lazy"></span><span>💥 '+esc(CARDS[x.id]?.name||x.id)+' · '+(CARDS[x.id]?.power||0)+' pts</span></div>').join('')||'<span class="v2-god-spared">Équipage épargné</span>')+'</div>').join('')+'</div><button class="primary" data-action="v2-ready">Continuer →</button>';
     }else if(e.stage==='roll'){
       const p=my[e.step];content='<p>Au tour de <b>'+esc(p.name)+'</b> de lancer le dé !</p>'+
         '<div class="v2-local-die">🎲</div><button class="primary" data-action="v2-roll">🎲 Lancer mon dé</button>'+
@@ -440,10 +444,17 @@
     if(p){
       const powers='<div class="extra-powers">'+
         '<button data-action="observation" class="extra-power" '+(p.observationUsed?'disabled':'')+'>👁 Observation <small>'+(p.observationUsed?'Déjà utilisé':'Voir les 3 prochaines cartes')+'</small></button>'+
-        '<button data-action="armament" class="extra-power" '+(p.armamentUsed||p.roster.length===0?'disabled':'')+'>🛡 Armement <small>'+(p.armamentUsed?'Déjà utilisé':p.roster.length===0?'Recrute d’abord':'Ajouter +5 à une recrue')+'</small></button>'+
+        '<span class="extra-power op21-armament-status">🛡 Armement <small>'+(p.armamentUsed?'Déjà utilisé':'Proposé à la prochaine recrue de moins de 55 pts')+'</small></span>'+
         '</div>';
       const marker='<button class="pass-btn" data-action="pass"';
       html=html.replace(marker,powers+marker);
+    }
+    if(a?.outcome==='sold'&&a.leader!==null&&a.leader!==undefined){
+      const winner=player(a.leader),card=CARDS[a.charId];
+      if(winner&&!winner.armamentUsed&&card?.power<55&&!a.armamentChoice){
+        html=html.replace('data-action="next"','data-action="next" disabled aria-disabled="true"');
+        html+='<div class="op21-armament-overlay"><section class="card op21-armament-modal"><small>🛡 HAKI DE L’ARMEMENT</small><h2>'+esc(winner.name)+', renforce ta recrue !</h2><p>'+esc(card.name)+' possède '+card.power+' points. Veux-tu lui offrir <b>+20 points définitifs</b> ?</p><div class="op21-power-evolution">'+card.power+' <span>→</span> '+(card.power+20)+'</div><button class="primary" data-action="armament-recruit">🛡 Utiliser le Haki</button><button class="btn-ghost" data-action="armament-defer">Conserver pour plus tard</button></section></div>';
+      }
     }
     return html;
   };
@@ -524,13 +535,25 @@
       const ul=modal.querySelector('ul');
       if(ul)ul.insertAdjacentHTML('beforeend',
         '<li>Haki de l’Observation : consulter discrètement les <b>3 prochains personnages</b>, une fois par joueur.</li>'+
-        '<li>Haki de l’Armement : donner <b>+5 points</b> à une recrue, une fois par joueur.</li>'+
+        '<li>Haki de l’Armement : à chaque recrue de <b>moins de 55 points</b>, proposer un bonus de <b>+20 points définitifs</b> (ou le garder pour plus tard). Une utilisation par joueur.</li>'+
         '<li>Synergies par affiliation : 1 personnage = 0 point ; 2 = +10 ; 3 = +20 ; 4 = +30 ; 5 ou plus = +50. Chaque affiliation donne son propre bonus, cumulable avec les autres. Les anciennes synergies par combinaison ont été supprimées.</li>'+
         '<li>Sept événements possibles : Guerre au sommet, Prime de la Marine, Personnage mystère, Marché Noir, God Valley, SMILE et Rêverie. 1 événement pour 1 à 5 recrues, 2 pour 6 à 10, 3 au-delà. Chaque annonce reste affichée jusqu’à Continuer.</li>'+
         '<li>Rêverie : enchère obligatoire, coût final doublé, Haki des Rois interdit. SMILE : chaque joueur lance une pièce (+25 ou −25 sur le personnage le plus faible, dans les limites 0 à 100).</li>');
     }
   };
 
+  document.addEventListener('click',event=>{
+    const b=event.target.closest('button[data-action="armament-recruit"],button[data-action="armament-defer"]');
+    if(!b||!state?.auction||state.auction.outcome!=='sold')return;
+    const a=state.auction,p=player(a.leader),c=CARDS[a.charId];
+    if(!p||p.armamentUsed||!c||c.power>=55||a.armamentChoice)return;
+    event.preventDefault();event.stopImmediatePropagation();
+    if(b.dataset.action==='armament-recruit'){
+      p.armamentUsed=true;p.armamentId=a.charId;p.armamentBonus=20;a.armamentChoice='used';
+      showToast('🛡 '+c.name+' gagne +20 points !');
+    } else a.armamentChoice='skip';
+    save();render();
+  },true);
   document.addEventListener('click',event=>{
     const b=event.target.closest('button[data-action^="v2-"]');
     if(!b||b.disabled||!state?.featureConfig?.plan)return;
@@ -602,6 +625,18 @@
     .mystery-symbol{font-size:78px;margin:12px 0;text-shadow:0 0 25px #e9c57955}
     .mystery-title{font-size:23px;margin:8px 0 12px}
     .mystery-character p{font-size:13px;max-width:320px;margin:0 auto}
+    .v2-god-results{display:grid;gap:12px;text-align:left;margin:20px 0}
+    .v2-god-player{border:1px solid #bf7a60;border-radius:14px;padding:12px;background:#211d2d}
+    .v2-god-player>strong{display:block;color:#ffd68b;margin-bottom:9px}
+    .v2-god-lost{display:flex;align-items:center;gap:9px;color:#fff0e7;font-weight:750;font-size:13px}
+    .v2-god-spared{color:#b7d2bf;font-size:13px}
+    .op21-armament-overlay{position:fixed;inset:0;background:#061522e8;z-index:800;display:grid;place-items:center;padding:18px;overflow:auto}
+    .op21-armament-modal{max-width:430px;width:100%;text-align:center;border:2px solid #e0b86b!important;box-shadow:0 18px 70px #0009}
+    .op21-armament-modal h2{margin:12px 0;color:#fbdc99}.op21-armament-modal p{line-height:1.5}
+    .op21-armament-modal button{display:block;width:100%;margin-top:10px}
+    .op21-power-evolution{font-size:31px;color:#eec678;font-weight:950;padding:10px}.op21-power-evolution span{color:#a3bec9;padding:0 8px}
+    .op21-armament-status{display:flex;flex-direction:column;justify-content:center;gap:4px;border:1px solid #56707e;padding:9px;border-radius:9px;font-size:12px}
+    .op21-armament-status small{font-size:10px}
     .armament-choices{display:flex;flex-direction:column;gap:8px;margin-bottom:13px}
     .armament-choices button{text-align:left;color:#f7ca72}
     .power-breakdown{font-size:11px;margin:8px 0 0;color:#d1dfe6;line-height:1.45}
