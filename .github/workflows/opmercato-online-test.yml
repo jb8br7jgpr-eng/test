@@ -35,22 +35,62 @@ jobs:
           if(lobby.room.players.length!==2)throw Error("Guest did not join");
           await request({action:"start",roomId,token:t1},400);
           const started=await act(t0,"start");
-          if(started.room.status!=="playing"||!started.room.event.used)throw Error("Start or event failed");
-          if(started.room.event.type==="marine"){
-            await act(t0,"roll");const lastRoll=await act(t1,"roll");
-            if(lastRoll.room.event.awaitingRolls)throw Error("Dice did not finish");
-          }else if(started.room.auction.tier!=="S")throw Error("War event not S");
-          const room0=(await get(t0)).room,actor=room0.auction.turnId;
+          if(started.room.status!=="playing"||started.room.round!==1)
+            throw Error("Game did not start");
+          const schedule=started.room.event;
+          const eventAt=schedule.eventRound,mysteryAt=schedule.mysteryRound;
+          if(eventAt<2||mysteryAt<2||eventAt===mysteryAt||
+             schedule.type==="war"&&mysteryAt===eventAt+1)
+            throw Error("Event and mystery are not independently scheduled: "+JSON.stringify(schedule));
+          if(started.room.event.used||started.room.auction.mystery)
+            throw Error("Surprises should not automatically trigger on round 1");
+          const actor=started.room.auction.turnId;
           const firstToken=actor===0?t0:t1,otherToken=actor===0?t1:t0;
           await request({action:"haki",roomId,token:otherToken},400);
-          const secured=await get(otherToken);
-          if(room0.auction.mystery&&secured.room.auction.charId!==null)throw Error("Mystery leaked");
           const haki=await act(firstToken,"haki");
-          if(haki.room.auction.outcome!=="sold"||haki.room.players[actor].roster.length!==1)throw Error("Haki failed");
-          const next=await act(t0,"next");
-          if(next.room.round!==2||!next.room.event.used)throw Error("Event did not persist");
-          if(!next.room.auction.mystery||next.room.auction.charId!==null)
-            throw Error("Mystery should be revealed only after the second auction settles");
+          if(haki.room.auction.outcome!=="sold"||haki.room.players[actor].roster.length!==1)
+            throw Error("Haki failed");
+          let sawMystery=false,sawEvent=false,sawWarSecond=false;
+          const last=Math.max(eventAt+(schedule.type==="war"?1:0),mysteryAt);
+          for(let expectedRound=2;expectedRound<=last;expectedRound++){
+            let current=(await act(t0,"next")).room;
+            if(current.round!==expectedRound)throw Error("Unexpected round number");
+            const mystery=expectedRound===mysteryAt;
+            if(Boolean(current.auction.mystery)!==mystery)
+              throw Error("Mystery occurred on the wrong round "+expectedRound);
+            if(mystery){
+              sawMystery=true;
+              if(current.auction.charId!==null||(await get(t1)).room.auction.charId!==null)
+                throw Error("Mystery leaked to either player's phone");
+            }
+            const eventNow=expectedRound>=eventAt;
+            if(Boolean(current.event.used)!==eventNow)
+              throw Error("Event occurred on the wrong round "+expectedRound);
+            if(expectedRound===eventAt){
+              sawEvent=true;
+              if(current.event.type==="marine"&&!current.event.awaitingRolls)
+                throw Error("Marine dice were not triggered");
+              if(current.event.type==="war"&&current.auction.tier!=="S")
+                throw Error("War did not reveal a class S card");
+            }
+            if(expectedRound===eventAt+1&&current.event.type==="war"){
+              sawWarSecond=true;
+              if(current.auction.tier!=="S")throw Error("Second war card must be rank S");
+            }
+            if(current.event.awaitingRolls){
+              current=(await act(t0,"roll")).room;
+              current=(await act(t1,"roll")).room;
+              if(current.event.awaitingRolls)throw Error("Marine dice were not completed");
+            }
+            // No bids: close the auction and advance without exhausting the roster.
+            for(let tries=0;current.auction.outcome===null&&tries<2;tries++){
+              const seat=current.auction.turnId;
+              current=(await act(seat===0?t0:t1,"pass")).room;
+            }
+            if(current.auction.outcome===null)throw Error("Could not settle round "+expectedRound);
+          }
+          if(!sawMystery||!sawEvent||schedule.type==="war"&&!sawWarSecond)
+            throw Error("Not all independently planned surprises were exercised");
           const latest=await get(t1);
           if(latest.room.players.length!==2)throw Error("Lost guest");
           await request({action:"get",roomId,token:"f".repeat(64)},400);
@@ -98,6 +138,17 @@ jobs:
           const gStart=await request({action:"start",roomId:gRoom,token:group.token});
           if(gStart.room.status!=="playing"||gStart.room.players.length!==4)
             throw Error("Four-player start failed");
-          console.log("PASS: create/join/reconnect/roles/mystery/Haki/event/roll/security + 4 players");
+          // Check that separate games no longer all schedule their surprise on turn two.
+          const eventRounds=new Set([eventAt]),mysteryRounds=new Set([mysteryAt]);
+          for(let i=0;i<7;i++){
+            const sample=(await request({action:"create",name:"Randomness "+i,budget:"1000",teamSize:5})).room.event;
+            if(sample.eventRound===sample.mysteryRound||
+               sample.type==="war"&&sample.mysteryRound===sample.eventRound+1)
+              throw Error("Independent surprises overlapped");
+            eventRounds.add(sample.eventRound);mysteryRounds.add(sample.mysteryRound);
+          }
+          if(eventRounds.size<2||mysteryRounds.size<2)
+            throw Error("Event scheduling does not vary across games");
+          console.log("PASS: variable and independent event / mystery timing, both surprise triggers, dice, war and 4-player sessions");
           console.log("PASS: private Observation, out-of-turn rejection, paid bid, budget, recruitment and free withdrawal");
           JS
