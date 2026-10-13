@@ -97,54 +97,98 @@ jobs:
             await host.locator('[data-online="rules"]').click();
             if(!await host.locator('.modal-content').getByText('Regles du mercato').count())throw Error("Online rules inaccessible");
             await host.locator('.modal-content [data-action="close-modal"]').click();
-            // Accept surprises scheduled for different rounds. Their timing is no longer fixed.
-            const diceVisible=await host.locator('[data-online="roll"]').count();
-            if(diceVisible){
-              await host.locator('[data-online="roll"]').click();
-              await guest.locator('[data-online="roll"]').click();
-              await host.locator('.online-turn').getByText("AU TOUR DE").waitFor({timeout:30000});
-            }
+            // La nouvelle version introduit 7 événements, dont le mystère optionnel.
             const turn=(await host.locator(".online-turn b").first().innerText()).trim();
             const first=turn==="Capitaine Test"?host:guest,other=turn==="Capitaine Test"?guest:host;
             await first.locator('[data-online="haki"]').click();
             await host.locator(".online-winner").waitFor({timeout:30000});
             await guest.locator(".online-winner").waitFor({timeout:30000});
-            if(await other.locator('[data-online="haki"]').count())throw Error("Haki is still active on other phone");
+            if(await other.locator('[data-online="haki"]').count())throw Error("Haki still active on other phone");
             await host.locator('[data-online="next"]').click();
+            // Si un événement est annoncé, les deux joueurs doivent le valider.
+            if(await host.locator('.v2-special').count()){
+              await guest.locator('.v2-special').waitFor({timeout:30000});
+              if(!await host.locator('[data-online="event-ready"]').count())
+                throw Error("Continue button missing from special event");
+              await host.locator('[data-online="event-ready"]').click();
+              if(!await host.locator('.v2-special').count())
+                throw Error("Event vanished before the other confirmation");
+              await guest.locator('[data-online="event-ready"]').click();
+              const eventType=await host.locator('.v2-special').getAttribute('class').catch(()=>null);
+              // Manage interactive stages without bypassing server-side turns.
+              for(let guard=0;guard<8;guard++){
+                const next=(await host.locator('#opmercato-online').innerText());
+                if(await host.locator('.online-round').count())break;
+                if(await host.locator('[data-online="roll"]').count()){
+                  const active=await host.locator('[data-online="roll"]').isEnabled();
+                  await (active?host:guest).locator('[data-online="roll"]').click();
+                  await host.locator('.v2-fx').waitFor({state:'hidden',timeout:10000}).catch(()=>{});
+                  continue;
+                }
+                if(await host.locator('[data-online="coin"]').count()){
+                  const active=await host.locator('[data-online="coin"]').isEnabled();
+                  await (active?host:guest).locator('[data-online="coin"]').click();
+                  await host.locator('.v2-fx').waitFor({state:'hidden',timeout:10000}).catch(()=>{});
+                  continue;
+                }
+                if(await host.locator('[data-online^="pick-"]').count()){
+                  const active=await host.locator('[data-online^="pick-"]').first().isEnabled();
+                  await (active?host:guest).locator('[data-online^="pick-"]').first().click();
+                  continue;
+                }
+                if(await host.locator('[data-online="event-skip"]').count()||await guest.locator('[data-online="event-skip"]').count()){
+                  await (await host.locator('[data-online="event-skip"]').count()?host:guest).locator('[data-online="event-skip"]').click();
+                  continue;
+                }
+                if(await host.locator('[data-online="event-ready"]').count()){
+                  await host.locator('[data-online="event-ready"]').click();
+                  await guest.locator('[data-online="event-ready"]').click();
+                  continue;
+                }
+                throw Error("Unknown event state: "+next.slice(0,300)+" "+eventType);
+              }
+            }
             await host.locator('.online-round').getByText("ENCHÈRE N° 2").waitFor({timeout:30000});
             await guest.locator('.online-round').getByText("ENCHÈRE N° 2").waitFor({timeout:30000});
             const hostMystery=await host.locator('.online-rank').count();
             const guestMystery=await guest.locator('.online-rank').count();
             if(Boolean(hostMystery)!==Boolean(guestMystery))
-              throw Error("Mystery identity isn't synchronized between phones");
+              throw Error("Mystery identity not synchronized");
             if(hostMystery&&(!await host.locator('.online-mystery').count()||!await guest.locator('.online-mystery').count()))
-              throw Error("Mystery picture was disclosed on an active auction");
-            // Validate the same random scheduling in the local implementation.
+              throw Error("Mystery identity leaked");
+            // Tirages locaux : 1 / 2 / 3 événements sans doublon ni chevauchement.
             const localContext=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
             const local=await localContext.newPage();
             listen(local,"local");
-            const specialRounds=new Set(),secretRounds=new Set();
-            for(let i=0;i<8;i++){
-              await local.goto(home+"&local-sample="+i,{waitUntil:"domcontentloaded",timeout:30000});
-              await local.locator('#team-size').fill("5");
-              await local.locator('[data-action="start"]').click();
-              const plan=await local.evaluate(()=>{
-                const state=JSON.parse(localStorage.getItem('mercato-pirates-v1'));
-                if(!state?.featureConfig)throw Error("Local surprises missing");
-                return state.featureConfig;
-              });
-              if(plan.eventRound===plan.mysteryRound||
-                plan.eventType==='war'&&plan.mysteryRound===plan.eventRound+1)
-                throw Error("Local event and mystery overlapped");
-              if(plan.eventRound<2||plan.mysteryRound<2)
-                throw Error("Local events should be scattered after the opening turn");
-              specialRounds.add(plan.eventRound);secretRounds.add(plan.mysteryRound);
-              await local.evaluate(()=>localStorage.removeItem('mercato-pirates-v1'));
+            const signatures=new Set();
+            for(const size of [3,8,15]){
+              for(let i=0;i<5;i++){
+                await local.goto(home+"&sample="+size+"-"+i,{waitUntil:"domcontentloaded",timeout:30000});
+                await local.locator('#team-size').fill(String(size));
+                await local.locator('[data-action="start"]').click();
+                const config=await local.evaluate(()=>{
+                  const saved=JSON.parse(localStorage.getItem('mercato-pirates-v1'));
+                  return saved?.featureConfig;
+                });
+                const plan=config?.plan||[];
+                const expected=size<=5?1:size<=10?2:3;
+                if(plan.length!==expected)throw Error("Incorrect count of events "+size+": "+JSON.stringify(plan));
+                if(new Set(plan.map(x=>x.type)).size!==expected)throw Error("Duplicate events");
+                const occupied=new Set();
+                for(const item of plan){
+                  if(occupied.has(item.round))throw Error("Overlapping events");
+                  occupied.add(item.round);
+                  if(item.type==="war")occupied.add(item.round+1);
+                  if(item.type==="smile"&&item.round<=Math.floor(size*2/2))
+                    throw Error("SMILE before midgame");
+                }
+                signatures.add(plan.map(x=>x.type+":"+x.round).join(","));
+                await local.evaluate(()=>localStorage.removeItem('mercato-pirates-v1'));
+              }
             }
             await localContext.close();
-            if(specialRounds.size<2||secretRounds.size<2)
-              throw Error("Local event scheduling is deterministic");
+            if(signatures.size<3)throw Error("Events not randomized");
             if(errors.length)throw Error("Browser script errors: "+errors.slice(0,3).join("; "));
-            console.log("PASS: two phones, images, Haki, synchronized mysteries, varied local event and mystery schedules.");
+            console.log("PASS: two phones, images, Haki, seven events, synced transitions and randomized local plans.");
           } finally {await browser.close();}
           JS
