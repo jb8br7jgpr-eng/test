@@ -90,15 +90,24 @@
   function marineEvent() {
     const f=state.featureConfig;
     f.rolls=[];
-    for(const p of state.players){
-      const roll=1+Math.floor(Math.random()*6);
-      const percent=roll*5;
-      const amount=safeBig(state.initialBudget)*BigInt(percent)/100n;
-      p.budget=(safeBig(p.budget)+amount).toString();
-      p.marineAward=amount.toString();
-      p.marineRoll=roll;
-      f.rolls.push({id:p.id,roll,percent,amount:amount.toString()});
-    }
+    f.awaitingRolls=true;
+    f.rollIndex=0;
+  }
+  function rollMarineDie(){
+    const f=state?.featureConfig;
+    if(!f||f.eventType!=='marine'||!f.awaitingRolls)return;
+    const p=state.players[f.rollIndex];
+    if(!p)return;
+    const roll=1+Math.floor(Math.random()*6);
+    const percent=roll*5;
+    const amount=safeBig(state.initialBudget)*BigInt(percent)/100n;
+    p.budget=(safeBig(p.budget)+amount).toString();
+    p.marineAward=amount.toString();
+    p.marineRoll=roll;
+    f.rolls.push({id:p.id,roll,percent,amount:amount.toString()});
+    f.rollIndex++;
+    if(f.rollIndex>=state.players.length)f.awaitingRolls=false;
+    save();render();
   }
 
   const oldDrawNext=drawNext;
@@ -168,7 +177,7 @@
       const banner=f.eventUsed&&f.activatedRound===state.round
         ? f.eventType==='war'
           ?'<div class="event-banner">⚔️ GUERRE AU SOMMET ! Les 2 personnages de rang S se présentent à la suite.</div>'
-          :'<div class="event-banner">🎲 PRIME DE LA MARINE ! '+f.rolls.map(r=>esc(player(r.id)?.name||'')+' : dé '+r.roll+' → +'+r.percent+' % ('+currency(r.amount)+')').join(' · ')+'</div>'
+          :'<div class="event-banner">🎲 PRIME DE LA MARINE ! '+(f.rolls||[]).map(r=>esc(player(r.id)?.name||'')+' : dé '+r.roll+' → +'+r.percent+' % ('+currency(r.amount)+')').join(' · ')+'</div>'
         :a?.warGuaranteed?'<div class="event-banner">⚔️ Guerre au sommet — deuxième personnage légendaire !</div>':'';
       html=html.replace('<section class="card auction">',banner+'<section class="card auction">');
     }
@@ -178,6 +187,15 @@
       const t=tierOf(c.power);
       const mysteryCard='<article class="card character-card mystery-character" style="--tier-glow:'+t.glow+'"><div class="card-top"><span class="wanted">🔒 ENCHÈRE MYSTÈRE</span><span class="tier" style="--tier-color:'+t.color+';--tier-border:'+t.color+'">Classe '+t.tier+'</span></div><div class="mystery-symbol">❔</div><h1 class="mystery-title">Qui se cache derrière cette carte ?</h1><p>Seul son rang est révélé. Son identité et sa puissance seront dévoilées après l’enchère.</p></article>';
       html=html.replace(actual,mysteryCard);
+    }
+    if(f?.awaitingRolls){
+      const roller=state.players[f.rollIndex];
+      const rolls=f.rolls.map(r=>'<span>'+esc(player(r.id)?.name||'')+' : 🎲 '+r.roll+' → '+currency(r.amount)+'</span>').join('');
+      const die='<section class="card auction"><div class="marine-roll-content"><span class="eyebrow">Prime de la Marine</span><h2>🎲 Au tour de '+esc(roller?.name||'')+'</h2><p>Un dé à 6 faces détermine ton bonus : 1 = 5 %, 2 = 10 %, 3 = 15 %, 4 = 20 %, 5 = 25 %, 6 = 30 % du budget de départ.</p><button class="primary" data-action="marine-roll">🎲 Lancer mon dé</button><div class="marine-history">'+rolls+'</div></div></section>';
+      const begin=html.indexOf('<section class="card auction">');
+      const end=html.indexOf('</section>',begin);
+      if(begin>=0&&end>begin)html=html.slice(0,begin)+die+html.slice(end+10);
+      return html;
     }
     const p=currentPlayer();
     if(p){
@@ -273,6 +291,11 @@
 
   const style=document.createElement('style');
   style.textContent=`
+    .marine-roll-content{text-align:center;padding:8px 0 3px}
+    .marine-roll-content h2{margin:14px 0;font-size:23px}
+    .marine-roll-content p{font-size:13px}
+    .marine-history{display:grid;gap:6px;margin-top:15px}
+    .marine-history span{color:#ffe6a6;font-size:12px;font-weight:750}
     .event-banner{margin:10px 0 14px;background:linear-gradient(110deg,#5d3f25,#9f6630);
       border:1px solid #e6b05e;padding:15px;border-radius:16px;font-weight:850;font-size:13px;line-height:1.6;color:#fff4d8}
     .extra-powers{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
@@ -309,10 +332,11 @@
     const button=event.target.closest('button[data-action]');
     if(!button||button.disabled)return;
     const action=button.dataset.action;
-    if(['observation','armament','armament-choose'].includes(action)){
+    if(['observation','armament','armament-choose','marine-roll'].includes(action)){
       event.preventDefault();event.stopImmediatePropagation();
       if(action==='observation')observation();
       else if(action==='armament')openArmament();
+      else if(action==='marine-roll')rollMarineDie();
       else useArmament(button.dataset.charId);
     }
   },true);
