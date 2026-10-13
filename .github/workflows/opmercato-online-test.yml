@@ -1,0 +1,58 @@
+name: OPMercato Online Smoke Test
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/opmercato-online-test.yml'
+      - 'mercato-online.js'
+      - 'supabase/functions/opmercato-online/index.ts'
+jobs:
+  online-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Test live multiplayer Edge Function
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          const endpoint="https://nezqupnhcqwuewfilioa.supabase.co/functions/v1/opmercato-online";
+          const apiKey="sb_publishable_rLlu872lFwupJfFw_f3alw_GhbR7Mok";
+          async function request(body,status=200){
+            const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json","apikey":apiKey},body:JSON.stringify(body)});
+            const data=await response.json();
+            if(response.status!==status||status===200&&data.error)
+              throw Error(body.action+": HTTP "+response.status+" "+JSON.stringify(data).slice(0,500));
+            return data;
+          }
+          const created=await request({action:"create",name:"Automated Host",budget:"250000000",teamSize:3,spoilers:true});
+          const roomId=created.room.id, code=created.room.code, t0=created.token;
+          if(!/^[A-Z2-9]{8}$/.test(code))throw Error("invalid room code");
+          const joined=await request({action:"join",code,name:"Automated Guest"});
+          const t1=joined.token;
+          const get=(token)=>request({action:"get",roomId,token});
+          const act=(token,action,extra={})=>request({action,roomId,token,...extra});
+          const lobby=await get(t0);
+          if(lobby.room.players.length!==2)throw Error("Guest did not join");
+          await request({action:"start",roomId,token:t1},400);
+          const started=await act(t0,"start");
+          if(started.room.status!=="playing"||!started.room.auction.mystery)throw Error("Start or mystery failed");
+          const room0=started.room;const actor=room0.auction.turnId;
+          const firstToken=actor===0?t0:t1,otherToken=actor===0?t1:t0;
+          await request({action:"haki",roomId,token:otherToken},400);
+          const secured=await get(otherToken);
+          if(secured.room.auction.charId!==null)throw Error("Mystery leaked");
+          const haki=await act(firstToken,"haki");
+          if(haki.room.auction.outcome!=="sold"||haki.room.players[actor].roster.length!==1)throw Error("Haki failed");
+          const next=await act(t0,"next");
+          if(next.room.round!==2||!next.room.event.used)throw Error("Event failed");
+          if(next.room.event.type==="marine"){
+            const roll1=await act(t0,"roll");const roll2=await act(t1,"roll");
+            if(roll2.room.event.awaitingRolls)throw Error("Dice did not finish");
+          }else{
+            if(next.room.auction.tier!=="S")throw Error("War event not S");
+          }
+          const latest=await get(t1);
+          if(latest.room.players.length!==2)throw Error("Lost guest");
+          await request({action:"get",roomId,token:"f".repeat(64)},400);
+          console.log("PASS: create/join/reconnect/role checks/mystery/haki/event/roll/security");
+          JS
