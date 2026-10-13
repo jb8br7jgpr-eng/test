@@ -304,7 +304,7 @@
         '<li>Haki de l’Observation : consulter discrètement les <b>3 prochains personnages</b>, une fois par joueur.</li>'+
         '<li>Haki de l’Armement : donner <b>+5 points</b> à une recrue, une fois par joueur.</li>'+
         '<li>Synergies : Luffy/Zoro/Sanji +15 ; Roger/Rayleigh/Gaban +20 ; Kaido/King/Queen +15 ; Ace/Sabo/Luffy +20 points.</li>'+
-        '<li>Une seule enchère mystère : seul le rang est visible jusqu’à la fin de l’enchère.</li>'+
+        '<li>Une enchère mystère apparaît à un tour aléatoire indépendant de l’événement. Son rang reste seul visible jusqu’à la révélation du personnage.</li>'+
         '<li>Un seul événement par partie : Guerre au sommet (2 cartes S consécutives) OU Prime de la Marine (chaque joueur lance un dé et reçoit 5 à 30 % de son budget initial).</li>');
     }
   };
