@@ -71,7 +71,8 @@
   async function action(action,args={}){
     if(busy)return;
     busy=true;
-    const clicked=root.querySelectorAll("[data-online]");
+    const clicked=[...root.querySelectorAll("[data-online]")];
+    const priorDisabled=clicked.map(b=>b.disabled);
     clicked.forEach(b=>b.disabled=true);
     try {
       const res=await call(action,args);
@@ -82,7 +83,7 @@
     }catch(e){
       note(e.message);
       if(String(e.message).includes("évolué"))await refresh();
-    }finally{busy=false;root.querySelectorAll("[data-online]").forEach(b=>b.disabled=false);}
+    }finally{busy=false;clicked.forEach((b,i)=>{if(b.isConnected)b.disabled=priorDisabled[i];});}
   }
   function label(p){return escOnline(p?.name||"Pirate");}
   function button(id,text,kind="primary",disabled=false){
