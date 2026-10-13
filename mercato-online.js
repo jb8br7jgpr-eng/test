@@ -325,7 +325,7 @@
     body.online-open{overflow:hidden}
     #opmercato-online{position:fixed;inset:0;z-index:1100;background:#0a1c29;
       overflow-y:auto;overscroll-behavior:contain;color:#e8f1f3}
-    .online-shell{max-width:760px;margin:auto;padding:20px 14px 60px}
+    .online-shell{max-width:760px;margin:auto;padding:calc(env(safe-area-inset-top) + 20px) 14px calc(env(safe-area-inset-bottom) + 60px)}
     .online-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:5px 0 20px}
     .online-head h1{font-size:clamp(21px,5vw,29px);margin:4px 0}
     .online-eyebrow{font-size:10px;letter-spacing:.17em;color:#f6c775;font-weight:900}
@@ -396,7 +396,7 @@
     .online-award{display:block;line-height:1.6}
     .online-detail-panel{position:fixed;inset:0;z-index:1200;background:#0a1c29f5;overflow:auto;padding:25px 12px}
     .online-detail-panel .online-card{max-width:660px;margin:0 auto}
-    @media(max-width:430px){.online-card{padding:13px}.online-shell{padding:14px 10px 35px}}
+    @media(max-width:430px){.online-card{padding:13px}.online-shell{padding:calc(env(safe-area-inset-top) + 14px) 10px calc(env(safe-area-inset-bottom) + 35px)}}
   `;
   document.head.appendChild(css);
   render();
