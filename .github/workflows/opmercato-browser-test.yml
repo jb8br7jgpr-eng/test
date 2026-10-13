@@ -188,6 +188,13 @@ jobs:
                 await local.evaluate(()=>localStorage.removeItem('mercato-pirates-v1'));
               }
             }
+            // Vérifie les vraies animations 3D du dé et de la pièce.
+            await local.evaluate(()=>window.OPMERCATO_EVENT_FX("die","Dé : 6",6));
+            await local.locator(".v2-dice-cube").waitFor({timeout:5000});
+            await local.locator(".v2-local-fx").waitFor({state:"hidden",timeout:6000});
+            await local.evaluate(()=>window.OPMERCATO_EVENT_FX("coin","PILE",true));
+            await local.locator(".v2-flip-coin").waitFor({timeout:5000});
+            await local.locator(".v2-local-fx").waitFor({state:"hidden",timeout:6000});
             await localContext.close();
             if(signatures.size<3)throw Error("Events not randomized");
             if(errors.length)throw Error("Browser script errors: "+errors.slice(0,3).join("; "));
