@@ -5,12 +5,6 @@ const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const db = createClient(URL, SERVICE, { auth: { persistSession: false } });
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization,apikey,content-type,x-client-info", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const REPO_CATALOG = "https://raw.githubusercontent.com/jb8br7jgpr-eng/test/main/opmercato-catalog.json";
-const SYNERGIES = [
-  { name: "Trio monstrueux", ids: ["luffy","zoro","sanji"], points: 15 },
-  { name: "Légendes de Roger", ids: ["roger","rayleigh","gaban"], points: 20 },
-  { name: "Trois calamités", ids: ["kaido","king","queen"], points: 15 },
-  { name: "Frères de fraternité", ids: ["ace","sabo","luffy"], points: 20 },
-];
 const json = (v:unknown,status=200)=>new Response(JSON.stringify(v),{status,headers:{...CORS,"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"}});
 const fail = (message:string,status=400)=>json({error:message},status);
 const rand = (n:number)=>crypto.getRandomValues(new Uint8Array(n));
@@ -43,13 +37,25 @@ function scheduleSurprises(playerCount:number,teamSize:number,requestedType:"war
  const mysteryRound=mysteries[rand(1)[0]%mysteries.length];
  return {type,eventRound,mysteryRound};
 }
+// Les points de synergie proviennent uniquement de l'affiliation enregistree
+// pour chaque personnage, et non plus d'anciennes combinaisons fixes.
+const affiliationPoints=(count:number)=>count>=5?50:count>=2?(count-1)*10:0;
+function affiliationBonuses(s:any,p:any){
+ const counts=new Map<string,number>();
+ for(const id of p.roster){
+   const name=String(s.catalog[id]?.affiliation||"").trim();
+   if(name)counts.set(name,(counts.get(name)||0)+1);
+ }
+ return [...counts].map(([name,count])=>({name,count,points:affiliationPoints(count)}))
+   .filter(x=>x.points>0).sort((a,b)=>b.points-a.points||a.name.localeCompare(b.name,"fr"));
+}
 const score=(s:any,p:any)=>p.roster.reduce((n:number,id:string)=>n+power(s,id),0)+
   (p.armamentId&&p.roster.includes(p.armamentId)?5:0)+
-  SYNERGIES.filter(b=>b.ids.every(x=>p.roster.includes(x))).reduce((n,b)=>n+b.points,0);
+  affiliationBonuses(s,p).reduce((n,b)=>n+b.points,0);
 const publicPlayer=(s:any,p:any)=>({id:p.id,name:p.name,budget:p.budget,roster:p.roster,passesUsed:p.passesUsed,
   hakiUsed:p.hakiUsed,observationUsed:p.observationUsed,armamentUsed:p.armamentUsed,armamentId:p.armamentId||null,
   marineAward:p.marineAward,marineRoll:p.marineRoll??null,purchases:p.purchases,score:score(s,p),
-  bonuses:SYNERGIES.filter(x=>x.ids.every(id=>p.roster.includes(id)))});
+  bonuses:affiliationBonuses(s,p)});
 function snapshot(s:any,seat:number,version:number,room:any){
  const p=s.players[seat];const a=s.auction;
  const secret=!!(a?.mystery&&a.outcome===null);
@@ -191,8 +197,19 @@ async function catalog(){
  const res=await fetch(REPO_CATALOG,{headers:{"Accept":"application/json"}});
  if(!res.ok)throw Error("Catalogue indisponible, réessaie.");
  const data=await res.json();
- if(!Array.isArray(data.characters)||data.characters.length<100)throw Error("Catalogue invalide.");
+ if(!Array.isArray(data.characters)||data.characters.length<100||
+   data.characters.some((c:any)=>typeof c.affiliation!=="string"||!c.affiliation.trim()))
+   throw Error("Catalogue des affiliations incomplet, réessaie.");
  cached=data;return data;
+}
+// Met aussi a jour les vieux salons, sans supprimer leur progression.
+async function ensureAffiliations(s:any){
+ if(!s?.catalog||Object.values(s.catalog).every((c:any)=>typeof c.affiliation==="string"&&c.affiliation.trim()))return;
+ const source=await catalog();
+ const names=new Map(source.characters.map((c:any)=>[c.id,c.affiliation]));
+ for(const [id,item] of Object.entries(s.catalog) as [string,any][]){
+   if(!item.affiliation&&names.has(id))item.affiliation=names.get(id);
+ }
 }
 Deno.serve(async(req:Request)=>{
  if(req.method==="OPTIONS")return new Response(null,{status:204,headers:CORS});
@@ -210,7 +227,7 @@ Deno.serve(async(req:Request)=>{
         !Number.isInteger(maxPlayers)||maxPlayers<2||maxPlayers>6)throw Error("Paramètres invalides.");
      const source=await catalog();
      const available=source.characters.filter((c:any)=>arg.spoilers!==false||!c.spoiler);
-     const byId=Object.fromEntries(available.map((c:any)=>[c.id,{power:c.power,name:c.name}]));
+     const byId=Object.fromEntries(available.map((c:any)=>[c.id,{power:c.power,name:c.name,affiliation:c.affiliation}]));
      const hostToken=token(),roomCode=code();
      const eventType=rand(1)[0]%2===0?"war":"marine";
      const schedule=scheduleSurprises(maxPlayers,teamSize,eventType);
@@ -235,6 +252,7 @@ Deno.serve(async(req:Request)=>{
      if(room.doc.status!=="lobby"||room.doc.players.length>=(room.doc.maxPlayers||2))throw Error("Cette partie a déjà démarré ou le salon est complet.");
      const guestToken=token();const guestHash=await hash(guestToken);
      const doc=structuredClone(room.doc),newSeat=doc.players.length;
+     await ensureAffiliations(doc);
      doc.players.push({id:newSeat,name:String(arg.name||"Pirate 2").trim().slice(0,25)||"Pirate 2",
        budget:doc.initialBudget,roster:[],passesUsed:0,hakiUsed:false,observationUsed:false,armamentUsed:false,
        armamentId:null,observationPeek:[],marineAward:"0",marineRoll:null,purchases:{}});
@@ -265,10 +283,14 @@ Deno.serve(async(req:Request)=>{
    const extra=Array.isArray(room.doc.extraTokenHashes)?room.doc.extraTokenHashes.indexOf(digest):-1;
    const seat=digest===room.host_token_hash?0:digest===room.guest_token_hash?1:extra>=0?extra+2:-1;
    if(seat<0)throw Error("Session non autorisée.");
-   if(arg.action==="get")return json({room:snapshot(room.doc,seat,room.version,room)});
+   if(arg.action==="get"){
+     await ensureAffiliations(room.doc);
+     return json({room:snapshot(room.doc,seat,room.version,room)});
+   }
    const allowed=["start","bid","pass","haki","observation","armament","next","roll","finish"];
    if(!allowed.includes(arg.action))throw Error("Action inconnue.");
    const doc=structuredClone(room.doc);
+   await ensureAffiliations(doc);
    takeAction(doc,seat,arg.action,arg);
    const {data:ok,error:casError}=await db.rpc("op_mercato_commit",{p_room:room.id,p_version:room.version,p_doc:doc});
    if(casError)throw Error("Sauvegarde refusée : "+casError.message);
