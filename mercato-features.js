@@ -394,6 +394,10 @@
           '<button class="pass-btn" disabled>👑 Taxe royale : refus interdit</button>');
       }
     }
+    if(a?.warGuaranteed&&!v2Active()&&f?.plan){
+      html=html.replace('<section class="card auction">',
+        '<div class="event-banner">⚔️ GUERRE AU SOMMET — deuxième légende de rang S !</div><section class="card auction">');
+    }
     if(a?.mystery&&a.outcome===null){
       const c=CARDS[a.charId];
       const actual=charCard(c);
@@ -431,10 +435,13 @@
       const p=state.players[i++];
       const d=getBreakdown(p);
       const powers='<span>👁 '+(p.observationUsed?'Utilisé':'Prêt')+'</span><span>🛡 '+(p.armamentUsed?'Utilisé':'Prêt')+'</span>';
+      const smileHtml=(p.roster||[]).filter(id=>p.smileModifiers?.[id]!==undefined)
+        .map(id=>'<span class="active-synergy">🍎 '+esc(CARDS[id]?.name||id)+
+          ' : '+effectivePower(p,id)+' pts · rang '+tierOf(effectivePower(p,id)).tier+'</span>').join('');
       const synergiesHtml=d.synergyItems.length?'<span class="active-synergy">🤝 '+d.synergyItems.map(s=>esc(s.name)+' ('+s.count+') +'+s.points).join(' · ')+'</span>':'';
       return '<div class="power-breakdown">Base '+d.base+(d.armament?' + '+d.armament+' Armement':'')+(d.synergy?' + '+d.synergy+' synergies':'')+' = <strong>'+d.total+' points</strong></div>'+
         (safeBig(p.marineAward)>0n?'<div class="power-breakdown">🎲 Prime de la Marine : +'+currency(p.marineAward)+'</div>':'')+
-        '<div class="special-stats">'+powers+synergiesHtml;
+        '<div class="special-stats">'+powers+synergiesHtml+smileHtml;
     });
     return html;
   };
@@ -447,13 +454,13 @@
     for(const p of people){
       for(const id of p.roster){
         if(!CARDS[id])continue;
-        entries.push({p,id,c:CARDS[id],price:p.purchases?.[id]});
+        entries.push({p,id,c:CARDS[id],power:effectivePower(p,id),price:p.purchases?.[id]});
       }
     }
-    const best=entries.slice().sort((a,b)=>b.c.power-a.c.power)[0];
+    const best=entries.slice().sort((a,b)=>b.power-a.power)[0];
     const bought=entries.filter(e=>e.price!==undefined&&safeBig(e.price)>0n);
     const bargain=bought.sort((a,b)=>{
-      const lhs=BigInt(a.c.power)*safeBig(b.price), rhs=BigInt(b.c.power)*safeBig(a.price);
+      const lhs=BigInt(a.power)*safeBig(b.price), rhs=BigInt(b.power)*safeBig(a.price);
       return lhs>rhs?-1:lhs<rhs?1:0;
     })[0];
     const spender=people.slice().sort((a,b)=>{
@@ -469,7 +476,7 @@
     const winners=ranking()[0];
     const medal=(emoji,title,value,note)=>'<div class="award-item"><span class="award-symbol">'+emoji+'</span><div><strong>'+title+'</strong><span>'+value+'</span><small>'+note+'</small></div></div>';
     const awards=[
-      best?medal('💥','Meilleure recrue',esc(best.c.name)+' · '+best.c.power+' pts','Équipage de '+esc(best.p.name)):'',
+      best?medal('💥','Meilleure recrue',esc(best.c.name)+' · '+best.power+' pts','Équipage de '+esc(best.p.name)):'',
       bargain?medal('💰','Meilleur rapport qualité/prix',esc(bargain.c.name),'Acheté par '+esc(bargain.p.name)+' pour '+currency(bargain.price)):'',
       spender&&spent>0n?medal('💸','Plus gros investisseur',esc(spender.name),'Dépenses : '+currency(spent)):'',
       tactician&&getBreakdown(tactician).synergy+getBreakdown(tactician).armament>0
