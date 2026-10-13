@@ -389,8 +389,8 @@
       html=html.replace('<section class="card auction">',
         '<div class="event-banner">✦ '+esc(label[1])+' ✦ '+esc(label[2])+'</div><section class="card auction">');
       if(v2Royal()){
-        html=html.replace(/<button class="haki-btn"[\\s\\S]*?<\\/button>/,'');
-        html=html.replace(/<button class="pass-btn"[^>]*>[\\s\\S]*?<\\/button>/,
+        html=html.replace(/<button class="haki-btn"[\s\S]*?<\/button>/,'');
+        html=html.replace(/<button class="pass-btn"[^>]*>[\s\S]*?<\/button>/,
           '<button class="pass-btn" disabled>👑 Taxe royale : refus interdit</button>');
       }
     }
