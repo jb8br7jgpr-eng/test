@@ -159,36 +159,36 @@
   <main id="app" class="shell" aria-live="polite"></main>
   <div id="modal" class="modal hidden" role="dialog" aria-modal="true"></div>
   <div id="toast" class="toast hidden" role="status"></div>
-  <script src="./characters-data.js"></script>
+  <script src="./characters-data.js?v=20261013-powerbalance-1"></script>
   <script src="./portrait-map.js?v=20261013-2"></script>
   <script>
   'use strict';
   // Classement ludique et subjectif, entièrement modifiable ci-dessous.
   // Format : [identifiant, nom, puissance (de 1 à 100)]. Le rang est calculé automatiquement.
   const CHARACTERS = [
-    ['roger','Gol D. Roger',100], ['prime-wb','Barbe Blanche (prime)',100], ['luffy','Monkey D. Luffy',100],
-    ['shanks','Shanks',99], ['prime-garp','Monkey D. Garp (prime)',99], ['kaido','Kaido',98],
-    ['mihawk','Dracule Mihawk',97], ['teach','Barbe Noire',96], ['akainu','Akainu',96],
+    ['roger','Gol D. Roger',100], ['prime-wb','Barbe Blanche (prime)',100], ['luffy','Monkey D. Luffy',96],
+    ['shanks','Shanks',99], ['prime-garp','Monkey D. Garp (prime)',100], ['kaido','Kaido',95],
+    ['mihawk','Dracule Mihawk',96], ['teach','Barbe Noire',96], ['akainu','Akainu',96],
     ['bigmom','Big Mom',95], ['sengoku','Sengoku (prime)',95],
     ['kuzan','Kuzan',94], ['rayleigh','Silvers Rayleigh (prime)',94], ['kizaru','Kizaru',93],
     ['oden','Kozuki Oden',93], ['fujitora','Fujitora',91], ['ryokugyu','Ryokugyu',90],
-    ['beckman','Benn Beckman',89], ['sabo','Sabo',88], ['zoro','Roronoa Zoro',87],
+    ['beckman','Benn Beckman',89], ['sabo','Sabo',90], ['zoro','Roronoa Zoro',95],
     ['yamato','Yamato',87], ['law','Trafalgar Law',86], ['kid','Eustass Kid',85],
-    ['marco','Marco',85], ['sanji','Sanji',84], ['king','King',83], ['shiryu','Shiryu',82],
+    ['marco','Marco',85], ['sanji','Sanji',90], ['king','King',83], ['shiryu','Shiryu',82],
     ['katakuri','Charlotte Katakuri',81], ['lucci','Rob Lucci',80],
-    ['queen','Queen',79], ['jinbe','Jinbe',78], ['hancock','Boa Hancock',78],
-    ['doflamingo','Donquixote Doflamingo',77], ['crocodile','Crocodile',77], ['kuma','Bartholomew Kuma',76],
+    ['queen','Queen',85], ['jinbe','Jinbe',84], ['hancock','Boa Hancock',78],
+    ['doflamingo','Donquixote Doflamingo',88], ['crocodile','Crocodile',86], ['kuma','Bartholomew Kuma',76],
     ['killer','Killer',75], ['magellan','Magellan',74], ['smoothie','Charlotte Smoothie',73],
     ['jack','Jack',72], ['inu','Inuarashi',72], ['neko','Nekomamushi',71],
-    ['ace','Portgas D. Ace',70], ['perospero','Charlotte Perospero',70], ['ivankov','Emporio Ivankov',69],
-    ['enel','Ener',68], ['kaku','Kaku',67], ['drake','X Drake',66], ['franky','Franky',65],
-    ['brook','Brook',64], ['robin','Nico Robin',63], ['hawkins','Basil Hawkins',63],
-    ['apoo','Scratchmen Apoo',62], ['chopper','Tony Tony Chopper',62], ['nami','Nami',61],
+    ['ace','Portgas D. Ace',85], ['perospero','Charlotte Perospero',70], ['ivankov','Emporio Ivankov',69],
+    ['enel','Ener',68], ['kaku','Kaku',67], ['drake','X Drake',66], ['franky','Franky',70],
+    ['brook','Brook',72], ['robin','Nico Robin',76], ['hawkins','Basil Hawkins',63],
+    ['apoo','Scratchmen Apoo',62], ['chopper','Tony Tony Chopper',70], ['nami','Nami',61],
     ['bege','Capone Bege',61], ['bonclay','Bon Clay',60], ['cavendish','Cavendish',59],
     ['bartolomeo','Bartolomeo',58], ['caesar','Caesar Clown',56], ['pica','Pica',56],
     ['diamante','Diamante',55], ['trebol','Trébol',53], ['bellamy','Bellamy',52], ['hody','Hody Jones',50],
     ['mr1','Mr. 1',49], ['hina','Hina',47], ['kuro','Kuro',45], ['tashigi','Tashigi',41],
-    ['arlong','Arlong',40], ['usopp','Usopp',39], ['donkrieg','Don Krieg',38],
+    ['arlong','Arlong',40], ['usopp','Usopp',70], ['donkrieg','Don Krieg',38],
     ['rebecca','Rebecca',37], ['foxy','Foxy',36], ['wapol','Wapol',35],
     ['buggy','Baggy',32], ['mr3','Mr. 3',30], ['alvida','Alvida',28],
     ['helmeppo','Hermep',27], ['jango','Jango',24], ['cabaji','Cabaji',21], ['mohji','Morge',20],
