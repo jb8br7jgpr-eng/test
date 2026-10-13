@@ -48,9 +48,9 @@ jobs:
                 await request({action:"bid",roomId,token:tokens[0],amount:current.baseBid},400);
                 current=await act(1,"event-ready");continue;
               }
-              if(e&&e.stage==="result"){
+              if(e&&["result","god-result"].includes(e.stage)){
                 current=await act(0,"event-ready");
-                if(current.event.active.stage!=="result")throw Error("Result vanished automatically");
+                if(current.event.active.stage!==e.stage)throw Error("Result vanished automatically");
                 current=await act(1,"event-ready");continue;
               }
               if(e&&e.stage==="roll"){
@@ -82,7 +82,22 @@ jobs:
                 continue;
               }
               if(e&&e.stage!=="auction")throw Error("Unrecognized event stage: "+e.stage);
-              if(a.outcome!==null){current=await act(0,"next");continue;}
+              if(a.outcome!==null){
+                if(a.outcome==="sold"&&a.power<55&&!current.players[a.leader].armamentUsed&&!a.armamentChoice){
+                  const winner=a.leader;
+                  await request({action:"next",roomId,token:tokens[0]},400);
+                  if(!current.players[winner].armamentUsed){
+                    const before=current.players[winner].score;
+                    current=await act(winner,"armament",{charId:a.charId});
+                    if(!current.players[winner].armamentUsed||current.players[winner].score!==before+20)
+                      throw Error("Armament +20 not applied and synchronized");
+                    const mirrored=await get(1-winner);
+                    if(mirrored.players[winner].score!==current.players[winner].score)
+                      throw Error("Armament not synchronized across phones");
+                  }
+                }
+                current=await act(0,"next");continue;
+              }
               if(a.mystery){
                 if(a.charId!==null||(await get(1)).auction.charId!==null)
                   throw Error("Mystery character revealed before auction");
@@ -123,6 +138,11 @@ jobs:
             const final=await get(1);
             if(final.status!=="finished")throw Error("Guest final state not synchronized");
             if(!paid)throw Error("No paid bids recorded");
+              const archive=await request({action:"history",entries:[{roomId,token:tokens[0]}]});
+              if(!archive.matches.some(m=>m.id===roomId&&m.players.length===2))
+                throw Error("Completed match missing from private archives");
+              const inaccessible=await request({action:"history",entries:[{roomId,token:"f".repeat(64)}]});
+              if(inaccessible.matches.length)throw Error("Private archives leaked with invalid token");
             console.log("PASS: "+size+" recruits, "+seen.size+" synced events, "+paid+" paid auctions");
           }
           await game(5);
