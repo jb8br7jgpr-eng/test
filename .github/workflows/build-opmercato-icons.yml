@@ -1,0 +1,65 @@
+name: Build OPMercato app icons
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'opmercato-logo.jpg'
+      - '.github/workflows/build-opmercato-icons.yml'
+permissions:
+  contents: write
+jobs:
+  icons:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Generate app and home screen PNG icons from official logo
+        run: |
+          python3 -m pip install --quiet Pillow
+          python3 - <<'PY'
+          from PIL import Image, ImageDraw
+          from pathlib import Path
+          img = Image.open("opmercato-logo.jpg").convert("RGBA")
+          # The compass is the emblem at the left side of OPMercato's landscape logo.
+          crop = img.crop((15, 180, 510, 795))
+          px = crop.load()
+          for y in range(crop.height):
+              for x in range(crop.width):
+                  r,g,b,a = px[x,y]
+                  light = min(r,g,b)
+                  if light >= 251:
+                      px[x,y] = (r,g,b,0)
+                  elif light > 228:
+                      px[x,y] = (r,g,b,int(255*(251-light)/23))
+          # A navy-and-gold branded square, with generous breathing space for iOS.
+          for size,name,maskable in [
+              (180,"apple-touch-icon.png",False),
+              (192,"icon-192.png",False),
+              (512,"icon-512.png",False),
+              (512,"icon-512-maskable.png",True),
+              (32,"favicon-32.png",False)]:
+              factor = .65 if maskable else .82
+              target=int(size*factor)
+              aspect=crop.width/crop.height
+              drawing=crop.resize((max(1,int(target*aspect)),target),Image.Resampling.LANCZOS)
+              icon=Image.new("RGBA",(size,size), (7,34,49,255))
+              pen=ImageDraw.Draw(icon)
+              edge=max(1,int(size*.045))
+              pen.rounded_rectangle((edge,edge,size-edge-1,size-edge-1),
+                 radius=int(size*.205),outline=(212,167,82,255),width=max(1,int(size*.022)))
+              x=(size-drawing.width)//2
+              y=(size-drawing.height)//2
+              icon.alpha_composite(drawing,(x,y))
+              icon.convert("RGB").save(name,format="PNG",optimize=True)
+              print(name,Path(name).stat().st_size)
+          PY
+      - name: Commit generated icons
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apple-touch-icon.png icon-192.png icon-512.png icon-512-maskable.png favicon-32.png
+          if ! git diff --cached --quiet; then
+            git commit -m "Create branded iPhone and PWA icons from the OPMercato logo"
+            git push
+          fi
