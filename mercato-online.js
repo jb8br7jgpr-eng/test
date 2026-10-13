@@ -140,7 +140,7 @@
         (p.marineAward&&BigInt(p.marineAward)>0n?'<div class="online-small">🎲 Prime Marine : +'+berrys(p.marineAward)+'</div>':'')+
         '<div class="online-small">👑 '+(p.hakiUsed?'Haki des Rois utilisé':'Disponible')+
         ' · 👁 '+(p.observationUsed?'Utilisé':'Disponible')+' · 🛡 '+(p.armamentUsed?'Utilisé':'Disponible')+'</div>'+
-        (p.bonuses?.length?'<div class="online-synergy">🤝 '+p.bonuses.map(x=>escOnline(x.name)+' +'+x.points).join(", ")+'</div>':'')+
+        (p.bonuses?.length?'<div class="online-synergy">🤝 '+p.bonuses.map(x=>escOnline(x.name)+' ('+x.count+') +'+x.points).join(", ")+'</div>':'')+
       '</div>').join("")+'</section>';
   }
   function portraitCard(id){
@@ -263,7 +263,7 @@
       'Haki des Rois : recruter gratuitement une fois, seulement si tu joues en premier et avant toute enchere.',
       'Haki de l’Observation : consulter secretement les trois prochaines cartes une fois par joueur.',
       'Haki de l’Armement : renforcer une de tes recrues de <b>+5 points</b>, une fois par joueur.',
-      'Synergies : Luffy/Zoro/Sanji +15 ; Roger/Rayleigh/Gaban +20 ; Kaido/King/Queen +15 ; Ace/Sabo/Luffy +20.',
+      'Synergies par affiliation : 1 personnage = 0 point ; 2 = +10 ; 3 = +20 ; 4 = +30 ; 5 ou plus = +50. Les bonus de plusieurs affiliations se cumulent. Les anciens trios spéciaux ne comptent plus.',
       'Une enchere mystere survient a un tour aleatoire distinct de la Prime de la Marine ou de la Guerre au sommet. Seule la classe est visible avant la revelation.',
       'Un evenement se declenche : Guerre au Sommet (deux classes S) ou Prime de la Marine (de 5 % a 30 % du budget initial).',
       'Le score total additionne les puissances des recrues, les synergies et le Haki de l’Armement. Le budget restant departage une egalite de points.',
