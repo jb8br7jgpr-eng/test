@@ -132,15 +132,17 @@
         '<p class="online-hint">L’hôte lancera le mercato dès que tout le monde sera prêt.</p>')+
       '</section>';
   }
+  function powerFor(p,id){const base=CARDS[id]?.power||0;return p.smileModifiers?.[id]===undefined?base:Math.max(0,Math.min(100,base+p.smileModifiers[id]));}
+  function classFor(n){return n>=95?"S":n>=80?"A":n>=65?"B":n>=50?"C":n>=35?"D":n>=20?"E":"F";}
   function gameScore(){
     return '<section class="online-teams"><h2>⚓ Vos équipages</h2>'+
       view.players.map(p=>'<div class="online-team"><div class="online-team-top"><b>'+label(p)+'</b><strong>'+p.score+' pts</strong></div>'+
         '<div class="online-team-meta">'+berrys(p.budget)+' restants · '+p.roster.length+'/'+view.teamSize+' recrues · '+p.passesUsed+'/5 refus</div>'+
         '<div class="online-roster">'+(p.roster.length?p.roster.map(id=>'<button type="button" data-action="details" data-char-id="'+escOnline(id)+'" class="online-roster-character">'+
           '<span class="portrait portrait-tiny"><span class="portrait-fallback">☠️</span><img class="portrait-photo" data-portrait-id="'+escOnline(id)+'" alt="" loading="lazy"></span>'+
-          '<span>'+escOnline(CARDS[id]?.name||id)+'</span></button>').join(""):
+          '<span>'+escOnline(CARDS[id]?.name||id)+(p.smileModifiers?.[id]!==undefined?'<small class="online-smile-buff">🍎 '+powerFor(p,id)+' pts (rang '+classFor(powerFor(p,id))+')</small>':'')+'</span></button>').join(""):
         '<span>Équipage vide</span>')+'</div>'+
-        '<div class="online-small">Base '+p.roster.reduce((v,id)=>v+(CARDS[id]?.power||0),0)+
+        '<div class="online-small">Base '+p.roster.reduce((v,id)=>v+powerFor(p,id),0)+
           (p.armamentId?' · Armement +5':'')+
           (p.bonuses?.length?' · Synergies +'+p.bonuses.reduce((v,x)=>v+x.points,0):'')+'</div>'+
         (p.marineAward&&BigInt(p.marineAward)>0n?'<div class="online-small">🎲 Prime Marine : +'+berrys(p.marineAward)+'</div>':'')+
@@ -248,7 +250,7 @@
         button("roll","🎲 Lancer mon dé (5 à 30 %)","primary",!mine);
     }else if(!active){
       const winner=leader?'🏆 '+label(leader)+' recrute '+escOnline(CARDS[a.charId]?.name||a.charId)+
-         (a.hakiWinner===leader.id?' gratuitement grâce au Haki des Rois':" pour "+berrys(a.highBid)) :
+         (a.hakiWinner===leader.id?' gratuitement grâce au Haki des Rois':" pour "+berrys(royal?BigInt(a.highBid)*2n:a.highBid)) :
          "🌊 Personnage invendu";
       actionHtml='<div class="online-turn online-winner">'+winner+'</div>'+
         (view.host?button("next","Personnage suivant →"): '<div class="online-hint">L’hôte passe au prochain personnage…</div>');
@@ -287,7 +289,7 @@
   function scoreboardEnd(){
     const sorted=[...view.players].sort((a,b)=>b.score-a.score||
       (BigInt(b.budget)>BigInt(a.budget)?1:BigInt(b.budget)<BigInt(a.budget)?-1:0));
-    const entries=view.players.flatMap(p=>p.roster.map(id=>({player:p,id,price:BigInt(p.purchases?.[id]||"0"),power:CARDS[id]?.power||0})));
+    const entries=view.players.flatMap(p=>p.roster.map(id=>({player:p,id,price:BigInt(p.purchases?.[id]||"0"),power:powerFor(p,id)})));
     const best=entries.slice().sort((a,b)=>b.power-a.power)[0];
     const bargain=entries.filter(e=>e.price>0n).sort((a,b)=>{
        const left=BigInt(a.power)*b.price,right=BigInt(b.power)*a.price;
@@ -421,6 +423,8 @@
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&showing)refresh();});
   const css=document.createElement("style");
   css.textContent=`
+    .online-smile-buff{display:block;font-size:10px;color:#f2cc7a;font-weight:800;margin-top:2px}
+
     .v2-special{margin:14px 0;border:2px solid #c8a369;background:radial-gradient(circle at 50% 10%,#344d60,#102332 75%);border-radius:23px;padding:28px 16px;color:#fff4d4;text-align:center;box-shadow:0 10px 32px #0008}
     .v2-war,.v2-god{border-color:#df685a;background:linear-gradient(130deg,#4b242a,#101c2c)}
     .v2-black,.v2-mystery{border-color:#a993e0;background:linear-gradient(130deg,#362448,#132332)}
