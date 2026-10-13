@@ -78,14 +78,20 @@
       const res=await call(action,args);
       apply(res,true);
       if(action==="observation")peekOpen=true;
-      if(["roll","coin"].includes(action)){
-        const e=res.room?.event?.active;
-        const outcome=action==="roll"?res.room?.event?.rolls?.find(x=>x.id===res.room.yourSeat):
-          e?.flips?.find(x=>x.id===res.room.yourSeat);
-        if(outcome){fx={type:action,outcome};paint();setTimeout(()=>{fx=null;if(showing)paint();},1600);}
-      }
       copyMessage="";
       paint();
+      if(["roll","coin"].includes(action)){
+        const e=res.room?.event?.active,seat=res.room.yourSeat;
+        const outcome=action==="roll"?res.room?.event?.rolls?.find(x=>x.id===seat):
+          e?.flips?.find(x=>x.id===seat);
+        if(outcome){
+          const name=res.room?.players?.[seat]?.name||"Pirate";
+          const desc=action==="roll"?
+            name+" : 🎲 "+outcome.roll+" → +"+outcome.percent+" % · "+berrys(outcome.amount):
+            name+" : "+(outcome.pile?"PILE · +25":"FACE · −25")+" · "+outcome.before+" → "+outcome.after+" pts";
+          window.OPMERCATO_EVENT_FX?.(action==="roll"?"die":"coin",desc,action==="roll"?outcome.roll:outcome.pile);
+        }
+      }
     }catch(e){
       note(e.message);
       if(String(e.message).includes("évolué"))await refresh();
