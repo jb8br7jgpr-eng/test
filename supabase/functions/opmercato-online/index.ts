@@ -35,7 +35,7 @@ function snapshot(s:any,seat:number,version:number,room:any){
  const p=s.players[seat];const a=s.auction;
  const secret=!!(a?.mystery&&a.outcome===null);
  return {id:room.id,code:room.code,topic:"opmercato:"+room.id+":"+s.channelSecret,version,status:s.status,
-   yourSeat:seat,host:seat===0,teamSize:s.teamSize,initialBudget:s.initialBudget,baseBid:s.baseBid,bidStep:s.bidStep,
+   yourSeat:seat,host:seat===0,maxPlayers:s.maxPlayers||2,teamSize:s.teamSize,initialBudget:s.initialBudget,baseBid:s.baseBid,bidStep:s.bidStep,
    round:s.round,remaining:s.drawPile.length-s.drawIndex,event:s.event,
    players:s.players.map(x=>publicPlayer(s,x)),
    auction:a?{...a,charId:secret?null:a.charId,tier:rank(power(s,a.charId)),power:secret?null:power(s,a.charId)}:null,
@@ -104,7 +104,7 @@ function takeAction(s:any,seat:number,action:string,payload:any){
  const p=s.players[seat];
  if(!p)throw Error("Joueur introuvable.");
  if(action==="start"){
-   if(seat!==0||s.status!=="lobby"||s.players.length!==2)throw Error("Deux joueurs sont nécessaires pour lancer la partie.");
+   if(seat!==0||s.status!=="lobby"||s.players.length!==(s.maxPlayers||2))throw Error("Attends que tous les joueurs aient rejoint le salon.");
    s.status="playing";next(s);return;
  }
  if(action==="finish"){if(seat!==0)throw Error("Seul l'hôte peut terminer la partie.");s.status="finished";s.auction=null;return;}
@@ -186,8 +186,9 @@ Deno.serve(async(req:Request)=>{
    if(arg.action==="create"){
      const name=String(arg.name||"Pirate 1").trim().slice(0,25);
      const starting=amount(arg.budget||"250000000");
-     const teamSize=Number(arg.teamSize??5);
-     if(starting<1n||!Number.isInteger(teamSize)||teamSize<1||teamSize>30)throw Error("Paramètres invalides.");
+     const teamSize=Number(arg.teamSize??5),maxPlayers=Number(arg.maxPlayers??2);
+     if(starting<1n||!Number.isInteger(teamSize)||teamSize<1||teamSize>30||
+        !Number.isInteger(maxPlayers)||maxPlayers<2||maxPlayers>6)throw Error("Paramètres invalides.");
      const source=await catalog();
      const available=source.characters.filter((c:any)=>arg.spoilers!==false||!c.spoiler);
      const byId=Object.fromEntries(available.map((c:any)=>[c.id,{power:c.power,name:c.name}]));
@@ -195,11 +196,13 @@ Deno.serve(async(req:Request)=>{
      const eventType=rand(1)[0]%2===0?"war":"marine";
      const baseBid=starting>=1000n?starting/50n:20n;
      const bidStep=starting>=1000n?starting/100n:10n;
-     const doc={status:"lobby",channelSecret:token(),players:[{id:0,name,budget:starting.toString(),roster:[],passesUsed:0,hakiUsed:false,
+     const doc={status:"lobby",channelSecret:token(),maxPlayers,extraTokenHashes:[],players:[{id:0,name,budget:starting.toString(),roster:[],passesUsed:0,hakiUsed:false,
        observationUsed:false,armamentUsed:false,armamentId:null,observationPeek:[],marineAward:"0",marineRoll:null,purchases:{}}],
        teamSize,initialBudget:starting.toString(),baseBid:baseBid.toString(),bidStep:bidStep.toString(),
        catalog:byId,drawPile:shuffle(available.map((c:any)=>c.id)),drawIndex:0,round:0,auction:null,
-       event:{type:eventType,eventRound:2,mysteryRound:1,mysteryUsed:false,used:false,activatedRound:null,
+       event:{type:eventType,eventRound:Math.min(2,Math.max(1,Math.floor(maxPlayers*teamSize/4))),
+         mysteryRound:Math.min(2,Math.max(1,Math.floor(maxPlayers*teamSize/3))),
+         mysteryUsed:false,used:false,activatedRound:null,
          warRounds:[],awaitingRolls:false,rolls:[],rollIndex:0}};
      const {data,error}=await db.from("op_mercato_rooms").insert({code:roomCode,host_token_hash:await hash(hostToken),doc}).select("id,code,version").single();
      if(error)throw Error("Création du salon impossible. "+error.message);
@@ -210,26 +213,38 @@ Deno.serve(async(req:Request)=>{
      if(!/^[A-Z2-9]{8}$/.test(roomCode))throw Error("Code de salon invalide.");
      const {data:room,error}=await db.from("op_mercato_rooms").select("*").eq("code",roomCode).maybeSingle();
      if(error||!room)throw Error("Salon introuvable.");
-     if(room.doc.status!=="lobby"||room.guest_token_hash)throw Error("Cette partie a déjà démarré ou le salon est complet.");
+     if(room.doc.status!=="lobby"||room.doc.players.length>=(room.doc.maxPlayers||2))throw Error("Cette partie a déjà démarré ou le salon est complet.");
      const guestToken=token();const guestHash=await hash(guestToken);
-     const doc=structuredClone(room.doc);
-     doc.players.push({id:1,name:String(arg.name||"Pirate 2").trim().slice(0,25)||"Pirate 2",
+     const doc=structuredClone(room.doc),newSeat=doc.players.length;
+     doc.players.push({id:newSeat,name:String(arg.name||"Pirate 2").trim().slice(0,25)||"Pirate 2",
        budget:doc.initialBudget,roster:[],passesUsed:0,hakiUsed:false,observationUsed:false,armamentUsed:false,
        armamentId:null,observationPeek:[],marineAward:"0",marineRoll:null,purchases:{}});
-     // Atomic join: a single update prevents two guests joining simultaneously.
-     const {data, error:joinError}=await db.from("op_mercato_rooms").update({
-       guest_token_hash:guestHash,doc,version:room.version+1,updated_at:new Date().toISOString()
-     }).eq("id",room.id).eq("version",room.version).is("guest_token_hash",null).select("id,code,version").maybeSingle();
-     if(joinError||!data)throw Error("Le salon vient d'être rejoint. Réessaie.");
+     // One atomic join per slot, with optimistic concurrency on the room version.
+     let data:any;
+     if(newSeat===1){
+       const joined=await db.from("op_mercato_rooms").update({
+         guest_token_hash:guestHash,doc,version:room.version+1,updated_at:new Date().toISOString()
+       }).eq("id",room.id).eq("version",room.version).is("guest_token_hash",null)
+       .select("id,code,version").maybeSingle();
+       if(joined.error||!joined.data)throw Error("Ce salon vient d'etre rejoint. Réessaie.");
+       data=joined.data;
+     }else{
+       doc.extraTokenHashes=Array.isArray(doc.extraTokenHashes)?doc.extraTokenHashes:[];
+       doc.extraTokenHashes[newSeat-2]=guestHash;
+       const joined=await db.rpc("op_mercato_commit",{p_room:room.id,p_version:room.version,p_doc:doc});
+       if(joined.error||!joined.data)throw Error("Ce salon vient d'etre rejoint. Réessaie.");
+       data={id:room.id,code:room.code,version:room.version+1};
+     }
      await notify(room,doc,data.version);
-     return json({token:guestToken,room:snapshot(doc,1,data.version,data)});
+     return json({token:guestToken,room:snapshot(doc,newSeat,data.version,data)});
    }
    const roomId=String(arg.roomId||""),access=String(arg.token||"");
    if(!/^[0-9a-f-]{36}$/.test(roomId)||!/^[0-9a-f]{64}$/.test(access))throw Error("Session non reconnue.");
    const {data:room,error}=await db.from("op_mercato_rooms").select("*").eq("id",roomId).maybeSingle();
    if(error||!room)throw Error("Salon introuvable.");
    const digest=await hash(access);
-   const seat=digest===room.host_token_hash?0:digest===room.guest_token_hash?1:-1;
+   const extra=Array.isArray(room.doc.extraTokenHashes)?room.doc.extraTokenHashes.indexOf(digest):-1;
+   const seat=digest===room.host_token_hash?0:digest===room.guest_token_hash?1:extra>=0?extra+2:-1;
    if(seat<0)throw Error("Session non autorisée.");
    if(arg.action==="get")return json({room:snapshot(room.doc,seat,room.version,room)});
    const allowed=["start","bid","pass","haki","observation","armament","next","roll","finish"];
