@@ -224,6 +224,146 @@
     showToast('🛡 '+CARDS[id].name+' gagne +5 points !');
   }
 
+
+  function v2Active(){return state?.featureConfig?.plan?state.featureConfig.active:null;}
+  function v2Royal(){return v2Active()?.type==='reverie';}
+  function v2Ready(){
+    const e=v2Active();if(!e||!['intro','result'].includes(e.stage))return;
+    if(e.stage==='result'){e.stage='auction';save();render();return;}
+    e.stage=e.type==='marine'?'roll':e.type==='smile'?'coin':
+      e.type==='black'?'select':e.type==='god'?'eliminate':'auction';
+    e.step=0;
+    if(e.type==='reverie'){
+      const a=state.auction;
+      a.turnId=findNextBidder((state.round-2+state.players.length)%state.players.length,a);
+      a.firstTurnId=a.turnId;
+      if(a.turnId===null){a.outcome='unsold';}
+    }
+    save();render();
+  }
+  function v2Fx(type,message){
+    const veil=document.createElement('div');veil.className='v2-local-fx';
+    veil.innerHTML='<div class="v2-local-fx-symbol">'+(type==='coin'?'🪙':'🎲')+'</div><strong>'+esc(message)+'</strong>';
+    document.body.appendChild(veil);setTimeout(()=>veil.remove(),1600);
+  }
+  function v2Roll(){
+    const e=v2Active();if(!e||e.type!=='marine'||e.stage!=='roll')return;
+    const p=state.players[e.step],roll=1+Math.floor(Math.random()*6),percent=roll*5;
+    const amount=safeBig(state.initialBudget)*BigInt(percent)/100n;
+    p.budget=(safeBig(p.budget)+amount).toString();p.marineAward=amount.toString();p.marineRoll=roll;
+    state.featureConfig.rolls.push({id:p.id,roll,percent,amount:amount.toString()});
+    e.step++;if(e.step===state.players.length)e.stage='result';
+    save();render();v2Fx('die',p.name+' : '+roll+' → +'+percent+' % ('+currency(amount)+')');
+  }
+  function v2Coin(){
+    const e=v2Active();if(!e||e.type!=='smile'||e.stage!=='coin')return;
+    const p=state.players[e.step],id=p.roster.slice()
+      .sort((a,b)=>effectivePower(p,a)-effectivePower(p,b))[0];
+    const pile=Math.random()<.5,before=id?effectivePower(p,id):0,
+      after=Math.max(0,Math.min(100,before+(pile?25:-25)));
+    if(id){p.smileModifiers=p.smileModifiers||{};p.smileModifiers[id]=after-(CARDS[id]?.power||0);}
+    e.flips.push({id:p.id,charId:id||null,pile,before,after});e.step++;
+    if(e.step===state.players.length)e.stage='result';
+    save();render();v2Fx('coin',p.name+' : '+(id?pile?'PILE · +25':'FACE · −25':'Aucune recrue à transformer'));
+  }
+  function v2Pick(id){
+    const e=v2Active();if(!e||e.type!=='black'||e.stage!=='select')return;
+    if(!e.choices.includes(id)||e.removed.includes(id))return;
+    e.removed.push(id);e.step++;
+    if(e.step===2){
+      state.auction.charId=e.choices.find(x=>!e.removed.includes(x));
+      for(const returned of e.removed){
+        const pos=state.drawIndex+Math.floor(Math.random()*(state.drawPile.length-state.drawIndex+1));
+        state.drawPile.splice(pos,0,returned);
+      }
+      e.stage='auction';
+    }
+    save();render();
+  }
+  function v2Eliminate(id){
+    const e=v2Active();if(!e||e.type!=='god'||e.stage!=='eliminate')return;
+    const first=state.auction.firstTurnId??0,actor=(first+e.step)%state.players.length,
+      opponent=state.players[(actor+1)%state.players.length];
+    if(id&&!opponent.roster.includes(id))return;
+    if(id){opponent.roster=opponent.roster.filter(x=>x!==id);e.removed.push({from:opponent.id,id});}
+    e.step++;if(e.step===state.players.length)e.stage='auction';
+    save();render();
+  }
+  const beforeRoyalBid=bid,beforeRoyalPass=pass,beforeRoyalSettle=settle,beforeRoyalBidder=findNextBidder;
+  findNextBidder=function(from,a){
+    if(!v2Royal()||v2Active().stage!=='auction')return beforeRoyalBidder(from,a);
+    const value=BigInt(a.highBid||0)>0n?BigInt(a.highBid)+BigInt(state.bidStep||10):BigInt(state.baseBid||20);
+    for(let offset=1;offset<=state.players.length;offset++){
+      const p=state.players[(Number(from)+offset)%state.players.length];
+      if(p.id===a.leader||a.passed.includes(p.id)||p.roster.length>=TEAM_SIZE)continue;
+      if(safeBig(p.budget)>=value*2n)return p.id;
+    }
+    return null;
+  };
+  bid=function(value){
+    if(v2Royal()&&v2Active().stage==='auction'){
+      const p=player(state.auction?.turnId);
+      if(!p||safeBig(p.budget)<BigInt(Math.floor(Number(value)||0))*2n)
+        return showToast('👑 Taxe royale : tu dois pouvoir payer le double de ta mise.');
+    }
+    return beforeRoyalBid(value);
+  };
+  pass=function(){
+    if(v2Royal()&&v2Active().stage==='auction')return showToast('👑 Rêverie : impossible de passer volontairement !');
+    return beforeRoyalPass();
+  };
+  settle=function(){
+    const royal=v2Royal()&&v2Active().stage==='auction',
+      a=state?.auction,leader=a?.leader,
+      extra=royal&&leader!==null&&leader!==undefined?safeBig(a.highBid):0n;
+    beforeRoyalSettle();
+    if(extra&&leader!==null){
+      const p=player(leader);p.budget=(safeBig(p.budget)-extra).toString();
+      if(p.purchases)p.purchases[a.charId]=(extra*2n).toString();
+      save();render();
+    }
+  };
+  function v2Screen(){
+    const e=v2Active(),def=V2_INFO[e.type],my=state.players,stateText=esc(def[2]);
+    let content='';
+    if(e.stage==='intro'){
+      content='<p>'+stateText+'</p><button class="primary" data-action="v2-ready">Continuer →</button>';
+    }else if(e.stage==='result'){
+      const rows=e.type==='marine'?state.featureConfig.rolls.map(x=>
+        esc(player(x.id)?.name)+' : 🎲 '+x.roll+' → +'+x.percent+' % · '+currency(x.amount)):
+        e.flips.map(x=>esc(player(x.id)?.name)+' : '+(x.charId?esc(CARDS[x.charId]?.name||x.charId)+' · '+(x.pile?'Pile +25':'Face −25')+' · '+x.before+' → '+x.after:'Aucune recrue à transformer'));
+      content='<div class="v2-local-results">'+rows.map(x=>'<p>'+x+'</p>').join('')+'</div>'+
+        '<button class="primary" data-action="v2-ready">Continuer →</button>';
+    }else if(e.stage==='roll'){
+      const p=my[e.step];content='<p>Au tour de <b>'+esc(p.name)+'</b> de lancer le dé !</p>'+
+        '<div class="v2-local-die">🎲</div><button class="primary" data-action="v2-roll">🎲 Lancer mon dé</button>'+
+        '<div class="v2-local-results">'+(state.featureConfig.rolls||[]).map(x=>
+          '<p>'+esc(player(x.id)?.name)+' : '+x.roll+' → +'+x.percent+' %</p>').join('')+'</div>';
+    }else if(e.stage==='coin'){
+      const p=my[e.step];content='<p>Au tour de <b>'+esc(p.name)+'</b> de lancer la pièce SMILE !</p>'+
+        '<div class="v2-local-die">🪙</div><button class="primary" data-action="v2-coin">🪙 Lancer ma pièce</button>';
+    }else if(e.stage==='select'){
+      const first=state.auction.firstTurnId??0,actor=my[(first+e.step)%my.length];
+      content='<p>Au tour de <b>'+esc(actor.name)+'</b> de retirer un personnage.</p>'+
+        '<div class="v2-local-choices">'+e.choices.filter(id=>!e.removed.includes(id)).map(id=>
+          '<div><strong>'+esc(CARDS[id]?.name||id)+'</strong><small>'+CARDS[id]?.power+' points</small>'+
+          '<button data-action="v2-pick" data-id="'+esc(id)+'">❌ Éliminer</button></div>').join('')+'</div>'+
+        '<p>Les deux personnages écartés retourneront dans la pioche.</p>';
+    }else if(e.stage==='eliminate'){
+      const first=state.auction.firstTurnId??0,actor=my[(first+e.step)%my.length],
+        opponent=my[(first+e.step+1)%my.length];
+      content='<p><b>'+esc(actor.name)+'</b> peut supprimer une recrue de <b>'+esc(opponent.name)+'</b>.</p>'+
+        '<div class="v2-local-choices">'+opponent.roster.map(id=>
+          '<div><strong>'+esc(CARDS[id]?.name||id)+'</strong><small>'+effectivePower(opponent,id)+' points</small>'+
+          '<button data-action="v2-delete" data-id="'+esc(id)+'">💥 Éliminer</button></div>').join('')+'</div>'+
+        '<button class="btn-ghost" data-action="v2-skip">Épargner cet équipage</button>'+
+        '<p>Les recrues éliminées disparaissent définitivement. Leurs places se libèrent.</p>';
+    }
+    return header()+'<section class="v2-local-special v2-'+e.type+'"><small>✦ ÉVÉNEMENT SPÉCIAL ✦</small>'+
+      '<div class="v2-local-symbol">'+def[0]+'</div><h1>'+def[1]+'</h1>'+content+'</section>'+
+      '<div class="v2-local-hint">Aucun événement ne disparaît automatiquement. Confirme pour continuer.</div>';
+  }
+
   const oldAuction=auctionScreen;
   auctionScreen=function(){
     if(!state||state.phase!=='auction')return oldAuction();
