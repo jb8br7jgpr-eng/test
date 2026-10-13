@@ -49,11 +49,51 @@ function affiliationBonuses(s:any,p:any){
  return [...counts].map(([name,count])=>({name,count,points:affiliationPoints(count)}))
    .filter(x=>x.points>0).sort((a,b)=>b.points-a.points||a.name.localeCompare(b.name,"fr"));
 }
-const score=(s:any,p:any)=>p.roster.reduce((n:number,id:string)=>n+power(s,id),0)+
+
+type Special="war"|"marine"|"mystery"|"black"|"god"|"smile"|"reverie";
+const SPECIALS:Special[]=["war","marine","mystery","black","god","smile","reverie"];
+const randomIndex=(n:number)=>rand(2).reduce((v,x)=>v*256+x,0)%n;
+function sevenSchedule(players:number,teamSize:number){
+ const total=players*teamSize,qty=teamSize<=5?1:teamSize<=10?2:3;
+ const allowed=SPECIALS.filter(t=>(t!=="smile"&&t!=="god")||total>=players*2+2);
+ const picks:Special[]=[];
+ while(picks.length<qty){picks.push(allowed.splice(randomIndex(allowed.length),1)[0]);}
+ const plan:{type:Special,round:number}[]=[];const busy=new Set<number>();
+ for(const type of picks){
+   const earliest=type==="smile"?Math.max(players+1,Math.floor(total/2)+1):
+     type==="god"?players+1:2;
+   const end=Math.max(earliest,Math.min(total-1,Math.ceil(total*.9)));
+   const choices:number[]=[];
+   for(let n=earliest;n<=end;n++){
+     if(busy.has(n)||(type==="war"&&busy.has(n+1)))continue;
+     if(type==="war"&&n>=total)continue;
+     choices.push(n);
+   }
+   if(!choices.length)continue;
+   const round=choices[randomIndex(choices.length)];plan.push({type,round});
+   busy.add(round);if(type==="war")busy.add(round+1);
+ }
+ return plan.sort((a,b)=>a.round-b.round);
+}
+const effectivePower=(s:any,p:any,id:string)=>Math.max(0,Math.min(100,p.smileModifiers?.[id]===undefined?power(s,id):power(s,id)+p.smileModifiers[id]));
+const taxed=(s:any)=>s.event?.active?.type==="reverie";
+const scheduledAt=(s:any,n:number)=>s.event?.schedule?.find((e:any)=>e.round===n);
+function eventReady(s:any,seat:number){
+ const e=s.event.active;
+ if(!e||!["intro","result"].includes(e.stage)||e.ready.includes(seat))throw Error("Validation indisponible.");
+ e.ready.push(seat);
+ if(e.ready.length<s.players.length)return;
+ e.ready=[];
+ if(e.stage==="result"){e.stage="auction";return;}
+ e.stage=e.type==="marine"?"roll":e.type==="smile"?"coin":e.type==="black"?"select":e.type==="god"?"eliminate":"auction";
+}
+
+const score=(s:any,p:any)=>p.roster.reduce((n:number,id:string)=>n+effectivePower(s,p,id),0)+
   (p.armamentId&&p.roster.includes(p.armamentId)?5:0)+
   affiliationBonuses(s,p).reduce((n,b)=>n+b.points,0);
 const publicPlayer=(s:any,p:any)=>({id:p.id,name:p.name,budget:p.budget,roster:p.roster,passesUsed:p.passesUsed,
   hakiUsed:p.hakiUsed,observationUsed:p.observationUsed,armamentUsed:p.armamentUsed,armamentId:p.armamentId||null,
+  smileModifiers:p.smileModifiers||{},
   marineAward:p.marineAward,marineRoll:p.marineRoll??null,purchases:p.purchases,score:score(s,p),
   bonuses:affiliationBonuses(s,p)});
 function snapshot(s:any,seat:number,version:number,room:any){
@@ -61,7 +101,7 @@ function snapshot(s:any,seat:number,version:number,room:any){
  const secret=!!(a?.mystery&&a.outcome===null);
  return {id:room.id,code:room.code,topic:"opmercato:"+room.id+":"+s.channelSecret,version,status:s.status,
    yourSeat:seat,host:seat===0,maxPlayers:s.maxPlayers||2,teamSize:s.teamSize,initialBudget:s.initialBudget,baseBid:s.baseBid,bidStep:s.bidStep,
-   round:s.round,remaining:s.drawPile.length-s.drawIndex,event:s.event,
+   round:s.round,remaining:s.drawPile.length-s.drawIndex,event:{...s.event,schedule:undefined},
    players:s.players.map(x=>publicPlayer(s,x)),
    auction:a?{...a,charId:secret?null:a.charId,tier:rank(power(s,a.charId)),power:secret?null:power(s,a.charId)}:null,
    peek:p?.observationPeek||[],phase:s.status};
@@ -71,7 +111,7 @@ function nextBidder(s:any,from:number){
  for(let i=1;i<=s.players.length;i++){
    const p=s.players[(from+i)%s.players.length];
    if(p.id===a.leader||a.passed.includes(p.id)||p.roster.length>=s.teamSize)continue;
-   if(canBid(s,p,min)||(first&&hasHaki(s,p)))return p.id;
+   if((taxed(s)?canBid(s,p,min*2n):canBid(s,p,min))||(first&&!taxed(s)&&hasHaki(s,p)))return p.id;
  }
  return null;
 }
@@ -82,10 +122,10 @@ function isComplete(s:any) {
 function settle(s:any){
  const a=s.auction;if(!a||a.outcome!==null)return;
  if(a.leader!==null){
-   const p=s.players[a.leader],cost=BigInt(a.highBid);
+   const p=s.players[a.leader],cost=BigInt(a.highBid)*(taxed(s)?2n:1n);
    if(p.roster.length>=s.teamSize||BigInt(p.budget)<cost)throw Error("Attribution invalide.");
    p.budget=(BigInt(p.budget)-cost).toString();
-   p.roster.push(a.charId);p.purchases[a.charId]=a.highBid;a.outcome="sold";
+   p.roster.push(a.charId);p.purchases[a.charId]=cost.toString();a.outcome="sold";
  } else a.outcome="unsold";
  a.turnId=null;
 }
@@ -98,7 +138,7 @@ function prepareWar(s:any){
  }
  return true;
 }
-function next(s:any){
+function legacyNext(s:any){
  if(isComplete(s)||s.drawIndex>=s.drawPile.length){s.status="finished";s.auction=null;return;}
  s.round++;
  if(!s.event.used&&s.round>=s.event.eventRound){
@@ -122,6 +162,7 @@ function checkActor(s:any,seat:number){
  const a=s.auction;
  if(s.status!=="playing"||!a||a.outcome!==null)throw Error("Aucune enchère active.");
  if(s.event.awaitingRolls)throw Error("Terminez les lancers de dés.");
+ if(s.event.schedule&&s.event.active&&s.event.active.stage!=="auction")throw Error("Valide l’événement avant l’enchère.");
  if(a.turnId!==seat)throw Error("Ce n'est pas ton tour.");
  return a;
 }
@@ -152,11 +193,12 @@ function takeAction(s:any,seat:number,action:string,payload:any){
  const a=checkActor(s,seat);
  if(action==="bid"){
    const v=amount(payload.amount);
-   if(v<minBid(s,a)||!canBid(s,p,v))throw Error("Montant insuffisant ou budget dépassé.");
+   if(v<minBid(s,a)||!canBid(s,p,taxed(s)?v*2n:v))throw Error("Montant insuffisant ou budget dépassé.");
    a.highBid=v.toString();a.leader=seat;
    a.turnId=nextBidder(s,seat);if(a.turnId===null)settle(s);return;
  }
  if(action==="pass"){
+   if(taxed(s))throw Error("Rêverie : impossible de passer pendant l’enchère royale.");
    if(a.leader===null){
      if(p.passesUsed>=5)throw Error("Tu as utilisé tes 5 refus avant enchère.");
      p.passesUsed++;
@@ -165,6 +207,7 @@ function takeAction(s:any,seat:number,action:string,payload:any){
    if(a.turnId===null)settle(s);return;
  }
  if(action==="haki"){
+   if(taxed(s))throw Error("Haki des Rois interdit durant la Rêverie.");
    if(p.hakiUsed||a.firstTurnId!==seat||a.leader!==null||a.highBid!=="0"||a.passed.length>0)
       throw Error("Haki des Rois indisponible.");
    p.hakiUsed=true;p.roster.push(a.charId);p.purchases[a.charId]="0";
@@ -174,7 +217,7 @@ function takeAction(s:any,seat:number,action:string,payload:any){
    if(p.observationUsed)throw Error("Haki de l'Observation déjà utilisé.");
    p.observationUsed=true;
    p.observationPeek=s.drawPile.slice(s.drawIndex,s.drawIndex+3).map((id:string,pos:number)=>({
-     id:(!s.event.mysteryUsed&&s.round+pos+1===s.event.mysteryRound)?null:id,
+     id:(s.event.schedule?s.event.schedule.some((e:any)=>e.type==="mystery"&&e.round===s.round+pos+1):!s.event.mysteryUsed&&s.round+pos+1===s.event.mysteryRound)?null:id,
      tier:rank(power(s,id))}));
    return;
  }
@@ -231,6 +274,7 @@ Deno.serve(async(req:Request)=>{
      const hostToken=token(),roomCode=code();
      const eventType=rand(1)[0]%2===0?"war":"marine";
      const schedule=scheduleSurprises(maxPlayers,teamSize,eventType);
+     const plan=sevenSchedule(maxPlayers,teamSize);
      const baseBid=starting>=1000n?starting/50n:20n;
      const bidStep=starting>=1000n?starting/100n:10n;
      const doc={status:"lobby",channelSecret:token(),maxPlayers,extraTokenHashes:[],players:[{id:0,name,budget:starting.toString(),roster:[],passesUsed:0,hakiUsed:false,
@@ -238,6 +282,7 @@ Deno.serve(async(req:Request)=>{
        teamSize,initialBudget:starting.toString(),baseBid:baseBid.toString(),bidStep:bidStep.toString(),
        catalog:byId,drawPile:shuffle(available.map((c:any)=>c.id)),drawIndex:0,round:0,auction:null,
        event:{type:schedule.type,eventRound:schedule.eventRound,mysteryRound:schedule.mysteryRound,
+         schedule:plan,active:null,
          mysteryUsed:false,used:false,activatedRound:null,
          warRounds:[],awaitingRolls:false,rolls:[],rollIndex:0}};
      const {data,error}=await db.from("op_mercato_rooms").insert({code:roomCode,host_token_hash:await hash(hostToken),doc}).select("id,code,version").single();
@@ -287,7 +332,7 @@ Deno.serve(async(req:Request)=>{
      await ensureAffiliations(room.doc);
      return json({room:snapshot(room.doc,seat,room.version,room)});
    }
-   const allowed=["start","bid","pass","haki","observation","armament","next","roll","finish"];
+   const allowed=["start","bid","pass","haki","observation","armament","next","roll","finish","event-ready","event-pick","event-eliminate","coin"];
    if(!allowed.includes(arg.action))throw Error("Action inconnue.");
    const doc=structuredClone(room.doc);
    await ensureAffiliations(doc);
