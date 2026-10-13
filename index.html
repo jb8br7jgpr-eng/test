@@ -137,6 +137,7 @@
   <main id="app" class="shell" aria-live="polite"></main>
   <div id="modal" class="modal hidden" role="dialog" aria-modal="true"></div>
   <div id="toast" class="toast hidden" role="status"></div>
+  <script src="./characters-data.js"></script>
   <script>
   'use strict';
   // Classement ludique et subjectif, entièrement modifiable ci-dessous.
@@ -170,7 +171,7 @@
     ['helmeppo','Hermep',27], ['jango','Jango',24], ['cabaji','Cabaji',21], ['mohji','Morge',20],
     ['spandam','Spandam',17], ['pearl','Pearl',16], ['higuma','Higuma',14],
     ['fullbody','Fullbody',12], ['charlos','Saint Charlos',6]
-  ].map(([id,name,power])=>({id,name,power}));
+  ].map(([id,name,power])=>({id,name,power})).concat(window.MERCATO_EXPANSION?.characters || []);
   const CARDS = Object.fromEntries(CHARACTERS.map(c=>[c.id,c]));
   const MAX_PLAYERS=6, MIN_PLAYERS=2, TEAM_SIZE=5, OPEN_BID=20, BID_STEP=10, STORE_KEY='mercato-pirates-v1';
   const TIERS = [
@@ -319,5 +320,6 @@
   }
   render();
   </script>
+  <script src="./mercato-upgrade.js"></script>
 </body>
 </html>
