@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/opmercato-browser-test.yml'
       - 'mercato-online.js'
+      - 'mercato-features.js'
       - 'index.html'
 jobs:
   two-phones:
@@ -79,7 +80,7 @@ jobs:
             await host.locator('[data-online="rules"]').click();
             if(!await host.locator('.modal-content').getByText('Regles du mercato').count())throw Error("Online rules inaccessible");
             await host.locator('.modal-content [data-action="close-modal"]').click();
-            // The local rules trigger the Marine bonus in round 1 for two pirates / three recruits.
+            // Accept surprises scheduled for different rounds. Their timing is no longer fixed.
             const diceVisible=await host.locator('[data-online="roll"]').count();
             if(diceVisible){
               await host.locator('[data-online="roll"]').click();
@@ -95,9 +96,38 @@ jobs:
             await host.locator('[data-online="next"]').click();
             await host.locator('.online-round').getByText("ENCHÈRE N° 2").waitFor({timeout:30000});
             await guest.locator('.online-round').getByText("ENCHÈRE N° 2").waitFor({timeout:30000});
-            if(!await host.locator('.online-rank').count())throw Error("Mystery round 2 not visible");
-            if(!await guest.locator('.online-rank').count())throw Error("Guest mystery round 2 not visible");
+            const hostMystery=await host.locator('.online-rank').count();
+            const guestMystery=await guest.locator('.online-rank').count();
+            if(Boolean(hostMystery)!==Boolean(guestMystery))
+              throw Error("Mystery identity isn't synchronized between phones");
+            if(hostMystery&&(!await host.locator('.online-mystery').count()||!await guest.locator('.online-mystery').count()))
+              throw Error("Mystery picture was disclosed on an active auction");
+            // Validate the same random scheduling in the local implementation.
+            const localContext=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+            const local=await localContext.newPage();
+            listen(local,"local");
+            const specialRounds=new Set(),secretRounds=new Set();
+            for(let i=0;i<8;i++){
+              await local.goto(home+"&local-sample="+i,{waitUntil:"domcontentloaded",timeout:30000});
+              await local.locator('#team-size').fill("5");
+              await local.locator('[data-action="start"]').click();
+              const plan=await local.evaluate(()=>{
+                const state=JSON.parse(localStorage.getItem('mercato-pirates-v1'));
+                if(!state?.featureConfig)throw Error("Local surprises missing");
+                return state.featureConfig;
+              });
+              if(plan.eventRound===plan.mysteryRound||
+                plan.eventType==='war'&&plan.mysteryRound===plan.eventRound+1)
+                throw Error("Local event and mystery overlapped");
+              if(plan.eventRound<2||plan.mysteryRound<2)
+                throw Error("Local events should be scattered after the opening turn");
+              specialRounds.add(plan.eventRound);secretRounds.add(plan.mysteryRound);
+              await local.evaluate(()=>localStorage.removeItem('mercato-pirates-v1'));
+            }
+            await localContext.close();
+            if(specialRounds.size<2||secretRounds.size<2)
+              throw Error("Local event scheduling is deterministic");
             if(errors.length)throw Error("Browser script errors: "+errors.slice(0,3).join("; "));
-            console.log("PASS two phones: create, join, realtime, mystery, haki, next event.");
+            console.log("PASS: two phones, images, Haki, synchronized mysteries, varied local event and mystery schedules.");
           } finally {await browser.close();}
           JS
