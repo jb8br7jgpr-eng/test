@@ -7,7 +7,7 @@
   const escOnline=x=>String(x??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
   const berrys=x=>{try{return BigInt(String(x??0)).toLocaleString("fr-FR")+" ฿";}catch{return "0 ฿";}};
   let session=null,view=null,showing=false,loading=false,channel=null,poll=null,topic="",onlineDetailId=null;
-  let mode="choose",client=null,busy=false,loaded=false,copyMessage="",peekOpen=false;
+  let mode="choose",client=null,busy=false,loaded=false,copyMessage="",peekOpen=false,fx=null;
   const root=document.createElement("section");root.id="opmercato-online";
   root.style.display="none";document.body.appendChild(root);
   try{const stored=JSON.parse(localStorage.getItem(KEY)||"null");if(stored?.roomId&&stored?.token)session=stored;}catch{}
@@ -78,6 +78,12 @@
       const res=await call(action,args);
       apply(res,true);
       if(action==="observation")peekOpen=true;
+      if(["roll","coin"].includes(action)){
+        const e=res.room?.event?.active;
+        const outcome=action==="roll"?res.room?.event?.rolls?.find(x=>x.id===res.room.yourSeat):
+          e?.flips?.find(x=>x.id===res.room.yourSeat);
+        if(outcome){fx={type:action,outcome};paint();setTimeout(()=>{fx=null;if(showing)paint();},1600);}
+      }
       copyMessage="";
       paint();
     }catch(e){
@@ -149,8 +155,70 @@
     if(!c)return '<div class="online-mystery">Personnage inconnu</div>';
     return charCard(c);
   }
+
+  const EVENT_INFO={
+    war:["⚔️","GUERRE AU SOMMET","Deux légendes de rang S surgissent consécutivement !"],
+    marine:["🎲","PRIME DE LA MARINE","Chaque pirate lance son dé pour gagner des Berrys."],
+    mystery:["❔","PERSONNAGE MYSTÈRE","Seul le rang du prochain personnage est visible."],
+    black:["🏴‍☠️","MARCHÉ NOIR","Trois personnages révélés. Deux seront renvoyés dans la pioche."],
+    god:["💥","INCIDENT DE GOD VALLEY","Chaque pirate peut supprimer une recrue adverse."],
+    smile:["🍎","SMILE","Le personnage le plus faible risque +25 ou −25 points."],
+    reverie:["👑","LA RÊVERIE","Taxe royale : mise finale ×2, aucun refus, Haki des Rois interdit."]
+  };
+  function specialPanel(){
+    const e=view.event.active,info=EVENT_INFO[e.type]||["✨","ÉVÉNEMENT SPÉCIAL",""];
+    const mine=view.yourSeat,player=view.players[mine],myReady=e.ready?.includes(mine);
+    let content="";
+    if(e.stage==="intro"){
+      content='<p class="v2-description">'+escOnline(info[2])+'</p>'+
+        button("event-ready",myReady?"✓ En attente des autres pirates…":"Continuer →","primary",myReady)+
+        '<p class="online-hint">'+(e.ready?.length||0)+'/'+view.players.length+' confirmations</p>';
+    }else if(e.stage==="result"){
+      const items=e.type==="marine"?(view.event.rolls||[]).map(x=>{
+        const p=view.players[x.id];return '<p>'+label(p)+' : 🎲 '+x.roll+' → +'+x.percent+' % ('+berrys(x.amount)+')</p>';
+      }):e.flips.map(x=>{
+        const p=view.players[x.id];return '<p>'+label(p)+' : '+escOnline(CARDS[x.charId]?.name||x.charId)+
+          ' — '+(x.pile?"Pile +25":"Face −25")+' · '+x.before+' → '+x.after+' pts</p>';
+      });
+      content='<div class="v2-results">'+items.join("")+'</div>'+
+        button("event-ready",myReady?"✓ En attente des autres pirates…":"Continuer →","primary",myReady);
+    }else if(e.stage==="roll"){
+      const owner=view.players[e.step],myTurn=e.step===mine;
+      content='<p>🎲 '+(myTurn?"À toi de lancer le dé !":"Au tour de "+label(owner))+'</p>'+
+        '<div class="v2-animated-object">🎲</div>'+
+        button("roll","🎲 Lancer le dé","primary",!myTurn)+
+        '<div class="v2-results">'+(view.event.rolls||[]).map(x=>'<p>'+label(view.players[x.id])+' : '+x.roll+' → +'+x.percent+' %</p>').join("")+'</div>';
+    }else if(e.stage==="coin"){
+      const flipped=e.flips.some(x=>x.id===mine);
+      content='<p>Chaque joueur lance sa pièce indépendamment.</p>'+
+        '<div class="v2-animated-object">🪙</div>'+
+        button("coin",flipped?"✓ Pièce lancée — en attente…":"🪙 Lancer ma pièce","primary",flipped)+
+        '<p class="online-hint">'+e.flips.length+'/'+view.players.length+' pièces lancées</p>';
+    }else if(e.stage==="select"){
+      const first=view.auction.firstTurnId??0,actor=(first+e.step)%view.players.length;
+      const canChoose=actor===mine;
+      content='<p>'+(canChoose?"Choisis un personnage à éliminer.":"Au tour de "+label(view.players[actor])+" de retirer un personnage.")+'</p>'+
+        '<div class="v2-choice-grid">'+e.choices.filter(id=>!e.removed.includes(id)).map(id=>
+          '<div class="v2-choice"><b>'+escOnline(CARDS[id]?.name||id)+'</b><span>'+Number(CARDS[id]?.power||0)+' pts</span>'+
+          button("pick-"+id,"❌ Éliminer","btn-ghost",!canChoose)+'</div>').join("")+'</div>'+
+        '<p class="online-hint">Les deux personnages retirés retourneront dans la pioche.</p>';
+    }else if(e.stage==="eliminate"){
+      const first=view.auction.firstTurnId??0,actor=(first+e.step)%view.players.length,target=(actor+1)%view.players.length;
+      const canChoose=actor===mine,opponent=view.players[target];
+      content='<p>'+(canChoose?"Choisis une recrue à supprimer chez "+label(opponent)+".":"Au tour de "+label(view.players[actor])+" d'affronter "+label(opponent)+".")+'</p>'+
+        '<div class="v2-choice-grid">'+opponent.roster.map(id=>
+          '<div class="v2-choice"><b>'+escOnline(CARDS[id]?.name||id)+'</b>'+
+          '<span>'+Number(CARDS[id]?.power||0)+' pts</span>'+
+          button("delete-"+id,"💥 Éliminer","btn-ghost",!canChoose)+'</div>').join("")+'</div>'+
+        (canChoose?button("event-skip","Épargner cet équipage","online-text"):"")+
+        '<p class="online-hint">Les recrues éliminées sont définitivement exclues, mais les places se libèrent.</p>';
+    }
+    return '<div class="v2-special v2-'+e.type+'"><div class="v2-tag">✦ ÉVÉNEMENT SPÉCIAL ✦</div>'+
+      '<div class="v2-symbol">'+info[0]+'</div><h2>'+info[1]+'</h2>'+content+'</div>';
+  }
   function eventBox(){
     const e=view.event||{};
+    if(e.active?.stage==="auction")return '<div class="online-event">✦ '+escOnline(EVENT_INFO[e.active.type]?.[1]||"Événement")+' ✦</div>';
     if(e.awaitingRolls||e.activatedRound===view.round&&e.used){
       if(e.type==="marine")return '<div class="online-event">🎲 PRIME DE LA MARINE : '+(e.rolls||[]).map(r=>{
         const p=view.players.find(p=>p.id===r.id);return label(p)+' : '+r.roll+' → +'+r.percent+' % ('+berrys(r.amount)+')';
@@ -163,12 +231,14 @@
   function auction(){
     const a=view.auction;const me=view.players[view.yourSeat];
     if(!a)return "";
+    if(view.event?.active&&view.event.active.stage!=="auction")return specialPanel();
     const active=a.outcome===null,turn=a.turnId===view.yourSeat;
     const bidder=view.players[a.turnId];
     const leader=a.leader!==null?view.players[a.leader]:null;
     const minimum=BigInt(a.highBid)>0n?BigInt(a.highBid)+BigInt(view.bidStep):BigInt(view.baseBid);
-    const canAfford=BigInt(me.budget)>=minimum&&me.roster.length<view.teamSize;
-    const canHaki=turn&&!me.hakiUsed&&a.firstTurnId===me.id&&a.leader===null&&a.highBid==="0"&&a.passed.length===0;
+    const royal=view.event?.active?.type==="reverie";
+    const canAfford=BigInt(me.budget)>=minimum*(royal?2n:1n)&&me.roster.length<view.teamSize;
+    const canHaki=!royal&&turn&&!me.hakiUsed&&a.firstTurnId===me.id&&a.leader===null&&a.highBid==="0"&&a.passed.length===0;
     const roll=view.event.awaitingRolls;
     let actionHtml="";
     if(roll){
@@ -185,7 +255,7 @@
     }else{
       const offerChoices=[0n,1n,5n,10n].map((factor)=>{
         const val=minimum+factor*BigInt(view.bidStep);
-        return button("bid-"+val.toString(),berrys(val), "online-offer",!turn||!canAfford||val>BigInt(me.budget));
+        return button("bid-"+val.toString(),berrys(val), "online-offer",!turn||!canAfford||val*(royal?2n:1n)>BigInt(me.budget));
       }).join("");
       actionHtml='<div class="online-turn"><span>AU TOUR DE</span><b>'+label(bidder)+'</b>'+
         (!turn?'<small>Patiente, l’autre pirate réfléchit !</small>':'<small>C’est à toi de jouer !</small>')+'</div>'+
@@ -195,8 +265,9 @@
         '<div class="online-custom"><input id="online-custom-amount" type="text" inputmode="numeric" placeholder="Autre montant en Berrys" '+(!turn?'disabled':'')+'>'+
         button("custom-bid","Enchérir","btn-ghost",!turn)+'</div>'+
         (canHaki?button("haki","👑 Haki des Rois — recruter gratuitement"): "")+
+        (royal?'<div class="online-event">👑 Taxe royale ×2 : refus interdit, Haki des Rois désactivé.</div>':"")+
         button("pass",a.leader!==null?"Se retirer (gratuit)":"Refuser ce personnage · "+(5-me.passesUsed)+"/5 restants",
-          "online-pass",!turn||(a.leader===null&&me.passesUsed>=5))+
+          "online-pass",royal||!turn||(a.leader===null&&me.passesUsed>=5))+
         '<div class="online-powers">'+
         button("observation",me.observationUsed?'👁 Revoir mes visions':'👁 Observation', "btn-ghost",!turn&&!me.observationUsed)+
         button("armament",me.armamentUsed?'🛡 Déjà utilisé':'🛡 Armement +5',"btn-ghost",!turn||me.armamentUsed||me.roster.length===0)+'</div>'+
@@ -264,7 +335,8 @@
       'Haki de l’Observation : consulter secretement les trois prochaines cartes une fois par joueur.',
       'Haki de l’Armement : renforcer une de tes recrues de <b>+5 points</b>, une fois par joueur.',
       'Synergies par affiliation : 1 personnage = 0 point ; 2 = +10 ; 3 = +20 ; 4 = +30 ; 5 ou plus = +50. Les bonus de plusieurs affiliations se cumulent. Les anciens trios spéciaux ne comptent plus.',
-      'Une enchere mystere survient a un tour aleatoire distinct de la Prime de la Marine ou de la Guerre au sommet. Seule la classe est visible avant la revelation.',
+      '7 evenements independants : Guerre au sommet, Prime de la Marine, Personnage mystere, Marche noir, God Valley, SMILE et Reverie.',
+      '1 evenement pour 1 a 5 recrues, 2 pour 6 a 10, 3 pour 11 a 30. Les joueurs confirment chaque annonce avec Continuer.',
       'Un evenement se declenche : Guerre au Sommet (deux classes S) ou Prime de la Marine (de 5 % a 30 % du budget initial).',
       'Le score total additionne les puissances des recrues, les synergies et le Haki de l’Armement. Le budget restant departage une egalite de points.',
       'Les personnages ne peuvent etre recrutes qu’une seule fois dans chaque partie.'
@@ -281,7 +353,9 @@
       '<div class="online-nav">'+button("catalog","📚 Catalogue ("+CHARACTERS.length+" personnages)","btn-ghost")+button("rules","📖 Règles","btn-ghost")+'</div>'+
       (view.status==="finished"?scoreboardEnd():auction())+gameScore()+
       (view.host&&view.status==="playing"?button("finish","Terminer cette partie","online-text"):"");
-    shell(main+(view?'<div class="online-back">'+button("leave-online","Quitter ce salon et créer une nouvelle partie","online-text")+'</div>':"")+(onlineDetailId?detail(onlineDetailId):""));
+    shell(main+(fx?'<div class="v2-fx"><div class="v2-fx-icon">'+(fx.type==="roll"?"🎲":"🪙")+'</div><strong>'+
+      (fx.type==="roll"?"Dé : "+fx.outcome.roll+" · +"+fx.outcome.percent+" %":fx.outcome.pile?"PILE · +25":"FACE · −25")+
+      '</strong></div>':"")+(view?'<div class="online-back">'+button("leave-online","Quitter ce salon et créer une nouvelle partie","online-text")+'</div>':"")+(onlineDetailId?detail(onlineDetailId):""));
   }
   // Les portraits sont charges par OPMERCATO_SHARED.refreshImages (mode local).
   const originalRender=render;
@@ -334,6 +408,11 @@
         '<div class="online-peek"><h3>🛡 Renforcer un personnage (+5 pts)</h3>'+p.roster.map(id=>button("arm-"+id,escOnline(CARDS[id]?.name||id),"btn-ghost")).join("")+'</div>');
       return;
     }
+    if(a==="event-ready"){await action("event-ready");return;}
+    if(a==="coin"){await action("coin");return;}
+    if(a==="event-skip"){await action("event-eliminate",{charId:""});return;}
+    if(a.startsWith("pick-")){await action("event-pick",{charId:a.slice(5)});return;}
+    if(a.startsWith("delete-")){await action("event-eliminate",{charId:a.slice(7)});return;}
     if(a==="custom-bid"){const val=root.querySelector("#online-custom-amount")?.value.replace(/[\s._]/g,"");await action("bid",{amount:val});return;}
     if(a.startsWith("bid-")){await action("bid",{amount:a.slice(4)});return;}
     if(a.startsWith("arm-")){await action("armament",{charId:a.slice(4)});return;}
@@ -342,6 +421,25 @@
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&showing)refresh();});
   const css=document.createElement("style");
   css.textContent=`
+    .v2-special{margin:14px 0;border:2px solid #c8a369;background:radial-gradient(circle at 50% 10%,#344d60,#102332 75%);border-radius:23px;padding:28px 16px;color:#fff4d4;text-align:center;box-shadow:0 10px 32px #0008}
+    .v2-war,.v2-god{border-color:#df685a;background:linear-gradient(130deg,#4b242a,#101c2c)}
+    .v2-black,.v2-mystery{border-color:#a993e0;background:linear-gradient(130deg,#362448,#132332)}
+    .v2-smile{border-color:#f1c762;background:linear-gradient(130deg,#5a392a,#172632)}
+    .v2-tag{font-size:11px;letter-spacing:.16em;color:#f9ca77;font-weight:800}
+    .v2-symbol{font-size:68px;margin:18px 0 8px;animation:v2Entrance .7s both}
+    .v2-special h2{font-size:25px;letter-spacing:.05em;color:#f9d58a;margin:8px 0 24px}
+    .v2-description{font-size:15px;margin:12px 0 24px}
+    .v2-special button.primary{margin:20px auto 5px;max-width:350px}
+    .v2-choice-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px;margin:18px 0}
+    .v2-choice{display:grid;gap:8px;align-content:space-between;padding:12px 7px;border:1px solid #9f855a;border-radius:13px;background:#203447;color:#fff}
+    .v2-choice b{font-size:13px;overflow-wrap:anywhere}.v2-choice span{font-size:12px}
+    .v2-choice button{min-height:42px}.v2-results{color:#f7d58b;font-size:14px;margin:20px 0}
+    .v2-animated-object{font-size:92px;animation:v2Entrance .9s infinite alternate;display:block}
+    .v2-fx{position:fixed;z-index:2500;inset:0;background:#081525e6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:25px;color:#fce9b1;text-align:center;font-size:24px}
+    .v2-fx-icon{font-size:130px;animation:v2Spin .26s linear infinite alternate}
+    @keyframes v2Spin{to{transform:rotateY(180deg) rotateZ(40deg) scale(1.2)}}
+    @keyframes v2Entrance{from{transform:scale(.85) rotate(-8deg);opacity:.5}to{transform:scale(1) rotate(8deg);opacity:1}}
+
     .online-open #modal{z-index:1600}
     .online-nav{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
     .online-nav .btn-ghost{color:#ffdf98;border-color:#a17f4b;font-size:12px}
