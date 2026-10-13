@@ -12,7 +12,7 @@
     'Reverse Mountain':'vivi',
     'Little Garden':'mr3 galdino',
     'Drum':'chopper wapol',
-    'Alabasta':'ace crocodile bonclay mr1 hina cobra pell chaka koza karoo',
+    'Alabasta':'ace crocodile bonclay mr1 daz-bones hina cobra pell chaka koza karoo',
     'Whisky Peak':'robin',
     'Jaya':'teach bellamy cricket burgess vanaugur lafitte docq doflamingo whitebeard-jr',
     'Skypiea':'enel ganfall wyper nolande kalgara conis ohm satori gedatsu shura',
@@ -21,7 +21,7 @@
     'Enies Lobby':'spandam kalifa blueno jabra kumadori fukuro spandine',
     'Post-Enies Lobby':'prime-garp coby helmeppo2',
     'Thriller Bark':'brook kuma moria perona absalom hogback ryuma',
-    'Sabaody':'law kid killer urouge bege hawkins apoo drake rayleigh kizaru bepo jeanbart penguin shachi sentomaru charlos',
+    'Sabaody':'law kid killer urouge bege hawkins apoo drake rayleigh kizaru bepo jeanbart penguin shachi heat wire sentomaru charlos',
     'Amazon Lily':'hancock',
     'Impel Down':'magellan ivankov shiryu',
     'Marineford':'akainu sengoku marco vista jozu izou thatch rakuyo whiteybay shiki tsuru onigumo momonga doberman',
@@ -39,6 +39,7 @@
     'Île des Hommes-Poissons / Egghead':'kuma',
     'Siècle oublié':'joyboy',
     'Hachinosu':'catarina vasco pizarro sanjuan stronger',
+    'Après Dressrosa':'bakkin',
     'Zou / Wano':'whoswho',
     'Egghead / Marine':'s-hawk',
     'Thriller Bark / Cross Guild':'mr1'
@@ -55,7 +56,7 @@
     'kong':'Post-Marineford','bogard':'Post-Enies Lobby',
     'joyboy':'Wano / Egghead','catarina':'Impel Down','vasco':'Impel Down',
     'pizarro':'Impel Down','sanjuan':'Marineford','stronger':'Jaya',
-    'rocks':'Wano','whitebeard-jr':'Après Dressrosa','prime-wb':'Jaya',
+    'rocks':'Wano','whitebeard-jr':'Après Dressrosa','prime-wb':'Jaya','coby':'Romance Dawn',
     'smoker':'Loguetown','bigmom':'Île des Hommes-Poissons',
     'ryokugyu':'Rêverie / Wano','oden':'Wano'
   });
