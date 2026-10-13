@@ -46,7 +46,7 @@ jobs:
             await host.locator('[data-online="open"]').click();
             await host.locator('[data-online="create-form"]').click();
             await host.locator('#online-name').fill("Capitaine Test");
-            await host.locator('#online-team').fill("3");
+            await host.locator('#online-team').fill("5");
             await host.locator('[data-online="create-go"]').click();
             try { await host.locator('.online-code').waitFor({timeout:16000}); }
             catch(e) {
