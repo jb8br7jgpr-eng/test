@@ -66,6 +66,19 @@ jobs:
             await host.locator('[data-online="start"]').click();
             await Promise.all([host.locator(".online-round").waitFor({timeout:30000}),
               guest.locator(".online-round").waitFor({timeout:30000})]);
+            // Real local-vs-online parity: same catalogue, personalized art, and detail modal.
+            await host.locator('[data-online="catalog"]').click();
+            await host.locator('#catalog-search').fill('Joy Boy');
+            const art=host.locator('#catalog-results img[data-portrait-id="joyboy"]').first();
+            await art.waitFor({timeout:10000});
+            await host.waitForFunction(()=>{const x=document.querySelector('#catalog-results img[data-portrait-id="joyboy"]');return x&&x.complete&&x.naturalWidth>0&&x.classList.contains('loaded');},null,{timeout:10000});
+            await host.locator('#catalog-results [data-action="details"]').first().click();
+            await host.locator('.detail-modal img[data-portrait-id="joyboy"]').waitFor({timeout:10000});
+            await host.waitForFunction(()=>document.querySelector('.detail-modal img[data-portrait-id="joyboy"]')?.naturalWidth>0,null,{timeout:10000});
+            await host.locator('.detail-modal [data-action="close-modal"]').click();
+            await host.locator('[data-online="rules"]').click();
+            if(!await host.locator('.modal-content').getByText('Regles du mercato').count())throw Error("Online rules inaccessible");
+            await host.locator('.modal-content [data-action="close-modal"]').click();
             if(!await host.locator('.online-rank').count())throw Error("Mystery first round not visible");
             const turn=(await host.locator(".online-turn b").first().innerText()).trim();
             const first=turn==="Capitaine Test"?host:guest,other=turn==="Capitaine Test"?guest:host;
