@@ -22,7 +22,7 @@ jobs:
           from pathlib import Path
           img = Image.open("opmercato-logo.jpg").convert("RGBA")
           # The compass is the emblem at the left side of OPMercato's landscape logo.
-          crop = img.crop((15, 180, 510, 795))
+          crop = img.crop((10, 180, 438, 785))
           px = crop.load()
           for y in range(crop.height):
               for x in range(crop.width):
