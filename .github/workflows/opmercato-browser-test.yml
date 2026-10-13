@@ -106,6 +106,14 @@ jobs:
             await host.locator(".online-winner").waitFor({timeout:30000});
             await guest.locator(".online-winner").waitFor({timeout:30000});
             if(await other.locator('[data-online="haki"]').count())throw Error("Haki still active on other phone");
+            // Une recrue à moins de 55 propose le Haki de l'Armement
+            // au gagnant et bloque la suite tant qu'il n'a pas répondu.
+            if(await first.locator('[data-online="armament-skip"]').count()){
+              if(await host.locator('[data-online="next"]').isEnabled())
+                throw Error("The next round should wait for Armament decision");
+              await first.locator('[data-online="armament-skip"]').click();
+              await host.locator('[data-online="next"]').waitFor({state:'visible'});
+            }
             await host.locator('[data-online="next"]').click();
             // Si un événement est annoncé, les deux joueurs doivent le valider.
             if(await host.locator('.v2-special').count()){
