@@ -248,7 +248,7 @@
     const owned=winners?.roster||[];
     const championSquad='<div class="champion-roster">'+owned.map(id=>{
       const c=CARDS[id];if(!c)return '';
-      return '<button data-action="details" data-char-id="'+esc(id)+'" class="champion-portrait">'+portraitMarkup(id,'portrait-medium')+'<span>'+esc(c.name)+'</span></button>';
+      return '<button data-action="details" data-char-id="'+esc(id)+'" class="champion-portrait"><div class="portrait portrait-medium"><span class="portrait-fallback">☠️</span><img class="portrait-photo" data-portrait-id="'+esc(id)+'" alt="" loading="lazy" /></div><span>'+esc(c.name)+'</span></button>';
     }).join('')+'</div>';
     html=html.replace('<div class="win-score">',championSquad+'<div class="win-score">');
     html=html.replace('<div class="ranking">',victory+'<div class="ranking">');
