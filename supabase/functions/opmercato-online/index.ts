@@ -76,23 +76,26 @@ function sevenSchedule(players:number,teamSize:number){
  return plan.sort((a,b)=>a.round-b.round);
 }
 const effectivePower=(s:any,p:any,id:string)=>p.smileModifiers?.[id]===undefined?power(s,id):Math.max(0,Math.min(100,power(s,id)+p.smileModifiers[id]));
+const armamentBonus=(p:any)=>p.armamentId&&p.roster.includes(p.armamentId)?Number(p.armamentBonus??5):0;
+const pendingArmament=(s:any)=>{const a=s.auction;return s.status==="playing"&&a?.outcome==="sold"&&a.leader!==null&&
+ !!s.players[a.leader]&&!s.players[a.leader].armamentUsed&&!a.armamentChoice&&power(s,a.charId)<55;};
 const taxed=(s:any)=>s.event?.active?.type==="reverie";
 const scheduledAt=(s:any,n:number)=>s.event?.schedule?.find((e:any)=>e.round===n);
 function eventReady(s:any,seat:number){
  const e=s.event.active;
- if(!e||!["intro","result"].includes(e.stage)||e.ready.includes(seat))throw Error("Validation indisponible.");
+ if(!e||!["intro","result","god-result"].includes(e.stage)||e.ready.includes(seat))throw Error("Validation indisponible.");
  e.ready.push(seat);
  if(e.ready.length<s.players.length)return;
  e.ready=[];
- if(e.stage==="result"){e.stage="auction";return;}
+ if(e.stage==="result"||e.stage==="god-result"){e.stage="auction";return;}
  e.stage=e.type==="marine"?"roll":e.type==="smile"?"coin":e.type==="black"?"select":e.type==="god"?"eliminate":"auction";
 }
 
 const score=(s:any,p:any)=>p.roster.reduce((n:number,id:string)=>n+effectivePower(s,p,id),0)+
-  (p.armamentId&&p.roster.includes(p.armamentId)?5:0)+
+  armamentBonus(p)+
   affiliationBonuses(s,p).reduce((n,b)=>n+b.points,0);
 const publicPlayer=(s:any,p:any)=>({id:p.id,name:p.name,budget:p.budget,roster:p.roster,passesUsed:p.passesUsed,
-  hakiUsed:p.hakiUsed,observationUsed:p.observationUsed,armamentUsed:p.armamentUsed,armamentId:p.armamentId||null,
+  hakiUsed:p.hakiUsed,observationUsed:p.observationUsed,armamentUsed:p.armamentUsed,armamentId:p.armamentId||null,armamentBonus:armamentBonus(p),
   smileModifiers:p.smileModifiers||{},
   marineAward:p.marineAward,marineRoll:p.marineRoll??null,purchases:p.purchases,score:score(s,p),
   bonuses:affiliationBonuses(s,p)});
@@ -249,7 +252,7 @@ function takeAction(s:any,seat:number,action:string,payload:any){
    if(id&&!target.roster.includes(id))throw Error("Ce personnage n'appartient pas à l'équipage adverse.");
    if(id){target.roster=target.roster.filter((x:string)=>x!==id);e.removed.push({from:target.id,id});}
    e.step++;
-   if(e.step===s.players.length)e.stage="auction";
+   if(e.step===s.players.length){e.stage="god-result";e.ready=[];}
    return;
  }
  if(action==="coin"){
@@ -289,9 +292,19 @@ function takeAction(s:any,seat:number,action:string,payload:any){
    return;
  }
  if(action==="next"){
+   if(pendingArmament(s))throw Error("Le gagnant doit choisir son Haki avant de continuer.");
    if(seat!==0)throw Error("Seul l'hôte peut passer au personnage suivant.");
    if(s.status!=="playing"||!s.auction||s.auction.outcome===null)throw Error("Attends le résultat de l'enchère.");
    next(s);return;
+ }
+ if(action==="armament"||action==="armament-skip"){
+   const a=s.auction;
+   if(!pendingArmament(s)||a.leader!==seat)throw Error("Haki de l’Armement indisponible.");
+   if(action==="armament"){
+     if(String(payload.charId||"")!==a.charId)throw Error("Cette recrue ne peut pas être renforcée.");
+     p.armamentUsed=true;p.armamentId=a.charId;p.armamentBonus=20;a.armamentChoice="used";
+   }else a.armamentChoice="skip";
+   return;
  }
  const a=checkActor(s,seat);
  if(action==="bid"){
@@ -323,11 +336,6 @@ function takeAction(s:any,seat:number,action:string,payload:any){
      id:(s.event.schedule?s.event.schedule.some((e:any)=>e.type==="mystery"&&e.round===s.round+pos+1):!s.event.mysteryUsed&&s.round+pos+1===s.event.mysteryRound)?null:id,
      tier:rank(power(s,id))}));
    return;
- }
- if(action==="armament"){
-   const id=String(payload.charId||"");
-   if(p.armamentUsed||!p.roster.includes(id))throw Error("Personnage non éligible.");
-   p.armamentUsed=true;p.armamentId=id;return;
  }
  throw Error("Action inconnue.");
 }
@@ -435,7 +443,7 @@ Deno.serve(async(req:Request)=>{
      await ensureAffiliations(room.doc);
      return json({room:snapshot(room.doc,seat,room.version,room)});
    }
-   const allowed=["start","bid","pass","haki","observation","armament","next","roll","finish","event-ready","event-pick","event-eliminate","coin"];
+   const allowed=["start","bid","pass","haki","observation","armament","armament-skip","next","roll","finish","event-ready","event-pick","event-eliminate","coin"];
    if(!allowed.includes(arg.action))throw Error("Action inconnue.");
    const doc=structuredClone(room.doc);
    await ensureAffiliations(doc);
