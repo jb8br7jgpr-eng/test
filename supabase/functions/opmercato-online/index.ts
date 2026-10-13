@@ -1,0 +1,245 @@
+import { createClient } from "npm:@supabase/supabase-js@2.57.4";
+
+const URL = Deno.env.get("SUPABASE_URL")!;
+const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const db = createClient(URL, SERVICE, { auth: { persistSession: false } });
+const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization,apikey,content-type,x-client-info", "Access-Control-Allow-Methods": "POST, OPTIONS" };
+const REPO_CATALOG = "https://raw.githubusercontent.com/jb8br7jgpr-eng/test/main/opmercato-catalog.json";
+const SYNERGIES = [
+  { name: "Trio monstrueux", ids: ["luffy","zoro","sanji"], points: 15 },
+  { name: "Légendes de Roger", ids: ["roger","rayleigh","gaban"], points: 20 },
+  { name: "Trois calamités", ids: ["kaido","king","queen"], points: 15 },
+  { name: "Frères de fraternité", ids: ["ace","sabo","luffy"], points: 20 },
+];
+const json = (v:unknown,status=200)=>new Response(JSON.stringify(v),{status,headers:{...CORS,"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"}});
+const fail = (message:string,status=400)=>json({error:message},status);
+const rand = (n:number)=>crypto.getRandomValues(new Uint8Array(n));
+const token = ()=>Array.from(rand(32),x=>x.toString(16).padStart(2,"0")).join("");
+const hash = async(text:string)=>Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(text))),x=>x.toString(16).padStart(2,"0")).join("");
+const code = ()=>Array.from(rand(8),x=>"ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[x%32]).join("");
+const amount=(v:unknown)=>{if(!/^\d{1,64}$/.test(String(v)))throw Error("Montant de Berrys invalide.");return BigInt(String(v));};
+const minBid=(s:any,a:any)=>BigInt(a.highBid)>0n?BigInt(a.highBid)+BigInt(s.bidStep):BigInt(s.baseBid);
+const canBid=(s:any,p:any,v:bigint)=>p&&p.roster.length<s.teamSize&&BigInt(p.budget)>=v;
+const hasHaki=(s:any,p:any)=>p&&!p.hakiUsed&&p.roster.length<s.teamSize;
+const power=(s:any,id:string)=>s.catalog[id]?.power??0;
+const rank=(n:number)=>n>=95?"S":n>=80?"A":n>=65?"B":n>=50?"C":n>=35?"D":n>=20?"E":"F";
+const shuffle=(xs:any[])=>{const a=[...xs];for(let i=a.length-1;i>0;i--){const j=rand(1)[0]%(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;};
+const score=(s:any,p:any)=>p.roster.reduce((n:number,id:string)=>n+power(s,id),0)+
+  (p.armamentId&&p.roster.includes(p.armamentId)?5:0)+
+  SYNERGIES.filter(b=>b.ids.every(x=>p.roster.includes(x))).reduce((n,b)=>n+b.points,0);
+const publicPlayer=(s:any,p:any)=>({id:p.id,name:p.name,budget:p.budget,roster:p.roster,passesUsed:p.passesUsed,
+  hakiUsed:p.hakiUsed,observationUsed:p.observationUsed,armamentUsed:p.armamentUsed,armamentId:p.armamentId||null,
+  marineAward:p.marineAward,marineRoll:p.marineRoll??null,purchases:p.purchases,score:score(s,p),
+  bonuses:SYNERGIES.filter(x=>x.ids.every(id=>p.roster.includes(id)))});
+function snapshot(s:any,seat:number,version:number,room:any){
+ const p=s.players[seat];const a=s.auction;
+ const secret=!!(a?.mystery&&a.outcome===null);
+ return {id:room.id,code:room.code,topic:"opmercato:"+room.id+":"+s.channelSecret,version,status:s.status,
+   yourSeat:seat,host:seat===0,teamSize:s.teamSize,initialBudget:s.initialBudget,baseBid:s.baseBid,bidStep:s.bidStep,
+   round:s.round,remaining:s.drawPile.length-s.drawIndex,event:s.event,
+   players:s.players.map(x=>publicPlayer(s,x)),
+   auction:a?{...a,charId:secret?null:a.charId,tier:rank(power(s,a.charId)),power:secret?null:power(s,a.charId)}:null,
+   peek:p?.observationPeek||[],phase:s.status};
+}
+function nextBidder(s:any,from:number){
+ const a=s.auction;const min=minBid(s,a);const first=a.leader===null&&a.highBid==="0"&&a.passed.length===0;
+ for(let i=1;i<=s.players.length;i++){
+   const p=s.players[(from+i)%s.players.length];
+   if(p.id===a.leader||a.passed.includes(p.id)||p.roster.length>=s.teamSize)continue;
+   if(canBid(s,p,min)||(first&&hasHaki(s,p)))return p.id;
+ }
+ return null;
+}
+function isComplete(s:any) {
+ return s.players.every((p:any)=>p.roster.length>=s.teamSize) ||
+ !s.players.some((p:any)=>canBid(s,p,BigInt(s.baseBid))||hasHaki(s,p));
+}
+function settle(s:any){
+ const a=s.auction;if(!a||a.outcome!==null)return;
+ if(a.leader!==null){
+   const p=s.players[a.leader],cost=BigInt(a.highBid);
+   if(p.roster.length>=s.teamSize||BigInt(p.budget)<cost)throw Error("Attribution invalide.");
+   p.budget=(BigInt(p.budget)-cost).toString();
+   p.roster.push(a.charId);p.purchases[a.charId]=a.highBid;a.outcome="sold";
+ } else a.outcome="unsold";
+ a.turnId=null;
+}
+function prepareWar(s:any){
+ for(let i=0;i<2;i++){
+   const j=s.drawIndex+i;
+   const k=s.drawPile.findIndex((id:string,pos:number)=>pos>=j&&rank(power(s,id))==="S");
+   if(k<0)return false;
+   [s.drawPile[j],s.drawPile[k]]=[s.drawPile[k],s.drawPile[j]];
+ }
+ return true;
+}
+function next(s:any){
+ if(isComplete(s)||s.drawIndex>=s.drawPile.length){s.status="finished";s.auction=null;return;}
+ s.round++;
+ if(!s.event.used&&s.round>=s.event.eventRound){
+   s.event.used=true;s.event.activatedRound=s.round;
+   if(s.event.type==="war"){
+     if(prepareWar(s))s.event.warRounds=[s.round,s.round+1];
+     else{s.event.type="marine";s.event.awaitingRolls=true;s.event.rollIndex=0;}
+   }else{s.event.awaitingRolls=true;s.event.rollIndex=0;}
+ }
+ const charId=s.drawPile[s.drawIndex++];
+ const mystery=!s.event.mysteryUsed&&s.round>=s.event.mysteryRound;
+ if(mystery)s.event.mysteryUsed=true;
+ s.auction={charId,highBid:"0",leader:null,passed:[],turnId:null,firstTurnId:null,
+   outcome:null,mystery,warGuaranteed:s.event.warRounds.includes(s.round),hakiWinner:null};
+ const from=(s.round-2+s.players.length)%s.players.length;
+ const first=nextBidder(s,from);
+ s.auction.turnId=first;s.auction.firstTurnId=first;
+ if(first===null){s.status="finished";s.auction=null;}
+}
+function checkActor(s:any,seat:number){
+ const a=s.auction;
+ if(s.status!=="playing"||!a||a.outcome!==null)throw Error("Aucune enchère active.");
+ if(s.event.awaitingRolls)throw Error("Terminez les lancers de dés.");
+ if(a.turnId!==seat)throw Error("Ce n'est pas ton tour.");
+ return a;
+}
+function takeAction(s:any,seat:number,action:string,payload:any){
+ const p=s.players[seat];
+ if(!p)throw Error("Joueur introuvable.");
+ if(action==="start"){
+   if(seat!==0||s.status!=="lobby"||s.players.length!==2)throw Error("Deux joueurs sont nécessaires pour lancer la partie.");
+   s.status="playing";next(s);return;
+ }
+ if(action==="finish"){if(seat!==0)throw Error("Seul l'hôte peut terminer la partie.");s.status="finished";s.auction=null;return;}
+ if(action==="roll"){
+   if(s.status!=="playing"||!s.event.awaitingRolls||s.event.rollIndex!==seat)throw Error("Ce n'est pas ton lancer.");
+   const roll=rand(1)[0]%6+1,percent=roll*5;
+   const prize=BigInt(s.initialBudget)*BigInt(percent)/100n;
+   p.budget=(BigInt(p.budget)+prize).toString();
+   p.marineAward=prize.toString();p.marineRoll=roll;
+   s.event.rolls.push({id:seat,roll,percent,amount:prize.toString()});
+   s.event.rollIndex++;
+   if(s.event.rollIndex>=s.players.length)s.event.awaitingRolls=false;
+   return;
+ }
+ if(action==="next"){
+   if(seat!==0)throw Error("Seul l'hôte peut passer au personnage suivant.");
+   if(s.status!=="playing"||!s.auction||s.auction.outcome===null)throw Error("Attends le résultat de l'enchère.");
+   next(s);return;
+ }
+ const a=checkActor(s,seat);
+ if(action==="bid"){
+   const v=amount(payload.amount);
+   if(v<minBid(s,a)||!canBid(s,p,v))throw Error("Montant insuffisant ou budget dépassé.");
+   a.highBid=v.toString();a.leader=seat;
+   a.turnId=nextBidder(s,seat);if(a.turnId===null)settle(s);return;
+ }
+ if(action==="pass"){
+   if(a.leader===null){
+     if(p.passesUsed>=5)throw Error("Tu as utilisé tes 5 refus avant enchère.");
+     p.passesUsed++;
+   }
+   a.passed.push(seat);a.turnId=nextBidder(s,seat);
+   if(a.turnId===null)settle(s);return;
+ }
+ if(action==="haki"){
+   if(p.hakiUsed||a.firstTurnId!==seat||a.leader!==null||a.highBid!=="0"||a.passed.length>0)
+      throw Error("Haki des Rois indisponible.");
+   p.hakiUsed=true;p.roster.push(a.charId);p.purchases[a.charId]="0";
+   a.leader=seat;a.hakiWinner=seat;a.highBid="0";a.outcome="sold";a.turnId=null;return;
+ }
+ if(action==="observation"){
+   if(p.observationUsed)throw Error("Haki de l'Observation déjà utilisé.");
+   p.observationUsed=true;
+   p.observationPeek=s.drawPile.slice(s.drawIndex,s.drawIndex+3).map((id:string,pos:number)=>({
+     id:(!s.event.mysteryUsed&&s.round+pos+1===s.event.mysteryRound)?null:id,
+     tier:rank(power(s,id))}));
+   return;
+ }
+ if(action==="armament"){
+   const id=String(payload.charId||"");
+   if(p.armamentUsed||!p.roster.includes(id))throw Error("Personnage non éligible.");
+   p.armamentUsed=true;p.armamentId=id;return;
+ }
+ throw Error("Action inconnue.");
+}
+async function notify(room:any,s:any,version:number){
+ try {
+   await fetch(URL+"/realtime/v1/api/broadcast",{method:"POST",headers:{"Content-Type":"application/json","apikey":SERVICE},
+     body:JSON.stringify({messages:[{topic:"opmercato:"+room.id+":"+s.channelSecret,event:"changed",payload:{version}}]})});
+ } catch(e){console.log("broadcast fallback polling",String(e));}
+}
+let cached:{characters:any[]}|null=null;
+async function catalog(){
+ if(cached)return cached;
+ const res=await fetch(REPO_CATALOG,{headers:{"Accept":"application/json"}});
+ if(!res.ok)throw Error("Catalogue indisponible, réessaie.");
+ const data=await res.json();
+ if(!Array.isArray(data.characters)||data.characters.length<100)throw Error("Catalogue invalide.");
+ cached=data;return data;
+}
+Deno.serve(async(req:Request)=>{
+ if(req.method==="OPTIONS")return new Response(null,{status:204,headers:CORS});
+ if(req.method!=="POST")return fail("Méthode interdite.",405);
+ if(Number(req.headers.get("content-length")||0)>16000)return fail("Requête trop grande.",413);
+ let arg:any;
+ try{arg=await req.json();}catch{return fail("JSON invalide.");}
+ if(!arg||typeof arg.action!=="string")return fail("Action manquante.");
+ try{
+   if(arg.action==="create"){
+     const name=String(arg.name||"Pirate 1").trim().slice(0,25);
+     const starting=amount(arg.budget||"250000000");
+     const teamSize=Number(arg.teamSize??5);
+     if(starting<1n||!Number.isInteger(teamSize)||teamSize<1||teamSize>30)throw Error("Paramètres invalides.");
+     const source=await catalog();
+     const available=source.characters.filter((c:any)=>arg.spoilers!==false||!c.spoiler);
+     const byId=Object.fromEntries(available.map((c:any)=>[c.id,{power:c.power,name:c.name}]));
+     const hostToken=token(),roomCode=code();
+     const eventType=rand(1)[0]%2===0?"war":"marine";
+     const baseBid=starting>=1000n?starting/50n:20n;
+     const bidStep=starting>=1000n?starting/100n:10n;
+     const doc={status:"lobby",channelSecret:token(),players:[{id:0,name,budget:starting.toString(),roster:[],passesUsed:0,hakiUsed:false,
+       observationUsed:false,armamentUsed:false,armamentId:null,observationPeek:[],marineAward:"0",marineRoll:null,purchases:{}}],
+       teamSize,initialBudget:starting.toString(),baseBid:baseBid.toString(),bidStep:bidStep.toString(),
+       catalog:byId,drawPile:shuffle(available.map((c:any)=>c.id)),drawIndex:0,round:0,auction:null,
+       event:{type:eventType,eventRound:2,mysteryRound:1,mysteryUsed:false,used:false,activatedRound:null,
+         warRounds:[],awaitingRolls:false,rolls:[],rollIndex:0}};
+     const {data,error}=await db.from("op_mercato_rooms").insert({code:roomCode,host_token_hash:await hash(hostToken),doc}).select("id,code,version").single();
+     if(error)throw Error("Création du salon impossible. "+error.message);
+     return json({token:hostToken,room:snapshot(doc,0,data.version,data)});
+   }
+   if(arg.action==="join"){
+     const roomCode=String(arg.code||"").trim().toUpperCase();
+     if(!/^[A-Z2-9]{8}$/.test(roomCode))throw Error("Code de salon invalide.");
+     const {data:room,error}=await db.from("op_mercato_rooms").select("*").eq("code",roomCode).maybeSingle();
+     if(error||!room)throw Error("Salon introuvable.");
+     if(room.doc.status!=="lobby"||room.guest_token_hash)throw Error("Cette partie a déjà démarré ou le salon est complet.");
+     const guestToken=token();const guestHash=await hash(guestToken);
+     const doc=structuredClone(room.doc);
+     doc.players.push({id:1,name:String(arg.name||"Pirate 2").trim().slice(0,25)||"Pirate 2",
+       budget:doc.initialBudget,roster:[],passesUsed:0,hakiUsed:false,observationUsed:false,armamentUsed:false,
+       armamentId:null,observationPeek:[],marineAward:"0",marineRoll:null,purchases:{}});
+     // Atomic join: a single update prevents two guests joining simultaneously.
+     const {data, error:joinError}=await db.from("op_mercato_rooms").update({
+       guest_token_hash:guestHash,doc,version:room.version+1,updated_at:new Date().toISOString()
+     }).eq("id",room.id).eq("version",room.version).is("guest_token_hash",null).select("id,code,version").maybeSingle();
+     if(joinError||!data)throw Error("Le salon vient d'être rejoint. Réessaie.");
+     await notify(room,doc,data.version);
+     return json({token:guestToken,room:snapshot(doc,1,data.version,data)});
+   }
+   const roomId=String(arg.roomId||""),access=String(arg.token||"");
+   if(!/^[0-9a-f-]{36}$/.test(roomId)||!/^[0-9a-f]{64}$/.test(access))throw Error("Session non reconnue.");
+   const {data:room,error}=await db.from("op_mercato_rooms").select("*").eq("id",roomId).maybeSingle();
+   if(error||!room)throw Error("Salon introuvable.");
+   const digest=await hash(access);
+   const seat=digest===room.host_token_hash?0:digest===room.guest_token_hash?1:-1;
+   if(seat<0)throw Error("Session non autorisée.");
+   if(arg.action==="get")return json({room:snapshot(room.doc,seat,room.version,room)});
+   const allowed=["start","bid","pass","haki","observation","armament","next","roll","finish"];
+   if(!allowed.includes(arg.action))throw Error("Action inconnue.");
+   const doc=structuredClone(room.doc);
+   takeAction(doc,seat,arg.action,arg);
+   const {data:ok,error:casError}=await db.rpc("op_mercato_commit",{p_room:room.id,p_version:room.version,p_doc:doc});
+   if(casError)throw Error("Sauvegarde refusée : "+casError.message);
+   if(!ok)return fail("La partie a évolué sur l'autre téléphone. Actualisation nécessaire.",409);
+   await notify(room,doc,room.version+1);
+   return json({room:snapshot(doc,seat,room.version+1,room)});
+ }catch(e){console.error("Mercato action error",String(e));return fail(e instanceof Error?e.message:"Erreur serveur.");}
+});
