@@ -264,7 +264,7 @@
       'Haki de l’Observation : consulter secretement les trois prochaines cartes une fois par joueur.',
       'Haki de l’Armement : renforcer une de tes recrues de <b>+5 points</b>, une fois par joueur.',
       'Synergies : Luffy/Zoro/Sanji +15 ; Roger/Rayleigh/Gaban +20 ; Kaido/King/Queen +15 ; Ace/Sabo/Luffy +20.',
-      'Une enchere mystere revele uniquement la classe tant que l’enchere n’est pas terminee.',
+      'Une enchere mystere survient a un tour aleatoire distinct de la Prime de la Marine ou de la Guerre au sommet. Seule la classe est visible avant la revelation.',
       'Un evenement se declenche : Guerre au Sommet (deux classes S) ou Prime de la Marine (de 5 % a 30 % du budget initial).',
       'Le score total additionne les puissances des recrues, les synergies et le Haki de l’Armement. Le budget restant departage une egalite de points.',
       'Les personnages ne peuvent etre recrutes qu’une seule fois dans chaque partie.'
