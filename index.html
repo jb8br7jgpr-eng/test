@@ -4,12 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#0a1c29" />
+  <meta name="application-name" content="OPMercato" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Mercato Pirates" />
-  <meta name="description" content="Un jeu d'enchères de personnages One Piece, à plusieurs sur un téléphone." />
-  <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="apple-touch-icon" href="icon-192.png" />
+  <meta name="apple-mobile-web-app-title" content="OPMercato" />
+  <meta name="description" content="OPMercato, le jeu d'enchères One Piece, seul ou en multijoueur en temps réel sur deux téléphones." />
+  <link rel="manifest" href="./manifest.webmanifest?v=pwa-20261013-1" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=pwa-20261013-1" />
+  <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png?v=pwa-20261013-1" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png?v=pwa-20261013-1" />
   <title>OPMercato — Mercato des Pirates</title>
   <style>
     :root { --bg: #081823; --panel: #112a38; --panel2: #173342; --outline: rgba(191,219,227,.13); --text: #f5f7f3; --muted: #a6bcc6; --gold: #f7ca72; --goldDark: #dfaa4d; --aqua: #7de3d3; --red: #fc938e; --shadow: 0 14px 38px rgba(0,0,0,.19); font-family: ui-rounded, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
@@ -336,7 +340,7 @@
   modal.addEventListener('click',event=>{if(event.target===modal)closeModal();});
   document.addEventListener('keydown',event=>{if(event.key==='Escape')closeModal();});
   if('serviceWorker' in navigator && window.location.protocol==='https:'){
-    window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+    window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=pwa-20261013-1').catch(()=>{}));
   }
   render();
   </script>
