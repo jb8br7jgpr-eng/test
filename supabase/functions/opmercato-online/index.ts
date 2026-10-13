@@ -75,7 +75,7 @@ function sevenSchedule(players:number,teamSize:number){
  }
  return plan.sort((a,b)=>a.round-b.round);
 }
-const effectivePower=(s:any,p:any,id:string)=>Math.max(0,Math.min(100,p.smileModifiers?.[id]===undefined?power(s,id):power(s,id)+p.smileModifiers[id]));
+const effectivePower=(s:any,p:any,id:string)=>p.smileModifiers?.[id]===undefined?power(s,id):Math.max(0,Math.min(100,power(s,id)+p.smileModifiers[id]));
 const taxed=(s:any)=>s.event?.active?.type==="reverie";
 const scheduledAt=(s:any,n:number)=>s.event?.schedule?.find((e:any)=>e.round===n);
 function eventReady(s:any,seat:number){
