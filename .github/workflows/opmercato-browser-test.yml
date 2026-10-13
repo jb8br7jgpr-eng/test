@@ -44,7 +44,13 @@ jobs:
             await host.locator('#online-name').fill("Capitaine Test");
             await host.locator('#online-team').fill("3");
             await host.locator('[data-online="create-go"]').click();
-            await host.locator('.online-code').waitFor({timeout:30000});
+            try { await host.locator('.online-code').waitFor({timeout:16000}); }
+            catch(e) {
+              console.error("CREATE DEBUG notice:", await host.locator('#online-notice').allTextContents());
+              console.error("CREATE DEBUG pageerrors:", errors);
+              console.error("CREATE DEBUG body:", (await host.locator('#opmercato-online').innerText()).slice(0,1400));
+              throw e;
+            }
             const code=(await host.locator(".online-code").innerText()).trim();
             if(!/^[A-Z2-9]{8}$/.test(code))throw Error("Code is malformed: "+code);
             await guest.goto(home+"&room="+code,{waitUntil:"domcontentloaded",timeout:60000});
