@@ -100,6 +100,7 @@
     const prefill=new URLSearchParams(location.search).get("room");
     const form=mode==="create"?
       '<h2>⚓ Créer un salon</h2><label>Ton pseudo<input id="online-name" maxlength="25" value="Pirate 1" autocomplete="nickname"></label>'+
+      '<label>Nombre de pirates (2 à 6)<select id="online-players"><option value="2">2 joueurs</option><option value="3">3 joueurs</option><option value="4">4 joueurs</option><option value="5">5 joueurs</option><option value="6">6 joueurs</option></select></label>'+
       '<label>Budget initial en Berrys<input id="online-budget" inputmode="numeric" type="text" value="250000000"></label>'+
       '<label>Personnages à recruter chacun<input id="online-team" inputmode="numeric" type="number" min="1" max="30" value="5"></label>'+
       '<label class="online-check"><input id="online-spoilers" type="checkbox" checked> Inclure les personnages manga récents (spoilers)</label>'+
@@ -119,9 +120,9 @@
     return '<section class="online-card"><h2>Salon prêt à accueillir les pirates</h2><div class="online-code">'+escOnline(view.code)+'</div>'+
       '<p class="online-hint">Transmets ce code à ta femme ou partage directement le lien.</p>'+
       '<div class="online-actions">'+button("copy-code","Copier le code","btn-ghost")+button("copy-link","Partager le lien","btn-ghost")+'</div>'+
-      '<div class="online-people">'+players+(view.players.length<2?'<div class="online-person online-wait">⏳ En attente du second joueur…</div>':'')+'</div>'+
-      '<p>Budget : <strong>'+berrys(view.initialBudget)+'</strong> · '+view.teamSize+' personnages chacun.</p>'+
-      (view.host?button("start","🏴‍☠️ Lancer la partie", "primary",view.players.length<2):
+      '<div class="online-people">'+players+(view.players.length<(view.maxPlayers||2)?'<div class="online-person online-wait">⏳ En attente de '+((view.maxPlayers||2)-view.players.length)+' pirate(s)…</div>':'')+'</div>'+
+      '<p>Budget : <strong>'+berrys(view.initialBudget)+'</strong> · '+view.teamSize+' personnages chacun · '+view.players.length+'/'+(view.maxPlayers||2)+' pirates.</p>'+
+      (view.host?button("start","🏴‍☠️ Lancer la partie", "primary",view.players.length<(view.maxPlayers||2)):
         '<p class="online-hint">L’hôte lancera le mercato dès que tout le monde sera prêt.</p>')+
       '</section>';
   }
@@ -313,7 +314,7 @@
         const data=a==="create-go"?await call("create",{
           name:root.querySelector("#online-name").value.trim(),
           budget:root.querySelector("#online-budget").value.trim(),
-          teamSize:Number(root.querySelector("#online-team").value),
+          teamSize:Number(root.querySelector("#online-team").value),maxPlayers:Number(root.querySelector("#online-players").value),
           spoilers:root.querySelector("#online-spoilers").checked}):
           await call("join",{name:root.querySelector("#online-name").value.trim(),code:root.querySelector("#online-code").value.trim()});
         session={roomId:data.room.id,token:data.token};localStorage.setItem(KEY,JSON.stringify(session));
@@ -361,6 +362,7 @@
     .online-card h2{font-size:21px;margin:0 0 15px}
     .online-card h3{font-size:17px;margin:20px 0 12px}
     .online-card label:not(.online-check){display:block;font-size:12px;color:#b6d1db;margin:15px 0;font-weight:750}
+    .online-card label select{display:block;width:100%;margin-top:8px;padding:13px;color:#f6fafb;background:#0d2534;border:1px solid #56707e;border-radius:11px;font-size:16px}
     .online-card label input:not([type=checkbox]){display:block;width:100%;margin-top:8px;padding:13px;color:#f6fafb;
       background:#0d2534;border:1px solid #56707e;border-radius:11px;font-size:16px}
     .online-card .primary,.online-shell .primary{width:100%;margin-top:10px}
