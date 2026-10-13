@@ -174,7 +174,8 @@
     ['fullbody','Fullbody',12], ['charlos','Saint Charlos',6]
   ].map(([id,name,power])=>({id,name,power})).concat(window.MERCATO_EXPANSION?.characters || []);
   const CARDS = Object.fromEntries(CHARACTERS.map(c=>[c.id,c]));
-  const MAX_PLAYERS=6, MIN_PLAYERS=2, TEAM_SIZE=5, OPEN_BID=20, BID_STEP=10, STORE_KEY='mercato-pirates-v1';
+  const MAX_PLAYERS=6, MIN_PLAYERS=2, OPEN_BID=20, BID_STEP=10, STORE_KEY='mercato-pirates-v1';
+  let TEAM_SIZE=5;
   const TIERS = [
     {min:95,tier:'S',label:'Légendaire',color:'#ffd171',background:'rgba(255,209,113,.16)',glow:'rgba(255,181,63,.24)'},
     {min:80,tier:'A',label:'Élite',color:'#e99dfa',background:'rgba(233,157,250,.13)',glow:'rgba(216,102,248,.18)'},
@@ -238,7 +239,7 @@
   }
   function endScreen(){let ranked=ranking(), winner=ranked[0], tied=ranked.filter(p=>getScore(p)===getScore(winner)&&p.budget===winner.budget);
     return `${header()}<section class="end-screen"><div class="card win-card"><div class="trophy">🏆</div><span class="eyebrow">LE MERCATO EST TERMINÉ</span><h1>${tied.length>1?'Égalité !':esc(winner.name)}</h1><p>${tied.length>1?`Les vainqueurs ex æquo : ${tied.map(p=>esc(p.name)).join(', ')}`:'a constitué le meilleur équipage des mers !'}</p><div class="win-score">${getScore(winner)} points</div></div>
-      <div class="section-heading"><h2>Classement final</h2><small>${state.round} enchères</small></div><div class="ranking">${ranked.map((p,i)=>`<div class="rank-row"><div class="rank-name"><span class="rank-no">${i+1}</span>${esc(p.name)}</div><div class="rank-stat">${getScore(p)} pts<small>${p.roster.length}/5 pers. · ${currency(p.budget)} restants</small></div></div>`).join('')}</div>
+      <div class="section-heading"><h2>Classement final</h2><small>${state.round} enchères</small></div><div class="ranking">${ranked.map((p,i)=>`<div class="rank-row"><div class="rank-name"><span class="rank-no">${i+1}</span>${esc(p.name)}</div><div class="rank-stat">${getScore(p)} pts<small>${p.roster.length}/${TEAM_SIZE} pers. · ${currency(p.budget)} restants</small></div></div>`).join('')}</div>
       ${scoreBoard()}<div class="footer-actions"><button class="primary" data-action="reset-request">Nouvelle partie ↻</button></div></section>`;
   }
   function render(){app.innerHTML=!state?setupScreen():state.phase==='finished'?endScreen():auctionScreen();}
@@ -322,5 +323,6 @@
   render();
   </script>
   <script src="./mercato-upgrade.js?v=20261013-2"></script>
+  <script src="./mercato-rules.js?v=20261013-1"></script>
 </body>
 </html>
