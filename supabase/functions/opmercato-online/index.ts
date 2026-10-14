@@ -54,7 +54,7 @@ type Special="war"|"marine"|"mystery"|"black"|"god"|"smile"|"reverie";
 const SPECIALS:Special[]=["war","marine","mystery","black","god","smile","reverie"];
 const randomIndex=(n:number)=>rand(2).reduce((v,x)=>v*256+x,0)%n;
 function sevenSchedule(players:number,teamSize:number){
- const total=players*teamSize,qty=teamSize<=5?1:teamSize<=10?2:3;
+ const total=players*teamSize,qty=teamSize<=5?1:teamSize<=9?2:3;
  const allowed=SPECIALS.filter(t=>(t!=="smile"&&t!=="god")||total>=players*2+2);
  const picks:Special[]=[];
  while(picks.length<qty){picks.push(allowed.splice(randomIndex(allowed.length),1)[0]);}
@@ -78,7 +78,7 @@ function sevenSchedule(players:number,teamSize:number){
 const effectivePower=(s:any,p:any,id:string)=>p.smileModifiers?.[id]===undefined?power(s,id):Math.max(0,Math.min(100,power(s,id)+p.smileModifiers[id]));
 const armamentBonus=(p:any)=>p.armamentId&&p.roster.includes(p.armamentId)?Number(p.armamentBonus??5):0;
 const pendingArmament=(s:any)=>{const a=s.auction;return s.status==="playing"&&a?.outcome==="sold"&&a.leader!==null&&
- !!s.players[a.leader]&&!s.players[a.leader].armamentUsed&&!a.armamentChoice&&power(s,a.charId)<55;};
+ !!s.players[a.leader]&&!s.players[a.leader].armamentUsed&&!a.armamentChoice&&power(s,a.charId)<=60;};
 const taxed=(s:any)=>s.event?.active?.type==="reverie";
 const scheduledAt=(s:any,n:number)=>s.event?.schedule?.find((e:any)=>e.round===n);
 function eventReady(s:any,seat:number){

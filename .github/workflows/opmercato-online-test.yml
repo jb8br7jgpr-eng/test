@@ -83,7 +83,7 @@ jobs:
               }
               if(e&&e.stage!=="auction")throw Error("Unrecognized event stage: "+e.stage);
               if(a.outcome!==null){
-                if(a.outcome==="sold"&&a.power<55&&!current.players[a.leader].armamentUsed&&!a.armamentChoice){
+                if(a.outcome==="sold"&&a.power<=60&&!current.players[a.leader].armamentUsed&&!a.armamentChoice){
                   const winner=a.leader;
                   await request({action:"next",roomId,token:tokens[0]},400);
                   if(!current.players[winner].armamentUsed){
@@ -133,7 +133,7 @@ jobs:
               paid++;
             }
             if(checks>=120)throw Error("Game did not terminate");
-            const expected=size<=5?1:size<=10?2:3;
+            const expected=size<=5?1:size<=9?2:3;
             if(seen.size!==expected)throw Error("Wrong number of triggered special events: "+size+" -> "+seen.size+" instead of "+expected);
             const final=await get(1);
             if(final.status!=="finished")throw Error("Guest final state not synchronized");
@@ -147,6 +147,7 @@ jobs:
           }
           await game(5);
           await game(8);
+          await game(10);
           await game(11);
           // Multijoueur historique : admissions privees de 4 joueurs.
           const group=await request({action:"create",name:"Player 1",budget:"1000",teamSize:2,maxPlayers:4});

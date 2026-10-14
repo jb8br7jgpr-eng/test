@@ -106,7 +106,7 @@ jobs:
             await host.locator(".online-winner").waitFor({timeout:30000});
             await guest.locator(".online-winner").waitFor({timeout:30000});
             if(await other.locator('[data-online="haki"]').count())throw Error("Haki still active on other phone");
-            // Une recrue à moins de 55 propose le Haki de l'Armement
+            // Une recrue à 60 points ou moins propose le Haki de l'Armement
             // au gagnant et bloque la suite tant qu'il n'a pas répondu.
             if(await first.locator('[data-online="armament-skip"]').count()){
               if(await host.locator('[data-online="next"]').isEnabled())
@@ -188,7 +188,7 @@ jobs:
             const local=await localContext.newPage();
             listen(local,"local");
             const signatures=new Set();
-            for(const size of [3,8,15]){
+            for(const size of [3,8,10,15]){
               for(let i=0;i<5;i++){
                 await local.goto(home+"&sample="+size+"-"+i,{waitUntil:"domcontentloaded",timeout:30000});
                 await local.locator('#team-size').fill(String(size));
@@ -198,7 +198,7 @@ jobs:
                   return saved?.featureConfig;
                 });
                 const plan=config?.plan||[];
-                const expected=size<=5?1:size<=10?2:3;
+                const expected=size<=5?1:size<=9?2:3;
                 if(plan.length!==expected)throw Error("Incorrect count of events "+size+": "+JSON.stringify(plan));
                 if(new Set(plan.map(x=>x.type)).size!==expected)throw Error("Duplicate events");
                 const occupied=new Set();

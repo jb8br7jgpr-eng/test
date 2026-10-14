@@ -267,7 +267,7 @@
     const royal=view.event?.active?.type==="reverie";
     const canAfford=BigInt(me.budget)>=minimum*(royal?2n:1n)&&me.roster.length<view.teamSize;
     const canHaki=!royal&&turn&&!me.hakiUsed&&a.firstTurnId===me.id&&a.leader===null&&a.highBid==="0"&&a.passed.length===0;
-    const armamentPending=a.outcome==="sold"&&leader&&!leader.armamentUsed&&Number(CARDS[a.charId]?.power??100)<55&&!a.armamentChoice;
+    const armamentPending=a.outcome==="sold"&&leader&&!leader.armamentUsed&&Number(CARDS[a.charId]?.power??100)<=60&&!a.armamentChoice;
     const roll=view.event.awaitingRolls;
     let actionHtml="";
     if(roll){
@@ -302,7 +302,7 @@
           "online-pass",royal||!turn||(a.leader===null&&me.passesUsed>=5))+
         '<div class="online-powers">'+
         button("observation",me.observationUsed?'👁 Revoir mes visions':'👁 Observation', "btn-ghost",!turn&&!me.observationUsed)+
-        '<span class="op21-haki-hint">🛡 '+(me.armamentUsed?'Armement utilisé':'Armement : +20 proposé sur une recrue &lt;55')+'</span></div>'+
+        '<span class="op21-haki-hint">🛡 '+(me.armamentUsed?'Armement utilisé':'Armement : +20 proposé sur une recrue ≤60')+'</span></div>'+
         (peekOpen&&me.observationUsed?peekPanel():"");
     }
     return '<div class="online-round"><strong>ENCHÈRE N° '+view.round+'</strong><span>'+view.remaining+' cartes restantes</span></div>'+
@@ -365,10 +365,10 @@
       'Refuser une carte avant toute enchere consomme un de tes <b>5 refus</b>. Se retirer apres une offre est gratuit.',
       'Haki des Rois : recruter gratuitement une fois, seulement si tu joues en premier et avant toute enchere.',
       'Haki de l’Observation : consulter secretement les trois prochaines cartes une fois par joueur.',
-      'Haki de l’Armement : après une recrue de <b>moins de 55 points</b>, tu peux lui donner <b>+20 points définitifs</b> ou conserver ton Haki. Une seule utilisation.',
+      'Haki de l’Armement : après une recrue de <b>60 points ou moins</b>, tu peux lui donner <b>+20 points définitifs</b> ou conserver ton Haki. Une seule utilisation.',
       'Synergies par affiliation : 1 personnage = 0 point ; 2 = +10 ; 3 = +20 ; 4 = +30 ; 5 ou plus = +50. Les bonus de plusieurs affiliations se cumulent. Les anciens trios spéciaux ne comptent plus.',
       '7 evenements independants : Guerre au sommet, Prime de la Marine, Personnage mystere, Marche noir, God Valley, SMILE et Reverie.',
-      '1 evenement pour 1 a 5 recrues, 2 pour 6 a 10, 3 pour 11 a 30. Les joueurs confirment chaque annonce avec Continuer.',
+      '1 evenement pour 1 a 5 recrues, 2 pour 6 a 9, 3 pour 10 a 30. Les joueurs confirment chaque annonce avec Continuer.',
       'Evenements sans doublon, sans chevauchement et a des tours aleatoires. SMILE arrive exclusivement dans la seconde moitie de la partie.',
       'La Reverie impose un prix double, interdit le refus volontaire et desactive le Haki des Rois pour son enchere.',
       'SMILE modifie uniquement les puissances dans la partie en cours et ne change jamais le catalogue.',

@@ -40,7 +40,7 @@
     reverie:['👑','LA RÊVERIE','Taxe royale : enchère ×2, refus et Haki des Rois interdits.']
   };
   function chooseSchedule(players,recruits){
-    const total=players*recruits,qty=recruits<=5?1:recruits<=10?2:3;
+    const total=players*recruits,qty=recruits<=5?1:recruits<=9?2:3;
     const types=V2_TYPES.filter(t=>(t!=='smile'&&t!=='god')||total>=players*2+2);
     const picks=[];
     while(picks.length<qty)picks.push(types.splice(Math.floor(Math.random()*types.length),1)[0]);
@@ -444,14 +444,14 @@
     if(p){
       const powers='<div class="extra-powers">'+
         '<button data-action="observation" class="extra-power" '+(p.observationUsed?'disabled':'')+'>👁 Observation <small>'+(p.observationUsed?'Déjà utilisé':'Voir les 3 prochaines cartes')+'</small></button>'+
-        '<span class="extra-power op21-armament-status">🛡 Armement <small>'+(p.armamentUsed?'Déjà utilisé':'Proposé à la prochaine recrue de moins de 55 pts')+'</small></span>'+
+        '<span class="extra-power op21-armament-status">🛡 Armement <small>'+(p.armamentUsed?'Déjà utilisé':'Proposé à la prochaine recrue de 60 pts ou moins')+'</small></span>'+
         '</div>';
       const marker='<button class="pass-btn" data-action="pass"';
       html=html.replace(marker,powers+marker);
     }
     if(a?.outcome==='sold'&&a.leader!==null&&a.leader!==undefined){
       const winner=player(a.leader),card=CARDS[a.charId];
-      if(winner&&!winner.armamentUsed&&card?.power<55&&!a.armamentChoice){
+      if(winner&&!winner.armamentUsed&&card?.power<=60&&!a.armamentChoice){
         html=html.replace('data-action="next"','data-action="next" disabled aria-disabled="true"');
         html+='<div class="op21-armament-overlay"><section class="card op21-armament-modal"><small>🛡 HAKI DE L’ARMEMENT</small><h2>'+esc(winner.name)+', renforce ta recrue !</h2><p>'+esc(card.name)+' possède '+card.power+' points. Veux-tu lui offrir <b>+20 points définitifs</b> ?</p><div class="op21-power-evolution">'+card.power+' <span>→</span> '+(card.power+20)+'</div><button class="primary" data-action="armament-recruit">🛡 Utiliser le Haki</button><button class="btn-ghost" data-action="armament-defer">Conserver pour plus tard</button></section></div>';
       }
@@ -535,9 +535,9 @@
       const ul=modal.querySelector('ul');
       if(ul)ul.insertAdjacentHTML('beforeend',
         '<li>Haki de l’Observation : consulter discrètement les <b>3 prochains personnages</b>, une fois par joueur.</li>'+
-        '<li>Haki de l’Armement : à chaque recrue de <b>moins de 55 points</b>, proposer un bonus de <b>+20 points définitifs</b> (ou le garder pour plus tard). Une utilisation par joueur.</li>'+
+        '<li>Haki de l’Armement : à chaque recrue de <b>60 points ou moins</b>, proposer un bonus de <b>+20 points définitifs</b> (ou le garder pour plus tard). Une utilisation par joueur.</li>'+
         '<li>Synergies par affiliation : 1 personnage = 0 point ; 2 = +10 ; 3 = +20 ; 4 = +30 ; 5 ou plus = +50. Chaque affiliation donne son propre bonus, cumulable avec les autres. Les anciennes synergies par combinaison ont été supprimées.</li>'+
-        '<li>Sept événements possibles : Guerre au sommet, Prime de la Marine, Personnage mystère, Marché Noir, God Valley, SMILE et Rêverie. 1 événement pour 1 à 5 recrues, 2 pour 6 à 10, 3 au-delà. Chaque annonce reste affichée jusqu’à Continuer.</li>'+
+        '<li>Sept événements possibles : Guerre au sommet, Prime de la Marine, Personnage mystère, Marché Noir, God Valley, SMILE et Rêverie. 1 événement pour 1 à 5 recrues, 2 pour 6 à 9, 3 à partir de 10. Chaque annonce reste affichée jusqu’à Continuer.</li>'+
         '<li>Rêverie : enchère obligatoire, coût final doublé, Haki des Rois interdit. SMILE : chaque joueur lance une pièce (+25 ou −25 sur le personnage le plus faible, dans les limites 0 à 100).</li>');
     }
   };
@@ -546,7 +546,7 @@
     const b=event.target.closest('button[data-action="armament-recruit"],button[data-action="armament-defer"]');
     if(!b||!state?.auction||state.auction.outcome!=='sold')return;
     const a=state.auction,p=player(a.leader),c=CARDS[a.charId];
-    if(!p||p.armamentUsed||!c||c.power>=55||a.armamentChoice)return;
+    if(!p||p.armamentUsed||!c||c.power>60||a.armamentChoice)return;
     event.preventDefault();event.stopImmediatePropagation();
     if(b.dataset.action==='armament-recruit'){
       p.armamentUsed=true;p.armamentId=a.charId;p.armamentBonus=20;a.armamentChoice='used';
