@@ -4,7 +4,7 @@ const URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const db = createClient(URL, SERVICE, { auth: { persistSession: false } });
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization,apikey,content-type,x-client-info", "Access-Control-Allow-Methods": "POST, OPTIONS" };
-const REPO_CATALOG = "https://raw.githubusercontent.com/jb8br7jgpr-eng/test/main/opmercato-catalog.json?v=20261013-powerbalance-1";
+const REPO_CATALOG = "https://raw.githubusercontent.com/jb8br7jgpr-eng/test/main/opmercato-catalog.json?v=20261016-roster251-1";
 const json = (v:unknown,status=200)=>new Response(JSON.stringify(v),{status,headers:{...CORS,"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"}});
 const fail = (message:string,status=400)=>json({error:message},status);
 const rand = (n:number)=>crypto.getRandomValues(new Uint8Array(n));

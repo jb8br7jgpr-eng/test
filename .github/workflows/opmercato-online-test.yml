@@ -32,6 +32,8 @@ jobs:
             const get=async(seat)=>(await request({action:"get",roomId,token:tokens[seat]})).room;
             await request({action:"start",roomId,token:tokens[1]},400);
             let current=await act(0,"start");
+            // Une carte est déjà affichée après le lancement : 251 - 1 = 250 en réserve.
+            if(current.remaining!==250)throw Error("Online catalogue must have 251 characters (250 remaining): "+current.remaining);
             const seen=new Set();
             let paid=0,checks=0;
             while(current.status==="playing"&&checks++<120){

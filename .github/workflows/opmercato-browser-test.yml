@@ -80,6 +80,15 @@ jobs:
             if(hud.scroll<100||hud.inset<8||hud.top<hud.inset-2)
               throw Error('iPhone sticky budget bar overlaps top of viewport: '+JSON.stringify(hud));
             await guest.evaluate(()=>document.querySelector('#opmercato-online').scrollTop=0);
+            // Regression: 251 personnages, Luffy et Gear 5 distincts, nouveaux portraits et doublon retiré.
+            const roster251=await host.evaluate(()=>({
+              visible:window.OPMERCATO_SHARED.catalogCount(),
+              luffy:CARDS.luffy?.power,gear5:CARDS['luffy-gear5']?.power,
+              kuma:CARDS['kuma-king'],
+              newIds:['dorry','brogy','judge','reiju','ichiji','niji','yonji','cracker','oven','daifuku','pekoms','tamago','little-oars-jr','oars','inazuma','guernica','emeth','hannyabal','fukaboshi','wadatsumi','pudding','brulee','morgans','crocus','kureha','hiriluk','tonoyasu','otohime','luffy-gear5'].every(id=>Boolean(CARDS[id]&&window.MERCATO_IMAGE_CARDS[id]?.length))
+            }));
+            if(roster251.visible!==251||roster251.luffy!==96||roster251.gear5!==100||roster251.kuma||!roster251.newIds)
+              throw Error('Local roster/portrait regression: '+JSON.stringify(roster251));
             // The affiliation bonuses must use the same progressive scale in local games.
             const localBonuses=await host.evaluate(()=>{
               const points=ids=>getScore({roster:ids})-ids.reduce((sum,id)=>sum+(CARDS[id]?.power||0),0);
@@ -99,6 +108,9 @@ jobs:
               throw Error("Local affiliation score mismatched: "+JSON.stringify(localBonuses)+" errors: "+errors.join("; "));
             // Real local-vs-online parity: same catalogue, personalized art, and detail modal.
             await host.locator('[data-online="catalog"]').click();
+            if(!await host.locator('[data-online="catalog"]').count())throw Error('Catalog UI unavailable');
+            await host.locator('#catalog-search').fill('Monkey D. Luffy (Gear 5)');
+            await host.locator('#catalog-results img[data-portrait-id="luffy-gear5"]').waitFor({timeout:10000});
             await host.locator('#catalog-search').fill('Joy Boy');
             const art=host.locator('#catalog-results img[data-portrait-id="joyboy"]').first();
             await art.waitFor({timeout:10000});

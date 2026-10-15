@@ -384,7 +384,7 @@
     if(!view){landing();return;}
     const main=view.status==="lobby"?waiting():
       '<div class="online-room-bar"><span>Salon <strong>'+escOnline(view.code)+'</strong></span><span>🌐 Synchronisation active</span></div>'+
-      liveHud()+'<div class="online-nav">'+button("catalog","📚 Catalogue ("+CHARACTERS.length+" personnages)","btn-ghost")+button("rules","📖 Règles","btn-ghost")+'</div>'+
+      liveHud()+'<div class="online-nav">'+button("catalog","📚 Catalogue ("+(window.OPMERCATO_SHARED?.catalogCount?.()??CHARACTERS.length)+" personnages)","btn-ghost")+button("rules","📖 Règles","btn-ghost")+'</div>'+
       (view.status==="finished"?scoreboardEnd():auction())+gameScore()+
       (view.host&&view.status==="playing"?button("finish","Terminer cette partie","online-text"):"");
     shell(main+(fx?'<div class="v2-fx"><div class="v2-fx-icon">'+(fx.type==="roll"?"🎲":"🪙")+'</div><strong>'+

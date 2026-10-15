@@ -370,6 +370,6 @@
     }
   },true);
   // Les deux modes partagent le meme chargeur d'images, les fiches et le catalogue.
-  window.OPMERCATO_SHARED = Object.freeze({refreshImages,openCatalog,openDetail,portraitMarkup,getDetails});
+  window.OPMERCATO_SHARED = Object.freeze({refreshImages,openCatalog,openDetail,portraitMarkup,getDetails,catalogCount:()=>CHARACTERS.filter(c=>!blocked.has(c.id)).length});
   render();
 })();
