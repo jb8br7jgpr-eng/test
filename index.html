@@ -159,8 +159,8 @@
   <main id="app" class="shell" aria-live="polite"></main>
   <div id="modal" class="modal hidden" role="dialog" aria-modal="true"></div>
   <div id="toast" class="toast hidden" role="status"></div>
-  <script src="./characters-data.js?v=20261013-powerbalance-1"></script>
-  <script src="./portrait-map.js?v=20261013-2"></script>
+  <script src="./characters-data.js?v=20261016-parity251-2"></script>
+  <script src="./portrait-map.js?v=20261016-parity251-2"></script>
   <script>
   'use strict';
   // Classement ludique et subjectif, entièrement modifiable ci-dessous.
@@ -168,28 +168,28 @@
   const CHARACTERS = [
     ['roger','Gol D. Roger',100], ['prime-wb','Barbe Blanche (prime)',100], ['luffy','Monkey D. Luffy',96],
     ['shanks','Shanks',99], ['prime-garp','Monkey D. Garp (prime)',100], ['kaido','Kaido',95],
-    ['mihawk','Dracule Mihawk',96], ['teach','Barbe Noire',96], ['akainu','Akainu',96],
-    ['bigmom','Big Mom',95], ['sengoku','Sengoku (prime)',95],
-    ['kuzan','Kuzan',94], ['rayleigh','Silvers Rayleigh (prime)',94], ['kizaru','Kizaru',93],
+    ['mihawk','Dracule Mihawk',93], ['teach','Barbe Noire',97], ['akainu','Akainu',95],
+    ['bigmom','Big Mom',95], ['sengoku','Sengoku (prime)',94],
+    ['kuzan','Kuzan',92], ['rayleigh','Silvers Rayleigh (prime)',96], ['kizaru','Kizaru',91],
     ['oden','Kozuki Oden',93], ['fujitora','Fujitora',91], ['ryokugyu','Ryokugyu',90],
-    ['beckman','Benn Beckman',89], ['sabo','Sabo',90], ['zoro','Roronoa Zoro',95],
-    ['yamato','Yamato',87], ['law','Trafalgar Law',86], ['kid','Eustass Kid',85],
-    ['marco','Marco',85], ['sanji','Sanji',90], ['king','King',83], ['shiryu','Shiryu',82],
-    ['katakuri','Charlotte Katakuri',81], ['lucci','Rob Lucci',80],
-    ['queen','Queen',85], ['jinbe','Jinbe',84], ['hancock','Boa Hancock',78],
-    ['doflamingo','Donquixote Doflamingo',88], ['crocodile','Crocodile',86], ['kuma','Bartholomew Kuma',76],
-    ['killer','Killer',75], ['magellan','Magellan',74], ['smoothie','Charlotte Smoothie',73],
-    ['jack','Jack',72], ['inu','Inuarashi',72], ['neko','Nekomamushi',71],
+    ['beckman','Benn Beckman',89], ['sabo','Sabo',92], ['zoro','Roronoa Zoro',95],
+    ['yamato','Yamato',89], ['law','Trafalgar Law',91], ['kid','Eustass Kid',91],
+    ['marco','Marco',86], ['sanji','Sanji',90], ['king','King',89], ['shiryu','Shiryu',82],
+    ['katakuri','Charlotte Katakuri',88], ['lucci','Rob Lucci',85],
+    ['queen','Queen',85], ['jinbe','Jinbe',84], ['hancock','Boa Hancock',82],
+    ['doflamingo','Donquixote Doflamingo',88], ['crocodile','Crocodile',88], ['kuma','Bartholomew Kuma',82],
+    ['killer','Killer',75], ['magellan','Magellan',70], ['smoothie','Charlotte Smoothie',73],
+    ['jack','Jack',72], ['inu','Inuarashi',75], ['neko','Nekomamushi',75],
     ['ace','Portgas D. Ace',85], ['perospero','Charlotte Perospero',70], ['ivankov','Emporio Ivankov',69],
-    ['enel','Ener',68], ['kaku','Kaku',67], ['drake','X Drake',66], ['franky','Franky',70],
+    ['enel','Ener',68], ['kaku','Kaku',73], ['drake','X Drake',66], ['franky','Franky',70],
     ['brook','Brook',72], ['robin','Nico Robin',76], ['hawkins','Basil Hawkins',63],
-    ['apoo','Scratchmen Apoo',62], ['chopper','Tony Tony Chopper',70], ['nami','Nami',61],
-    ['bege','Capone Bege',61], ['bonclay','Bon Clay',60], ['cavendish','Cavendish',59],
-    ['bartolomeo','Bartolomeo',58], ['caesar','Caesar Clown',56], ['pica','Pica',56],
-    ['diamante','Diamante',55], ['trebol','Trébol',53], ['bellamy','Bellamy',52], ['hody','Hody Jones',50],
-    ['mr1','Mr. 1',49], ['hina','Hina',47], ['kuro','Kuro',45], ['tashigi','Tashigi',41],
+    ['apoo','Scratchmen Apoo',62], ['chopper','Tony Tony Chopper',70], ['nami','Nami',63],
+    ['bege','Capone Bege',61], ['bonclay','Bon Clay',60], ['cavendish','Cavendish',64],
+    ['bartolomeo','Bartolomeo',64], ['caesar','Caesar Clown',64], ['pica','Pica',69],
+    ['diamante','Diamante',70], ['trebol','Trébol',68], ['bellamy','Bellamy',52], ['hody','Hody Jones',63],
+    ['mr1','Mr. 1',62], ['hina','Hina',47], ['kuro','Kuro',45], ['tashigi','Tashigi',41],
     ['arlong','Arlong',40], ['usopp','Usopp',70], ['donkrieg','Don Krieg',38],
-    ['rebecca','Rebecca',37], ['foxy','Foxy',36], ['wapol','Wapol',35],
+    ['rebecca','Rebecca',60], ['foxy','Foxy',36], ['wapol','Wapol',35],
     ['buggy','Baggy',32], ['mr3','Mr. 3',30], ['alvida','Alvida',28],
     ['helmeppo','Hermep',27], ['jango','Jango',24], ['cabaji','Cabaji',21], ['mohji','Morge',20],
     ['spandam','Spandam',17], ['pearl','Pearl',16], ['higuma','Higuma',14],
@@ -340,18 +340,18 @@
   modal.addEventListener('click',event=>{if(event.target===modal)closeModal();});
   document.addEventListener('keydown',event=>{if(event.key==='Escape')closeModal();});
   if('serviceWorker' in navigator && window.location.protocol==='https:'){
-    window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=pwa-20261015-royal-hud-1').catch(()=>{}));
+    window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=pwa-20261016-parity251-2').catch(()=>{}));
   }
   render();
   </script>
   <script src="./opmercato-custom-portraits.js?v=20261013-portraits-2"></script>
-  <script src="./mercato-upgrade.js?v=20261016-roster251-1"></script>
+  <script src="./mercato-upgrade.js?v=20261016-parity251-2"></script>
   <script src="./mercato-rules.js?v=20261013-passfix"></script>
   <script src="./mercato-features.js?v=20261015-royal-hud-1"></script>
   <script src="./mercato-card-premium.js?v=20261013-premium-2"></script>
   <script src="./mercato-hud-21.js?v=20261013-op21-1"></script>
   <script src="./mercato-history-21.js?v=20261013-op21-1"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script defer src="./mercato-online.js?v=20261016-roster251-1"></script>
+  <script defer src="./mercato-online.js?v=20261016-parity251-2"></script>
 </body>
 </html>
