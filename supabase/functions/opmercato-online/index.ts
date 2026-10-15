@@ -314,7 +314,7 @@ function takeAction(s:any,seat:number,action:string,payload:any){
    a.turnId=nextBidder(s,seat);if(a.turnId===null)settle(s);return;
  }
  if(action==="pass"){
-   if(taxed(s))throw Error("Rêverie : impossible de passer pendant l’enchère royale.");
+   if(taxed(s)&&a.leader===null)throw Error("Rêverie : une première mise est obligatoire avant de se retirer.");
    if(a.leader===null){
      if(p.passesUsed>=5)throw Error("Tu as utilisé tes 5 refus avant enchère.");
      p.passesUsed++;

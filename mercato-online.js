@@ -187,7 +187,7 @@
     black:["🏴‍☠️","MARCHÉ NOIR","Trois personnages révélés. Deux seront renvoyés dans la pioche."],
     god:["💥","INCIDENT DE GOD VALLEY","Chaque pirate peut supprimer une recrue adverse."],
     smile:["🍎","SMILE","Le personnage le plus faible risque +25 ou −25 points."],
-    reverie:["👑","LA RÊVERIE","Taxe royale : mise finale ×2, aucun refus, Haki des Rois interdit."]
+    reverie:["👑","LA RÊVERIE","Taxe royale ×2 : première mise obligatoire, retrait possible ensuite. Haki des Rois interdit."]
   };
   function specialPanel(){
     const e=view.event.active,info=EVENT_INFO[e.type]||["✨","ÉVÉNEMENT SPÉCIAL",""];
@@ -297,9 +297,9 @@
         '<div class="online-custom"><input id="online-custom-amount" type="text" inputmode="numeric" placeholder="Autre montant en Berrys" '+(!turn?'disabled':'')+'>'+
         button("custom-bid","Enchérir","btn-ghost",!turn)+'</div>'+
         (canHaki?button("haki","👑 Haki des Rois — recruter gratuitement"): "")+
-        (royal?'<div class="online-event">👑 Taxe royale ×2 : refus interdit, Haki des Rois désactivé.</div>':"")+
+        (royal?'<div class="online-event">👑 Taxe royale ×2 : première mise obligatoire, puis retrait gratuit. Haki des Rois désactivé.</div>':"")+
         button("pass",a.leader!==null?"Se retirer (gratuit)":"Refuser ce personnage · "+(5-me.passesUsed)+"/5 restants",
-          "online-pass",royal||!turn||(a.leader===null&&me.passesUsed>=5))+
+          "online-pass",!turn||(royal&&a.leader===null)||(a.leader===null&&me.passesUsed>=5))+
         '<div class="online-powers">'+
         button("observation",me.observationUsed?'👁 Revoir mes visions':'👁 Observation', "btn-ghost",!turn&&!me.observationUsed)+
         '<span class="op21-haki-hint">🛡 '+(me.armamentUsed?'Armement utilisé':'Armement : +20 proposé sur une recrue ≤60')+'</span></div>'+
@@ -370,7 +370,7 @@
       '7 evenements independants : Guerre au sommet, Prime de la Marine, Personnage mystere, Marche noir, God Valley, SMILE et Reverie.',
       '1 evenement pour 1 a 5 recrues, 2 pour 6 a 9, 3 pour 10 a 30. Les joueurs confirment chaque annonce avec Continuer.',
       'Evenements sans doublon, sans chevauchement et a des tours aleatoires. SMILE arrive exclusivement dans la seconde moitie de la partie.',
-      'La Reverie impose un prix double, interdit le refus volontaire et desactive le Haki des Rois pour son enchere.',
+      'La Reverie impose une premiere mise ; ensuite, se retirer est gratuit. Le gagnant paie le double de sa mise et le Haki des Rois est interdit.',
       'SMILE modifie uniquement les puissances dans la partie en cours et ne change jamais le catalogue.',
       'Le score total additionne les puissances des recrues, les synergies et le Haki de l’Armement. Le budget restant departage une egalite de points.',
       'Les personnages ne peuvent etre recrutes qu’une seule fois dans chaque partie.'
@@ -452,7 +452,7 @@
   const css=document.createElement("style");
   css.textContent=`
     .online-smile-buff{display:block;font-size:10px;color:#f2cc7a;font-weight:800;margin-top:2px}
-    .op21-live-hud{position:sticky;top:0;z-index:80;display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:5px;background:#081b29f5;border:1px solid #9e7d48;border-radius:14px;padding:8px 5px;box-shadow:0 7px 17px #0015;backdrop-filter:blur(13px)}
+    .op21-live-hud{position:sticky;top:calc(env(safe-area-inset-top, 0px) + 8px);z-index:80;display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:5px;background:#081b29f5;border:1px solid #9e7d48;border-radius:14px;padding:8px 5px;box-shadow:0 7px 17px #0015;backdrop-filter:blur(13px)}
     .op21-hud-player{min-width:0;display:grid;gap:3px;text-align:center;padding:3px}
     .op21-hud-player:not(:last-child){border-right:1px solid #ffffff2b}
     .op21-hud-player span{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:850;color:#dae7ec}

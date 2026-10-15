@@ -39,7 +39,7 @@ jobs:
             page.on("console",m=>{if(m.type()==="error"&&/mercato-online|Uncaught/i.test(m.text())) errors.push(title+": "+m.text());});
           }
           const ctx1=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:2});
-          const ctx2=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:2});
+          const ctx2=await browser.newContext({viewport:{width:440,height:956},isMobile:true,hasTouch:true,deviceScaleFactor:3});
           const host=await ctx1.newPage(),guest=await ctx2.newPage();
           listen(host,"host");listen(guest,"guest");
           const home="http://127.0.0.1:8765/?v=online-browser";
@@ -69,6 +69,17 @@ jobs:
             await host.locator('[data-online="start"]').click();
             await Promise.all([host.locator(".online-round").waitFor({timeout:30000}),
               guest.locator(".online-round").waitFor({timeout:30000})]);
+            // Le bandeau doit rester visible sous la zone de statut, même sur grand iPhone.
+            const hud=await guest.evaluate(async()=>{
+              const scroller=document.querySelector('#opmercato-online');
+              scroller.scrollTop=480;
+              await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+              const item=document.querySelector('.op21-live-hud');
+              return {scroll:scroller.scrollTop,top:item.getBoundingClientRect().top,inset:parseFloat(getComputedStyle(item).top)};
+            });
+            if(hud.scroll<100||hud.inset<8||hud.top<hud.inset-2)
+              throw Error('iPhone sticky budget bar overlaps top of viewport: '+JSON.stringify(hud));
+            await guest.evaluate(()=>document.querySelector('#opmercato-online').scrollTop=0);
             // The affiliation bonuses must use the same progressive scale in local games.
             const localBonuses=await host.evaluate(()=>{
               const points=ids=>getScore({roster:ids})-ids.reduce((sum,id)=>sum+(CARDS[id]?.power||0),0);
@@ -213,6 +224,32 @@ jobs:
                 await local.evaluate(()=>localStorage.removeItem('mercato-pirates-v1'));
               }
             }
+            // Test local déterministe : Rêverie interdit le refus initial, puis autorise le retrait gratuit.
+            await local.goto(home+'&reverie=local-regression',{waitUntil:'domcontentloaded',timeout:30000});
+            await local.evaluate(()=>localStorage.removeItem('mercato-pirates-v1'));
+            await local.reload({waitUntil:'domcontentloaded'});
+            await local.locator('[data-action="start"]').click();
+            const initialBudgets=await local.evaluate(()=>{
+              state.featureConfig.active={type:'reverie',stage:'auction',round:state.round};
+              save();render();
+              return state.players.map(p=>({budget:Number(p.budget),passes:p.passesUsed}));
+            });
+            if(!await local.locator('button.pass-btn').isDisabled())
+              throw Error('Local Reverie allows withdrawal before first bid');
+            await local.locator('button.offer-btn:not([disabled])').first().click();
+            if(await local.locator('button.pass-btn').isDisabled())
+              throw Error('Local Reverie still blocks withdrawal after first bid');
+            await local.locator('button.pass-btn').click();
+            const outcome=await local.evaluate(()=>({
+              auction:state.auction,players:state.players.map(p=>({budget:Number(p.budget),passes:p.passesUsed}))
+            }));
+            if(outcome.auction.outcome!=='sold'||outcome.auction.leader===null)
+              throw Error('Local Reverie did not settle after withdrawal');
+            const win=outcome.auction.leader;
+            if(initialBudgets[win].budget-outcome.players[win].budget!==Number(outcome.auction.highBid)*2)
+              throw Error('Local Reverie did not charge double');
+            if(outcome.players.some((p,i)=>p.passes!==initialBudgets[i].passes))
+              throw Error('Local Reverie withdrawal consumed a refusal');
             // Vérifie les vraies animations 3D du dé et de la pièce.
             await local.evaluate(()=>window.OPMERCATO_EVENT_FX("die","Dé : 6",6));
             await local.locator(".v2-dice-cube").waitFor({timeout:5000});

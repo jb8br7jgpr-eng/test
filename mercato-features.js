@@ -37,7 +37,7 @@
     black:['🏴‍☠️','MARCHÉ NOIR','Trois personnages apparaissent, un seul sera mis aux enchères.'],
     god:['💥','INCIDENT DE GOD VALLEY','Chaque joueur peut éliminer une recrue adverse.'],
     smile:['🍎','SMILE','Le personnage le plus faible mange un fruit SMILE : pile ou face ?'],
-    reverie:['👑','LA RÊVERIE','Taxe royale : enchère ×2, refus et Haki des Rois interdits.']
+    reverie:['👑','LA RÊVERIE','Taxe royale ×2 : première mise obligatoire, retrait possible ensuite. Haki des Rois interdit.']
   };
   function chooseSchedule(players,recruits){
     const total=players*recruits,qty=recruits<=5?1:recruits<=9?2:3;
@@ -336,7 +336,7 @@
     return beforeRoyalBid(value);
   };
   pass=function(){
-    if(v2Royal()&&v2Active().stage==='auction')return showToast('👑 Rêverie : impossible de passer volontairement !');
+    if(v2Royal()&&v2Active().stage==='auction'&&state.auction?.leader===null)return showToast('👑 Rêverie : il faut une première mise avant de pouvoir se retirer !');
     return beforeRoyalPass();
   };
   settle=function(){
@@ -416,8 +416,8 @@
         '<div class="event-banner">✦ '+esc(label[1])+' ✦ '+esc(label[2])+'</div><section class="card auction">');
       if(v2Royal()){
         html=html.replace(/<button class="haki-btn"[\s\S]*?<\/button>/,'');
-        html=html.replace(/<button class="pass-btn"[^>]*>[\s\S]*?<\/button>/,
-          '<button class="pass-btn" disabled>👑 Taxe royale : refus interdit</button>');
+        if(a?.leader===null)html=html.replace(/<button class="pass-btn"[^>]*>[\s\S]*?<\/button>/,
+          '<button class="pass-btn" disabled>👑 Première mise obligatoire</button>');
       }
     }
     if(a?.warGuaranteed&&!v2Active()&&f?.plan){
@@ -538,7 +538,7 @@
         '<li>Haki de l’Armement : à chaque recrue de <b>60 points ou moins</b>, proposer un bonus de <b>+20 points définitifs</b> (ou le garder pour plus tard). Une utilisation par joueur.</li>'+
         '<li>Synergies par affiliation : 1 personnage = 0 point ; 2 = +10 ; 3 = +20 ; 4 = +30 ; 5 ou plus = +50. Chaque affiliation donne son propre bonus, cumulable avec les autres. Les anciennes synergies par combinaison ont été supprimées.</li>'+
         '<li>Sept événements possibles : Guerre au sommet, Prime de la Marine, Personnage mystère, Marché Noir, God Valley, SMILE et Rêverie. 1 événement pour 1 à 5 recrues, 2 pour 6 à 9, 3 à partir de 10. Chaque annonce reste affichée jusqu’à Continuer.</li>'+
-        '<li>Rêverie : enchère obligatoire, coût final doublé, Haki des Rois interdit. SMILE : chaque joueur lance une pièce (+25 ou −25 sur le personnage le plus faible, dans les limites 0 à 100).</li>');
+        '<li>Rêverie : première mise obligatoire, puis retrait gratuit autorisé ; coût final doublé et Haki des Rois interdit. SMILE : chaque joueur lance une pièce (+25 ou −25 sur le personnage le plus faible, dans les limites 0 à 100).</li>');
     }
   };
 

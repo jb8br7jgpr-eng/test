@@ -340,18 +340,18 @@
   modal.addEventListener('click',event=>{if(event.target===modal)closeModal();});
   document.addEventListener('keydown',event=>{if(event.key==='Escape')closeModal();});
   if('serviceWorker' in navigator && window.location.protocol==='https:'){
-    window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=pwa-20261014-rules-1').catch(()=>{}));
+    window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=pwa-20261015-royal-hud-1').catch(()=>{}));
   }
   render();
   </script>
   <script src="./opmercato-custom-portraits.js?v=20261013-portraits-2"></script>
   <script src="./mercato-upgrade.js?v=20261013-shared-portraits-1"></script>
   <script src="./mercato-rules.js?v=20261013-passfix"></script>
-  <script src="./mercato-features.js?v=20261014-rules-1"></script>
+  <script src="./mercato-features.js?v=20261015-royal-hud-1"></script>
   <script src="./mercato-card-premium.js?v=20261013-premium-2"></script>
   <script src="./mercato-hud-21.js?v=20261013-op21-1"></script>
   <script src="./mercato-history-21.js?v=20261013-op21-1"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script defer src="./mercato-online.js?v=20261014-rules-1"></script>
+  <script defer src="./mercato-online.js?v=20261015-royal-hud-1"></script>
 </body>
 </html>
