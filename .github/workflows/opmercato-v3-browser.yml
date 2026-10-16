@@ -50,6 +50,28 @@ jobs:
             if(await page.evaluate(()=>state.v3.phase)!=="ships")throw Error("Dice ties not resolved");
             await page.locator('[data-action^="v3-ship-"]').first().click();
             await page.locator('[data-action^="v3-ship-"]').nth(1).click();
+            const shipRows=await page.locator('.player-card .v3-team-ship').count();
+            if(shipRows!==2)throw Error("Ship information must be on its own row in each player summary: "+shipRows);
+            const portraitChecks=await page.evaluate(()=>{
+              const backup={ship:state.players[0].ship,turn:state.auction?.turnId,peek:state.v3.oroPeek,lock:state.v3.oroLocked,openers:state.v3.oroOpeners,swapped:state.v3.oroSwapped,used:state.players[0].observationUsed};
+              state.players[0].ship='orojackson';
+              if(state.auction){state.auction.turnId=0;state.auction.outcome=null;}
+              const ok=window.OPMERCATO_V3_ORO?.();
+              const cards=[...document.querySelectorAll('.v3-oro-card')];
+              const clips=cards.map(x=>x.querySelector('.v3-face-clip'));
+              const bounds=clips.map(x=>x?.getBoundingClientRect());
+              const sizes=bounds.map(x=>[Math.round(x?.width||0),Math.round(x?.height||0)]);
+              const escapes=clips.some((x,i)=>x&&x.querySelector('img')?.getBoundingClientRect().width>bounds[i].width+3);
+              if(typeof modal!=='undefined')modal.classList.add('hidden');
+              state.players[0].ship=backup.ship;state.players[0].observationUsed=backup.used;
+              if(state.auction)state.auction.turnId=backup.turn;
+              state.v3.oroPeek=backup.peek;state.v3.oroLocked=backup.lock;state.v3.oroOpeners=backup.openers;state.v3.oroSwapped=backup.swapped;
+              save();render();
+              return {ok,cards:cards.length,sizes,escapes};
+            });
+            if(!portraitChecks.ok||portraitChecks.cards!==6||portraitChecks.sizes.some(x=>x[0]<45||x[0]>68||x[1]<45||x[1]>68)||portraitChecks.escapes)
+              throw Error("Oro facial crop broke its grid: "+JSON.stringify(portraitChecks));
+            console.log("PASS local Oro face thumbnails, 6 cards, and independent ship summary");
             const result=await page.evaluate(()=>({phase:state.v3.phase,ships:state.players.map(p=>p.ship)}));
             if(new Set(result.ships).size!==2||!result.ships.every(Boolean))throw Error("Ships not unique "+JSON.stringify(result));
             const sprite=await page.evaluate(async()=>{const res=await fetch("./opmercato-ships-sprite.webp");return [res.status,(await res.arrayBuffer()).byteLength]});
