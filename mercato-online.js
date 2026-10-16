@@ -60,8 +60,7 @@
     const previous=view;
     if(next.event?.active?.type!=="burst"||next.event?.active?.round!==previous?.event?.active?.round)burstDraft="";
     view=next;
-    if(showing)paint();
-    addSync();
+    // L'écran de roulement apparaît AVANT le nouveau résultat pour éviter un flash prématuré.
     // Les deux iPhone voient le même lancer, même si l'autre joueur l'a déclenché.
     const oldEvent=previous?.event?.active,newEvent=next.event?.active;
     if(showing&&previous?.id===next.id&&oldEvent&&newEvent&&
@@ -88,6 +87,8 @@
         }
       }
     }
+    if(showing)paint();
+    addSync();
   }
   async function refresh(){
     if(!session||loading)return;
