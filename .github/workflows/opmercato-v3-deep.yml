@@ -35,6 +35,7 @@ jobs:
           const act=async(seat,action,extra={})=>(await send({action,roomId,token:tokens[seat],...extra})).room;
           const get=async(seat)=>(await send({action:"get",roomId,token:tokens[seat]})).room;
           let v=await act(0,"start");
+          for(let seat=0;seat<2;seat++)v=await act(seat,"v3-intro-ready");
           for(let seat=0;seat<2;seat++)v=await act(seat,"v3-roll");
           for(let guard=0;v.v3.stage==="dice-tie"&&guard++<40;){
             for(const seat of v.v3.tiePlayers)v=await act(seat,"v3-roll");
