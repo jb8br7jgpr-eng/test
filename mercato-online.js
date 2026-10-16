@@ -485,7 +485,7 @@
       const used=new Set(view.players.map(p=>p.ship).filter(Boolean));
       return box("⛵ Choix des navires",'<p>Ordre du tirage : '+x.choiceOrder.map(id=>label(view.players[id])).join(" → ")+'</p>'+
          '<h3>Au tour de '+label(owner)+'</h3><div class="v3-ship-grid">'+SHIPS3.map(sh=>
-          '<div class="v3-ship"><div class="v3-ship-art"><img src="./opmercato-ship-'+sh.id+'.jpg" alt="'+escOnline(sh.name)+'" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'"><span style="display:none">'+sh.emoji+'</span></div>'+
+          '<div class="v3-ship"><div class="v3-ship-art"><img src="./opmercato-ships-sprite.webp" style="object-position:'+(SHIPS3.findIndex(q=>q.id===sh.id)*25)+'% 50%" alt="'+escOnline(sh.name)+'" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'"><span style="display:none">'+sh.emoji+'</span></div>'+
           '<strong>'+escOnline(sh.name)+'</strong><small>'+escOnline(sh.power)+'</small><p>'+escOnline(sh.effect)+'</p>'+
           button("v3-select-"+sh.id,used.has(sh.id)?"Déjà choisi":"Choisir ce navire","primary",used.has(sh.id)||current!==mine)+'</div>').join("")+'</div>');
     }
