@@ -305,9 +305,19 @@
         faces.map((face,i)=>'<div class="v2-dice-face v2-side-'+(i+1)+'">'+face+'</div>').join('')+
         '</div></div>';
     }
-    veil.innerHTML=visual+'<strong class="v2-fx-result">'+esc(message)+'</strong>';
+    // On ne révèle JAMAIS le score ou le côté de la pièce avant l'arrêt de l'animation.
+    const label=type==='die'?'Le dé roule…':'La pièce tourne…';
+    veil.innerHTML=visual+'<strong class="v2-fx-progress" role="status">'+label+'</strong>'+
+      '<strong class="v2-fx-result" hidden></strong>';
+    veil.querySelector('.v2-fx-result').textContent=message;
     document.body.appendChild(veil);
-    setTimeout(()=>veil.remove(),2100);
+    const duration=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?180:1850;
+    setTimeout(()=>{
+      if(!veil.isConnected)return;
+      veil.querySelector('.v2-fx-progress').hidden=true;
+      veil.querySelector('.v2-fx-result').hidden=false;
+    },duration);
+    setTimeout(()=>veil.remove(),duration+1300);
   }
   window.OPMERCATO_EVENT_FX=v2Fx;
   function v2Roll(){
@@ -447,7 +457,9 @@
       const rows=e.type==='marine'?state.featureConfig.rolls.map(x=>
         esc(player(x.id)?.name)+' : 🎲 '+x.roll+' → +'+x.percent+' % · '+currency(x.amount)):
         e.flips.map(x=>esc(player(x.id)?.name)+' : '+(x.charId?esc(CARDS[x.charId]?.name||x.charId)+' · '+(x.pile?'Pile +25':'Face −25')+' · '+x.before+' → '+x.after:'Aucune recrue à transformer'));
-      content='<div class="v2-local-results">'+rows.map(x=>'<p>'+x+'</p>').join('')+'</div>'+
+      content=(e.type==='smile'&&window.OPMERCATO_SMILE_SUMMARY?
+        window.OPMERCATO_SMILE_SUMMARY.render(e.flips,my):
+        '<div class="v2-local-results">'+rows.map(x=>'<p>'+x+'</p>').join('')+'</div>')+
         '<button class="primary" data-action="v2-ready">Continuer →</button>';
     }else if(e.stage==='god-result'){
       content='<p>Les pertes de chaque équipage</p><div class="v2-god-results">'+
@@ -717,7 +729,8 @@
     .v2-coin-face{transform:rotateY(180deg);background:radial-gradient(circle,#f8e5ad,#b88c3f 75%)}
     @keyframes v2ActualCoin{0%{transform:translateY(-90px) rotateY(0deg) scale(.7)}
       100%{transform:translateY(0) rotateY(var(--coin-flip)) scale(1)}}
-    .v2-fx-result{display:block;font-size:21px;line-height:1.5;color:#ffe4a4;text-shadow:0 3px 7px #071926}
+    .v2-fx-progress,.v2-fx-result{display:block;font-size:21px;line-height:1.5;color:#ffe4a4;text-shadow:0 3px 7px #071926}
+    .v2-fx-progress[hidden],.v2-fx-result[hidden]{display:none!important}
     @media(prefers-reduced-motion:reduce){.v2-dice-cube,.v2-flip-coin{animation-duration:.01ms}}
 
     @keyframes v2LocalSpin{to{transform:rotateY(180deg) rotateZ(30deg) scale(1.2)}}
