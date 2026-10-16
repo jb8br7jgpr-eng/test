@@ -255,7 +255,9 @@
         const p=view.players[x.id];return '<p>'+label(p)+' : '+escOnline(CARDS[x.charId]?.name||x.charId)+
           ' — '+(x.pile?"Pile +25":"Face −25")+' · '+x.before+' → '+x.after+' pts</p>';
       });
-      content='<div class="v2-results">'+items.join("")+'</div>'+
+      content=(e.type==="smile"&&window.OPMERCATO_SMILE_SUMMARY?
+        window.OPMERCATO_SMILE_SUMMARY.render(e.flips,view.players):
+        '<div class="v2-results">'+items.join("")+'</div>')+
         button("event-ready",myReady?"✓ En attente des autres pirates…":"Continuer →","primary",myReady);
     }else if(e.stage==="god-result"){
       content='<p>💥 Voici les personnages perdus par chaque pirate :</p><div class="op21-god-result">'+view.players.map(p=>
@@ -327,11 +329,17 @@
       actionHtml='<div class="online-turn">🎲 Au tour de <b>'+label(roller)+'</b> pour lancer son dé</div>'+
         button("roll","🎲 Lancer mon dé (5 à 30 %)","primary",!mine);
     }else if(!active){
-      const rawCost=royal?BigInt(a.highBid)*2n:BigInt(a.highBid);const effectiveCost=leader?.ship==='mobydick'?((rawCost*90n+50n)/100n||1n):rawCost;
+      const bidAmount=BigInt(a.highBid||"0"),rawCost=royal?bidAmount*2n:bidAmount;
+      const recorded=leader?.purchases?.[a.charId];
+      const effectiveCost=leader&&recorded!==undefined?BigInt(recorded):leader?.ship==='mobydick'?((rawCost*90n+50n)/100n||1n):rawCost;
       const winner=leader?'🏆 '+label(leader)+' recrute '+escOnline(CARDS[a.charId]?.name||a.charId)+
          (a.hakiWinner===leader.id?' gratuitement grâce au Haki des Rois':" pour "+berrys(effectiveCost)+(leader?.ship==='mobydick'?' · 🐋 Protection du Père : −'+berrys(rawCost-effectiveCost):''))+(view.v3&&leader.shipBonus?.[a.charId]?' · 🐉 Terre Sainte +'+leader.shipBonus[a.charId]+' → '+powerFor(leader,a.charId)+' pts':'') :
          "🌊 Personnage invendu";
-      actionHtml='<div class="online-turn online-winner">'+winner+'</div>'+
+      const royalReceipt=leader&&royal&&a.hakiWinner!==leader.id?
+        '<div class="online-royal-receipt">👑 RÊVERIE : '+berrys(bidAmount)+' × 2 = <strong>'+berrys(rawCost)+'</strong>'+
+        (leader.ship==='mobydick'?' · 🐋 Protection du Père −'+berrys(rawCost-effectiveCost):'')+
+        '<div>Montant réellement payé : <strong>'+berrys(effectiveCost)+'</strong></div></div>':"";
+      actionHtml='<div class="online-turn online-winner">'+winner+'</div>'+royalReceipt+
         (armamentPending?(leader.id===me.id?
           '<div class="op21-armament-online"><strong>🛡 Haki de l’Armement</strong><p>'+escOnline(CARDS[a.charId]?.name||a.charId)+' : '+CARDS[a.charId].power+' → '+Math.min(100,CARDS[a.charId].power+(leader.ship==='polartang'?40:20))+' points. Utiliser ton Haki maintenant ?</p>'+button("armament-use","🛡 Renforcer de +"+(leader.ship==='polartang'?40:20)+" points")+button("armament-skip","Conserver mon Haki","btn-ghost")+'</div>':
           '<div class="op21-armament-online">🛡 '+label(leader)+' choisit d’utiliser ou non son Haki de l’Armement…</div>'):'')+
@@ -702,6 +710,8 @@
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&showing)refresh();});
   const css=document.createElement("style");
   css.textContent=`
+    .online-royal-receipt{padding:14px 11px;margin:12px 0;text-align:center;background:#293b47;color:#ffe0a2;border:1px solid #d4a966;border-radius:13px;line-height:1.7;font-size:13px}
+    .online-royal-receipt strong{color:#fff0bc}
     .v3-shared-backdrop{position:fixed;z-index:1400;inset:0;display:flex;align-items:center;justify-content:center;background:#061522ef;overflow-y:auto;padding:calc(env(safe-area-inset-top) + 15px) 15px calc(env(safe-area-inset-bottom) + 15px);box-sizing:border-box}
     .v3-shared-notice{width:min(100%,460px);max-height:95dvh;overflow-y:auto;box-sizing:border-box;text-align:center;padding:23px 20px 25px;border:2px solid #e0b96d;border-radius:20px;background:radial-gradient(ellipse at top,#284d61,#102839 78%);color:#eaf5f6;box-shadow:0 18px 60px #000a}
     .v3-shared-kicker{font-size:11px;letter-spacing:.13em;color:#f7cc7c;font-weight:900}
