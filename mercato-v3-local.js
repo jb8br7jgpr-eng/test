@@ -70,7 +70,7 @@ function screen(){const v=V(),m=v.morgans,t=v.market;
   if(['character','reveal','winner'].includes(m.phase))h+=btn('morgans-next','Continuer');
   if(m.phase==='wheel')h+='<div class="v3-wheel">🎡</div>'+btn('morgans-wheel','Tourner la roue');
   if(['winner','offer','armament'].includes(m.phase))h+='<h3>🏆 '+esc(player(m.winner).name)+'</h3>';
-  if(m.phase==='offer')h+='<p>Recrutement gratuit · '+(m.bonus?'Terre Sainte +'+m.bonus:'')+'</p>'+btn('morgans-accept','Accepter la recrue')+btn('morgans-reject','Refuser');
+  if(m.phase==='offer'){const recipient=player(m.winner),previewPlayer={...recipient,roster:[...recipient.roster,m.id],shipBonus:{...recipient.shipBonus,[m.id]:recipient.ship==='redforce'?m.bonus:0}};const gain=getScore(previewPlayer)-getScore(recipient);h+='<p>Recrutement gratuit · '+(m.bonus?'Terre Sainte +'+m.bonus+' · ':'')+'Gain total estimé : <strong>+'+gain+' points</strong>, synergies comprises.</p>'+btn('morgans-accept','Accepter la recrue')+btn('morgans-reject','Refuser');}
   if(m.phase==='armament')h+=btn('morgans-armament','🛡 Utiliser le Haki +'+(player(m.winner).ship==='polartang'?40:20))+btn('morgans-skip','Conserver mon Haki');
   return h;
  }
@@ -105,14 +105,14 @@ function v3OroScreen(){
  const make=(key,initial)=>'<select id="'+key+'">'+items.map((x,i)=>'<option value="'+i+'" '+(i===initial?'selected':'')+'>'+(i+1)+'. '+nm(x.id)+'</option>').join('')+'</select>';
  modal.innerHTML='<section class="card modal-content v3-oro-modal"><span class="eyebrow">👑 Vision du Futur</span>'+
  '<h2>Les '+items.length+' prochaines cartes</h2><div class="v3-oro-grid">'+items.map((x,i)=>
-  '<div class="v3-oro-card"><small>Position '+(i+1)+'</small><b>'+nm(x.id)+'</b>'+
+  '<div class="v3-oro-card"><small>Position '+(i+1)+'</small><img class="portrait-photo v3-oro-photo" data-portrait-id="'+esc(x.id)+'" alt="" loading="lazy"><b>'+nm(x.id)+'</b>'+
   '<span>Rang '+tierOf(CARDS[x.id].power).tier+' · '+CARDS[x.id].power+' pts</span>'+
   '<small>Premier à miser : '+esc(player(x.first).name)+'</small></div>').join('')+'</div>'+
  (items.length>=2&&!v.oroSwapped?'<h3>🔀 Échanger deux positions</h3><div class="v3-oro-pair">'+make('v3-oro-a',0)+make('v3-oro-b',1)+'</div>'+
  '<p id="v3-oro-preview">Aperçu : positions 1 et 2 échangées ; premiers enchérisseurs inchangés.</p>'+
  '<button class="primary" data-action="v3-oro-confirm">Confirmer l’inversion</button>':'')+
  '<button class="btn-ghost" data-action="close-modal">Continuer sans autre inversion</button></section>';
- modal.classList.remove('hidden');
+ modal.classList.remove('hidden');window.OPMERCATO_SHARED?.refreshImages?.();
 }
 function v3UseOro(){
  const a=state?.auction,p=a?.turnId!==null?player(a?.turnId):null;
@@ -182,6 +182,6 @@ document.addEventListener('click',e=>{const b=e.target.closest('button[data-acti
  save();render();
 },true);
 const css=document.createElement('style');css.textContent='.v3-screen{text-align:center;padding:20px;margin:16px 0}.v3-screen h2{color:#f6d28f;font-size:26px}.v3-screen .primary{display:block;width:100%;margin:10px 0}.v3-screen input,.v3-screen select{width:100%;background:#163544;color:#fff;border:1px solid #b98e56;border-radius:10px;padding:12px;margin:8px 0}.v3-ship-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px}.v3-ship{display:grid;gap:7px;background:#23465c;padding:8px;border-radius:13px}.v3-ship img{width:100%;aspect-ratio:1;object-fit:cover}.v3-ship small,.v3-ship p{font-size:12px}.v3-players-mini{font-size:12px;padding:10px;color:#c5d4dd}.v3-ship-mini{font-size:11px;color:#f4ca87}.v3-wheel{font-size:80px;animation:v3spin 2s linear infinite}@keyframes v3spin{to{transform:rotate(360deg)}}';
-css.textContent+='.v3-hud-ship{width:24px;height:24px;border-radius:50%;object-fit:cover;display:inline-block;vertical-align:middle;margin-right:3px}.v3-mini-hud{margin-top:8px}.v3-morgans-portrait{max-width:400px;margin:10px auto}.v3-trade-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.v3-trade-cards .character-card{min-width:0;min-height:185px;padding:10px}.v3-trade-cards .character-name{font-size:18px;margin:20px 0 10px}.v3-trade-cards .power strong{font-size:23px}.v3-oro-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.v3-oro-card{display:grid;gap:3px;padding:8px;border:1px solid #94764f;border-radius:10px;background:#183b50;font-size:11px}.v3-oro-card span,.v3-oro-card small{font-size:10px;color:#cfdeed}.v3-oro-pair{display:grid;grid-template-columns:1fr 1fr;gap:9px}';
+css.textContent+='.v3-oro-photo{width:100%;height:auto;aspect-ratio:1;object-fit:cover;border-radius:8px;background:#31556a}.v3-hud-ship{width:24px;height:24px;border-radius:50%;object-fit:cover;display:inline-block;vertical-align:middle;margin-right:3px}.v3-mini-hud{margin-top:8px}.v3-morgans-portrait{max-width:400px;margin:10px auto}.v3-trade-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.v3-trade-cards .character-card{min-width:0;min-height:185px;padding:10px}.v3-trade-cards .character-name{font-size:18px;margin:20px 0 10px}.v3-trade-cards .power strong{font-size:23px}.v3-oro-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.v3-oro-card{display:grid;gap:3px;padding:8px;border:1px solid #94764f;border-radius:10px;background:#183b50;font-size:11px}.v3-oro-card span,.v3-oro-card small{font-size:10px;color:#cfdeed}.v3-oro-pair{display:grid;grid-template-columns:1fr 1fr;gap:9px}';
 document.head.appendChild(css);
 })();
