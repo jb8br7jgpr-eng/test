@@ -478,6 +478,11 @@
     return ids.reduce((n,id)=>n+(id===add?Math.max(0,Math.min(100,Number(CARDS[id]?.power||0)+Number(view.players.find(x=>x.roster.includes(add))?.shipBonus?.[add]||0)+
        Number(view.players.find(x=>x.roster.includes(add))?.smileModifiers?.[add]||0))):v3Power(p,id)),0)+v3Synergy(ids);
   };
+  function v3TradeCard(id,owner){
+    const c=CARDS[id]||{},name=escOnline(c.name||id),power=owner?v3Power(owner,id):Number(c.power||0);
+    return '<article class="v3-transfer-card"><span class="v3-transfer-photo"><img class="portrait-photo" data-portrait-id="'+escOnline(id)+'" alt="" loading="lazy"></span>'+
+      '<strong>'+name+'</strong><small>Rang '+classFor(Number(c.power||0))+' · '+power+' pts</small></article>';
+  }
   function v3Page(){
     const x=view.v3,me=view.players[view.yourSeat],mine=view.yourSeat;
     if(x.stage==="intro"){
@@ -546,11 +551,22 @@
     }
     if(x.stage==="market"){
       const m=x.market,owner=view.players[m.order[m.step]];
+      if(m.result){
+        const r=m.result,a=view.players[r.from],b=view.players[r.to],ready=r.ready||[];
+        const inner='<div class="v3-transfer-outcome"><div class="v3-transfer-symbol">'+(r.accepted?'✅':'❌')+'</div>'+
+          '<h3>Échange '+(r.accepted?'accepté !':'refusé')+'</h3>'+
+          '<p>'+label(a)+' a proposé un échange à '+label(b)+'.</p>'+
+          '<div class="v3-transfer-vs">'+v3TradeCard(r.give,r.accepted?b:a)+'<span class="v3-transfer-arrow">⇄</span>'+v3TradeCard(r.take,r.accepted?a:b)+'</div>'+
+          '<p>'+(r.accepted?'Les deux personnages ont changé d’équipage.':'Les personnages restent dans leurs équipages respectifs.')+'</p>'+
+          '<p class="v3-transfer-ready">'+ready.length+'/'+view.players.length+' pirates prêts à continuer.</p>'+
+          (ready.includes(mine)?'<p>En attente des autres joueurs…</p>':button("v3-trade-continue",m.step+1>=m.order.length?"Continuer les enchères →":"Continuer le marché →","primary"))+'</div>';
+        return box("🔄 Résultat du transfert",inner);
+      }
       let inner='<p>Une proposition par joueur, un personnage contre un personnage, sans Berrys.</p>'+
         '<p>Proposition '+(m.step+1)+'/'+m.order.length+' · Au tour de <b>'+label(owner)+'</b></p>';
       if(m.offer){
         const a=view.players[m.offer.from],b=view.players[m.offer.to],give=m.offer.give,take=m.offer.take;
-        inner+='<div class="v3-trade-versus"><div>'+portraitCard(give)+'</div><span>⇄</span><div>'+portraitCard(take)+'</div></div>'+
+        inner+='<div class="v3-transfer-vs">'+v3TradeCard(give,a)+'<span class="v3-transfer-arrow">⇄</span>'+v3TradeCard(take,b)+'</div>'+
          '<p>'+label(a)+' propose à '+label(b)+'</p>'+
          '<p>Effets estimés : '+label(a)+' <b>'+(projected3(a,give,take)-a.score)+' pts</b> · '+
          label(b)+' <b>'+(projected3(b,take,give)-b.score)+' pts</b></p>'+
@@ -581,8 +597,10 @@
     if([...take.options].some(x=>x.value===old))take.value=old;
     const a=give.value,b=take.value,panel=root.querySelector("#v3-trade-preview");
     if(!a||!b||!panel)return;
-    panel.innerHTML='<p>Impact total (synergies comprises) : <b>'+label(mine)+' '+(projected3(mine,a,b)-mine.score)+
+    panel.innerHTML='<div class="v3-transfer-vs">'+v3TradeCard(a,mine)+'<span class="v3-transfer-arrow">⇄</span>'+v3TradeCard(b,other)+'</div>'+
+      '<p>Impact total (synergies comprises) : <b>'+label(mine)+' '+(projected3(mine,a,b)-mine.score)+
       ' pts</b> · <b>'+label(other)+' '+(projected3(other,b,a)-other.score)+' pts</b></p>';
+    window.OPMERCATO_SHARED?.refreshImages?.();
   }
 
   function paint(){
@@ -655,7 +673,7 @@
     if(a==="v3-morgans-accept"||a==="v3-morgans-reject"){await action("v3-morgans-recruit",{accept:a==="v3-morgans-accept"});return;}
     if(a==="v3-trade-offer"){await action("v3-trade-offer",{to:Number(root.querySelector("#v3-trade-target")?.value),
        give:root.querySelector("#v3-trade-give")?.value,take:root.querySelector("#v3-trade-take")?.value});return;}
-    if(["v3-trade-pass","v3-trade-accept","v3-trade-reject"].includes(a)){await action(a);return;}
+    if(["v3-trade-pass","v3-trade-accept","v3-trade-reject","v3-trade-continue"].includes(a)){await action(a);return;}
     if(a==="armament-use"){await action("armament",{charId:view.auction?.charId});return;}
     if(a==="armament-skip"){await action("armament-skip");return;}
     if(a==="event-ready"){await action("event-ready");return;}
@@ -710,6 +728,18 @@
     .v3-prediction-card{max-width:320px;margin:14px auto}
     .v3-morgans-logo,.v3-wheel{text-align:center;font-size:72px;animation:v3die 1.5s both}
     .v3-wheel{animation:v3die 2s linear infinite}
+    .v3-transfer-vs{display:grid;grid-template-columns:minmax(0,1fr) 22px minmax(0,1fr);align-items:center;gap:6px;width:100%;max-width:520px;margin:14px auto}
+    .v3-transfer-card{min-width:0;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;align-items:center;gap:7px;text-align:center;border:1px solid #68899c;border-radius:15px;background:#18394e;padding:12px 5px}
+    .v3-transfer-card strong{max-width:100%;display:block;font-size:clamp(11px,3.2vw,15px);overflow-wrap:anywhere;line-height:1.25;color:#f7f5e9}
+    .v3-transfer-card small{color:#f0ce96;font-size:11px}
+    .v3-transfer-photo{position:relative;display:block;width:64px;height:64px;min-width:64px;overflow:hidden;border:2px solid #f5d193;border-radius:50%;background:#2a5066}
+    .v3-transfer-photo img{width:100%!important;height:100%!important;object-fit:cover!important;object-position:center 24%;border-radius:50%}
+    .v3-transfer-arrow{font-size:22px;color:#fbd28e;text-align:center}
+    .v3-transfer-outcome{text-align:center;padding:8px 0}
+    .v3-transfer-symbol{font-size:64px}
+    .v3-transfer-outcome h3{font-size:clamp(20px,6vw,28px);color:#fbd28e;margin:8px}
+    .v3-transfer-outcome p{font-size:14px;line-height:1.5}
+    .v3-transfer-ready{font-size:12px!important;color:#c2d7e2}
     .v3-trade-versus{display:grid;grid-template-columns:1fr 30px 1fr;align-items:center;gap:5px}
     .v3-trade-versus .character-card{min-height:100px;padding:8px;margin:0}
     .v3-trade-versus .character-name{font-size:16px;margin:2px}.v3-trade-versus .power strong{font-size:16px}
