@@ -400,7 +400,7 @@
     const first=state.auction.firstTurnId??0,actor=(first+e.step)%state.players.length,
       opponent=state.players[(actor+1)%state.players.length];
     if(id&&!opponent.roster.includes(id))return;
-    if(id){opponent.roster=opponent.roster.filter(x=>x!==id);e.removed.push({from:opponent.id,id});}
+    if(id){opponent.roster=opponent.roster.filter(x=>x!==id);e.removed.push({from:opponent.id,id});(state.featureConfig.godLosses??=[]).push({from:opponent.id,id});}
     e.step++;if(e.step===state.players.length){e.stage='god-result';e.ready=[];}
     save();render();
   }
