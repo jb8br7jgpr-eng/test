@@ -253,7 +253,7 @@
     return `<div class="resolved"><div class="icon">${won?'🏆':'🌊'}</div><h2>${won?'Personnage recruté !':'Personnage invendu'}</h2><p>${won?`<b>${esc(p.name)}</b> recrute <b>${esc(c.name)}</b> pour <strong>${currency(a.highBid)}</strong>.`:`Personne n'a enchéri sur <b>${esc(c.name)}</b>.`}</p><button class="primary" data-action="next">${isComplete()||state.drawIndex>=state.drawPile.length?'Voir le classement final':'Personnage suivant →'}</button></div>`;
   }
   function scoreBoard(){
-    return `<div class="section-heading"><h2>Les équipages</h2><small>5 places par joueur</small></div><section class="score-list">${state.players.map((p,i)=>{
+    return `<div class="section-heading"><h2>Les équipages</h2><small>${TEAM_SIZE} places par joueur</small></div><section class="score-list">${state.players.map((p,i)=>{
       let roster=p.roster.map(id=>{const c=CARDS[id];return `<span class="chip">${esc(c.name)} <em>${tierOf(c.power).tier}</em></span>`;}).join('');
       let empty=Array.from({length:TEAM_SIZE-p.roster.length},()=>'<span class="chip empty">+ à recruter</span>').join('');
       return `<article class="player-card"><div class="player-header"><div class="identity"><div class="avatar" style="--avatar-bg:${AVATARS[i]}">${esc(p.name.trim().slice(0,1).toUpperCase()||'P')}</div><div><strong>${esc(p.name)}</strong><small>${currency(p.budget)} restants · ${p.roster.length}/${TEAM_SIZE} recrutés</small></div></div><div class="player-score"><b>${getScore(p)}</b><small>POINTS</small></div></div><div class="roster">${roster}${empty}</div></article>`;
