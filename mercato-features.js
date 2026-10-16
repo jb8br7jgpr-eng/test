@@ -154,6 +154,7 @@
     f.rollIndex++;
     if(f.rollIndex>=state.players.length)f.awaitingRolls=false;
     save();render();
+    v2Fx('die',p.name+' : '+roll+' → +'+percent+' % ('+currency(amount)+')',roll);
   }
 
   const oldDrawNext=drawNext;
