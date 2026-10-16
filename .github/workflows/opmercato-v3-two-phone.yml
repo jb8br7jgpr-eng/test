@@ -61,13 +61,21 @@ jobs:
                 throw e;
               }
             }
-            for(const page of pages)await page.locator('[data-online="v3-roll"]').click();
+            for(const page of pages){
+              await page.locator('.op-v3-dice-overlay').waitFor({state:"hidden",timeout:10000});
+              await page.locator('[data-online="v3-roll"]:not([disabled])').click();
+              await page.locator('.op-v3-dice-overlay').waitFor({state:"hidden",timeout:10000});
+            }
             for(let guard=0;guard<40;guard++){
               await host.waitForTimeout(500);
               if(await host.locator('[data-online^="v3-select-"]').count())break;
               for(const page of pages){
                 const button=page.locator('[data-online="v3-roll"]');
-                if(await button.count()&&await button.isEnabled())await button.click();
+                if(await page.locator('.op-v3-dice-overlay').count())continue;
+                if(await button.count()&&await button.isEnabled()) {
+                  await button.click();
+                  await page.locator('.op-v3-dice-overlay').waitFor({state:'hidden',timeout:10000});
+                }
               }
             }
             if(!await host.locator('[data-online^="v3-select-"]').count())throw Error("Ship selection did not render");
