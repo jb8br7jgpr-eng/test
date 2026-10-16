@@ -89,7 +89,7 @@
     if(!p)return;
     const skipWithoutBid=isUnbid(a);
     if(skipWithoutBid && passUsed(p)>=MAX_PASSES+(p.ship==='sunny'?3:0)){
-      showToast('5 refus sans enchère utilisés. Tu dois miser ou utiliser ton Haki des Rois si disponible.');
+      showToast('Tous tes refus sont utilisés. Tu dois miser ou utiliser ton Haki des Rois si disponible.');
       return;
     }
     if(skipWithoutBid)p.passesUsed=passUsed(p)+1;
@@ -137,7 +137,7 @@
     html=html.replace("Passer t'exclut uniquement des enchères pour ce personnage.",
       freeWithdrawal?
       'Se retirer d’une enchère déjà commencée ne consomme aucune de tes 5 passes.':
-      'Seul un refus avant la première enchère consomme une passe sur les '+MAX_PASSES+'.');
+      'Seul un refus avant la première enchère consomme une passe sur les '+(MAX_PASSES+(p.ship==='sunny'?3:0))+'.');
     return html;
   };
 
@@ -149,7 +149,7 @@
     return html.replace(/<div class="roster">/g,()=>{
       const p=state.players[i++];
       if(!p)return '<div class="roster">';
-      return '<div class="special-stats"><span>⏭️ Refus sans enchère : '+passUsed(p)+'/'+MAX_PASSES+'</span>'+
+      return '<div class="special-stats"><span>⏭️ Refus sans enchère : '+passUsed(p)+'/'+(MAX_PASSES+(p.ship==='sunny'?3:0))+'</span>'+
         '<span class="'+(p.hakiUsed?'power-spent':'power-ready')+'">'+
         (p.hakiUsed?'👑 Haki utilisé':'👑 Haki disponible')+'</span></div><div class="roster">';
     });
