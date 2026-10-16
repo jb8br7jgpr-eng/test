@@ -7,12 +7,28 @@ const v3ShipStatus=p=>p.ship==='sunny'?(8-p.passesUsed)+' refus':p.ship==='redfo
 const v3ShipImage=p=>p.ship?'<img class="v3-hud-ship" src="./opmercato-ships-sprite.webp" style="object-position:'+(SHIPS.findIndex(x=>x[0]===p.ship)*25)+'% 50%" alt="">':'';
 const v3MiniHud=()=>'<div class="op21-local-hud v3-mini-hud">'+state.players.map(p=>'<div class="op21-hud-item"><b class="op21-hud-name">'+esc(p.name)+'</b><strong class="op21-hud-money">'+currency(p.budget)+'</strong><small class="op21-hud-stats">⭐ '+getScore(p)+' pts</small>'+(p.ship?'<small>'+v3ShipImage(p)+' '+v3ShipStatus(p)+'</small>':'')+'</div>').join('')+'</div>';
 const oldStart=start,oldDraw=drawNext,oldScore=getScore,oldSettle=settle,oldRender=render,oldPass=pass;
+const oldScoreBoardV3=scoreBoard;
+scoreBoard=function(){
+ let html=oldScoreBoardV3();
+ if(!V())return html;
+ for(const p of state.players)for(const id of p.roster){
+   const n=p.shipBonus?.[id];if(!n)continue;
+   const c=CARDS[id];if(!c)continue;
+   const marker=esc(c.name)+' <em>'+tierOf(c.power).tier+'</em>';
+   html=html.replace(marker,marker+' <small class="v3-redforce-bonus">🐉 Terre Sainte +'+n+' · '+pow(p,id)+' pts</small>');
+ }
+ return html;
+};
 const oldResolved=resolvedScreen;
 resolvedScreen=function(a,c){
  let html=oldResolved(a,c);
- if(!V()||a.outcome!=='sold'||a.leader===null||a.hakiWinner===a.leader)return html;
+ if(!V()||a?.outcome!=='sold'||a.leader===null)return html;
  const p=player(a.leader);
- if(!p||p.ship!=='mobydick'||!p.purchases?.[a.charId])return html;
+ if(p?.ship==='redforce'&&p.shipBonus?.[a.charId]){
+   const n=p.shipBonus[a.charId];
+   html+='<div class="v3-redforce-result">🐉 Terre Sainte activée ! <strong>+'+n+' points</strong> · '+nm(a.charId)+' : '+pow(p,a.charId)+' points (rang inchangé)</div>';
+ }
+ if(!p||p.ship!=='mobydick'||!p.purchases?.[a.charId]||a.hakiWinner===a.leader)return html;
  const paid=BigInt(p.purchases[a.charId]),gross=BigInt(a.highBid)*(state.featureConfig?.active?.type==='reverie'?2n:1n);
  const saved=gross-paid;
  if(saved<=0n)return html;
@@ -209,6 +225,6 @@ document.addEventListener('click',async e=>{const b=e.target.closest('button[dat
  save();render();
 },true);
 const css=document.createElement('style');css.textContent='.v3-screen{text-align:center;padding:20px;margin:16px 0}.v3-screen h2{color:#f6d28f;font-size:26px}.v3-screen .primary{display:block;width:100%;margin:10px 0}.v3-screen input,.v3-screen select{width:100%;background:#163544;color:#fff;border:1px solid #b98e56;border-radius:10px;padding:12px;margin:8px 0}.v3-ship-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px}.v3-ship{display:grid;gap:7px;background:#23465c;padding:8px;border-radius:13px}.v3-ship img{width:100%;aspect-ratio:1;object-fit:cover}.v3-ship small,.v3-ship p{font-size:12px}.v3-players-mini{font-size:12px;padding:10px;color:#c5d4dd}.v3-ship-mini{font-size:11px;color:#f4ca87}.v3-wheel{font-size:80px;animation:v3spin 2s linear infinite}@keyframes v3spin{to{transform:rotate(360deg)}}';
-css.textContent+='.v3-intro-symbols{font-size:66px;filter:drop-shadow(0 8px 14px #0007);margin:12px 0}.v3-start-intro{max-width:620px;margin:auto}.v3-intro-steps{text-align:left;display:grid;gap:8px;margin:22px auto}.v3-intro-steps p{margin:0;padding:12px;border:1px solid #97794d;border-radius:12px;background:#1a3647;line-height:1.5}.v3-oro-photo{width:100%;height:auto;aspect-ratio:1;object-fit:cover;border-radius:8px;background:#31556a}.v3-hud-ship{width:24px;height:24px;border-radius:50%;object-fit:cover;display:inline-block;vertical-align:middle;margin-right:3px}.v3-mini-hud{margin-top:8px}.v3-morgans-portrait{max-width:400px;margin:10px auto}.v3-trade-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.v3-trade-cards .character-card{min-width:0;min-height:185px;padding:10px}.v3-trade-cards .character-name{font-size:18px;margin:20px 0 10px}.v3-trade-cards .power strong{font-size:23px}.v3-oro-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.v3-oro-card{display:grid;gap:3px;padding:8px;border:1px solid #94764f;border-radius:10px;background:#183b50;font-size:11px}.v3-oro-card span,.v3-oro-card small{font-size:10px;color:#cfdeed}.v3-oro-pair{display:grid;grid-template-columns:1fr 1fr;gap:9px}';
+css.textContent+='.v3-redforce-result{padding:14px;text-align:center;background:#183b50;border:1px solid #e0af67;border-radius:12px;color:#ffdc93;font-size:14px;margin:12px auto}.v3-redforce-bonus{display:block;font-size:10px;font-weight:800;color:#eed092}.v3-intro-symbols{font-size:66px;filter:drop-shadow(0 8px 14px #0007);margin:12px 0}.v3-start-intro{max-width:620px;margin:auto}.v3-intro-steps{text-align:left;display:grid;gap:8px;margin:22px auto}.v3-intro-steps p{margin:0;padding:12px;border:1px solid #97794d;border-radius:12px;background:#1a3647;line-height:1.5}.v3-oro-photo{width:100%;height:auto;aspect-ratio:1;object-fit:cover;border-radius:8px;background:#31556a}.v3-hud-ship{width:24px;height:24px;border-radius:50%;object-fit:cover;display:inline-block;vertical-align:middle;margin-right:3px}.v3-mini-hud{margin-top:8px}.v3-morgans-portrait{max-width:400px;margin:10px auto}.v3-trade-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.v3-trade-cards .character-card{min-width:0;min-height:185px;padding:10px}.v3-trade-cards .character-name{font-size:18px;margin:20px 0 10px}.v3-trade-cards .power strong{font-size:23px}.v3-oro-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.v3-oro-card{display:grid;gap:3px;padding:8px;border:1px solid #94764f;border-radius:10px;background:#183b50;font-size:11px}.v3-oro-card span,.v3-oro-card small{font-size:10px;color:#cfdeed}.v3-oro-pair{display:grid;grid-template-columns:1fr 1fr;gap:9px}';
 document.head.appendChild(css);
 })();
