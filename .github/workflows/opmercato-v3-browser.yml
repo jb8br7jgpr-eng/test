@@ -45,6 +45,7 @@ jobs:
               if(!["dice","dice-tie"].includes(phase))throw Error("Unexpected stage "+phase);
               await page.locator('[data-action="v3-roll"]').click();
               await page.locator('.op-v3-dice-overlay').waitFor({state:'hidden',timeout:6500});
+              await page.waitForFunction(()=>state?.v3?.phase==='ships'||(['dice','dice-tie'].includes(state?.v3?.phase)&&document.querySelector('[data-action="v3-roll"]:not([disabled])')),{timeout:6500});
             }
             if(await page.evaluate(()=>state.v3.phase)!=="ships")throw Error("Dice ties not resolved");
             await page.locator('[data-action^="v3-ship-"]').first().click();
