@@ -171,7 +171,7 @@
   function classFor(n){return n>=95?"S":n>=80?"A":n>=65?"B":n>=50?"C":n>=35?"D":n>=20?"E":"F";}
   function gameScore(){
     return '<section class="online-teams"><h2>⚓ Vos équipages</h2>'+
-      view.players.map(p=>'<div class="online-team"><div class="online-team-top"><b>'+label(p)+'</b><strong>'+p.score+' pts</strong></div>'+shipMark3(p)+
+      view.players.map(p=>'<div class="online-team"><div class="online-team-top"><b>'+label(p)+'</b><strong>'+p.score+' pts</strong></div><div class="v3-team-ship-online">'+shipMark3(p)+'</div>'+
         '<div class="online-team-meta">'+berrys(p.budget)+' restants · '+p.roster.length+'/'+view.teamSize+' recrues · '+p.passesUsed+'/'+(p.ship==='sunny'?8:5)+' refus</div>'+
         '<div class="online-roster">'+(p.roster.length?p.roster.map(id=>'<button type="button" data-action="details" data-char-id="'+escOnline(id)+'" class="online-roster-character">'+
           '<span class="portrait portrait-tiny"><span class="portrait-fallback">☠️</span><img class="portrait-photo" data-portrait-id="'+escOnline(id)+'" alt="" loading="lazy"></span>'+
@@ -359,7 +359,7 @@
     out+='<div class="'+(oro?'v3-peek-grid':'v3-peek-list')+'">'+(items.length?items.map((x,i)=>{
       const c=x.id?CARDS[x.id]:null;
       return '<div class="v3-peek-card"><b>Position '+(i+1)+'</b>'+
-      (c?'<span class="portrait portrait-tiny"><img class="portrait-photo" data-portrait-id="'+escOnline(x.id)+'" alt=""></span>':'')+
+      (c?'<span class="v3-face-clip"><img class="portrait-photo v3-face-image" data-portrait-id="'+escOnline(x.id)+'" alt=""></span>':'')+
       '<strong>'+escOnline(c?.name||(x.id||'🔒 Enchère mystère'))+'</strong>'+
       '<small>Rang '+escOnline(x.tier)+(x.power!==undefined?' · '+x.power+' pts':'')+'</small>'+
       (oro?'<small>Début : '+label(view.players[x.firstSeat])+'</small>':'')+'</div>';
@@ -449,11 +449,11 @@
 
   // --- OPMercato 3.0 multiplayer screens ---
   const SHIPS3=[
-    {id:"sunny",name:"Thousand Sunny",emoji:"☀️",power:"Coup de Vent",effect:"+3 refus supplémentaires"},
-    {id:"redforce",name:"Red Force",emoji:"🐉",power:"Terre Sainte",effect:"+1 à +3 points par recrue"},
-    {id:"mobydick",name:"Moby Dick",emoji:"🐋",power:"Protection du Père",effect:"−10 % sur les enchères gagnées"},
-    {id:"polartang",name:"Polar Tang",emoji:"💛",power:"Opération de Jouvence",effect:"Armement +40 au lieu de +20"},
-    {id:"orojackson",name:"Oro Jackson",emoji:"👑",power:"Vision du Futur",effect:"6 cartes et une inversion"}
+    {id:"sunny",name:"Thousand Sunny",emoji:"☀️",power:"Coup de Vent",effect:"8 refus au lieu de 5 pendant les enchères classiques. Les règles obligatoires de la Rêverie restent applicables."},
+    {id:"redforce",name:"Red Force",emoji:"🐉",power:"Terre Sainte",effect:"Chaque recrue reçoit aléatoirement +1, +2 ou +3 points, avec un maximum de 100. Le bonus suit le personnage transféré."},
+    {id:"mobydick",name:"Moby Dick",emoji:"🐋",power:"Protection du Père",effect:"−10 % sur le prix réellement payé des enchères gagnées, y compris pendant les événements spéciaux. Les offres sont comparées avant la remise."},
+    {id:"polartang",name:"Polar Tang",emoji:"💛",power:"Opération de Jouvence",effect:"Ton Haki de l’Armement passe une seule fois de +20 à +40 points sur un personnage de puissance initiale 60 ou moins, sans dépasser 100."},
+    {id:"orojackson",name:"Oro Jackson",emoji:"👑",power:"Vision du Futur",effect:"Remplace l’Observation : dévoile les 6 prochaines recrues avec leur puissance et leur premier enchérisseur ; inverse deux positions une fois."}
   ];
   const sh3=id=>SHIPS3.find(x=>x.id===id);
   const shipMark3=(p,compact=false)=>{
@@ -680,12 +680,21 @@
   const css=document.createElement("style");
   css.textContent=`
 
+    .v3-face-clip{display:block!important;position:relative!important;width:60px!important;height:60px!important;max-width:60px!important;max-height:60px!important;overflow:hidden!important;contain:layout paint!important;border-radius:50%!important;border:2px solid #e0b76e;background:#24485a;margin:5px auto;flex:none!important}
+    .v3-face-clip>.portrait-photo.v3-face-image{display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:cover!important;object-position:center 22%!important;transform:none!important;border-radius:50%!important}
     .v3-peek-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.v3-peek-card{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;border:1px solid #638898;background:#16354a;padding:8px;border-radius:10px;font-size:11px;text-align:center}.v3-peek-card strong{font-size:11px;overflow-wrap:anywhere}.v3-peek-card small{font-size:10px;color:#c4d4dd}.v3-peek-card .portrait-tiny{width:48px;height:48px}.v3-swap-controls{display:grid;grid-template-columns:1fr 1fr;gap:8px}.v3-swap-controls select{width:100%;background:#183449;color:#fff;border-radius:8px;padding:8px;border:1px solid #6b8c9b}
     .v3-start-intro{text-align:center;padding:24px 15px}
     .v3-intro-symbols{font-size:74px;filter:drop-shadow(0 10px 14px #0008)}
     .v3-intro-steps{display:grid;gap:8px;margin:20px 0;text-align:left}
     .v3-intro-steps p{padding:12px;border:1px solid #b08a57;background:#1a3549;border-radius:11px;margin:0;line-height:1.5}
     .v3-redforce-bonus{display:block;color:#f6cf86;font-size:10px;font-weight:800}
+    .v3-team-ship-online{display:flex;align-items:center;gap:10px;margin:10px 0 3px;padding:7px 10px;border:1px solid #9e8055;background:#0c2537;border-radius:12px;max-width:100%;box-sizing:border-box}
+    .v3-team-ship-online .v3-ship-stamp{display:flex;align-items:center;flex-wrap:wrap;gap:7px;width:100%;font-size:12px;margin:0;line-height:1.3;min-width:0}
+    .v3-team-ship-online .v3-ship-stamp img{width:40px;height:40px;min-width:40px;border-radius:50%}
+    .v3-team-ship-online .v3-ship-stamp small{display:inline-flex;margin-left:auto;background:#315647;color:#d6f5e0;border-radius:12px;padding:5px 9px;white-space:nowrap}
+    .v3-ship p{line-height:1.48;font-size:12px;min-height:6em;color:#e4edf0}
+    .v3-ship{align-content:start;padding:11px;gap:8px}
+    .v3-ship strong{font-size:15px;color:#ffe1a5}
     .v3-ship-stamp{display:inline-flex;align-items:center;gap:5px;color:#fbd48f;font-size:11px;margin:5px 0}
     .v3-ship-stamp img{width:27px;height:27px;object-fit:cover;border-radius:50%;border:1px solid #d3a867}
     .v3-ship-stamp small{font-size:10px;color:#98e9b4}
