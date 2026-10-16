@@ -152,7 +152,7 @@
   render=function(){
     oldRender();
     const top=app.querySelector('.topbar');
-    if(top){
+    if(top && state){
       top.insertAdjacentHTML('afterend','<div class="game-nav"><button class="btn-ghost" data-action="catalog">📚 Catalogue ('+CHARACTERS.filter(c=>!blocked.has(c.id)).length+' personnages)</button><span>🎲 Enchères entre amis</span></div>');
     }
     refreshImages();
