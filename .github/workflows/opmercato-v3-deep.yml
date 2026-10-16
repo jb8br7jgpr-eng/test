@@ -3,7 +3,7 @@ name: OPMercato V3 Deep Online Integration
 on:
   workflow_dispatch:
   push:
-    branches: [main, opmercato-v3-work-20261016, opmercato-v3-polish-20261016]
+    branches: [main, opmercato-v3-work-20261016, opmercato-v3-polish-20261016, opmercato-v3-transfer-recap-20261016]
     paths:
       - '.github/workflows/opmercato-v3-deep.yml'
       - 'supabase/functions/opmercato-online/index.ts'
@@ -96,7 +96,21 @@ jobs:
             }
             if(v.v3.stage==="market"){
               foundTrade=true;const t=v.v3.market;
-              if(t.offer){v=await act(t.offer.to,"v3-trade-accept");accepted=true;continue;}
+              if(t.result){
+                const status=t.result.accepted;
+                const first=0,second=1;
+                if(!t.result.ready.includes(first)){
+                  v=await act(first,"v3-trade-continue");
+                  if(v.v3.stage!=="market"||!v.v3.market.result)throw Error("Trade result vanished before everyone continued");
+                }
+                if(v.v3.market.result&&!v.v3.market.result.ready.includes(second))v=await act(second,"v3-trade-continue");
+                if(status)accepted=true;
+                continue;
+              }
+              if(t.offer){
+                const response=t.exchanges.length===0?"v3-trade-accept":"v3-trade-reject";
+                v=await act(t.offer.to,response);continue;
+              }
               if(t.step>=t.order.length)throw Error("Finished market not advancing");
               const from=t.order[t.step],to=1-from;
               const give=v.players[from].roster.find(id=>!t.locked.includes(id));
