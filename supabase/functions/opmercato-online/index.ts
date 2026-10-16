@@ -191,6 +191,7 @@ function nextSeven(s:any){
   if(spec.type==="war"&&!v3MoveUnlockedToFront(s,id=>rank(power(s,id))==="S",2))spec.type="marine";
   else if(spec.type==="black"&&!v3MoveUnlockedToFront(s,()=>true,3))spec.type="marine";
   else if(spec.type==="burst"&&!v3MoveUnlockedToFront(s,id=>BURST_IDS.has(id),1))spec.type="marine";
+  else if(spec.type==="mystery"&&!v3MoveUnlockedToFront(s,()=>true,1))spec.type="marine";
  }
  if(spec&&["smile","god"].includes(spec.type)&&s.players.some((p:any)=>p.roster.length===0)){
    // Les équipages vides rendent SMILE et God Valley impossibles.
