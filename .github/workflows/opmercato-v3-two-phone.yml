@@ -24,6 +24,22 @@ jobs:
           import {chromium} from "playwright-core";
           const browser=await chromium.launch({executablePath:process.env.CHROME_BINARY,headless:true,args:["--no-sandbox"]});
           const pages=[],errors=[];
+          async function confirmShared(titleHint=""){
+            const host=pages[0],guest=pages[1];
+            await host.locator('.v3-shared-backdrop').waitFor({timeout:20000});
+            await guest.locator('.v3-shared-backdrop').waitFor({timeout:20000});
+            const hostText=await host.locator('.v3-shared-notice').innerText();
+            const guestText=await guest.locator('.v3-shared-notice').innerText();
+            if(hostText!==guestText)throw Error("Shared notices differ between devices: "+hostText+" <> "+guestText);
+            if(titleHint&&!hostText.includes(titleHint))throw Error("Unexpected notice: "+hostText);
+            await host.locator('[data-online="v3-notice-continue"]').click();
+            await host.getByText('En attente des autres pirates', {exact:false}).first().waitFor({timeout:15000});
+            if(!await guest.locator('[data-online="v3-notice-continue"]').count())
+              throw Error("Guest must still see its own Continue button");
+            await guest.locator('[data-online="v3-notice-continue"]').click();
+            for(const page of pages)await page.locator('.v3-shared-backdrop').waitFor({state:'hidden',timeout:15000});
+            return hostText;
+          }
           const live="https://nezqupnhcqwuewfilioa.supabase.co/functions/v1/opmercato-online";
           const staging=live+"-v3-staging";
           async function device(){
@@ -70,6 +86,7 @@ jobs:
             }
             for(let guard=0;guard<40;guard++){
               await host.waitForTimeout(500);
+              if(await host.locator('.v3-shared-backdrop').count())await confirmShared();
               if(await host.locator('[data-online^="v3-select-"]').count())break;
               for(const page of pages){
                 const button=page.locator('[data-online="v3-roll"]');
@@ -92,6 +109,7 @@ jobs:
               }
               if(!selectable)throw Error("Ship "+id+" cannot be selected even after synchronization");
               await selectable.click();
+              await confirmShared('Navire choisi');
               await host.waitForTimeout(300);
             }
             for(const page of pages){
@@ -101,17 +119,21 @@ jobs:
             }
             if(errors.length)throw Error("Browser exceptions: "+errors.join("\n"));
             const rosterUI=await host.evaluate(()=>{
-              const p=view.players[0],ids=['roger','prime-wb'];
-              p.roster=ids;p.smileModifiers={[ids[0]]:-25,[ids[1]]:25};
-              p.shipBonus={[ids[0]]:3};p.armamentId=ids[0];p.armamentBonus=20;p.score=198;
-              paint();
-              const team=document.querySelector('.online-team'),rows=[...team.querySelectorAll('.oprs-character')];
+              const p={id:0,name:"Essai",budget:"10000",roster:["roger","prime-wb"],
+                smileModifiers:{roger:-25,"prime-wb":25},shipBonus:{roger:3},
+                armamentId:"roger",armamentBonus:20,passesUsed:0};
+              const html=window.OPMERCATO_ROSTER_SUMMARY.crew(p,{v3:true,online:true,score:198,losses:[]});
+              const team=document.createElement('div');team.className='online-team';
+              team.style.maxWidth='340px';team.innerHTML=html;
+              document.querySelector('#opmercato-online').appendChild(team);
+              const rows=[...team.querySelectorAll('.oprs-character')];
               const bounds=rows.map(el=>el.getBoundingClientRect());
-              return {rows:rows.length,negative:team.querySelectorAll('.oprs-negative').length,
+              const outcome={rows:rows.length,negative:team.querySelectorAll('.oprs-negative').length,
                 positive:team.querySelectorAll('.oprs-positive').length,
                 total:team.querySelector('.oprs-grand-total')?.textContent,
                 overlap:bounds.some((el,i)=>i>0&&el.top<bounds[i-1].bottom-2),
                 detail:!!rows[0]?.matches('[data-online="details"]')};
+              team.remove();return outcome;
             });
             if(rosterUI.rows!==2||rosterUI.negative<1||rosterUI.positive<1||rosterUI.overlap||
               !rosterUI.detail||!rosterUI.total?.includes('198'))
