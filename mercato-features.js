@@ -551,7 +551,7 @@
     const p=currentPlayer();
     if(p){
       const powers='<div class="extra-powers">'+
-        '<button data-action="observation" class="extra-power" '+(p.observationUsed?'disabled':'')+'>👁 Observation <small>'+(p.observationUsed?'Déjà utilisé':'Voir les 3 prochaines cartes')+'</small></button>'+
+        '<button data-action="observation" class="extra-power" '+(p.observationUsed?'disabled':'')+'>'+(state?.v3&&p.ship==='orojackson'?'👑 Vision du Futur':'👁 Observation')+' <small>'+(p.observationUsed?'Déjà utilisé':state?.v3&&p.ship==='orojackson'?'Révéler 6 cartes et inverser deux positions':'Voir les 3 prochaines cartes')+'</small></button>'+
         '<span class="extra-power op21-armament-status">🛡 Armement <small>'+(p.armamentUsed?'Déjà utilisé':'Proposé à la prochaine recrue de 60 pts ou moins')+'</small></span>'+
         '</div>';
       const marker='<button class="pass-btn" data-action="pass"';
@@ -778,7 +778,7 @@
     const action=button.dataset.action;
     if(['observation','armament','armament-choose','marine-roll'].includes(action)){
       event.preventDefault();event.stopImmediatePropagation();
-      if(action==='observation')observation();
+      if(action==='observation'){const p=state?.auction?.turnId!==null?player(state?.auction?.turnId):null;if(!(state?.v3&&p?.ship==='orojackson'&&window.OPMERCATO_V3_ORO?.()))observation();}
       else if(action==='armament')openArmament();
       else if(action==='marine-roll')rollMarineDie();
       else useArmament(button.dataset.charId);
