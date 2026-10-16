@@ -110,6 +110,10 @@ jobs:
             if(await page.evaluate(()=>state.v3.market.offer)===null)throw Error("Market offer not submitted");
             await page.locator('[data-action="v3-trade-accept"]').click();
             if(await page.evaluate(()=>state.v3.market.exchanges.length)!==1)throw Error("Trade not accepted");
+            if(!await page.locator('.v3-trade-decision.is-accepted').count())throw Error("Accepted exchange result missing");
+            if(await page.locator('.v3-trade-face .portrait-photo').count()<2)throw Error("Trade portrait layout missing");
+            await page.locator('[data-action="v3-trade-continue"]').click();
+            if(await page.evaluate(()=>state.v3.market.idx)!==1)throw Error("Continue did not start the next turn");
             console.log("PASS local V3 trade and bonus transfer UI");
             if(errors.length)throw Error("Browser exceptions: "+errors.join("; "));
           }finally{await browser.close();}
