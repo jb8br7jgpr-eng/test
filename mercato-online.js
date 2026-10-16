@@ -342,11 +342,34 @@
       portraitCard(a.charId)+'<section class="online-card online-actions-area">'+actionHtml+'</section>';
   }
   function peekPanel(){
-    const me=view.players[view.yourSeat];
-    return '<div class="online-peek"><h3>👁 Tes 3 prochaines cartes</h3>'+
-      (view.peek.length?view.peek.map((x,i)=>'<p>'+(i+1)+'. '+(x.id?escOnline(CARDS[x.id]?.name||x.id):'🔒 Enchère mystère')+
-         ' — classe '+escOnline(x.tier)+'</p>').join(""):'<p>Aucune carte restante.</p>')+
-      '<small>Cette vision est privée : l’autre joueur ne la reçoit pas.</small></div>';
+    const me=view.players[view.yourSeat],oro=view.v3&&me.ship==="orojackson",items=view.peek||[];
+    let out='<div class="online-peek"><h3>👁 '+(oro?"Vision du Futur — ":"")+"Tes "+(oro?6:3)+" prochaines cartes</h3>";
+    out+='<div class="'+(oro?'v3-peek-grid':'v3-peek-list')+'">'+(items.length?items.map((x,i)=>{
+      const c=x.id?CARDS[x.id]:null;
+      return '<div class="v3-peek-card"><b>Position '+(i+1)+'</b>'+
+      (c?'<span class="portrait portrait-tiny"><img class="portrait-photo" data-portrait-id="'+escOnline(x.id)+'" alt=""></span>':'')+
+      '<strong>'+escOnline(c?.name||(x.id||'🔒 Enchère mystère'))+'</strong>'+
+      '<small>Rang '+escOnline(x.tier)+(x.power!==undefined?' · '+x.power+' pts':'')+'</small>'+
+      (oro?'<small>Début : '+label(view.players[x.firstSeat])+'</small>':'')+'</div>';
+    }).join(""):'<p>Aucun personnage restant.</p>')+'</div>';
+    if(oro&&!view.v3.swapUsed&&items.length>=2){
+       const selector=(id)=>'<select id="'+id+'">'+items.map((x,i)=>'<option value="'+i+'">'+(i+1)+'. '+escOnline(CARDS[x.id]?.name||x.id)+'</option>').join("")+'</select>';
+       out+='<h4>🔀 Inverser deux personnages (facultatif)</h4>'+
+         '<div class="v3-swap-controls"><label>Premier personnage'+selector("v3-swap-first")+'</label>'+
+         '<label>Second personnage'+selector("v3-swap-second")+'</label></div>'+
+         '<div id="v3-swap-preview" class="v3-trade-preview"></div>'+
+         button("v3-swap","Confirmer l’inversion","btn-ghost");
+    }else if(oro&&view.v3.swapUsed)out+='<p>✓ Inversion utilisée.</p>';
+    return out+'<small>Vision privée. Seul le joueur concerné reçoit ces informations.</small></div>';
+  }
+  function v3RefreshSwap(){
+    if(!view?.v3)return;const x=root.querySelector("#v3-swap-first"),y=root.querySelector("#v3-swap-second"),preview=root.querySelector("#v3-swap-preview");
+    if(!x||!y||!preview)return;
+    const a=Number(x.value),b=Number(y.value);
+    const p=view.peek||[];
+    preview.textContent=a===b?"Choisis deux positions différentes.":
+      "Aperçu : "+(a+1)+" → "+(b+1)+", "+(b+1)+" → "+(a+1)+
+      ". Les premiers enchérisseurs restent attachés à leur position.";
   }
   function scoreboardEnd(){
     const sorted=[...view.players].sort((a,b)=>b.score-a.score||
@@ -551,6 +574,7 @@
       (fx.type==="roll"?"Dé : "+fx.outcome.roll+" · +"+fx.outcome.percent+" %":fx.outcome.pile?"PILE · +25":"FACE · −25")+
       '</strong></div>':"")+(view?'<div class="online-back">'+button("leave-online","Quitter ce salon et créer une nouvelle partie","online-text")+'</div>':"")+(onlineDetailId?detail(onlineDetailId):""));
     if(view?.v3?.stage==="market")v3RefreshTrade();
+    if(peekOpen&&view?.v3)v3RefreshSwap();
   }
   // Les portraits sont charges par OPMERCATO_SHARED.refreshImages (mode local).
   const originalRender=render;
@@ -598,6 +622,7 @@
     if(a==="catalog"){window.OPMERCATO_SHARED?.openCatalog?.();return;}
     if(a==="rules"){onlineRules();return;}
     if(a==="observation"&&view.players[view.yourSeat].observationUsed){peekOpen=!peekOpen;paint();return;}
+    if(a==="v3-swap"){const first=Number(root.querySelector("#v3-swap-first")?.value),second=Number(root.querySelector("#v3-swap-second")?.value);if(first===second){note("Sélectionne deux positions différentes.");return;}await action("v3-observation-swap",{a:first,b:second});peekOpen=true;return;}
     if(a==="v3-roll"){await action("v3-roll");return;}
     if(a.startsWith("v3-select-")){await action("v3-ship",{ship:a.slice(10)});return;}
     if(a==="v3-morgans-ready"){await action("v3-morgans-ready");return;}
@@ -625,11 +650,13 @@
     if(["start","bid","pass","haki","observation","next","roll","finish"].includes(a)){await action(a);return;}
   },true);
   document.addEventListener("input",ev=>{if(ev.target?.id==="online-burst-amount")burstDraft=ev.target.value;});
-  document.addEventListener("change",ev=>{if(["v3-trade-target","v3-trade-give","v3-trade-take"].includes(ev.target?.id))v3RefreshTrade();});
+  document.addEventListener("change",ev=>{if(["v3-trade-target","v3-trade-give","v3-trade-take"].includes(ev.target?.id))v3RefreshTrade();
+    if(["v3-swap-first","v3-swap-second"].includes(ev.target?.id))v3RefreshSwap();});
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&showing)refresh();});
   const css=document.createElement("style");
   css.textContent=`
 
+    .v3-peek-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.v3-peek-card{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;border:1px solid #638898;background:#16354a;padding:8px;border-radius:10px;font-size:11px;text-align:center}.v3-peek-card strong{font-size:11px;overflow-wrap:anywhere}.v3-peek-card small{font-size:10px;color:#c4d4dd}.v3-peek-card .portrait-tiny{width:48px;height:48px}.v3-swap-controls{display:grid;grid-template-columns:1fr 1fr;gap:8px}.v3-swap-controls select{width:100%;background:#183449;color:#fff;border-radius:8px;padding:8px;border:1px solid #6b8c9b}
     .v3-ship-stamp{display:inline-flex;align-items:center;gap:5px;color:#fbd48f;font-size:11px;margin:5px 0}
     .v3-ship-stamp img{width:27px;height:27px;object-fit:cover;border-radius:50%;border:1px solid #d3a867}
     .v3-ship-stamp small{font-size:10px;color:#98e9b4}
