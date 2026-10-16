@@ -100,6 +100,22 @@ jobs:
               if(ships<2)throw Error("Ship HUD missing on one phone: "+ships);
             }
             if(errors.length)throw Error("Browser exceptions: "+errors.join("\n"));
-            console.log("PASS browser V3 on two iPhones: lobby, dice, exclusive ships, auction and ship HUD");
+            const rosterUI=await host.evaluate(()=>{
+              const p=view.players[0],ids=['roger','prime-wb'];
+              p.roster=ids;p.smileModifiers={[ids[0]]:-25,[ids[1]]:25};
+              p.shipBonus={[ids[0]]:3};p.armamentId=ids[0];p.armamentBonus=20;p.score=198;
+              paint();
+              const team=document.querySelector('.online-team'),rows=[...team.querySelectorAll('.oprs-character')];
+              const bounds=rows.map(el=>el.getBoundingClientRect());
+              return {rows:rows.length,negative:team.querySelectorAll('.oprs-negative').length,
+                positive:team.querySelectorAll('.oprs-positive').length,
+                total:team.querySelector('.oprs-grand-total')?.textContent,
+                overlap:bounds.some((el,i)=>i>0&&el.top<bounds[i-1].bottom-2),
+                detail:!!rows[0]?.matches('[data-online="details"]')};
+            });
+            if(rosterUI.rows!==2||rosterUI.negative<1||rosterUI.positive<1||rosterUI.overlap||
+              !rosterUI.detail||!rosterUI.total?.includes('198'))
+              throw Error("Online iPhone team summary invalid: "+JSON.stringify(rosterUI));
+            console.log("PASS two iPhones: lobby, ships, online team effects, no overlap and score breakdown");
           }finally{await browser.close();}
           JS
