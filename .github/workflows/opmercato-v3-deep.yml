@@ -3,7 +3,7 @@ name: OPMercato V3 Deep Online Integration
 on:
   workflow_dispatch:
   push:
-    branches: [opmercato-v3-work-20261016]
+    branches: [main, opmercato-v3-work-20261016]
     paths:
       - '.github/workflows/opmercato-v3-deep.yml'
       - 'supabase/functions/opmercato-online/index.ts'
