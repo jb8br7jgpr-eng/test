@@ -45,7 +45,12 @@ jobs:
               if(!["dice","dice-tie"].includes(phase))throw Error("Unexpected stage "+phase);
               await page.locator('[data-action="v3-roll"]').click();
               await page.locator('.op-v3-dice-overlay').waitFor({state:'hidden',timeout:6500});
-              await page.waitForFunction(()=>state?.v3?.phase==='ships'||(['dice','dice-tie'].includes(state?.v3?.phase)&&document.querySelector('[data-action="v3-roll"]:not([disabled])')),{timeout:6500});
+              try {
+                await page.waitForFunction(()=>state?.v3?.phase==='ships'||(['dice','dice-tie'].includes(state?.v3?.phase)&&document.querySelector('[data-action="v3-roll"]:not([disabled])')),null,{timeout:14000});
+              }catch(err){
+                const diagnostic=await page.evaluate(()=>({phase:state?.v3?.phase,round:state?.round,overlay:!!document.querySelector('.op-v3-dice-overlay'),button:document.querySelector('[data-action="v3-roll"]')?.outerHTML,tail:document.querySelector('#app')?.innerText?.slice(0,700)}));
+                throw Error("Dice UI failed to resume: "+JSON.stringify(diagnostic)+" "+err.message);
+              }
             }
             if(await page.evaluate(()=>state.v3.phase)!=="ships")throw Error("Dice ties not resolved");
             await page.locator('[data-action^="v3-ship-"]').first().click();
