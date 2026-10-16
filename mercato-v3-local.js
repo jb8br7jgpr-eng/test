@@ -108,7 +108,7 @@ function preview(){const v=V();if(v?.phase!=='market'||v.market.offer)return;
 }
 render=function(){if(V()&&['dice','ships','morgans','market'].includes(V().phase)){
  app.innerHTML=v3MiniHud()+'<section class="card v3-screen"><span class="eyebrow">OPMERCATO 3.0</span>'+screen()+'</section>'+
-  '<div class="v3-players-mini">'+state.players.map(p=>esc(p.name)+' : '+currency(p.budget)+' · '+getScore(p)+' pts').join('<hr>')+'</div>';preview();return;}
+  '<div class="v3-players-mini">'+state.players.map(p=>esc(p.name)+' : '+currency(p.budget)+' · '+getScore(p)+' pts').join('<hr>')+'</div>';preview();window.OPMERCATO_SHARED?.refreshImages?.();return;}
  oldRender();if(V()){app.querySelectorAll('.player-card').forEach((node,i)=>{const p=state.players[i],s=sh(p.ship);if(!s)return;
  node.querySelector('.player-header')?.insertAdjacentHTML('beforeend','<span class="v3-ship-mini"><img src="./opmercato-ships-sprite.webp" style="width:26px;height:26px;border-radius:50%;object-fit:cover;object-position:'+(SHIPS.findIndex(q=>q[0]===s[0])*25)+'% 50%" alt="">'+s[1]+' · '+
  (p.ship==='sunny'?(8-p.passesUsed)+' refus':p.ship==='mobydick'?'−10 %':p.ship==='redforce'?'Actif':p.ship==='polartang'?(p.armamentUsed?'Utilisé':'Prêt'):(p.observationUsed?'Utilisé':'Prêt'))+'</span>');});}};
