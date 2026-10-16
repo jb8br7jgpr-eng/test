@@ -226,7 +226,7 @@
       content='<div class="v2-burst-card">'+portraitCard(view.auction.charId)+'</div>'+
         '<h3>🚀 Les offres sont révélées !</h3>'+
         '<div class="v2-results">'+e.offers.map(o=>'<p>'+label(view.players[o.id])+' : '+berrys(o.amount)+'</p>').join('')+'</div>'+
-        '<p>'+(e.winner===null?'Personnage invendu.':'🏆 '+label(view.players[e.winner])+' recrute '+escOnline(CARDS[view.auction.charId]?.name||"ce personnage")+' pour '+berrys(view.auction.highBid))+'</p>'+
+        '<p>'+(e.winner===null?'Personnage invendu.':'🏆 '+label(view.players[e.winner])+' recrute '+escOnline(CARDS[view.auction.charId]?.name||"ce personnage")+' pour '+berrys(view.v3?view.players[e.winner].purchases?.[view.auction.charId]??view.auction.highBid:view.auction.highBid)+(view.v3&&view.players[e.winner].ship==='mobydick'?' · 🐋 Protection du Père : −'+berrys(BigInt(view.auction.highBid)-BigInt(view.players[e.winner].purchases?.[view.auction.charId]??view.auction.highBid)):''))+'</p>'+
         button("event-ready",myReady?"✓ En attente des autres pirates…":"Continuer →","primary",myReady);
     }else if(e.stage==="result"){
       const items=e.type==="marine"?(view.event.rolls||[]).map(x=>{
