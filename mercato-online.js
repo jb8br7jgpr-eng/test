@@ -478,6 +478,11 @@
     return ids.reduce((n,id)=>n+(id===add?Math.max(0,Math.min(100,Number(CARDS[id]?.power||0)+Number(view.players.find(x=>x.roster.includes(add))?.shipBonus?.[add]||0)+
        Number(view.players.find(x=>x.roster.includes(add))?.smileModifiers?.[add]||0))):v3Power(p,id)),0)+v3Synergy(ids);
   };
+  function v3TradeFace(id,p){
+    const c=CARDS[id],base=c?.power||0;
+    return '<div class="v3-trade-mini"><span class="v3-trade-face"><img class="portrait-photo v3-trade-face-img" data-portrait-id="'+escOnline(id)+'" alt="" loading="lazy"></span>'+
+      '<strong>'+escOnline(c?.name||id)+'</strong><small>Rang '+classFor(base)+' · '+v3Power(p,id)+' pts</small></div>';
+  }
   function v3Page(){
     const x=view.v3,me=view.players[view.yourSeat],mine=view.yourSeat;
     if(x.stage==="intro"){
@@ -548,9 +553,21 @@
       const m=x.market,owner=view.players[m.order[m.step]];
       let inner='<p>Une proposition par joueur, un personnage contre un personnage, sans Berrys.</p>'+
         '<p>Proposition '+(m.step+1)+'/'+m.order.length+' · Au tour de <b>'+label(owner)+'</b></p>';
-      if(m.offer){
+      if(m.result){
+        const o=m.result,a=view.players[o.from],b=view.players[o.to],accepted=!!o.accepted,ready=o.ready||[];
+        inner='<div class="v3-trade-result '+(accepted?'v3-trade-approved':'v3-trade-declined')+'">'+
+          '<div class="v3-trade-result-icon">'+(accepted?'✅':'❌')+'</div>'+
+          '<h2>Échange '+(accepted?'accepté !':'refusé')+'</h2>'+
+          '<p>'+label(b)+' a '+(accepted?'accepté':'refusé')+' la proposition de '+label(a)+'.</p>'+
+          '<div class="v3-trade-pair">'+v3TradeFace(o.give,accepted?b:a)+'<span class="v3-trade-arrow">⇄</span>'+
+          v3TradeFace(o.take,accepted?a:b)+'</div>'+
+          '<p class="v3-trade-result-detail">'+(accepted?'Les équipages sont actualisés. Les recrues échangées ne peuvent plus être proposées pendant ce marché.':'Les équipages restent inchangés. La proposition est consommée.')+'</p>'+
+          '<p>Joueurs prêts : <b>'+ready.length+'/'+view.players.length+'</b></p>'+
+          button("v3-trade-continue",ready.includes(mine)?"✓ En attente des autres joueurs":"Continuer →","primary",ready.includes(mine))+
+          '</div>';
+      }else if(m.offer){
         const a=view.players[m.offer.from],b=view.players[m.offer.to],give=m.offer.give,take=m.offer.take;
-        inner+='<div class="v3-trade-versus"><div>'+portraitCard(give)+'</div><span>⇄</span><div>'+portraitCard(take)+'</div></div>'+
+        inner+='<div class="v3-trade-pair">'+v3TradeFace(give,a)+'<span class="v3-trade-arrow">⇄</span>'+v3TradeFace(take,b)+'</div>'+
          '<p>'+label(a)+' propose à '+label(b)+'</p>'+
          '<p>Effets estimés : '+label(a)+' <b>'+(projected3(a,give,take)-a.score)+' pts</b> · '+
          label(b)+' <b>'+(projected3(b,take,give)-b.score)+' pts</b></p>'+
@@ -710,6 +727,19 @@
     .v3-prediction-card{max-width:320px;margin:14px auto}
     .v3-morgans-logo,.v3-wheel{text-align:center;font-size:72px;animation:v3die 1.5s both}
     .v3-wheel{animation:v3die 2s linear infinite}
+    .v3-trade-pair{display:grid;grid-template-columns:minmax(0,1fr) 26px minmax(0,1fr);gap:7px;align-items:center;max-width:480px;margin:17px auto;min-width:0}
+    .v3-trade-mini{min-width:0;max-width:100%;overflow:hidden;padding:12px 7px;background:#18374a;border:1px solid #927952;border-radius:14px;display:grid;gap:7px;justify-items:center;align-content:start;text-align:center}
+    .v3-trade-face{display:block;position:relative;width:78px;height:78px;flex:none;border:2px solid #ddbb82;border-radius:50%;overflow:hidden;background:#17374d;contain:layout paint}
+    .v3-trade-face-img{display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:cover!important;object-position:center 22%!important;transform:none!important}
+    .v3-trade-mini strong{font-size:clamp(12px,3vw,16px);line-height:1.3;overflow-wrap:anywhere;font-weight:850}
+    .v3-trade-mini small{font-size:12px;color:#f2d69a;white-space:normal}
+    .v3-trade-arrow{font-size:24px;font-weight:900;color:#f2d69a}
+    .v3-trade-result{padding:15px 10px;border:1px solid #a18958;background:#1a384a;border-radius:15px;text-align:center}
+    .v3-trade-result-icon{font-size:46px}
+    .v3-trade-result h2{margin:7px 0 12px}
+    .v3-trade-result-detail{color:#d5e6ec;line-height:1.5;font-size:13px}
+    .v3-trade-approved{border-color:#66b995}.v3-trade-declined{border-color:#c48c83}
+    @media(max-width:360px){.v3-trade-face{width:62px;height:62px}.v3-trade-mini{padding:8px 4px}.v3-trade-pair{gap:4px}}
     .v3-trade-versus{display:grid;grid-template-columns:1fr 30px 1fr;align-items:center;gap:5px}
     .v3-trade-versus .character-card{min-height:100px;padding:8px;margin:0}
     .v3-trade-versus .character-name{font-size:16px;margin:2px}.v3-trade-versus .power strong{font-size:16px}
