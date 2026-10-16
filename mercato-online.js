@@ -296,7 +296,7 @@
         '<p class="online-hint">Les recrues éliminées sont définitivement exclues, mais les places se libèrent.</p>';
     }
     return '<div class="v2-special v2-'+e.type+'"><div class="v2-tag">✦ ÉVÉNEMENT SPÉCIAL ✦</div>'+
-      '<div class="v2-symbol">'+info[0]+'</div><h2>'+info[1]+'</h2>'+content+'</div>';
+      '<div class="v2-symbol">'+info[0]+'</div>'+(window.OPMERCATO_ART?.image(e.type)||'')+'<h2>'+info[1]+'</h2>'+content+'</div>';
   }
   function eventBox(){
     const e=view.event||{};
@@ -498,7 +498,7 @@
   function v3Page(){
     const x=view.v3,me=view.players[view.yourSeat],mine=view.yourSeat;
     if(x.stage==="intro"){
-      return '<section class="online-card v3-card v3-start-intro"><div class="v3-intro-symbols">🎲 ⛵</div><h2>Bienvenue à bord, pirates !</h2>'+
+      return '<section class="online-card v3-card v3-start-intro">'+(window.OPMERCATO_ART?.logo()||'')+'<h2>Bienvenue à bord, pirates !</h2>'+
        '<p>La partie commence par un tirage au sort, puis chacun choisit son navire exclusif.</p>'+
        '<div class="v3-intro-steps"><p><b>1.</b> Chaque joueur lance un dé à six faces. En cas d’égalité, seuls les ex æquo relancent.</p>'+
        '<p><b>2.</b> Le plus grand score choisit son navire en premier ; les autres suivent dans l’ordre.</p>'+
@@ -531,7 +531,7 @@
     }
     if(x.stage==="morgans"){
       const m=x.morgans,stage=m.stage,id=m.id;
-      let inner='<div class="v3-morgans-logo">📰</div><p>Devine la puissance initiale du personnage secret entre 1 et 100.</p>';
+      let inner=(stage==='intro'?(window.OPMERCATO_ART?.image('morgans')||''):'')+'<p>Devine la puissance initiale du personnage secret entre 1 et 100.</p>';
       if(stage==="intro")inner+='<p>'+m.ready.length+'/'+view.players.length+' pirates prêts.</p>'+
         button("v3-morgans-ready",m.ready.includes(mine)?"En attente des autres…":"Continuer →","primary",m.ready.includes(mine));
       if(stage==="guesses")inner+='<p>'+m.submitted.length+'/'+view.players.length+' prédictions enregistrées.</p>'+
@@ -563,12 +563,12 @@
     }
     if(x.stage==="market"){
       const m=x.market,owner=view.players[m.order[m.step]];
-      let inner='<p>Une proposition par joueur, un personnage contre un personnage, sans Berrys.</p>'+
+      let inner=(m.offer||m.result?'':(window.OPMERCATO_ART?.image('market',true)||''))+'<p>Une proposition par joueur, un personnage contre un personnage, sans Berrys.</p>'+
         '<p>Proposition '+(m.step+1)+'/'+m.order.length+' · Au tour de <b>'+label(owner)+'</b></p>';
       if(m.result){
         const o=m.result,a=view.players[o.from],b=view.players[o.to],done=(o.ack||[]).includes(mine);
         inner+='<div class="v3-transfer-result '+(o.accepted?'is-accepted':'is-rejected')+'" role="status">'+
-          '<div class="v3-transfer-result-icon">'+(o.accepted?'✅':'❌')+'</div>'+
+          '<div class="v3-transfer-result-icon">'+(o.accepted?'✅':'❌')+'</div>'+(window.OPMERCATO_ART?.image(o.accepted?'accepted':'rejected',true)||'')+
           '<h3>'+(o.accepted?'Échange accepté !':'Échange refusé')+'</h3>'+
           '<p>'+label(b)+(o.accepted?' a accepté':' a refusé')+' la proposition de '+label(a)+'.</p>'+
           '<p class="v3-transfer-result-pair">'+escOnline(CARDS[o.give]?.name||o.give)+' ⇄ '+escOnline(CARDS[o.take]?.name||o.take)+'</p>'+
