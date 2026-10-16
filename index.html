@@ -346,7 +346,7 @@
   modal.addEventListener('click',event=>{if(event.target===modal)closeModal();});
   document.addEventListener('keydown',event=>{if(event.key==='Escape')closeModal();});
   if('serviceWorker' in navigator && window.location.protocol==='https:'){
-    window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=pwa-20261016-roster2').catch(()=>{}));
+    window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=pwa-20261016-shared-confirm1').catch(()=>{}));
   }
   render();
   </script>
@@ -361,6 +361,6 @@
   <script src="./mercato-roster-summary.js?v=20261016-roster2"></script>
   <script src="./mercato-history-21.js?v=20261013-op21-1"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script defer src="./mercato-online.js?v=20261016-roster1"></script>
+  <script defer src="./mercato-online.js?v=20261016-shared-confirm1"></script>
 </body>
 </html>
