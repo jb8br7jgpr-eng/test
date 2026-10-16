@@ -55,6 +55,30 @@ jobs:
                 if(current.event.active.stage!==e.stage)throw Error("Result vanished automatically");
                 current=await act(1,"event-ready");continue;
               }
+              if(e?.type==="burst"&&e.stage==="offers"){
+                const unsubmitted=[0,1].find(seat=>!e.offers.some(o=>o.id===seat));
+                if(e.offers.some(o=>o.amount!==undefined))throw Error("Secret Burst amount leaked into current view");
+                const mirrored=await get(1-unsubmitted);
+                if(mirrored.event.active.offers.some(o=>o.amount!==undefined))
+                  throw Error("Secret Burst bid visible to another player");
+                const offer=current.baseBid;
+                current=await act(unsubmitted,"burst-offer",{amount:offer});
+                if(current.event.active.stage==="offers"&&current.event.active.offers.some(o=>o.amount!==undefined))
+                  throw Error("First locked Burst offer was leaked");
+                continue;
+              }
+              if(e?.type==="burst"&&e.stage==="tie"){
+                if(e.offers.some(o=>o.amount===undefined))throw Error("Both Burst bids must be revealed together");
+                await request({action:"burst-coin",roomId,token:tokens[1]},400);
+                current=await act(0,"burst-coin");
+                if(current.event.active.stage!=="result")throw Error("Burst coin did not resolve two-player tie");
+                if(current.auction.outcome!=="sold")throw Error("Burst winner was not recruited");
+                continue;
+              }
+              if(e?.type==="burst"&&e.stage==="result"){
+                if(e.offers.length!==2||e.offers.some(o=>o.amount===undefined))
+                  throw Error("Burst did not reveal all bids simultaneously");
+              }
               if(e&&e.stage==="roll"){
                 const seat=e.step;
                 current=await act(seat,"roll");

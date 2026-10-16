@@ -50,8 +50,9 @@ function affiliationBonuses(s:any,p:any){
    .filter(x=>x.points>0).sort((a,b)=>b.points-a.points||a.name.localeCompare(b.name,"fr"));
 }
 
-type Special="war"|"marine"|"mystery"|"black"|"god"|"smile"|"reverie";
-const SPECIALS:Special[]=["war","marine","mystery","black","god","smile","reverie"];
+type Special="war"|"marine"|"mystery"|"black"|"god"|"smile"|"reverie"|"burst";
+const BURST_IDS=new Set(["luffy","zoro","nami","usopp","sanji","chopper","robin","franky","brook","jinbe","luffy-gear5"]);
+const SPECIALS:Special[]=["war","marine","mystery","black","god","smile","reverie","burst"];
 const randomIndex=(n:number)=>rand(2).reduce((v,x)=>v*256+x,0)%n;
 function sevenSchedule(players:number,teamSize:number){
  const total=players*teamSize,qty=teamSize<=5?1:teamSize<=9?2:3;
@@ -88,7 +89,7 @@ function eventReady(s:any,seat:number){
  if(e.ready.length<s.players.length)return;
  e.ready=[];
  if(e.stage==="result"||e.stage==="god-result"){e.stage="auction";return;}
- e.stage=e.type==="marine"?"roll":e.type==="smile"?"coin":e.type==="black"?"select":e.type==="god"?"eliminate":"auction";
+ e.stage=e.type==="marine"?"roll":e.type==="smile"?"coin":e.type==="black"?"select":e.type==="god"?"eliminate":e.type==="burst"?"offers":"auction";
 }
 
 const score=(s:any,p:any)=>p.roster.reduce((n:number,id:string)=>n+effectivePower(s,p,id),0)+
@@ -101,10 +102,18 @@ const publicPlayer=(s:any,p:any)=>({id:p.id,name:p.name,budget:p.budget,roster:p
   bonuses:affiliationBonuses(s,p)});
 function snapshot(s:any,seat:number,version:number,room:any){
  const p=s.players[seat];const a=s.auction;
- const secret=!!(a?.mystery&&a.outcome===null);
+ const e=s.event?.active;
+ const eventPublic={...s.event,schedule:undefined,active:e?.type==="burst"?{
+   ...e,
+   offers:["intro","offers"].includes(e.stage)
+     ?(e.offers||[]).map((o:any)=>({id:o.id,submitted:true}))
+     :(e.offers||[]),
+   tieBits:undefined
+ }:e};
+ const secret=!!(a?.mystery&&a.outcome===null)||!!(e?.type==="burst"&&e.stage==="intro");
  return {id:room.id,code:room.code,topic:"opmercato:"+room.id+":"+s.channelSecret,version,status:s.status,
    yourSeat:seat,host:seat===0,maxPlayers:s.maxPlayers||2,teamSize:s.teamSize,initialBudget:s.initialBudget,baseBid:s.baseBid,bidStep:s.bidStep,
-   round:s.round,remaining:s.drawPile.length-s.drawIndex,event:{...s.event,schedule:undefined},
+   round:s.round,remaining:s.drawPile.length-s.drawIndex,event:eventPublic,
    players:s.players.map(x=>publicPlayer(s,x)),
    auction:a?{...a,charId:secret?null:a.charId,tier:rank(power(s,a.charId)),power:secret?null:power(s,a.charId)}:null,
    peek:p?.observationPeek||[],phase:s.status};
@@ -173,13 +182,26 @@ function nextSeven(s:any){
    const alternatives=(["mystery","marine","black","reverie"] as Special[]).filter(t=>!reserved.has(t));
    spec.type=alternatives[randomIndex(alternatives.length)]||"marine";
  }
+ if(spec?.type==="burst"&&!s.drawPile.slice(s.drawIndex).some((id:string)=>BURST_IDS.has(id))){
+   const reserved=new Set(s.event.schedule.map((e:any)=>e.type));
+   const alternatives=(["mystery","marine","black","reverie"] as Special[]).filter(x=>!reserved.has(x));
+   spec.type=alternatives[randomIndex(alternatives.length)]||"marine";
+ }
  if(spec?.type==="war"&&!prepareWar(s)){
    const reserved=new Set(s.event.schedule.map((e:any)=>e.type));
    const alternatives=(["marine","mystery","black","reverie"] as Special[]).filter(x=>!reserved.has(x));
    spec.type=alternatives[randomIndex(alternatives.length)]||"marine";
  }
+ // La sélection Burst est limitée aux cartes non tirées : pas de doublon, Luffy Gear 5 inclus.
+ if(spec?.type==="burst"){
+   const choices=s.drawPile.map((id:string,i:number)=>BURST_IDS.has(id)&&i>=s.drawIndex?i:-1).filter((i:number)=>i>=0);
+   if(choices.length){
+     const chosen=choices[randomIndex(choices.length)];
+     [s.drawPile[s.drawIndex],s.drawPile[chosen]]=[s.drawPile[chosen],s.drawPile[s.drawIndex]];
+   }
+ }
  const charId=s.drawPile[s.drawIndex++];
- const e=spec?{type:spec.type,round:s.round,stage:"intro",ready:[] as number[],step:0,
+ const e:any=spec?{type:spec.type,round:s.round,stage:"intro",ready:[] as number[],step:0,
    choices:[] as string[],removed:[] as any[],flips:[] as any[]}:null;
  if(e){
    s.event.active=e;s.event.used=true;s.event.type=e.type;s.event.activatedRound=s.round;
@@ -189,6 +211,7 @@ function nextSeven(s:any){
      s.drawIndex+=e.choices.length-1;
    }
    if(e.type==="marine")s.event.rolls=[];
+   if(e.type==="burst"){e.offers=[];e.tieFlips=[];e.tieBits="";e.tied=[];}
  }
  const mystery=e?.type==="mystery";
  if(mystery)s.event.mysteryUsed=true;
@@ -223,6 +246,46 @@ function takeAction(s:any,seat:number,action:string,payload:any){
  if(action==="event-ready"){
    if(!s.event.schedule||s.status!=="playing")throw Error("Événement indisponible.");
    eventReady(s,seat);return;
+ }
+
+ // Les mises sont confidentielles jusqu'à ce que chaque joueur ait validé.
+ if(action==="burst-offer"){
+   const e=s.event.active;
+   if(!s.event.schedule||e?.type!=="burst"||e.stage!=="offers")throw Error("Enchère secrète indisponible.");
+   if(e.offers.some((o:any)=>o.id===seat))throw Error("Ton offre est déjà verrouillée.");
+   const value=amount(payload.amount);
+   if(value!==0n&&value<BigInt(s.baseBid))throw Error("Enchère inférieure à la mise de départ.");
+   if(value>0n&&(p.roster.length>=s.teamSize||BigInt(p.budget)<value))throw Error("Budget insuffisant ou équipage complet.");
+   e.offers.push({id:seat,amount:value.toString()});
+   if(e.offers.length===s.players.length){
+     const best=e.offers.reduce((v:bigint,o:any)=>BigInt(o.amount)>v?BigInt(o.amount):v,0n);
+     e.tied=best>0n?e.offers.filter((o:any)=>BigInt(o.amount)===best).map((o:any)=>o.id):[];
+     e.tieBits="";e.tieFlips=[];
+     if(e.tied.length>1)e.stage="tie";
+     else{
+       e.winner=e.tied[0]??null;e.stage="result";e.ready=[];
+       s.auction.leader=e.winner;s.auction.highBid=best.toString();settle(s);
+     }
+   }
+   return;
+ }
+ if(action==="burst-coin"){
+   const e=s.event.active;
+   if(!s.event.schedule||e?.type!=="burst"||e.stage!=="tie"||seat!==0)
+     throw Error("Seul l'hôte peut lancer la pièce de départage.");
+   const pile=randomIndex(2)===0;
+   e.tieBits+=(pile?"0":"1");e.tieFlips.push({pile});
+   const needed=Math.ceil(Math.log2(e.tied.length));
+   if(e.tieBits.length>=needed){
+     const index=parseInt(e.tieBits,2);e.tieBits="";
+     // Pour 3 à 6 joueurs ex æquo, les tirages binaires hors plage recommencent.
+     if(index<e.tied.length){
+       const best=e.offers.reduce((v:bigint,o:any)=>BigInt(o.amount)>v?BigInt(o.amount):v,0n);
+       e.winner=e.tied[index];e.stage="result";e.ready=[];
+       s.auction.leader=e.winner;s.auction.highBid=best.toString();settle(s);
+     }
+   }
+   return;
  }
  if(action==="event-pick"){
    const e=s.event.active;
@@ -481,7 +544,7 @@ Deno.serve(async(req:Request)=>{
      await ensureAffiliations(room.doc);
      return json({room:snapshot(room.doc,seat,room.version,room)});
    }
-   const allowed=["start","bid","pass","haki","observation","armament","armament-skip","next","roll","finish","event-ready","event-pick","event-eliminate","coin"];
+   const allowed=["start","bid","pass","haki","observation","armament","armament-skip","next","roll","finish","event-ready","event-pick","event-eliminate","coin","burst-offer","burst-coin"];
    if(!allowed.includes(arg.action))throw Error("Action inconnue.");
    const doc=structuredClone(room.doc);
    await ensureAffiliations(doc);

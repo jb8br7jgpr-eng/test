@@ -29,7 +29,8 @@
 
 
   // Le meme catalogue d'evenements que le serveur.
-  const V2_TYPES=['war','marine','mystery','black','god','smile','reverie'];
+  const BURST_IDS=new Set(['luffy','zoro','nami','usopp','sanji','chopper','robin','franky','brook','jinbe','luffy-gear5']);
+  const V2_TYPES=['war','marine','mystery','black','god','smile','reverie','burst'];
   const V2_INFO={
     war:['⚔️','GUERRE AU SOMMET','Deux légendes de rang S se présentent à la suite.'],
     marine:['🎲','PRIME DE LA MARINE','Chaque joueur gagne une prime en lançant son dé.'],
@@ -37,7 +38,8 @@
     black:['🏴‍☠️','MARCHÉ NOIR','Trois personnages apparaissent, un seul sera mis aux enchères.'],
     god:['💥','INCIDENT DE GOD VALLEY','Chaque joueur peut éliminer une recrue adverse.'],
     smile:['🍎','SMILE','Le personnage le plus faible mange un fruit SMILE : pile ou face ?'],
-    reverie:['👑','LA RÊVERIE','Taxe royale ×2 : première mise obligatoire, retrait possible ensuite. Haki des Rois interdit.']
+    reverie:['👑','LA RÊVERIE','Taxe royale ×2 : première mise obligatoire, retrait possible ensuite. Haki des Rois interdit.'],
+    burst:['🚀','COUP DE BURST','Le Thousand Sunny surgit ! Un Chapeau de paille disponible rejoint une enchère secrète. Une seule proposition par pirate, puis révélation simultanée.']
   };
   function chooseSchedule(players,recruits){
     const total=players*recruits,qty=recruits<=5?1:recruits<=9?2:3;
@@ -158,6 +160,11 @@
         const pool=['mystery','marine','black','reverie'].filter(x=>!reserved.has(x));
         selected=pool[Math.floor(Math.random()*pool.length)]||'marine';
       }
+      if(selected==='burst'&&!state.drawPile.slice(state.drawIndex).some(id=>BURST_IDS.has(id))){
+        const reserved=new Set(f.plan.map(x=>x.type));
+        const pool=['mystery','marine','black','reverie'].filter(x=>!reserved.has(x));
+        selected=pool[Math.floor(Math.random()*pool.length)]||'marine';
+      }
       if(selected==='war'&&!prepareWarCards(upcoming)){
         const reserved=new Set(f.plan.map(x=>x.type));
         const pool=['marine','mystery','black','reverie'].filter(x=>!reserved.has(x));
@@ -167,6 +174,16 @@
       oldDrawNext();
       if(state.phase!=='auction'||!state.auction)return;
       const a=state.auction;
+      if(selected==='burst'){
+        // Inclure la carte qui vient d'être tirée et les cartes futures, mais jamais les recrues
+        // déjà achetées ni les cartes refusées dans les enchères précédentes.
+        const candidates=[a.charId,...state.drawPile.slice(state.drawIndex)].filter(id=>BURST_IDS.has(id));
+        const chosen=candidates[Math.floor(Math.random()*candidates.length)];
+        if(chosen&&chosen!==a.charId){
+          const index=state.drawPile.indexOf(chosen,state.drawIndex);
+          if(index>=0){state.drawPile[index]=a.charId;a.charId=chosen;}
+        }
+      }
       a.mystery=selected==='mystery';
       a.warGuaranteed=f.warRounds.includes(state.round);
       if(selected){
@@ -177,6 +194,7 @@
           f.active.choices=[a.charId,...extras];
         }
         if(selected==='marine'){f.rolls=[];f.rollIndex=0;f.awaitingRolls=false;}
+        if(selected==='burst'){f.active.offers=[];f.active.tieFlips=[];f.active.tieBits='';f.active.tied=[];}
         f.eventUsed=true;f.activatedRound=state.round;f.eventType=selected;
       }
       save();render();return;
@@ -240,7 +258,7 @@
     const e=v2Active();if(!e||!['intro','result','god-result'].includes(e.stage))return;
     if(e.stage==='result'||e.stage==='god-result'){e.stage='auction';save();render();return;}
     e.stage=e.type==='marine'?'roll':e.type==='smile'?'coin':
-      e.type==='black'?'select':e.type==='god'?'eliminate':'auction';
+      e.type==='black'?'select':e.type==='god'?'eliminate':e.type==='burst'?'offers':'auction';
     e.step=0;
     if(e.type==='reverie'){
       const a=state.auction;
@@ -255,10 +273,10 @@
     // Le hasard est déjà décidé ; le rendu 3D ne fait que révéler le résultat.
     const veil=document.createElement('div');veil.className='v2-local-fx';
     let visual='';
-    if(type==='coin'){
+    if(type==='coin'||type==='burst-coin'){
       const flip=result?1800:1980;
       visual='<div class="v2-fx-stage"><div class="v2-flip-coin" style="--coin-flip:'+flip+'deg">'+
-        '<div class="v2-coin-side v2-coin-pile">🍎<span>PILE</span></div>'+
+        '<div class="v2-coin-side v2-coin-pile">'+(type==='burst-coin'?'🚀':'🍎')+'<span>PILE</span></div>'+
         '<div class="v2-coin-side v2-coin-face">☠️<span>FACE</span></div></div></div>';
     }else{
       const n=Math.max(1,Math.min(6,Number(result)||1));
@@ -292,6 +310,58 @@
     e.flips.push({id:p.id,charId:id||null,pile,before,after});e.step++;
     if(e.step===state.players.length)e.stage='result';
     save();render();v2Fx('coin',p.name+' : '+(id?pile?'PILE · +25':'FACE · −25':'Aucune recrue à transformer'),pile);
+  }
+
+  function v2BurstSettle(winner){
+    const e=v2Active(),a=state.auction;
+    const max=e.offers.reduce((v,o)=>Math.max(v,o.amount),0);
+    e.winner=winner;
+    e.stage='result';
+    e.ready=[];
+    a.leader=winner;
+    a.highBid=max;
+    // La recette normale de règlement conserve les budgets, les achats et le Haki d'Armement.
+    settle();
+  }
+  function v2BurstOffer(){
+    const e=v2Active();
+    if(e?.type!=='burst'||e.stage!=='offers')return;
+    const p=state.players[e.step],input=document.querySelector('#v2-burst-amount');
+    const raw=String(input?.value??'').trim();
+    if(!/^\d{1,12}$/.test(raw))return showToast('Indique un montant entier en Berrys, ou 0 pour ne pas miser.');
+    const value=Number(raw),minimum=Number(state.baseBid||20);
+    if(!Number.isSafeInteger(value)||value!==0&&value<minimum)
+      return showToast('La mise doit être de 0 (passer) ou au moins '+currency(minimum)+'.');
+    if(value>0&&(p.roster.length>=TEAM_SIZE||safeBig(p.budget)<BigInt(value)))
+      return showToast('Enchère impossible : budget insuffisant ou équipage complet.');
+    if(e.offers.some(o=>o.id===p.id))return;
+    e.offers.push({id:p.id,amount:value});
+    e.step++;
+    if(e.step===state.players.length){
+      const max=Math.max(...e.offers.map(o=>o.amount));
+      const tied=max>0?e.offers.filter(o=>o.amount===max).map(o=>o.id):[];
+      if(tied.length>1){e.tied=tied;e.tieBits='';e.tieFlips=[];e.stage='tie';}
+      else v2BurstSettle(tied[0]??null);
+    }
+    save();render();
+  }
+  function v2BurstCoin(){
+    const e=v2Active();
+    if(e?.type!=='burst'||e.stage!=='tie')return;
+    const pile=Math.random()<.5;
+    e.tieBits+=(pile?'0':'1');
+    e.tieFlips.push({pile});
+    const bits=Math.ceil(Math.log2(e.tied.length));
+    let msg='COUP DE BURST : '+(pile?'PILE':'FACE');
+    if(e.tieBits.length>=bits){
+      const n=parseInt(e.tieBits,2);
+      e.tieBits='';
+      if(n<e.tied.length){
+        msg+=' · '+state.players[e.tied[n]].name+' remporte le départage !';
+        v2BurstSettle(e.tied[n]);
+      }else msg+=' · Nouvelle pièce pour départager les ex æquo.';
+    }
+    save();render();v2Fx('burst-coin',msg,pile);
   }
   function v2Pick(id){
     const e=v2Active();if(!e||e.type!=='black'||e.stage!=='select')return;
@@ -355,7 +425,7 @@
     let content='';
     if(e.stage==='intro'){
       content='<p>'+stateText+'</p><button class="primary" data-action="v2-ready">Continuer →</button>';
-    }else if(e.stage==='result'){
+    }else if(e.stage==='result'&&e.type!=='burst'){
       const rows=e.type==='marine'?state.featureConfig.rolls.map(x=>
         esc(player(x.id)?.name)+' : 🎲 '+x.roll+' → +'+x.percent+' % · '+currency(x.amount)):
         e.flips.map(x=>esc(player(x.id)?.name)+' : '+(x.charId?esc(CARDS[x.charId]?.name||x.charId)+' · '+(x.pile?'Pile +25':'Face −25')+' · '+x.before+' → '+x.after:'Aucune recrue à transformer'));
@@ -365,6 +435,26 @@
       content='<p>Les pertes de chaque équipage</p><div class="v2-god-results">'+
         my.map(p=>'<div class="v2-god-player"><strong>'+esc(p.name)+'</strong>'+
           (e.removed.filter(x=>x.from===p.id).map(x=>'<div class="v2-god-lost"><span class="portrait portrait-tiny"><span class="portrait-fallback">☠️</span><img class="portrait-photo" data-portrait-id="'+esc(x.id)+'" alt="" loading="lazy"></span><span>💥 '+esc(CARDS[x.id]?.name||x.id)+' · '+(CARDS[x.id]?.power||0)+' pts</span></div>').join('')||'<span class="v2-god-spared">Équipage épargné</span>')+'</div>').join('')+'</div><button class="primary" data-action="v2-ready">Continuer →</button>';
+    }else if(e.type==='burst'&&e.stage==='offers'){
+      const p=my[e.step],min=Number(state.baseBid||20);
+      content='<div class="v2-burst-card">'+charCard(CARDS[state.auction.charId])+'</div>'+
+        '<p>🔒 Au tour de <b>'+esc(p.name)+'</b> : une seule mise secrète, sans chronomètre.</p>'+
+        '<div class="v2-burst-input"><label for="v2-burst-amount">Ta proposition en Berrys (0 pour passer)</label>'+
+        '<input id="v2-burst-amount" type="number" min="0" step="1" inputmode="numeric" placeholder="Mise de départ : '+min+'"></div>'+
+        '<button class="primary" data-action="v2-burst-offer">🔒 Verrouiller mon offre</button>'+
+        '<p>'+(e.offers.length)+' / '+my.length+' propositions enregistrées. Les montants restent cachés.</p>';
+    }else if(e.type==='burst'&&e.stage==='tie'){
+      content='<div class="v2-burst-card">'+charCard(CARDS[state.auction.charId])+'</div>'+
+        '<h2>💰 Offres révélées simultanément</h2>'+
+        '<div class="v2-local-results">'+e.offers.map(o=>'<p>'+esc(player(o.id).name)+' : '+currency(o.amount)+'</p>').join('')+'</div>'+
+        '<p>Égalité en tête ! 🪙 Le pile ou face départage les joueurs concernés.</p>'+
+        '<button class="primary" data-action="v2-burst-coin">🪙 Lancer la pièce</button>';
+    }else if(e.type==='burst'&&e.stage==='result'){
+      content='<div class="v2-burst-card">'+charCard(CARDS[state.auction.charId])+'</div>'+
+        '<h2>🚀 Révélation des offres !</h2>'+
+        '<div class="v2-local-results">'+e.offers.map(o=>'<p>'+esc(player(o.id).name)+' : '+currency(o.amount)+'</p>').join('')+'</div>'+
+        '<p>'+(e.winner===null?'Personnage invendu.':'🏆 '+esc(player(e.winner).name)+' recrute '+esc(CARDS[state.auction.charId].name)+' pour '+currency(state.auction.highBid)+' !')+'</p>'+
+        '<button class="primary" data-action="v2-ready">Continuer →</button>';
     }else if(e.stage==='roll'){
       const p=my[e.step];content='<p>Au tour de <b>'+esc(p.name)+'</b> de lancer le dé !</p>'+
         '<div class="v2-local-die">🎲</div><button class="primary" data-action="v2-roll">🎲 Lancer mon dé</button>'+
@@ -537,7 +627,7 @@
         '<li>Haki de l’Observation : consulter discrètement les <b>3 prochains personnages</b>, une fois par joueur.</li>'+
         '<li>Haki de l’Armement : à chaque recrue de <b>60 points ou moins</b>, proposer un bonus de <b>+20 points définitifs</b> (ou le garder pour plus tard). Une utilisation par joueur.</li>'+
         '<li>Synergies par affiliation : 1 personnage = 0 point ; 2 = +10 ; 3 = +20 ; 4 = +30 ; 5 ou plus = +50. Chaque affiliation donne son propre bonus, cumulable avec les autres. Les anciennes synergies par combinaison ont été supprimées.</li>'+
-        '<li>Sept événements possibles : Guerre au sommet, Prime de la Marine, Personnage mystère, Marché Noir, God Valley, SMILE et Rêverie. 1 événement pour 1 à 5 recrues, 2 pour 6 à 9, 3 à partir de 10. Chaque annonce reste affichée jusqu’à Continuer.</li>'+
+        '<li>Huit événements possibles : Guerre au sommet, Prime de la Marine, Personnage mystère, Marché Noir, God Valley, SMILE, Rêverie et Coup de Burst. 1 événement pour 1 à 5 recrues, 2 pour 6 à 9, 3 à partir de 10. Chaque annonce reste affichée jusqu’à Continuer.</li>'+
         '<li>Rêverie : première mise obligatoire, puis retrait gratuit autorisé ; coût final doublé et Haki des Rois interdit. SMILE : chaque joueur lance une pièce (+25 ou −25 sur le personnage le plus faible, dans les limites 0 à 100).</li>');
     }
   };
@@ -562,6 +652,8 @@
     if(action==='v2-ready')v2Ready();
     else if(action==='v2-roll')v2Roll();
     else if(action==='v2-coin')v2Coin();
+    else if(action==='v2-burst-offer')v2BurstOffer();
+    else if(action==='v2-burst-coin')v2BurstCoin();
     else if(action==='v2-pick')v2Pick(b.dataset.id);
     else if(action==='v2-delete')v2Eliminate(b.dataset.id);
     else if(action==='v2-skip')v2Eliminate('');
@@ -572,12 +664,16 @@
       border:2px solid #d0ab70;border-radius:23px;padding:30px 15px;text-align:center;color:#f8e8cb}
     .v2-local-special.v2-god,.v2-local-special.v2-war{background:linear-gradient(145deg,#4d2730,#102132);border-color:#dd7664}
     .v2-local-special.v2-black,.v2-local-special.v2-mystery{background:linear-gradient(145deg,#483358,#162734);border-color:#ae9bda}
+    .v2-local-special.v2-burst{background:linear-gradient(145deg,#294f73,#0b273c);border-color:#f1be63}
     .v2-local-special.v2-smile{background:linear-gradient(145deg,#5d3926,#132836);border-color:#f1be63}
     .v2-local-special small{letter-spacing:.12em;color:#f5d69a}
     .v2-local-special h1{font-size:27px;color:#ffdb8f;margin:8px 0 25px}
     .v2-local-special p{font-size:14px;line-height:1.6}
     .v2-local-symbol{font-size:70px;animation:v2LocalBounce .85s infinite alternate;margin:18px auto}
     .v2-local-special button.primary{margin:20px auto 6px;max-width:360px}
+    .v2-burst-card{margin:12px auto;max-width:440px}.v2-burst-card .character-card{margin:0 auto}
+    .v2-burst-input{display:grid;gap:8px;text-align:left;max-width:340px;margin:20px auto}
+    .v2-burst-input input{width:100%;border-radius:12px;padding:14px;font-size:18px;background:#f1ece0;color:#102a3d}
     .v2-local-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px;margin:18px 0}
     .v2-local-choices>div{display:grid;align-content:space-between;gap:8px;background:#234154;padding:13px 8px;border:1px solid #b69a6b;border-radius:14px}
     .v2-local-choices button{background:#e5bd77;color:#152635;border:none;border-radius:10px;padding:10px}

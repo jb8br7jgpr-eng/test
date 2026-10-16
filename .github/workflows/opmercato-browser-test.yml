@@ -136,7 +136,7 @@ jobs:
             await host.locator('[data-online="rules"]').click();
             if(!await host.locator('.modal-content').getByText('Regles du mercato').count())throw Error("Online rules inaccessible");
             await host.locator('.modal-content [data-action="close-modal"]').click();
-            // La nouvelle version introduit 7 événements, dont le mystère optionnel.
+            // La version actuelle propose 8 événements, dont Burst à enchères secrètes.
             const turn=(await host.locator(".online-turn b").first().innerText()).trim();
             const first=turn==="Capitaine Test"?host:guest,other=turn==="Capitaine Test"?guest:host;
             await first.locator('[data-online="haki"]').click();
@@ -174,6 +174,18 @@ jobs:
               for(let guard=0;guard<8;guard++){
                 const next=(await host.locator('#opmercato-online').innerText());
                 if(await host.locator('.online-round').count())break;
+                if(await host.locator('[data-online="burst-submit"]').count()){
+                  await host.locator('#online-burst-amount').fill('5000000');
+                  await host.locator('[data-online="burst-submit"]').click();
+                  await guest.locator('#online-burst-amount').fill('5000000');
+                  await guest.locator('[data-online="burst-submit"]').click();
+                  continue;
+                }
+                if(await host.locator('[data-online="burst-coin"]').count()){
+                  await host.locator('[data-online="burst-coin"]').click();
+                  await host.locator('.v2-local-fx').waitFor({state:'hidden',timeout:10000}).catch(()=>{});
+                  continue;
+                }
                 if(await host.locator('[data-online="roll"]').count()){
                   const active=await host.locator('[data-online="roll"]').isEnabled();
                   await (active?host:guest).locator('[data-online="roll"]').click();
@@ -250,6 +262,46 @@ jobs:
                 await local.evaluate(()=>localStorage.removeItem('mercato-pirates-v1'));
               }
             }
+            // Test local déterministe du Coup de Burst avec égalité et pièce animée.
+            await local.goto(home+'&burst=local-secret-test',{waitUntil:'domcontentloaded',timeout:30000});
+            await local.evaluate(()=>localStorage.removeItem('mercato-pirates-v1'));
+            await local.reload({waitUntil:'domcontentloaded'});
+            await local.locator('[data-action="start"]').click();
+            const burstIntro=await local.evaluate(()=>{
+              state.featureConfig.plan=[{type:'burst',round:state.round+1}];
+              drawNext();
+              return {stage:state.featureConfig.active?.stage,type:state.featureConfig.active?.type,
+                id:state.auction?.charId};
+            });
+            const burstIds=new Set(['luffy','zoro','nami','usopp','sanji','chopper','robin','franky','brook','jinbe','luffy-gear5']);
+            if(burstIntro.stage!=='intro'||burstIntro.type!=='burst'||!burstIds.has(burstIntro.id))
+              throw Error("Local Burst failed to select an available Straw Hat: "+JSON.stringify(burstIntro));
+            if(await local.locator('.v2-burst-card').count())throw Error("Burst card shown before intro");
+            await local.locator('[data-action="v2-ready"]').click();
+            if(!await local.locator('.v2-burst-card').count())throw Error("Burst character card missing after intro");
+            await local.locator('#v2-burst-amount').fill('50');
+            await local.locator('[data-action="v2-burst-offer"]').click();
+            const hidden=await local.evaluate(()=>({
+              stage:state.featureConfig.active.stage,offers:state.featureConfig.active.offers.length,
+              screen:document.querySelector('.v2-local-special')?.innerText||''
+            }));
+            if(hidden.stage!=='offers'||hidden.offers!==1||hidden.screen.includes('50 ฿'))
+              throw Error("First local Burst bid must stay hidden: "+JSON.stringify(hidden));
+            await local.locator('#v2-burst-amount').fill('50');
+            await local.locator('[data-action="v2-burst-offer"]').click();
+            if(!await local.locator('[data-action="v2-burst-coin"]').count())
+              throw Error("Equal secret Burst bids did not trigger a coin toss");
+            await local.locator('[data-action="v2-burst-coin"]').click();
+            const burstOutcome=await local.evaluate(()=>({
+              stage:state.featureConfig.active.stage,
+              winner:state.featureConfig.active.winner,
+              auction:state.auction.outcome,
+              roster:state.players.map(p=>p.roster.includes(state.auction.charId)),
+              prices:state.players.map(p=>p.purchases?.[state.auction.charId]||'0')
+            }));
+            if(burstOutcome.stage!=='result'||burstOutcome.auction!=='sold'||
+              burstOutcome.roster.filter(Boolean).length!==1||!burstOutcome.prices.includes('50'))
+              throw Error("Burst settlement failed: "+JSON.stringify(burstOutcome));
             // Test local déterministe : Rêverie interdit le refus initial, puis autorise le retrait gratuit.
             await local.goto(home+'&reverie=local-regression',{waitUntil:'domcontentloaded',timeout:30000});
             await local.evaluate(()=>localStorage.removeItem('mercato-pirates-v1'));

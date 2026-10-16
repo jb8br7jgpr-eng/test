@@ -7,7 +7,7 @@
   const escOnline=x=>String(x??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
   const berrys=x=>{try{return BigInt(String(x??0)).toLocaleString("fr-FR")+" ฿";}catch{return "0 ฿";}};
   let session=null,view=null,showing=undefined,loading=false,channel=null,poll=null,topic="",onlineDetailId=null;
-  let mode="choose",client=null,busy=false,loaded=false,copyMessage="",peekOpen=false,fx=null;
+  let mode="choose",client=null,busy=false,loaded=false,copyMessage="",peekOpen=false,fx=null,burstDraft="";
   const root=document.createElement("section");root.id="opmercato-online";
   root.style.display="none";document.body.appendChild(root);
   try{const stored=JSON.parse(localStorage.getItem(KEY)||"null");if(stored?.roomId&&stored?.token)session=stored;}catch{}
@@ -58,6 +58,7 @@
     const next=result?.room;if(!next)return;
     if(!force&&view?.id===next.id&&Number(next.version)<=Number(view.version))return;
     const previous=view;
+    if(next.event?.active?.type!=="burst"||next.event?.active?.round!==previous?.event?.active?.round)burstDraft="";
     view=next;
     if(showing)paint();
     addSync();
@@ -72,6 +73,11 @@
           const name=next.players[latest.id]?.name||"Pirate";
           window.OPMERCATO_EVENT_FX?.("die",name+" : 🎲 "+latest.roll+" → +"+latest.percent+" % · "+berrys(latest.amount),latest.roll);
         }
+      }else if(newEvent.type==="burst"){
+        const added=(newEvent.tieFlips||[]).slice((oldEvent.tieFlips||[]).length);
+        const latest=added.at(-1);
+        if(latest)window.OPMERCATO_EVENT_FX?.("burst-coin","COUP DE BURST : "+(latest.pile?"PILE":"FACE")+
+          (newEvent.winner!==undefined&&newEvent.winner!==null?" · "+(next.players[newEvent.winner]?.name||"Pirate")+" l'emporte !":""),latest.pile);
       }else if(newEvent.type==="smile"){
         const added=(newEvent.flips||[]).slice((oldEvent.flips||[]).length);
         const latest=added.at(-1);
@@ -187,7 +193,8 @@
     black:["🏴‍☠️","MARCHÉ NOIR","Trois personnages révélés. Deux seront renvoyés dans la pioche."],
     god:["💥","INCIDENT DE GOD VALLEY","Chaque pirate peut supprimer une recrue adverse."],
     smile:["🍎","SMILE","Le personnage le plus faible risque +25 ou −25 points."],
-    reverie:["👑","LA RÊVERIE","Taxe royale ×2 : première mise obligatoire, retrait possible ensuite. Haki des Rois interdit."]
+    reverie:["👑","LA RÊVERIE","Taxe royale ×2 : première mise obligatoire, retrait possible ensuite. Haki des Rois interdit."],
+    burst:["🚀","COUP DE BURST","Le Thousand Sunny débarque ! Un Chapeau de paille disponible arrive pour une enchère secrète unique."]
   };
   function specialPanel(){
     const e=view.event.active,info=EVENT_INFO[e.type]||["✨","ÉVÉNEMENT SPÉCIAL",""];
@@ -197,6 +204,30 @@
       content='<p class="v2-description">'+escOnline(info[2])+'</p>'+
         button("event-ready",myReady?"✓ En attente des autres pirates…":"Continuer →","primary",myReady)+
         '<p class="online-hint">'+(e.ready?.length||0)+'/'+view.players.length+' confirmations</p>';
+    }else if(e.type==="burst"&&e.stage==="offers"){
+      const submitted=e.offers?.some(o=>o.id===mine);
+      content='<div class="v2-burst-card">'+portraitCard(view.auction.charId)+'</div>'+
+        '<p>🔒 Chacun dépose une seule offre secrète, sans chronomètre.</p>'+
+        '<div class="v2-burst-ledger">'+view.players.map(p=>
+          '<div>'+label(p)+' <span>'+(e.offers?.some(o=>o.id===p.id)?'🔒 Offre verrouillée':'⏳ En attente')+'</span></div>').join('')+'</div>'+
+        (submitted?'<p class="online-hint">Ton offre est verrouillée. Attends les autres joueurs.</p>':
+          '<label class="v2-burst-label" for="online-burst-amount">Ta proposition en Berrys (0 pour passer)</label>'+
+          '<input id="online-burst-amount" class="v2-burst-amount" type="text" inputmode="numeric" value="'+escOnline(burstDraft)+'" placeholder="Mise minimum : '+berrys(view.baseBid)+'">'+
+          button("burst-submit","🔒 Confirmer mon offre secrète","primary"))+
+        '<p class="online-hint">'+(e.offers?.length||0)+' / '+view.players.length+' offres validées</p>';
+    }else if(e.type==="burst"&&e.stage==="tie"){
+      content='<div class="v2-burst-card">'+portraitCard(view.auction.charId)+'</div>'+
+        '<h3>💰 Révélation simultanée des offres</h3>'+
+        '<div class="v2-results">'+e.offers.map(o=>'<p>'+label(view.players[o.id])+' : '+berrys(o.amount)+'</p>').join('')+'</div>'+
+        '<p>🪙 Égalité entre les meilleures offres ! Départage à pile ou face.</p>'+
+        (view.host?button("burst-coin","🪙 Lancer la pièce","primary"):
+          '<p class="online-hint">L’hôte lance la pièce, le résultat apparaît sur les deux téléphones.</p>');
+    }else if(e.type==="burst"&&e.stage==="result"){
+      content='<div class="v2-burst-card">'+portraitCard(view.auction.charId)+'</div>'+
+        '<h3>🚀 Les offres sont révélées !</h3>'+
+        '<div class="v2-results">'+e.offers.map(o=>'<p>'+label(view.players[o.id])+' : '+berrys(o.amount)+'</p>').join('')+'</div>'+
+        '<p>'+(e.winner===null?'Personnage invendu.':'🏆 '+label(view.players[e.winner])+' recrute '+escOnline(CARDS[view.auction.charId]?.name||"ce personnage")+' pour '+berrys(view.auction.highBid))+'</p>'+
+        button("event-ready",myReady?"✓ En attente des autres pirates…":"Continuer →","primary",myReady);
     }else if(e.stage==="result"){
       const items=e.type==="marine"?(view.event.rolls||[]).map(x=>{
         const p=view.players[x.id];return '<p>'+label(p)+' : 🎲 '+x.roll+' → +'+x.percent+' % ('+berrys(x.amount)+')</p>';
@@ -367,7 +398,7 @@
       'Haki de l’Observation : consulter secretement les trois prochaines cartes une fois par joueur.',
       'Haki de l’Armement : après une recrue de <b>60 points ou moins</b>, tu peux lui donner <b>+20 points définitifs</b> ou conserver ton Haki. Une seule utilisation.',
       'Synergies par affiliation : 1 personnage = 0 point ; 2 = +10 ; 3 = +20 ; 4 = +30 ; 5 ou plus = +50. Les bonus de plusieurs affiliations se cumulent. Les anciens trios spéciaux ne comptent plus.',
-      '7 evenements independants : Guerre au sommet, Prime de la Marine, Personnage mystere, Marche noir, God Valley, SMILE et Reverie.',
+      '8 evenements independants : Guerre au sommet, Prime de la Marine, Personnage mystere, Marche noir, God Valley, SMILE, Reverie et Coup de Burst.',
       '1 evenement pour 1 a 5 recrues, 2 pour 6 a 9, 3 pour 10 a 30. Les joueurs confirment chaque annonce avec Continuer.',
       'Evenements sans doublon, sans chevauchement et a des tours aleatoires. SMILE arrive exclusivement dans la seconde moitie de la partie.',
       'La Reverie impose une premiere mise ; ensuite, se retirer est gratuit. Le gagnant paie le double de sa mise et le Haki des Rois est interdit.',
@@ -441,6 +472,12 @@
     if(a==="armament-skip"){await action("armament-skip");return;}
     if(a==="event-ready"){await action("event-ready");return;}
     if(a==="coin"){await action("coin");return;}
+    if(a==="burst-coin"){await action("burst-coin");return;}
+    if(a==="burst-submit"){
+      const amount=root.querySelector("#online-burst-amount")?.value.replace(/[\s._]/g,"").trim();
+      if(!/^\d+$/.test(String(amount??""))){note("Indique une offre entière en Berrys, ou 0 pour passer.");return;}
+      await action("burst-offer",{amount});return;
+    }
     if(a==="event-skip"){await action("event-eliminate",{charId:""});return;}
     if(a.startsWith("pick-")){await action("event-pick",{charId:a.slice(5)});return;}
     if(a.startsWith("delete-")){await action("event-eliminate",{charId:a.slice(7)});return;}
@@ -448,6 +485,7 @@
     if(a.startsWith("bid-")){await action("bid",{amount:a.slice(4)});return;}
     if(["start","bid","pass","haki","observation","next","roll","finish"].includes(a)){await action(a);return;}
   },true);
+  document.addEventListener("input",ev=>{if(ev.target?.id==="online-burst-amount")burstDraft=ev.target.value;});
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&showing)refresh();});
   const css=document.createElement("style");
   css.textContent=`
@@ -470,6 +508,13 @@
     .v2-special{margin:14px 0;border:2px solid #c8a369;background:radial-gradient(circle at 50% 10%,#344d60,#102332 75%);border-radius:23px;padding:28px 16px;color:#fff4d4;text-align:center;box-shadow:0 10px 32px #0008}
     .v2-war,.v2-god{border-color:#df685a;background:linear-gradient(130deg,#4b242a,#101c2c)}
     .v2-black,.v2-mystery{border-color:#a993e0;background:linear-gradient(130deg,#362448,#132332)}
+    .v2-burst{border-color:#f4c476;background:linear-gradient(135deg,#294e73,#102232)}
+    .v2-burst-card{max-width:420px;margin:12px auto}
+    .v2-burst-card .character-card{margin:0 auto}
+    .v2-burst-ledger{display:grid;gap:8px;text-align:left;margin:14px 0}
+    .v2-burst-ledger>div{padding:12px;border:1px solid #8f805e;border-radius:10px;background:#233e50;display:flex;justify-content:space-between;gap:10px}
+    .v2-burst-label{display:block;text-align:left;margin-top:20px;font-size:13px}
+    .v2-burst-amount{box-sizing:border-box;width:100%;border:1px solid #ba965e;background:#f3ede0;color:#152c3c;padding:14px;border-radius:12px;font-size:18px;margin-top:9px}
     .v2-smile{border-color:#f1c762;background:linear-gradient(130deg,#5a392a,#172632)}
     .v2-tag{font-size:11px;letter-spacing:.16em;color:#f9ca77;font-weight:800}
     .v2-symbol{font-size:68px;margin:18px 0 8px;animation:v2Entrance .7s both}
