@@ -166,7 +166,7 @@
           '<span>'+escOnline(CARDS[id]?.name||id)+(p.smileModifiers?.[id]!==undefined?'<small class="online-smile-buff">🍎 '+powerFor(p,id)+' pts (rang '+classFor(CARDS[id]?.power||0)+')</small>':'')+'</span></button>').join(""):
         '<span>Équipage vide</span>')+'</div>'+
         '<div class="online-small">Base '+p.roster.reduce((v,id)=>v+powerFor(p,id),0)+
-          (p.armamentId?' · Armement +'+(p.armamentBonus??5):'')+
+          (!view?.v3&&p.armamentId?' · Armement +'+(p.armamentBonus??5):'')+
           (p.bonuses?.length?' · Synergies +'+p.bonuses.reduce((v,x)=>v+x.points,0):'')+'</div>'+
         (p.marineAward&&BigInt(p.marineAward)>0n?'<div class="online-small">🎲 Prime Marine : +'+berrys(p.marineAward)+'</div>':'')+
         '<div class="online-small">👑 '+(p.hakiUsed?'Haki des Rois utilisé':'Disponible')+
@@ -463,8 +463,8 @@
   };
   const projected3=(p,remove,add)=>{
     const ids=p.roster.map(id=>id===remove?add:id);
-    return ids.reduce((n,id)=>n+(id===add?Number(CARDS[id]?.power||0)+Number(view.players.find(x=>x.roster.includes(add))?.shipBonus?.[add]||0)+
-       Number(view.players.find(x=>x.roster.includes(add))?.smileModifiers?.[add]||0):v3Power(p,id)),0)+v3Synergy(ids);
+    return ids.reduce((n,id)=>n+(id===add?Math.max(0,Math.min(100,Number(CARDS[id]?.power||0)+Number(view.players.find(x=>x.roster.includes(add))?.shipBonus?.[add]||0)+
+       Number(view.players.find(x=>x.roster.includes(add))?.smileModifiers?.[add]||0))):v3Power(p,id)),0)+v3Synergy(ids);
   };
   function v3Page(){
     const x=view.v3,me=view.players[view.yourSeat],mine=view.yourSeat;
