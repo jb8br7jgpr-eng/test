@@ -52,7 +52,15 @@ jobs:
             await host.locator('[data-online="start"]').click();
             for(const page of pages)await page.locator('[data-online="v3-intro-ready"]').waitFor({timeout:25000});
             for(const page of pages)await page.locator('[data-online="v3-intro-ready"]').click();
-            for(const page of pages)await page.locator('[data-online="v3-roll"]').waitFor({timeout:25000});
+            await host.waitForTimeout(1200);
+            for(const page of pages){
+              try { await page.locator('[data-online="v3-roll"]').waitFor({timeout:20000}); }
+              catch(e){
+                const ui=await page.locator('.online-shell').innerText();
+                console.log("INTRO-TO-DICE DIAGNOSTIC:",ui.slice(0,1800));
+                throw e;
+              }
+            }
             for(const page of pages)await page.locator('[data-online="v3-roll"]').click();
             for(let guard=0;guard<40;guard++){
               await host.waitForTimeout(500);
