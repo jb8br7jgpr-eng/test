@@ -2,7 +2,7 @@ name: OPMercato V3 Staging Smoke
 on:
   workflow_dispatch:
   push:
-    branches: [main, opmercato-v3-work-20261016, opmercato-v3-polish-20261016]
+    branches: [main, opmercato-v3-work-20261016, opmercato-v3-polish-20261016, opmercato-v3-transfer-recap-20261016]
     paths:
       - 'mercato-online.js'
       - 'mercato-v3-local.js'
