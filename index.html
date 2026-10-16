@@ -196,7 +196,7 @@
     ['fullbody','Fullbody',12], ['charlos','Saint Charlos',6]
   ].map(([id,name,power])=>({id,name,power})).concat(window.MERCATO_EXPANSION?.characters || []);
   const CARDS = Object.fromEntries(CHARACTERS.map(c=>[c.id,c]));
-  const MAX_PLAYERS=6, MIN_PLAYERS=2, OPEN_BID=20, BID_STEP=10, STORE_KEY='mercato-pirates-v1';
+  const MAX_PLAYERS=5, MIN_PLAYERS=2, OPEN_BID=20, BID_STEP=10, STORE_KEY='mercato-pirates-v1';
   let TEAM_SIZE=5;
   const TIERS = [
     {min:95,tier:'S',label:'Légendaire',color:'#ffd171',background:'rgba(255,209,113,.16)',glow:'rgba(255,181,63,.24)'},
@@ -227,7 +227,7 @@
   function header(){return `<div class="topbar${!state?' home-header':''}"><div class="brand"><div class="op-logo-frame op-logo-header"><img src="./opmercato-logo.jpg?v=1" alt="OPMercato, la boussole des pirates" /></div></div><button class="btn-ghost" data-action="rules" aria-label="Afficher les règles">Règles ?</button></div>`;}
   function setupScreen(){
     return `${header()}<section class="intro"><div class="op-logo-home-wrap"><div class="op-logo-frame op-logo-home"><img src="./opmercato-logo.jpg?v=1" alt="Logo OPMercato" /></div></div><span class="eyebrow">Le jeu d'enchères des mers</span><h1>Forme l'équipage<br/>le plus puissant.</h1><p>Recrute des personnages One Piece aux enchères, gère ton budget et affronte tes amis. Celui qui a le plus de points avec ses <strong>5 personnages</strong> remporte la partie.</p></section>
-      <section class="card settings"><span class="section-label">Combien de pirates ?</span><div class="settings-row"><span class="hint" style="margin:0">De 2 à 6 joueurs</span><div class="counter"><button class="round-button" data-action="less" aria-label="Moins de joueurs">−</button><span id="numPlayers" class="count">${playerCount}</span><button class="round-button" data-action="more" aria-label="Plus de joueurs">+</button></div></div>
+      <section class="card settings"><span class="section-label">Combien de pirates ?</span><div class="settings-row"><span class="hint" style="margin:0">De 2 à 5 joueurs</span><div class="counter"><button class="round-button" data-action="less" aria-label="Moins de joueurs">−</button><span id="numPlayers" class="count">${playerCount}</span><button class="round-button" data-action="more" aria-label="Plus de joueurs">+</button></div></div>
       <span class="section-label">Noms des joueurs</span><div id="names" class="players-inputs">${names.slice(0,playerCount).map((n,i)=>`<div class="field"><label for="name-${i}">Joueur ${i+1}</label><input id="name-${i}" type="text" data-player-input="${i}" maxlength="25" value="${esc(n)}" autocomplete="off" /></div>`).join('')}</div>
       <div class="field field-budget"><label for="budget">Budget de départ (฿)</label><input id="budget" type="number" min="100" max="100000" step="100" value="${startingBudget}" inputmode="numeric" /></div>
       <button class="primary" data-action="start">⚓ Lancer le mercato</button><p class="hint">Un seul téléphone suffit : à chaque tour, l'écran indique qui doit enchérir. Le classement et la progression sont sauvegardés sur cet appareil.</p></section><footer class="footer-actions"><button class="text-btn" data-action="rules">Lire toutes les règles</button></footer>`;
@@ -350,6 +350,7 @@
   <script src="./mercato-features.js?v=20261016-burst-1"></script>
   <script src="./mercato-card-premium.js?v=20261013-premium-2"></script>
   <script src="./mercato-hud-21.js?v=20261013-op21-1"></script>
+  <script src="./mercato-v3-local.js?v=20261016-v3-draft"></script>
   <script src="./mercato-history-21.js?v=20261013-op21-1"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script defer src="./mercato-online.js?v=20261016-burst-1"></script>
