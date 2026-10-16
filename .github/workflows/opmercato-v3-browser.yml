@@ -120,7 +120,18 @@ jobs:
               const half=Math.ceil(TEAM_SIZE/2);
               const ids=Object.keys(CARDS).filter(id=>id!==state.v3.morgans.id).slice(0,half*2);
               state.players[0].roster=ids.slice(0,half);state.players[1].roster=ids.slice(half,half*2);
+              state.players[0].smileModifiers={[ids[0]]:25,[ids[1]]:-25};
+              state.players[0].shipBonus={[ids[0]]:3};
+              state.players[0].armamentId=ids[0];state.players[0].armamentBonus=20;
               state.v3.market.done=false;state.v3.phase='auction';state.auction.outcome='unsold';
+              render();
+              const first=document.querySelectorAll('.player-card')[0];
+              const chars=first.querySelectorAll('.oprs-character');
+              if(chars.length!==half||first.querySelectorAll('.oprs-positive').length<2||!first.querySelector('.oprs-negative')||
+                 !first.textContent.includes('Limite 0–100')||!first.querySelector('.oprs-grand-total')?.textContent.includes(String(getScore(state.players[0]))))
+                throw Error('Local character effects and scores not readable: '+first.innerText.slice(0,900));
+              const bounds=[...chars].map(el=>el.getBoundingClientRect());
+              if(bounds.some((b,i)=>i>0&&b.top<bounds[i-1].bottom-2))throw Error('Roster rows overlap on iPhone');
               drawNext();
             });
             if(await page.evaluate(()=>state.v3.phase)!=="market")throw Error("Market not triggered at halfway");
