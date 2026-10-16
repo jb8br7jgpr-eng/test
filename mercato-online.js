@@ -603,6 +603,19 @@
       ' pts</b> · <b>'+label(other)+' '+(projected3(other,b,a)-other.score)+' pts</b></p>';
   }
 
+  function sharedNotice(){
+    const n=view?.v3?.notice;if(!n)return "";
+    const confirmed=(n.ack||[]).includes(view.yourSeat),ready=(n.ack||[]).length;
+    return '<div class="v3-shared-backdrop" role="dialog" aria-modal="true" aria-label="Résultat partagé">'+
+      '<section class="v3-shared-notice"><span class="v3-shared-kicker">✦ ÉVÉNEMENT PARTAGÉ ✦</span>'+
+      '<div class="v3-shared-icon" aria-hidden="true">'+escOnline(n.icon||"✨")+'</div>'+
+      '<h2>'+escOnline(n.title)+'</h2><p>'+escOnline(n.body)+'</p>'+
+      (confirmed?'<div class="v3-shared-wait">✓ Tu as confirmé. En attente des autres pirates…</div>':
+        button("v3-notice-continue","Continuer →","primary"))+
+      '<div class="v3-shared-progress">'+ready+' / '+view.players.length+' joueurs prêts</div>'+
+      '<small>La partie reprend uniquement après confirmation de tous les joueurs.</small>'+
+      '</section></div>';
+  }
   function paint(){
     if(!showing)return;
     if(!view){landing();return;}
@@ -613,7 +626,7 @@
       (view.host&&view.status==="playing"?button("finish","Terminer cette partie","online-text"):"");
     shell(main+(fx?'<div class="v2-fx"><div class="v2-fx-icon">'+(fx.type==="roll"?"🎲":"🪙")+'</div><strong>'+
       (fx.type==="roll"?"Dé : "+fx.outcome.roll+" · +"+fx.outcome.percent+" %":fx.outcome.pile?"PILE · +25":"FACE · −25")+
-      '</strong></div>':"")+(view?'<div class="online-back">'+button("leave-online","Quitter ce salon et créer une nouvelle partie","online-text")+'</div>':"")+(onlineDetailId?detail(onlineDetailId):""));
+      '</strong></div>':"")+(view?'<div class="online-back">'+button("leave-online","Quitter ce salon et créer une nouvelle partie","online-text")+'</div>':"")+(onlineDetailId?detail(onlineDetailId):"")+sharedNotice());
     if(view?.v3?.stage==="market")v3RefreshTrade();
     if(peekOpen&&view?.v3)v3RefreshSwap();
   }
@@ -658,6 +671,7 @@
     if(a==="v3-roll"){const seat=view.yourSeat,name=view.players[seat]?.name;await action("v3-roll");const roll=view?.v3?.lastDice?.[seat];if(roll>=1&&roll<=6)await window.OPMERCATO_V3_DICE?.play(roll,name);return;}
     if(a.startsWith("v3-select-")){await action("v3-ship",{ship:a.slice(10)});return;}
     if(a==="v3-intro-ready"){await action("v3-intro-ready");return;}
+    if(a==="v3-notice-continue"){await action("v3-notice-continue");return;}
     if(a==="v3-morgans-ready"){await action("v3-morgans-ready");return;}
     if(a==="v3-morgans-guess"){await action("v3-morgans-guess",{guess:Number(root.querySelector("#v3-prediction")?.value)});return;}
     if(a==="v3-morgans-next"||a==="v3-morgans-wheel"||a==="v3-morgans-armament"||a==="v3-morgans-skip"){await action(a);return;}
@@ -688,6 +702,16 @@
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&showing)refresh();});
   const css=document.createElement("style");
   css.textContent=`
+    .v3-shared-backdrop{position:fixed;z-index:1400;inset:0;display:flex;align-items:center;justify-content:center;background:#061522ef;overflow-y:auto;padding:calc(env(safe-area-inset-top) + 15px) 15px calc(env(safe-area-inset-bottom) + 15px);box-sizing:border-box}
+    .v3-shared-notice{width:min(100%,460px);max-height:95dvh;overflow-y:auto;box-sizing:border-box;text-align:center;padding:23px 20px 25px;border:2px solid #e0b96d;border-radius:20px;background:radial-gradient(ellipse at top,#284d61,#102839 78%);color:#eaf5f6;box-shadow:0 18px 60px #000a}
+    .v3-shared-kicker{font-size:11px;letter-spacing:.13em;color:#f7cc7c;font-weight:900}
+    .v3-shared-icon{font-size:64px;margin:13px 0 6px;line-height:1.25}
+    .v3-shared-notice h2{font-size:clamp(21px,5.6vw,28px);line-height:1.25;overflow-wrap:anywhere;margin:8px 0}
+    .v3-shared-notice p{font-size:15px;line-height:1.7;overflow-wrap:anywhere;margin:15px 0;color:#e4eced}
+    .v3-shared-notice .primary{width:100%;max-width:320px;min-height:52px;font-size:16px;margin:17px auto 8px}
+    .v3-shared-wait{padding:16px 8px;border:1px solid #65977f;background:#16463a;color:#c3f5d8;border-radius:12px;margin:15px 0;font-size:13px;font-weight:850}
+    .v3-shared-progress{font-weight:900;color:#f6d48f;font-size:13px;margin:12px 0}
+    .v3-shared-notice small{font-size:11px;line-height:1.5;color:#b4cbd5;display:block}
 
     .v3-face-clip{display:block!important;position:relative!important;width:60px!important;height:60px!important;max-width:60px!important;max-height:60px!important;overflow:hidden!important;contain:layout paint!important;border-radius:50%!important;border:2px solid #e0b76e;background:#24485a;margin:5px auto;flex:none!important}
     .v3-face-clip>.portrait-photo.v3-face-image{display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:cover!important;object-position:center 22%!important;transform:none!important;border-radius:50%!important}
