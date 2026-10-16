@@ -130,6 +130,33 @@
     .chip em {font-style:normal;font-weight:950;color:var(--gold);margin-left:3px;}
     .chip.empty {color:#788e9b;border-style:dashed;}
     .footer-actions {display:flex;align-items:center;justify-content:center;gap:15px;margin-top:26px;flex-wrap:wrap;}
+
+    /* UI du jeu : logo centré et actions identiques sur mobile et ordinateur. */
+    .topbar.in-game-header {justify-content:center; margin-bottom:18px;}
+    .topbar.in-game-header .brand {width:100%; justify-content:center;}
+    .op-game-footer {display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; align-items:stretch; margin:23px 0 15px;}
+    .op-footer-btn {display:flex; align-items:center; justify-content:center; min-width:0; min-height:47px; padding:10px 5px; border:1px solid; border-radius:13px; font-size:clamp(10px,2.7vw,12px); line-height:1.25; font-weight:850; text-align:center; white-space:normal; overflow-wrap:anywhere; text-decoration:none; box-shadow:0 5px 15px #0003; }
+    .op-footer-rules {color:#e1f3ff; border-color:#5b8cac; background:#1d4a66;}
+    .op-footer-restart {color:#ffedc7; border-color:#bc9854; background:#664b2d;}
+    .op-footer-finish {color:#ffe1e3; border-color:#bd737b; background:#6c3540;}
+    .op-footer-btn:active:not(:disabled) {filter:brightness(1.14);}
+    .op-footer-note {margin:0 0 8px; font-size:11px; text-align:center; color:#afc8d2;}
+    .op-trade-effects {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:15px 0 17px;text-align:center;}
+    .op-trade-title {grid-column:1/-1;font-size:14px;font-weight:900;color:#ffdf9d;margin:0 0 2px;}
+    .op-trade-player {min-width:0;padding:13px 7px;background:#102f41;border:1px solid #648094;border-radius:14px;display:flex;align-items:center;flex-direction:column;gap:10px;}
+    .op-trade-player-name {color:#f6fbff;font-size:13px;line-height:1.3;overflow-wrap:anywhere;}
+    .op-trade-scores {display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:5px;color:#bbd0da;font-size:12px;font-weight:750;}
+    .op-trade-scores b {color:#fff1bb;font-size:clamp(13px,3.5vw,18px);white-space:nowrap;}
+    .op-trade-arrow {color:#ffdb94;font-weight:900;}
+    .op-trade-delta {display:inline-block;margin-top:auto;max-width:100%;padding:7px 9px;border-radius:10px;font-size:clamp(11px,3vw,15px);font-weight:950;line-height:1.2;}
+    .op-trade-player.is-positive {border-color:#68bba0;}
+    .op-trade-player.is-positive .op-trade-delta {color:#c5f8dc;background:#18513c;}
+    .op-trade-player.is-negative {border-color:#cf8888;}
+    .op-trade-player.is-negative .op-trade-delta {color:#ffe1db;background:#71333d;}
+    .op-trade-player.is-neutral .op-trade-delta {color:#e0eaf0;background:#304a5c;}
+    .op-trade-preview .op-trade-effects {margin-top:14px;}
+    @media(max-width:345px) {.op-game-footer {gap:5px;}.op-footer-btn {padding:9px 3px;font-size:10px;}.op-trade-effects {grid-template-columns:1fr;}}
+
     .text-btn {background:none;border:0;color:#a8bdc7;font-size:12px;text-decoration:underline;text-underline-offset:3px;padding:6px;}
     .text-btn.danger {color:#ffb6af;}
     .end-screen {padding:20px 0 0;}
@@ -230,7 +257,11 @@
   function getScore(p) {return [...p.roster].sort((a,b)=>CARDS[b].power-CARDS[a].power).slice(0,TEAM_SIZE).reduce((s,id)=>s+CARDS[id].power,0);}
   function ranking() {return [...state.players].sort((a,b)=>getScore(b)-getScore(a)||b.budget-a.budget||a.id-b.id);}
   function isComplete(){return state.players.every(p=>p.roster.length===TEAM_SIZE) || !state.players.some(p=>canParticipate(p,OPEN_BID));}
-  function header(){return `<div class="topbar${!state?' home-header':''}"><div class="brand"><div class="op-logo-frame op-logo-header"><img src="./opmercato-logo.jpg?v=1" alt="OPMercato, la boussole des pirates" /></div></div>${!state?'<nav class="home-nav" aria-label="Navigation"><button class="btn-ghost" data-action="catalog" type="button">📚 Catalogue</button><button class="btn-ghost" data-action="rules" type="button">📖 Règles</button></nav>':'<button class="btn-ghost" data-action="rules" aria-label="Afficher les règles">Règles ?</button>'}</div>`;}
+  function header(){return `<div class="topbar${!state?' home-header':' in-game-header'}"><div class="brand"><div class="op-logo-frame op-logo-header"><img src="./opmercato-logo.jpg?v=1" alt="OPMercato, la boussole des pirates" /></div></div>${!state?'<nav class="home-nav" aria-label="Navigation"><button class="btn-ghost" data-action="catalog" type="button">📚 Catalogue</button><button class="btn-ghost" data-action="rules" type="button">📖 Règles</button></nav>':''}</div>`;}
+  function gameFooter(){return '<div class="footer-actions op-game-footer">'+
+    '<button type="button" class="op-footer-btn op-footer-rules" data-action="rules">📖 Règles</button>'+
+    '<button type="button" class="op-footer-btn op-footer-restart" data-action="reset-request">↻ Recommencer</button>'+
+    '<button type="button" class="op-footer-btn op-footer-finish" data-action="finish-request">Terminer</button></div>';}
   function setupScreen(){
     return `${header()}<section class="intro"><div class="op-logo-home-wrap"><div class="op-logo-frame op-logo-home"><img src="./opmercato-logo.jpg?v=1" alt="Logo OPMercato" /></div></div><span class="eyebrow">Le jeu d'enchères des mers</span><h1>Forme l'équipage<br/>le plus puissant.</h1><p>Recrute des personnages One Piece aux enchères, gère ton budget et affronte tes amis. Celui qui a le plus de points avec ses <strong>${TEAM_SIZE} personnages</strong> remporte la partie.</p></section>
       <section class="card settings"><span class="section-label">Combien de pirates ?</span><div class="settings-row"><span class="hint" style="margin:0">De 2 à 5 joueurs</span><div class="counter"><button class="round-button" data-action="less" aria-label="Moins de joueurs">−</button><span id="numPlayers" class="count">${playerCount}</span><button class="round-button" data-action="more" aria-label="Plus de joueurs">+</button></div></div>
@@ -252,7 +283,7 @@
       <div class="turn-banner"><div><span>AU TOUR DE</span><strong>${esc(bidder?.name || '')}</strong></div><div class="turn-budget">${currency(bidder?.budget ?? 0)}<br/><span style="color:var(--muted);font-size:10px">disponibles</span></div></div>
       <div class="offers">${[0,20,50,100].map(add=>{let amount=min+add;return `<button data-action="bid" data-amount="${amount}" class="offer-btn" ${!canParticipate(bidder,amount)?'disabled':''}><b>${currency(amount)}</b><small>${add===0?'Offre minimale':`Offre +${add} ฿`}</small></button>`;}).join('')}</div>
       <button class="pass-btn" data-action="pass">Passer mon tour</button><p class="notice">Passer t'exclut uniquement des enchères pour ce personnage.</p>`}</section>
-    ${scoreBoard()}<div class="footer-actions"><button class="text-btn danger" data-action="finish-request">Terminer la partie</button><button class="text-btn" data-action="reset-request">Recommencer</button></div>`;
+    ${scoreBoard()}${gameFooter()}`;
   }
   function resolvedScreen(a,c){
     const won=a.outcome==='sold', p=won?player(a.leader):null;
@@ -346,7 +377,7 @@
   modal.addEventListener('click',event=>{if(event.target===modal)closeModal();});
   document.addEventListener('keydown',event=>{if(event.key==='Escape')closeModal();});
   if('serviceWorker' in navigator && window.location.protocol==='https:'){
-    window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=pwa-20261017-art1').catch(()=>{}));
+    window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=pwa-20261017-ui2').catch(()=>{}));
   }
   render();
   </script>
@@ -358,11 +389,11 @@
   <script src="./mercato-card-premium.js?v=20261013-premium-2"></script>
   <script src="./mercato-hud-21.js?v=20261016-v3-1"></script>
   <script src="./mercato-v3-dice.js?v=20261016-v3-hd"></script>
-  <script src="./mercato-v3-local.js?v=20261017-art1"></script>
+  <script src="./mercato-v3-local.js?v=20261017-ui2"></script>
   <script src="./mercato-smile-summary.js?v=20261016-smile2"></script>
   <script src="./mercato-roster-summary.js?v=20261016-roster2"></script>
   <script src="./mercato-history-21.js?v=20261013-op21-1"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script defer src="./mercato-online.js?v=20261017-art1"></script>
+  <script defer src="./mercato-online.js?v=20261017-ui2"></script>
 </body>
 </html>
