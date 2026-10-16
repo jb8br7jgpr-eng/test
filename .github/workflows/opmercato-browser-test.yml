@@ -1,16 +1,6 @@
 name: OPMercato Two-Phone Browser Test
 on:
-  workflow_dispatch:
-  push:
-    paths:
-      - '.github/workflows/opmercato-browser-test.yml'
-      - 'mercato-online.js'
-      - 'mercato-features.js'
-      - 'index.html'
-      - 'characters-data.js'
-      - 'opmercato-catalog.json'
-      - 'portrait-map.js'
-      - 'sw.js'
+  workflow_dispatch: # Legacy V2 test, manual only. V3 suites run on commits.
 jobs:
   two-phones:
     runs-on: ubuntu-latest
