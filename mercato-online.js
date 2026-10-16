@@ -110,6 +110,18 @@
       paint();
 
     }catch(e){
+      if(action==="v3-intro-ready"&&String(e.message).includes("évolué")){
+        try {
+          await refresh();
+          if(view?.v3?.stage==="intro"&&!view.v3.introReady?.includes(view.yourSeat)){
+            apply(await call(action,args),true);
+            copyMessage="";
+            paint();
+            return;
+          }
+          if(view?.v3?.stage!=="intro"||view.v3.introReady?.includes(view.yourSeat))return;
+        }catch(retryError){e=retryError;}
+      }
       note(e.message);
       if(String(e.message).includes("évolué"))await refresh();
     }finally{busy=false;clicked.forEach((b,i)=>{if(b.isConnected)b.disabled=priorDisabled[i];});}
