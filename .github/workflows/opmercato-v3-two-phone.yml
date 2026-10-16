@@ -50,6 +50,8 @@ jobs:
             await guest.locator('[data-online="join-go"]').click();
             await guest.locator('.online-code').waitFor({timeout:25000});
             await host.locator('[data-online="start"]').click();
+            for(const page of pages)await page.locator('[data-online="v3-intro-ready"]').waitFor({timeout:25000});
+            for(const page of pages)await page.locator('[data-online="v3-intro-ready"]').click();
             for(const page of pages)await page.locator('[data-online="v3-roll"]').waitFor({timeout:25000});
             for(const page of pages)await page.locator('[data-online="v3-roll"]').click();
             for(let guard=0;guard<40;guard++){
