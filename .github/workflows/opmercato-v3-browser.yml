@@ -35,6 +35,14 @@ jobs:
             await page.goto("http://127.0.0.1:8765/",{waitUntil:"domcontentloaded"});
             await page.evaluate(()=>localStorage.clear());
             await page.reload({waitUntil:"domcontentloaded"});
+            const home=await page.evaluate(()=>({team:document.querySelector("#team-size")?.value,
+              nav:[...document.querySelectorAll(".home-nav button")].map(x=>x.textContent.trim()),
+              online:document.querySelector(".home-online-button")?.getBoundingClientRect().height||0,
+              oldOnline:!!document.querySelector(".online-entry"),duplicate:!!document.querySelector(".game-nav")}));
+            if(home.team!=="10"||home.nav.length!==2||!home.nav[0].includes("Catalogue")||
+              !home.nav[1].includes("Règles")||home.online<55||home.oldOnline||home.duplicate)
+              throw Error("Homepage layout or local default invalid: "+JSON.stringify(home));
+            console.log("PASS homepage top Catalogue / Règles, prominent online button and 10-player roster defaults");
             await page.locator('[data-action="start"]').click();
             if(await page.evaluate(()=>state?.v3?.phase)!=="intro")throw Error("V3 introduction missing");
             await page.locator('[data-action="v3-intro-continue"]').click();
@@ -100,8 +108,9 @@ jobs:
             if(await page.evaluate(()=>state.v3.morgans.done)!==true)throw Error("Morgans refuse did not finish");
             console.log("PASS local V3 Morgans predictions and refusal");
             await page.evaluate(()=>{
-              const ids=Object.keys(CARDS).filter(id=>id!==state.v3.morgans.id).slice(0,6);
-              state.players[0].roster=ids.slice(0,3);state.players[1].roster=ids.slice(3,6);
+              const half=Math.ceil(TEAM_SIZE/2);
+              const ids=Object.keys(CARDS).filter(id=>id!==state.v3.morgans.id).slice(0,half*2);
+              state.players[0].roster=ids.slice(0,half);state.players[1].roster=ids.slice(half,half*2);
               state.v3.market.done=false;state.v3.phase='auction';state.auction.outcome='unsold';
               drawNext();
             });
