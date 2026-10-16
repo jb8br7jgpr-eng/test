@@ -1,0 +1,48 @@
+name: OPMercato V3 Five Players
+on:
+  workflow_dispatch:
+  push:
+    branches: [opmercato-v3-polish-20261016]
+    paths: ['.github/workflows/opmercato-v3-five-players.yml', 'supabase/functions/opmercato-online/index.ts']
+jobs:
+  test-5:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Validate five unique ships and initial bidding
+        run: |
+          node --input-type=module <<'JS'
+          const url="https://nezqupnhcqwuewfilioa.supabase.co/functions/v1/opmercato-online-v3-staging";
+          const key="sb_publishable_rLlu872lFwupJfFw_f3alw_GhbR7Mok";
+          async function req(d){
+            const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json",apikey:key},body:JSON.stringify(d)});
+            const j=await r.json();if(!r.ok||j.error)throw Error(d.action+" : "+JSON.stringify(j).slice(0,350));return j;
+          }
+          const host=await req({action:"create",name:"Fleet Captain",budget:"1000000",teamSize:10,maxPlayers:5,spoilers:true});
+          const players=[host],roomId=host.room.id,code=host.room.code;
+          for(let n=1;n<5;n++)players.push(await req({action:"join",name:"Fleet "+n,code}));
+          const act=async(seat,action,x={})=>(await req({action,roomId,token:players[seat].token,...x})).room;
+          let v=await act(0,"start");
+          if(v.v3.stage!=="intro")throw Error("Initial intro missing");
+          for(let i=0;i<5;i++)v=await act(i,"v3-intro-ready");
+          if(v.v3.stage!=="dice")throw Error("Dice phase missing");
+          for(let i=0;i<5;i++)v=await act(i,"v3-roll");
+          for(let g=0;v.v3.stage==="dice-tie"&&g<70;g++){
+            for(const i of v.v3.tiePlayers)v=await act(i,"v3-roll");
+          }
+          if(v.v3.stage!=="ships")throw Error("Dice tie resolution failed");
+          const order=v.v3.choiceOrder;
+          if(new Set(order).size!==5||v.v3.firstBidder!==order[4])throw Error("Incorrect selection order");
+          const ships=["redforce","orojackson","mobydick","polartang","sunny"];
+          for(let i=0;i<5;i++)v=await act(order[i],"v3-ship",{ship:ships[i]});
+          if(v.v3.stage!=="auction")throw Error("Auction did not begin after ship choice");
+          const selected=v.players.map(p=>p.ship);
+          if(new Set(selected).size!==5||ships.some(s=>!selected.includes(s)))throw Error("Duplicate/missing ships");
+          if(v.auction.firstTurnId!==order[4])throw Error("Last ship selector did not open auction");
+          if(v.players[order[4]].ship!=="sunny")throw Error("Sunny selection mismatch");
+          if(v.auction.turnId!==order[4])throw Error("First bidder should be Sunny");
+          console.log("PASS 5-player intro, dice ties, unique ships, starter and server auction");
+          JS
