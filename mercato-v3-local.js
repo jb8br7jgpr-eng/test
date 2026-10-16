@@ -49,7 +49,7 @@ function recruit(p,id,bonus){if(p.ship==='redforce'){p.shipBonus=p.shipBonus||{}
 start=function(){const prior=state;oldStart();if(state&&state!==prior){
  const n=Math.floor(Math.random()*state.drawPile.length),secret=state.drawPile.splice(n,1)[0];
  state.round=0;state.drawIndex=0;state.auction=null;
- state.v3={phase:'intro',rolls:{},order:[],idx:0,starter:0,morgans:{id:secret,phase:'pending',guesses:{},shown:0,winner:null,ties:[],bonus:0,done:false},market:{done:false,order:[],idx:0,offer:null,locked:[],exchanges:[]}};
+ state.v3={phase:'intro',rolls:{},order:[],idx:0,starter:0,morgans:{id:secret,phase:'pending',guesses:{},shown:0,winner:null,ties:[],bonus:0,done:false},market:{done:false,order:[],idx:0,offer:null,result:null,locked:[],exchanges:[]}};
  state.players.forEach(p=>{p.ship=null;p.shipBonus={};});
  if(state.featureConfig){state.featureConfig.active=null;state.featureConfig.eventUsed=false;state.featureConfig.activatedRound=null;}
  save();render();
@@ -67,7 +67,7 @@ const dueM=()=>!V().morgans.done&&V().morgans.phase==='pending'&&state.players.e
 const dueT=()=>TEAM_SIZE>=2&&!V().market.done&&state.players.every(p=>p.roster.length>=Math.ceil(TEAM_SIZE/2));
 drawNext=function(){if(!V())return oldDraw();if(V().phase!=='auction')return;
  if(dueM()){V().phase='morgans';V().morgans.phase='intro';state.auction=null;save();render();return;}
- if(dueT()){const t=V().market;t.order=shuffle(state.players.map(p=>p.id));t.idx=0;t.offer=null;t.locked=[];t.exchanges=[];V().phase='market';state.auction=null;save();render();return;}
+ if(dueT()){const t=V().market;t.order=shuffle(state.players.map(p=>p.id));t.idx=0;t.offer=null;t.result=null;t.locked=[];t.exchanges=[];V().phase='market';state.auction=null;save();render();return;}
  oldDraw();if(state.phase==='auction'&&state.auction){
  const normal=(V().starter+state.round-1)%state.players.length;
  const wanted=V().oroOpeners?.[state.auction.charId]??normal;
@@ -82,7 +82,14 @@ function swap(o){const a=player(o.from),b=player(o.to);
  if(a.armamentId===o.give)a.armamentId=null;if(b.armamentId===o.take)b.armamentId=null;
  V().market.locked.push(o.give,o.take);V().market.exchanges.push(o);
 }
-function nextTrade(){const t=V().market;t.offer=null;t.idx++;if(t.idx>=t.order.length){t.done=true;resume();}else{save();render();}}
+function tradeTile(p,id,value){
+ const c=CARDS[id],power=value===undefined?pow(p,id):value;
+ return '<div class="v3-trade-person"><span class="v3-trade-face"><img class="portrait-photo v3-trade-face-img" data-portrait-id="'+esc(id)+'" alt="" loading="lazy"></span><strong class="v3-trade-person-name">'+nm(id)+'</strong><span class="v3-trade-person-rank">Rang '+tierOf(c.power).tier+' · <b>'+power+' pts</b></span></div>';
+}
+function tradeComparison(a,b,give,take,givePower,takePower){
+ return '<div class="v3-trade-compact">'+tradeTile(a,give,givePower)+'<span class="v3-trade-arrow" aria-hidden="true">⇄</span>'+tradeTile(b,take,takePower)+'</div>';
+}
+function nextTrade(){const t=V().market;t.offer=null;t.result=null;t.idx++;if(t.idx>=t.order.length){t.done=true;resume();}else{save();render();}}
 function screen(){const v=V(),m=v.morgans,t=v.market;
  if(v.phase==='intro')return '<div class="v3-start-intro"><div class="v3-intro-symbols">🎲 ⛵</div><h2>Que l’aventure commence !</h2><p>Avant les enchères, chaque pirate lance un dé à six faces.</p><div class="v3-intro-steps"><p><b>1.</b> Tout le monde lance son dé. En cas d’égalité, seuls les ex æquo relancent.</p><p><b>2.</b> Le plus grand résultat choisit son navire en premier, puis les autres dans l’ordre.</p><p><b>3.</b> Chaque navire est unique et donne un pouvoir pour toute la partie.</p><p><b>4.</b> Le dernier à choisir son navire ouvre la première enchère. Ensuite les premiers enchérisseurs alternent.</p></div>'+btn('intro-continue','⚔️ Commencer les lancers')+'</div>';
  if(v.phase==='dice'||v.phase==='dice-tie'){
@@ -112,15 +119,27 @@ function screen(){const v=V(),m=v.morgans,t=v.market;
   return h;
  }
  if(v.phase==='market'){
-  const p=player(t.order[t.idx]);let h='<h2>🔄 Marché des transferts</h2><h3>Proposition '+(t.idx+1)+'/'+t.order.length+' — '+esc(p.name)+'</h3>';
-  if(t.offer){const o=t.offer,a=player(o.from),b=player(o.to);h+='<div class="v3-trade-cards">'+charCard(CARDS[o.give])+charCard(CARDS[o.take])+'</div><h3>'+nm(o.give)+' ⇄ '+nm(o.take)+'</h3>'+
-    '<p>'+esc(a.name)+' '+(tradeScore(a,o.give,o.take)-getScore(a))+' pts · '+esc(b.name)+' '+(tradeScore(b,o.take,o.give)-getScore(b))+' pts</p>'+
-    btn('trade-accept','Accepter')+btn('trade-reject','Refuser');
-  }else{const people=state.players.filter(x=>x.id!==p.id&&x.roster.some(id=>!t.locked.includes(id)));
-    h+='<label>Adversaire<select id="v3-target">'+people.map(x=>'<option value="'+x.id+'">'+esc(x.name)+'</option>').join('')+'</select></label>'+
-    '<label>Ton personnage<select id="v3-give">'+p.roster.filter(id=>!t.locked.includes(id)).map(id=>'<option value="'+id+'">'+nm(id)+'</option>').join('')+'</select></label>'+
-    '<label>Personnage souhaité<select id="v3-take"></select></label><p id="v3-preview"></p>'+
-    btn('trade-offer','Proposer')+btn('trade-pass','Passer');}
+  const p=player(t.order[t.idx]);
+  let h='<h2>🔄 Marché des transferts</h2><p class="v3-trade-step">Proposition '+(t.idx+1)+'/'+t.order.length+' · Au tour de <b>'+esc(p.name)+'</b></p>';
+  if(t.result){
+   const o=t.result,a=player(o.from),b=player(o.to);
+   h+='<section class="v3-trade-decision" aria-live="polite"><div class="v3-trade-symbol">'+(o.accepted?'✅':'❌')+'</div><h3>'+(o.accepted?'Échange accepté !':'Échange refusé')+'</h3>'+
+     '<p>'+esc(a.name)+' et '+esc(b.name)+'</p>'+tradeComparison(a,b,o.give,o.take,o.givePower,o.takePower)+
+     (o.accepted?'<p class="v3-trade-effect">Bilan : <b>'+esc(a.name)+' '+(o.deltaFrom>=0?'+':'')+o.deltaFrom+' pts</b> · <b>'+esc(b.name)+' '+(o.deltaTo>=0?'+':'')+o.deltaTo+' pts</b></p>':
+     '<p class="v3-trade-effect">Les deux équipages restent inchangés.</p>')+
+     btn('trade-continue',t.idx+1>=t.order.length?'Continuer vers les enchères →':'Continuer le marché →')+'</section>';
+  }else if(t.offer){
+   const o=t.offer,a=player(o.from),b=player(o.to);
+   h+='<p>'+esc(a.name)+' propose un échange à '+esc(b.name)+'</p>'+tradeComparison(a,b,o.give,o.take)+
+     '<p class="v3-trade-effect">Impact estimé : <b>'+esc(a.name)+' '+(tradeScore(a,o.give,o.take)-getScore(a))+' pts</b> · <b>'+esc(b.name)+' '+(tradeScore(b,o.take,o.give)-getScore(b))+' pts</b></p>'+
+     btn('trade-accept','✅ Accepter l’échange')+btn('trade-reject','Refuser l’échange');
+  }else{
+   const people=state.players.filter(x=>x.id!==p.id&&x.roster.some(id=>!t.locked.includes(id)));
+   h+='<label>Adversaire<select id="v3-target">'+people.map(x=>'<option value="'+x.id+'">'+esc(x.name)+'</option>').join('')+'</select></label>'+
+     '<label>Ton personnage<select id="v3-give">'+p.roster.filter(id=>!t.locked.includes(id)).map(id=>'<option value="'+id+'">'+nm(id)+'</option>').join('')+'</select></label>'+
+     '<label>Personnage souhaité<select id="v3-take"></select></label><p id="v3-preview"></p>'+
+     btn('trade-offer','Proposer')+btn('trade-pass','Passer');
+  }
   return h;
  }return '';
 }
@@ -229,10 +248,20 @@ document.addEventListener('click',async e=>{const b=e.target.closest('button[dat
  else if(a==='morgans-armament'||a==='morgans-skip'){if(a==='morgans-armament'){const p=player(m.winner);p.armamentId=m.id;p.armamentUsed=true;p.armamentBonus=p.ship==='polartang'?40:20;}m.phase='done';resume();return;}
  else if(a==='trade-pass'){nextTrade();return;}
  else if(a==='trade-offer'){const p=player(t.order[t.idx]),to=Number(document.querySelector('#v3-target')?.value),give=document.querySelector('#v3-give')?.value,take=document.querySelector('#v3-take')?.value;if(!p.roster.includes(give)||!player(to)?.roster.includes(take))return;t.offer={from:p.id,to,give,take};}
- else if(a==='trade-accept'||a==='trade-reject'){if(a==='trade-accept')swap(t.offer);nextTrade();return;}
+ else if(a==='trade-accept'||a==='trade-reject'){
+  if(!t.offer||t.result)return;
+  const o=t.offer,from=player(o.from),to=player(o.to),accepted=a==='trade-accept';
+  const beforeFrom=getScore(from),beforeTo=getScore(to);
+  const givePower=pow(from,o.give),takePower=pow(to,o.take);
+  if(accepted)swap(o);
+  t.result={...o,accepted,givePower,takePower,deltaFrom:getScore(from)-beforeFrom,deltaTo:getScore(to)-beforeTo};
+  t.offer=null;
+ }
+ else if(a==='trade-continue'){if(!t.result)return;nextTrade();return;}
  save();render();
 },true);
 const css=document.createElement('style');css.textContent='.v3-screen{text-align:center;padding:20px;margin:16px 0}.v3-screen h2{color:#f6d28f;font-size:26px}.v3-screen .primary{display:block;width:100%;margin:10px 0}.v3-screen input,.v3-screen select{width:100%;background:#163544;color:#fff;border:1px solid #b98e56;border-radius:10px;padding:12px;margin:8px 0}.v3-ship-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px}.v3-ship{display:grid;gap:7px;background:#23465c;padding:8px;border-radius:13px}.v3-ship img{width:100%;aspect-ratio:1;object-fit:cover}.v3-ship small,.v3-ship p{font-size:12px}.v3-players-mini{font-size:12px;padding:10px;color:#c5d4dd}.v3-ship-mini{font-size:11px;color:#f4ca87}.v3-wheel{font-size:80px;animation:v3spin 2s linear infinite}@keyframes v3spin{to{transform:rotate(360deg)}}';
 css.textContent+='.v3-face-clip{display:block!important;position:relative!important;width:60px!important;height:60px!important;max-width:60px!important;max-height:60px!important;flex:none!important;overflow:hidden!important;contain:layout paint!important;margin:4px auto!important;border:2px solid #d5ad68;border-radius:50%!important;background:#234258}.v3-face-clip>.portrait-photo.v3-face-image{position:absolute!important;inset:0!important;display:block!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;min-width:0!important;object-fit:cover!important;object-position:center 22%!important;border-radius:50%!important;transform:none!important}.v3-oro-card{min-width:0;overflow:hidden;align-items:center}.v3-oro-card b{overflow-wrap:anywhere;font-size:12px;line-height:1.2}.v3-oro-modal{max-width:660px;width:min(100%,660px);max-height:88dvh;overflow-y:auto;overflow-x:hidden;box-sizing:border-box}.v3-team-ship{display:flex;align-items:center;gap:9px;padding:9px 11px;margin-top:9px;background:#0d2636b8;border:1px solid #8d7557;border-radius:12px;min-width:0}.v3-team-ship>img{width:40px;height:40px;flex:none;object-fit:cover;border-radius:50%;border:1px solid #d2b17c}.v3-team-ship-name{display:grid;gap:2px;flex:1;min-width:0;color:#fce1ae}.v3-team-ship-name strong{font-size:13px;overflow-wrap:anywhere}.v3-team-ship-name small{font-size:11px;color:#c4d9e1}.v3-team-ship-status{font-size:11px;font-weight:800;color:#d6f5e0;background:#315647;border-radius:99px;padding:5px 8px;flex:none}.v3-ship{padding:11px;align-content:start;gap:8px}.v3-ship p{line-height:1.45;font-size:12px!important;color:#e5ecf0}.v3-redforce-result{padding:14px;text-align:center;background:#183b50;border:1px solid #e0af67;border-radius:12px;color:#ffdc93;font-size:14px;margin:12px auto}.v3-redforce-bonus{display:block;font-size:10px;font-weight:800;color:#eed092}.v3-intro-symbols{font-size:66px;filter:drop-shadow(0 8px 14px #0007);margin:12px 0}.v3-start-intro{max-width:620px;margin:auto}.v3-intro-steps{text-align:left;display:grid;gap:8px;margin:22px auto}.v3-intro-steps p{margin:0;padding:12px;border:1px solid #97794d;border-radius:12px;background:#1a3647;line-height:1.5}.v3-oro-photo{width:100%;height:auto;aspect-ratio:1;object-fit:cover;border-radius:8px;background:#31556a}.v3-hud-ship{width:24px;height:24px;border-radius:50%;object-fit:cover;display:inline-block;vertical-align:middle;margin-right:3px}.v3-mini-hud{margin-top:8px}.v3-morgans-portrait{max-width:400px;margin:10px auto}.v3-trade-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.v3-trade-cards .character-card{min-width:0;min-height:185px;padding:10px}.v3-trade-cards .character-name{font-size:18px;margin:20px 0 10px}.v3-trade-cards .power strong{font-size:23px}.v3-oro-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.v3-oro-card{display:grid;gap:3px;padding:8px;border:1px solid #94764f;border-radius:10px;background:#183b50;font-size:11px}.v3-oro-card span,.v3-oro-card small{font-size:10px;color:#cfdeed}.v3-oro-pair{display:grid;grid-template-columns:1fr 1fr;gap:9px}';
+css.textContent+=".v3-trade-step{font-size:14px;color:#cbd8e4}.v3-trade-compact{width:100%;max-width:540px;display:grid;grid-template-columns:minmax(0,1fr) 25px minmax(0,1fr);align-items:center;gap:6px;margin:15px auto}.v3-trade-person{display:flex;flex-direction:column;align-items:center;gap:7px;min-width:0;padding:12px 6px;background:#19354a;border:1px solid #927a59;border-radius:14px;box-sizing:border-box;overflow:hidden}.v3-trade-face{position:relative;display:block;width:72px;height:72px;max-width:100%;overflow:hidden;border-radius:50%;border:2px solid #d2b17c;background:#29475a;flex:none}.v3-trade-face>.portrait-photo.v3-trade-face-img{display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:cover!important;object-position:center 22%!important;transform:none!important;border-radius:50%!important}.v3-trade-person-name{font-size:clamp(12px,3.4vw,17px);line-height:1.3;text-align:center;overflow-wrap:anywhere;max-width:100%}.v3-trade-person-rank{font-size:11px;line-height:1.4;color:#d0dce5}.v3-trade-arrow{font-size:25px;color:#efcb8b}.v3-trade-effect{font-size:13px;line-height:1.6;color:#ffdc9c;overflow-wrap:anywhere;margin:14px 0}.v3-trade-decision{border:1px solid #c7a575;border-radius:16px;background:#142e42;padding:14px 10px;margin-top:15px}.v3-trade-decision h3{font-size:22px;color:#f8d690}.v3-trade-symbol{font-size:42px}";
 document.head.appendChild(css);
 })();
