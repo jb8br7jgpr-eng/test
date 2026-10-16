@@ -94,6 +94,12 @@ jobs:
               if(m.stage==="armament"){v=await act(m.winner,"v3-morgans-skip");continue;}
               throw Error("Unexpected Morgans stage "+m.stage);
             }
+            if(v.v3.stage==="trade-result"){
+              const r=v.v3.market.result;
+              if(!r)throw Error("Missing public trade result");
+              if(r.accepted!==true&&r.accepted!==false)throw Error("Invalid trade decision");
+              v=await act(0,"v3-trade-continue");continue;
+            }
             if(v.v3.stage==="market"){
               foundTrade=true;const t=v.v3.market;
               if(t.offer){v=await act(t.offer.to,"v3-trade-accept");accepted=true;continue;}
