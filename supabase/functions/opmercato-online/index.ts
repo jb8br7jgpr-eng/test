@@ -556,3 +556,166 @@ Deno.serve(async(req:Request)=>{
    return json({room:snapshot(doc,seat,room.version+1,room)});
  }catch(e){console.error("Mercato action error",String(e));return fail(e instanceof Error?e.message:"Erreur serveur.");}
 });
+
+
+/* OPMercato 3.0 game engine: protects existing V2 rooms through version checks. */
+const SHIP_IDS=["sunny","redforce","mobydick","polartang","orojackson"];
+const isV3=(s:any)=>s.v3?.version===3;
+const v3Clamp=(n:number)=>Math.max(0,Math.min(100,n));
+const v3Cost=(s:any,p:any,bid:bigint)=>{const gross=bid*(taxed(s)?2n:1n);return p.ship==="mobydick"?(gross*90n+50n)/100n||1n:gross;};
+const v3CanBid=(s:any,p:any,bid:bigint)=>!!p&&p.roster.length<s.teamSize&&bid<=BigInt(p.budget)&&v3Cost(s,p,bid)<=BigInt(p.budget);
+const v3Limit=(p:any)=>p.ship==="sunny"?8:5;
+function v3Recruit(s:any,p:any,id:string){
+ if(p.ship==="redforce"){p.shipBonus=p.shipBonus||{};if(p.shipBonus[id]===undefined)p.shipBonus[id]=randomIndex(3)+1;}
+}
+function v3Create(s:any){
+ const n=randomIndex(s.drawPile.length),secret=s.drawPile.splice(n,1)[0];
+ s.v3={version:3,stage:"dice",rolls:{},choiceOrder:[],choiceIndex:0,firstBidder:0,
+   morgans:{id:secret,stage:"waiting",guesses:{},ready:[],shown:0,winner:null,bonus:null,done:false},
+   market:{done:false,order:[],step:0,offer:null,locked:[],exchanges:[]},swapUsed:false};
+}
+function v3Public(s:any){
+ if(!isV3(s))return null;
+ const v=s.v3,m=v.morgans,known=!["waiting","intro","guesses"].includes(m.stage);
+ return {version:3,stage:v.stage,rolls:v.rolls,choiceOrder:v.choiceOrder,choiceIndex:v.choiceIndex,firstBidder:v.firstBidder,
+  morgans:{stage:m.stage,ready:m.ready,submitted:Object.keys(m.guesses).map(Number),
+     id:known?m.id:null,guesses:known&&m.stage!=="character"?m.guesses:{},
+     shown:m.shown,winner:["winner","offer","armament","complete"].includes(m.stage)?m.winner:null,
+     tied:m.stage==="wheel"?m.tied:[],bonus:m.stage==="offer"?m.bonus:null,done:m.done},
+  market:v.market,swapUsed:v.swapUsed};
+}
+function v3MorgansDue(s:any){
+ const m=s.v3.morgans;
+ return !m.done&&m.stage==="waiting"&&s.players.every((p:any)=>p.roster.length<s.teamSize)&&
+ (s.teamSize===1||s.round>=Math.max(2,Math.floor(s.teamSize*s.players.length*.3))||
+ s.players.some((p:any)=>p.roster.length>=s.teamSize-1));
+}
+function v3MarketDue(s:any){
+ return !s.v3.market.done&&s.teamSize>=2&&s.players.every((p:any)=>p.roster.length>=Math.ceil(s.teamSize/2));
+}
+function v3Advance(s:any){
+ if(v3MorgansDue(s)){s.v3.stage="morgans";s.v3.morgans.stage="intro";s.auction=null;return;}
+ if(v3MarketDue(s)){
+  const t=s.v3.market;t.order=shuffle(s.players.map((p:any)=>p.id));t.step=0;t.locked=[];t.exchanges=[];
+  s.v3.stage="market";s.auction=null;return;
+ }
+ s.v3.stage="auction";
+ if(s.event.schedule)nextSeven(s);else legacyNext(s);
+}
+function v3SwapPeople(s:any,offer:any){
+ const from=s.players[offer.from],to=s.players[offer.to],one=offer.give,two=offer.take;
+ from.roster=from.roster.map((id:string)=>id===one?two:id);
+ to.roster=to.roster.map((id:string)=>id===two?one:id);
+ for(const key of ["smileModifiers","shipBonus"]){
+  from[key]=from[key]||{};to[key]=to[key]||{};
+  const first=from[key][one],second=to[key][two];delete from[key][one];delete to[key][two];
+  if(first!==undefined)to[key][one]=first;if(second!==undefined)from[key][two]=second;
+ }
+ if(from.armamentId===one)from.armamentId=null;
+ if(to.armamentId===two)to.armamentId=null;
+ s.v3.market.locked.push(one,two);s.v3.market.exchanges.push(offer);
+}
+function v3NextTrade(s:any){
+ const t=s.v3.market;t.offer=null;t.step++;
+ if(t.step>=t.order.length){t.done=true;s.v3.stage="auction";v3Advance(s);}
+}
+function v3Act(s:any,seat:number,action:string,arg:any){
+ const v=s.v3,m=v.morgans,t=v.market,p=s.players[seat];
+ if(action==="start"){
+  if(seat!==0||s.status!=="lobby"||s.players.length!==s.maxPlayers)throw Error("Salon incomplet.");
+  s.status="playing";v.stage="dice";return true;
+ }
+ if(action==="finish"){if(seat!==0)throw Error("Seul l'hôte peut terminer.");s.status="finished";return true;}
+ if(v.stage==="dice"){
+  if(action!=="v3-roll"||v.rolls[seat]!==undefined)throw Error("Lancer de dé impossible.");
+  v.rolls[seat]=randomIndex(6)+1;
+  if(Object.keys(v.rolls).length===s.players.length){
+   const ranked=s.players.map((q:any)=>q.id).sort((a:number,b:number)=>v.rolls[b]-v.rolls[a]);
+   // Exact dice ties require a fair tiebreak later. Their original values never reorder other groups.
+   for(let i=0;i<ranked.length;){
+    let j=i+1;while(j<ranked.length&&v.rolls[ranked[j]]===v.rolls[ranked[i]])j++;
+    if(j-i>1)ranked.splice(i,j-i,...shuffle(ranked.slice(i,j)));
+    i=j;
+   }
+   v.choiceOrder=ranked;v.firstBidder=ranked[ranked.length-1];v.stage="ships";
+  }
+  return true;
+ }
+ if(v.stage==="ships"){
+  if(action!=="v3-ship"||v.choiceOrder[v.choiceIndex]!==seat)throw Error("Ce n'est pas ton tour.");
+  const ship=String(arg.ship||"");
+  if(!SHIP_IDS.includes(ship)||s.players.some((q:any)=>q.ship===ship))throw Error("Navire indisponible.");
+  p.ship=ship;p.shipBonus={};v.choiceIndex++;
+  if(v.choiceIndex>=s.players.length)v3Advance(s);
+  return true;
+ }
+ if(v.stage==="morgans"){
+  if(action==="v3-morgans-ready"&&m.stage==="intro"){
+   if(m.ready.includes(seat))throw Error("Déjà prêt.");m.ready.push(seat);
+   if(m.ready.length===s.players.length)m.stage="guesses";return true;
+  }
+  if(action==="v3-morgans-guess"&&m.stage==="guesses"){
+   const n=Number(arg.guess);
+   if(m.guesses[seat]!==undefined||!Number.isInteger(n)||n<1||n>100)throw Error("Prédiction invalide.");
+   m.guesses[seat]=n;if(Object.keys(m.guesses).length===s.players.length)m.stage="character";return true;
+  }
+  if(action==="v3-morgans-next"&&seat===0){
+   if(m.stage==="character"){m.stage="reveal";return true;}
+   if(m.stage==="reveal"){
+    m.shown++;
+    if(m.shown>=s.players.length){
+     const distances=s.players.map((q:any)=>({seat:q.id,d:Math.abs(m.guesses[q.id]-power(s,m.id))}));
+     const minimum=Math.min(...distances.map((x:any)=>x.d));
+     m.tied=distances.filter((x:any)=>x.d===minimum).map((x:any)=>x.seat);
+     m.winner=m.tied.length===1?m.tied[0]:null;m.stage=m.tied.length===1?"winner":"wheel";
+    }
+    return true;
+   }
+   if(m.stage==="winner"){m.stage="offer";if(s.players[m.winner].ship==="redforce")m.bonus=randomIndex(3)+1;return true;}
+  }
+  if(action==="v3-morgans-wheel"&&m.stage==="wheel"&&seat===0){
+   m.winner=m.tied[randomIndex(m.tied.length)];m.stage="winner";return true;
+  }
+  if(action==="v3-morgans-recruit"&&m.stage==="offer"&&m.winner===seat){
+   if(arg.accept===true){
+    if(p.roster.length>=s.teamSize)throw Error("Équipage complet.");
+    p.roster.push(m.id);p.purchases[m.id]="0";
+    if(p.ship==="redforce")p.shipBonus[m.id]=m.bonus??randomIndex(3)+1;
+   }
+   m.done=true;
+   if(arg.accept===true&&!p.armamentUsed&&power(s,m.id)<=60)m.stage="armament";
+   else {m.stage="complete";v3Advance(s);}
+   return true;
+  }
+  if(["v3-morgans-armament","v3-morgans-skip"].includes(action)&&m.stage==="armament"&&m.winner===seat){
+   if(action==="v3-morgans-armament"){p.armamentUsed=true;p.armamentId=m.id;p.armamentBonus=p.ship==="polartang"?40:20;}
+   m.stage="complete";v3Advance(s);return true;
+  }
+  throw Error("Étape Morgans en attente.");
+ }
+ if(v.stage==="market"){
+  if(action==="v3-trade-pass"&&t.offer===null&&t.order[t.step]===seat){v3NextTrade(s);return true;}
+  if(action==="v3-trade-offer"&&t.offer===null&&t.order[t.step]===seat){
+   const to=Number(arg.to),give=String(arg.give||""),take=String(arg.take||"");
+   const recipient=s.players[to];
+   if(!recipient||to===seat||!p.roster.includes(give)||!recipient.roster.includes(take)||
+     t.locked.includes(give)||t.locked.includes(take))throw Error("Transfert impossible.");
+   t.offer={from:seat,to,give,take};return true;
+  }
+  if(["v3-trade-accept","v3-trade-reject"].includes(action)&&t.offer?.to===seat){
+   if(action==="v3-trade-accept")v3SwapPeople(s,t.offer);
+   v3NextTrade(s);return true;
+  }
+  throw Error("Marché en attente.");
+ }
+ if(v.stage!=="auction")throw Error("Phase en attente.");
+ if(action==="v3-observation-swap"){
+  const peek=p.observationPeek||[],a=Number(arg.a),b=Number(arg.b);
+  if(p.ship!=="orojackson"||v.swapUsed||!p.observationUsed||a===b||
+   !Number.isInteger(a)||!Number.isInteger(b)||a<0||b<0||a>=peek.length||b>=peek.length||
+   s.drawPile[s.drawIndex+a]!==peek[a].id||s.drawPile[s.drawIndex+b]!==peek[b].id)throw Error("Inversion indisponible.");
+  [s.drawPile[s.drawIndex+a],s.drawPile[s.drawIndex+b]]=[s.drawPile[s.drawIndex+b],s.drawPile[s.drawIndex+a]];
+  [peek[a],peek[b]]=[peek[b],peek[a]];v.swapUsed=true;return true;
+ }
+ return false;
+}
