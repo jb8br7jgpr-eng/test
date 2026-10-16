@@ -1,0 +1,67 @@
+name: OPMercato V3 Ship Powers Integration
+on:
+  workflow_dispatch:
+  push:
+    branches: [opmercato-v3-polish-20261016]
+    paths:
+      - '.github/workflows/opmercato-v3-powers.yml'
+      - 'supabase/functions/opmercato-online/index.ts'
+jobs:
+  powers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Verify Oro Jackson vision and Red Force bonuses against staging
+        run: |
+          node --input-type=module <<'JS'
+          const api="https://nezqupnhcqwuewfilioa.supabase.co/functions/v1/opmercato-online-v3-staging",key="sb_publishable_rLlu872lFwupJfFw_f3alw_GhbR7Mok";
+          async function send(d){
+            const r=await fetch(api,{method:"POST",headers:{"Content-Type":"application/json",apikey:key},body:JSON.stringify(d)});
+            const j=await r.json();if(!r.ok||j.error)throw Error(d.action+" "+r.status+": "+JSON.stringify(j).slice(0,500));return j;
+          }
+          const h=await send({action:"create",name:"Powers Host",budget:"250000000",teamSize:3,maxPlayers:2,spoilers:true});
+          const g=await send({action:"join",name:"Powers Guest",code:h.room.code});
+          const tokens=[h.token,g.token],roomId=h.room.id;
+          const act=async(seat,action,x={})=>(await send({action,roomId,token:tokens[seat],...x})).room;
+          const get=async(seat)=>(await send({action:"get",roomId,token:tokens[seat]})).room;
+          let v=await act(0,"start");
+          for(const seat of [0,1])v=await act(seat,"v3-intro-ready");
+          for(const seat of [0,1])v=await act(seat,"v3-roll");
+          for(let count=0;v.v3.stage==="dice-tie"&&count++<40;)
+            for(const seat of v.v3.tiePlayers)v=await act(seat,"v3-roll");
+          if(v.v3.stage!=="ships")throw Error("No ship selection after dice");
+          const red=v.v3.choiceOrder[0],oro=v.v3.choiceOrder[1];
+          v=await act(red,"v3-ship",{ship:"redforce"});
+          v=await act(oro,"v3-ship",{ship:"orojackson"});
+          if(v.v3.stage!=="auction")throw Error("Cannot test powers: expected auction "+v.v3.stage);
+          const first=v.auction.firstTurnId;
+          if(first!==oro)throw Error("Last ship chooser should open first auction");
+          v=await act(oro,"observation");
+          const secretView=await get(red),peekView=await get(oro);
+          const items=peekView.peek;
+          if(items.length!==6||items.some(x=>!x.id||!Number.isInteger(x.power)||!Number.isInteger(x.firstSeat)))
+            throw Error("Oro vision must reveal 6 cards, power, and opening bidder: "+JSON.stringify(items));
+          if(secretView.peek.length)throw Error("Oro Jackson vision leaked to opponent");
+          const original=items.map(x=>x.id);
+          v=await act(oro,"v3-observation-swap",{a:0,b:1});
+          const revised=(await get(oro)).peek;
+          if(revised[0].id!==original[1]||revised[1].id!==original[0]||v.v3.swapUsed!==true)
+            throw Error("Vision inversion not persisted");
+          if(revised[0].firstSeat!==items[0].firstSeat||revised[1].firstSeat!==items[1].firstSeat)
+            throw Error("Vision opening bidder should remain attached to its slot");
+          if(v.auction.outcome!==null)throw Error("Unexpected settled auction");
+          v=await act(oro,"pass");
+          if(v.auction.outcome!==null||v.auction.turnId!==red)
+            throw Error("Red Force should receive next opening offer");
+          v=await act(red,"bid",{amount:v.baseBid});
+          if(v.auction.outcome!=="sold"||v.auction.leader!==red)throw Error("Red Force should win recruitment");
+          const winner=v.players[red],id=v.auction.charId,bonus=winner.shipBonus?.[id];
+          if(!Number.isInteger(bonus)||bonus<1||bonus>3)throw Error("Red Force must roll a bonus from 1 to 3: "+bonus);
+          if(winner.roster.length!==1)throw Error("Winner roster incorrect");
+          if(winner.score<1)throw Error("Recruitment did not update score");
+          console.log("PASS Oro Jackson: 6 private cards, inversion preserving opening bidders");
+          console.log("PASS Red Force: first recruitment bonus +"+bonus+" applied to "+id+" with synchronized score");
+          JS

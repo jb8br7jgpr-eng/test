@@ -7,12 +7,35 @@ const v3ShipStatus=p=>p.ship==='sunny'?(8-p.passesUsed)+' refus':p.ship==='redfo
 const v3ShipImage=p=>p.ship?'<img class="v3-hud-ship" src="./opmercato-ships-sprite.webp" style="object-position:'+(SHIPS.findIndex(x=>x[0]===p.ship)*25)+'% 50%" alt="">':'';
 const v3MiniHud=()=>'<div class="op21-local-hud v3-mini-hud">'+state.players.map(p=>'<div class="op21-hud-item"><b class="op21-hud-name">'+esc(p.name)+'</b><strong class="op21-hud-money">'+currency(p.budget)+'</strong><small class="op21-hud-stats">⭐ '+getScore(p)+' pts</small>'+(p.ship?'<small>'+v3ShipImage(p)+' '+v3ShipStatus(p)+'</small>':'')+'</div>').join('')+'</div>';
 const oldStart=start,oldDraw=drawNext,oldScore=getScore,oldSettle=settle,oldRender=render,oldPass=pass;
+const oldAuctionScreenV3=auctionScreen;
+auctionScreen=function(){
+ if(state?.v3&&state.phase==='auction'&&!state.auction){
+   return '<section class="card auction"><h2>⚓ Prochaine enchère</h2><p>Le personnage est en préparation…</p></section>';
+ }
+ return oldAuctionScreenV3();
+};
+const oldScoreBoardV3=scoreBoard;
+scoreBoard=function(){
+ let html=oldScoreBoardV3();
+ if(!V())return html;
+ for(const p of state.players)for(const id of p.roster){
+   const n=p.shipBonus?.[id];if(!n)continue;
+   const c=CARDS[id];if(!c)continue;
+   const marker=esc(c.name)+' <em>'+tierOf(c.power).tier+'</em>';
+   html=html.replace(marker,marker+' <small class="v3-redforce-bonus">🐉 Terre Sainte +'+n+' · '+pow(p,id)+' pts</small>');
+ }
+ return html;
+};
 const oldResolved=resolvedScreen;
 resolvedScreen=function(a,c){
  let html=oldResolved(a,c);
- if(!V()||a.outcome!=='sold'||a.leader===null||a.hakiWinner===a.leader)return html;
+ if(!V()||a?.outcome!=='sold'||a.leader===null)return html;
  const p=player(a.leader);
- if(!p||p.ship!=='mobydick'||!p.purchases?.[a.charId])return html;
+ if(p?.ship==='redforce'&&p.shipBonus?.[a.charId]){
+   const n=p.shipBonus[a.charId];
+   html+='<div class="v3-redforce-result">🐉 Terre Sainte activée ! <strong>+'+n+' points</strong> · '+nm(a.charId)+' : '+pow(p,a.charId)+' points (rang inchangé)</div>';
+ }
+ if(!p||p.ship!=='mobydick'||!p.purchases?.[a.charId]||a.hakiWinner===a.leader)return html;
  const paid=BigInt(p.purchases[a.charId]),gross=BigInt(a.highBid)*(state.featureConfig?.active?.type==='reverie'?2n:1n);
  const saved=gross-paid;
  if(saved<=0n)return html;
@@ -26,7 +49,7 @@ function recruit(p,id,bonus){if(p.ship==='redforce'){p.shipBonus=p.shipBonus||{}
 start=function(){const prior=state;oldStart();if(state&&state!==prior){
  const n=Math.floor(Math.random()*state.drawPile.length),secret=state.drawPile.splice(n,1)[0];
  state.round=0;state.drawIndex=0;state.auction=null;
- state.v3={phase:'dice',rolls:{},order:[],idx:0,starter:0,morgans:{id:secret,phase:'pending',guesses:{},shown:0,winner:null,ties:[],bonus:0,done:false},market:{done:false,order:[],idx:0,offer:null,locked:[],exchanges:[]}};
+ state.v3={phase:'intro',rolls:{},order:[],idx:0,starter:0,morgans:{id:secret,phase:'pending',guesses:{},shown:0,winner:null,ties:[],bonus:0,done:false},market:{done:false,order:[],idx:0,offer:null,locked:[],exchanges:[]}};
  state.players.forEach(p=>{p.ship=null;p.shipBonus={};});
  if(state.featureConfig){state.featureConfig.active=null;state.featureConfig.eventUsed=false;state.featureConfig.activatedRound=null;}
  save();render();
@@ -61,6 +84,7 @@ function swap(o){const a=player(o.from),b=player(o.to);
 }
 function nextTrade(){const t=V().market;t.offer=null;t.idx++;if(t.idx>=t.order.length){t.done=true;resume();}else{save();render();}}
 function screen(){const v=V(),m=v.morgans,t=v.market;
+ if(v.phase==='intro')return '<div class="v3-start-intro"><div class="v3-intro-symbols">🎲 ⛵</div><h2>Que l’aventure commence !</h2><p>Avant les enchères, chaque pirate lance un dé à six faces.</p><div class="v3-intro-steps"><p><b>1.</b> Tout le monde lance son dé. En cas d’égalité, seuls les ex æquo relancent.</p><p><b>2.</b> Le plus grand résultat choisit son navire en premier, puis les autres dans l’ordre.</p><p><b>3.</b> Chaque navire est unique et donne un pouvoir pour toute la partie.</p><p><b>4.</b> Le dernier à choisir son navire ouvre la première enchère. Ensuite les premiers enchérisseurs alternent.</p></div>'+btn('intro-continue','⚔️ Commencer les lancers')+'</div>';
  if(v.phase==='dice'||v.phase==='dice-tie'){
   const tied=v.phase==='dice-tie',group=tied?v.tieGroups[v.tieIndex]:state.players.map(p=>p.id);
   const rolls=tied?v.tieRolls:v.rolls,nextId=group.find(id=>rolls[id]===undefined);
@@ -117,7 +141,7 @@ render=function(){
    app.innerHTML='<section class="card v3-screen"><h2>⚓ Prochain recrutement</h2><p>Le prochain personnage est en préparation.</p><button class="primary" data-action="next">Continuer →</button></section>';
    return;
  }
- if(V()&&['dice','ships','morgans','market'].includes(V().phase)){
+ if(V()&&['intro','dice','ships','morgans','market'].includes(V().phase)){
  app.innerHTML=v3MiniHud()+'<section class="card v3-screen"><span class="eyebrow">OPMERCATO 3.0</span>'+screen()+'</section>'+
   '<div class="v3-players-mini">'+state.players.map(p=>esc(p.name)+' : '+currency(p.budget)+' · '+getScore(p)+' pts').join('<hr>')+'</div>';preview();window.OPMERCATO_SHARED?.refreshImages?.();return;}
  oldRender();if(V()){app.querySelectorAll('.player-card').forEach((node,i)=>{const p=state.players[i],s=sh(p.ship);if(!s)return;
@@ -149,6 +173,7 @@ function v3UseOro(){
  save();render();v3OroScreen();return true;
 }
 
+window.OPMERCATO_V3_ORO=v3UseOro;
 document.addEventListener('change',e=>{if(['v3-target','v3-give','v3-take'].includes(e.target.id))preview();},true);
 document.addEventListener('change',e=>{
  if(['v3-oro-a','v3-oro-b'].includes(e.target.id)){
@@ -173,13 +198,14 @@ document.addEventListener('click',e=>{
   save();render();v3OroScreen();return;
  }
 },true);
-document.addEventListener('click',e=>{const b=e.target.closest('button[data-action^="v3-"]');if(!b||!V())return;e.preventDefault();e.stopImmediatePropagation();
+document.addEventListener('click',async e=>{const b=e.target.closest('button[data-action^="v3-"]');if(!b||!V())return;e.preventDefault();e.stopImmediatePropagation();
  const a=b.dataset.action.slice(3),v=V(),m=v.morgans,t=v.market;
- if(a==='roll'){
+ if(a==='intro-continue'){v.phase='dice';}
+ else if(a==='roll'){
  const tied=v.phase==='dice-tie',group=tied?v.tieGroups[v.tieIndex]:state.players.map(p=>p.id);
  const rolls=tied?v.tieRolls:v.rolls,id=group.find(id=>rolls[id]===undefined);if(id===undefined)return;
  rolls[id]=1+Math.floor(Math.random()*6);
- window.OPMERCATO_EVENT_FX?.('die',player(id).name+' : 🎲 '+rolls[id],rolls[id]);
+ await window.OPMERCATO_V3_DICE?.play(rolls[id],player(id).name);
  if(group.every(who=>rolls[who]!==undefined)){
   const buckets=new Map();
   for(const who of group){const n=rolls[who];buckets.set(n,[...(buckets.get(n)||[]),who]);}
@@ -206,6 +232,6 @@ document.addEventListener('click',e=>{const b=e.target.closest('button[data-acti
  save();render();
 },true);
 const css=document.createElement('style');css.textContent='.v3-screen{text-align:center;padding:20px;margin:16px 0}.v3-screen h2{color:#f6d28f;font-size:26px}.v3-screen .primary{display:block;width:100%;margin:10px 0}.v3-screen input,.v3-screen select{width:100%;background:#163544;color:#fff;border:1px solid #b98e56;border-radius:10px;padding:12px;margin:8px 0}.v3-ship-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px}.v3-ship{display:grid;gap:7px;background:#23465c;padding:8px;border-radius:13px}.v3-ship img{width:100%;aspect-ratio:1;object-fit:cover}.v3-ship small,.v3-ship p{font-size:12px}.v3-players-mini{font-size:12px;padding:10px;color:#c5d4dd}.v3-ship-mini{font-size:11px;color:#f4ca87}.v3-wheel{font-size:80px;animation:v3spin 2s linear infinite}@keyframes v3spin{to{transform:rotate(360deg)}}';
-css.textContent+='.v3-oro-photo{width:100%;height:auto;aspect-ratio:1;object-fit:cover;border-radius:8px;background:#31556a}.v3-hud-ship{width:24px;height:24px;border-radius:50%;object-fit:cover;display:inline-block;vertical-align:middle;margin-right:3px}.v3-mini-hud{margin-top:8px}.v3-morgans-portrait{max-width:400px;margin:10px auto}.v3-trade-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.v3-trade-cards .character-card{min-width:0;min-height:185px;padding:10px}.v3-trade-cards .character-name{font-size:18px;margin:20px 0 10px}.v3-trade-cards .power strong{font-size:23px}.v3-oro-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.v3-oro-card{display:grid;gap:3px;padding:8px;border:1px solid #94764f;border-radius:10px;background:#183b50;font-size:11px}.v3-oro-card span,.v3-oro-card small{font-size:10px;color:#cfdeed}.v3-oro-pair{display:grid;grid-template-columns:1fr 1fr;gap:9px}';
+css.textContent+='.v3-redforce-result{padding:14px;text-align:center;background:#183b50;border:1px solid #e0af67;border-radius:12px;color:#ffdc93;font-size:14px;margin:12px auto}.v3-redforce-bonus{display:block;font-size:10px;font-weight:800;color:#eed092}.v3-intro-symbols{font-size:66px;filter:drop-shadow(0 8px 14px #0007);margin:12px 0}.v3-start-intro{max-width:620px;margin:auto}.v3-intro-steps{text-align:left;display:grid;gap:8px;margin:22px auto}.v3-intro-steps p{margin:0;padding:12px;border:1px solid #97794d;border-radius:12px;background:#1a3647;line-height:1.5}.v3-oro-photo{width:100%;height:auto;aspect-ratio:1;object-fit:cover;border-radius:8px;background:#31556a}.v3-hud-ship{width:24px;height:24px;border-radius:50%;object-fit:cover;display:inline-block;vertical-align:middle;margin-right:3px}.v3-mini-hud{margin-top:8px}.v3-morgans-portrait{max-width:400px;margin:10px auto}.v3-trade-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.v3-trade-cards .character-card{min-width:0;min-height:185px;padding:10px}.v3-trade-cards .character-name{font-size:18px;margin:20px 0 10px}.v3-trade-cards .power strong{font-size:23px}.v3-oro-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.v3-oro-card{display:grid;gap:3px;padding:8px;border:1px solid #94764f;border-radius:10px;background:#183b50;font-size:11px}.v3-oro-card span,.v3-oro-card small{font-size:10px;color:#cfdeed}.v3-oro-pair{display:grid;grid-template-columns:1fr 1fr;gap:9px}';
 document.head.appendChild(css);
 })();

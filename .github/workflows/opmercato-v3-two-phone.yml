@@ -2,7 +2,7 @@ name: OPMercato V3 Two-Phone Browser Journey
 on:
   workflow_dispatch:
   push:
-    branches: [main, opmercato-v3-work-20261016]
+    branches: [main, opmercato-v3-work-20261016, opmercato-v3-polish-20261016]
     paths: ['.github/workflows/opmercato-v3-two-phone.yml', 'mercato-online.js', 'index.html']
 jobs:
   two-phones:
@@ -50,7 +50,17 @@ jobs:
             await guest.locator('[data-online="join-go"]').click();
             await guest.locator('.online-code').waitFor({timeout:25000});
             await host.locator('[data-online="start"]').click();
-            for(const page of pages)await page.locator('[data-online="v3-roll"]').waitFor({timeout:25000});
+            for(const page of pages)await page.locator('[data-online="v3-intro-ready"]').waitFor({timeout:25000});
+            for(const page of pages)await page.locator('[data-online="v3-intro-ready"]').click();
+            await host.waitForTimeout(1200);
+            for(const page of pages){
+              try { await page.locator('[data-online="v3-roll"]').waitFor({timeout:20000}); }
+              catch(e){
+                const ui=await page.locator('.online-shell').innerText();
+                console.log("INTRO-TO-DICE DIAGNOSTIC:",ui.slice(0,1800));
+                throw e;
+              }
+            }
             for(const page of pages)await page.locator('[data-online="v3-roll"]').click();
             for(let guard=0;guard<40;guard++){
               await host.waitForTimeout(500);

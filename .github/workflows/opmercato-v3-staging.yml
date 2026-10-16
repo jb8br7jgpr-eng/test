@@ -2,7 +2,7 @@ name: OPMercato V3 Staging Smoke
 on:
   workflow_dispatch:
   push:
-    branches: [main, opmercato-v3-work-20261016]
+    branches: [main, opmercato-v3-work-20261016, opmercato-v3-polish-20261016]
     paths:
       - 'mercato-online.js'
       - 'mercato-v3-local.js'
@@ -33,12 +33,13 @@ jobs:
           }
           async function room(teamSize=1){
             const host=await request({action:"create",name:"V3 Test 1",budget:"10000000",teamSize,maxPlayers:2,spoilers:true});
-            if(host.room.v3?.stage!=="dice"||host.room.v3.morgans.id)throw Error("Not V3 or Morgans leaked");
+            if(host.room.v3?.stage!=="intro"||host.room.v3.morgans.id)throw Error("Not V3 or Morgans leaked");
             const guest=await request({action:"join",name:"V3 Test 2",code:host.room.code});
             const tokens=[host.token,guest.token],id=host.room.id;
             const act=async(seat,action,payload={})=>(await request({roomId:id,token:tokens[seat],action,...payload})).room;
             const get=async(seat)=>(await request({roomId:id,token:tokens[seat],action:"get"})).room;
             let r=await act(0,"start");
+            r=await act(0,"v3-intro-ready");r=await act(1,"v3-intro-ready");
             r=await act(0,"v3-roll");r=await act(1,"v3-roll");
             let guard=0;
             while(r.v3.stage==="dice-tie"&&guard++<40){

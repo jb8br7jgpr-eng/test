@@ -110,6 +110,18 @@
       paint();
 
     }catch(e){
+      if(action==="v3-intro-ready"&&String(e.message).includes("évolué")){
+        try {
+          await refresh();
+          if(view?.v3?.stage==="intro"&&!view.v3.introReady?.includes(view.yourSeat)){
+            apply(await call(action,args),true);
+            copyMessage="";
+            paint();
+            return;
+          }
+          if(view?.v3?.stage!=="intro"||view.v3.introReady?.includes(view.yourSeat))return;
+        }catch(retryError){e=retryError;}
+      }
       note(e.message);
       if(String(e.message).includes("évolué"))await refresh();
     }finally{busy=false;clicked.forEach((b,i)=>{if(b.isConnected)b.disabled=priorDisabled[i];});}
@@ -163,7 +175,7 @@
         '<div class="online-team-meta">'+berrys(p.budget)+' restants · '+p.roster.length+'/'+view.teamSize+' recrues · '+p.passesUsed+'/'+(p.ship==='sunny'?8:5)+' refus</div>'+
         '<div class="online-roster">'+(p.roster.length?p.roster.map(id=>'<button type="button" data-action="details" data-char-id="'+escOnline(id)+'" class="online-roster-character">'+
           '<span class="portrait portrait-tiny"><span class="portrait-fallback">☠️</span><img class="portrait-photo" data-portrait-id="'+escOnline(id)+'" alt="" loading="lazy"></span>'+
-          '<span>'+escOnline(CARDS[id]?.name||id)+(p.smileModifiers?.[id]!==undefined?'<small class="online-smile-buff">🍎 '+powerFor(p,id)+' pts (rang '+classFor(CARDS[id]?.power||0)+')</small>':'')+'</span></button>').join(""):
+          '<span>'+escOnline(CARDS[id]?.name||id)+(view.v3&&p.shipBonus?.[id]?'<small class="v3-redforce-bonus">🐉 Terre Sainte +'+p.shipBonus[id]+' · '+powerFor(p,id)+' pts</small>':'')+(p.smileModifiers?.[id]!==undefined?'<small class="online-smile-buff">🍎 '+powerFor(p,id)+' pts (rang '+classFor(CARDS[id]?.power||0)+')</small>':'')+'</span></button>').join(""):
         '<span>Équipage vide</span>')+'</div>'+
         '<div class="online-small">Base '+p.roster.reduce((v,id)=>v+powerFor(p,id),0)+
           (!view?.v3&&p.armamentId?' · Armement +'+(p.armamentBonus??5):'')+
@@ -309,7 +321,7 @@
     }else if(!active){
       const rawCost=royal?BigInt(a.highBid)*2n:BigInt(a.highBid);const effectiveCost=leader?.ship==='mobydick'?((rawCost*90n+50n)/100n||1n):rawCost;
       const winner=leader?'🏆 '+label(leader)+' recrute '+escOnline(CARDS[a.charId]?.name||a.charId)+
-         (a.hakiWinner===leader.id?' gratuitement grâce au Haki des Rois':" pour "+berrys(effectiveCost)+(leader?.ship==='mobydick'?' · 🐋 Protection du Père : −'+berrys(rawCost-effectiveCost):'')) :
+         (a.hakiWinner===leader.id?' gratuitement grâce au Haki des Rois':" pour "+berrys(effectiveCost)+(leader?.ship==='mobydick'?' · 🐋 Protection du Père : −'+berrys(rawCost-effectiveCost):''))+(view.v3&&leader.shipBonus?.[a.charId]?' · 🐉 Terre Sainte +'+leader.shipBonus[a.charId]+' → '+powerFor(leader,a.charId)+' pts':'') :
          "🌊 Personnage invendu";
       actionHtml='<div class="online-turn online-winner">'+winner+'</div>'+
         (armamentPending?(leader.id===me.id?
@@ -333,7 +345,7 @@
         button("pass",a.leader!==null?"Se retirer (gratuit)":"Refuser ce personnage · "+(5-me.passesUsed)+"/5 restants",
           "online-pass",!turn||(royal&&a.leader===null)||(a.leader===null&&me.passesUsed>=(me.ship==='sunny'?8:5)))+
         '<div class="online-powers">'+
-        button("observation",me.observationUsed?'👁 Revoir mes visions':'👁 Observation', "btn-ghost",!turn&&!me.observationUsed)+
+        button("observation",me.ship==="orojackson"?(me.observationUsed?"👑 Revoir Vision du Futur":"👑 Vision du Futur · 6 cartes + inversion"):(me.observationUsed?"👁 Revoir mes visions":"👁 Observation"),"btn-ghost",!turn&&!me.observationUsed)+
         '<span class="op21-haki-hint">🛡 '+(me.armamentUsed?'Armement utilisé':'Armement : +20 proposé sur une recrue ≤60')+'</span></div>'+
         (peekOpen&&me.observationUsed?peekPanel():"");
     }
@@ -468,6 +480,17 @@
   };
   function v3Page(){
     const x=view.v3,me=view.players[view.yourSeat],mine=view.yourSeat;
+    if(x.stage==="intro"){
+      return '<section class="online-card v3-card v3-start-intro"><div class="v3-intro-symbols">🎲 ⛵</div><h2>Bienvenue à bord, pirates !</h2>'+
+       '<p>La partie commence par un tirage au sort, puis chacun choisit son navire exclusif.</p>'+
+       '<div class="v3-intro-steps"><p><b>1.</b> Chaque joueur lance un dé à six faces. En cas d’égalité, seuls les ex æquo relancent.</p>'+
+       '<p><b>2.</b> Le plus grand score choisit son navire en premier ; les autres suivent dans l’ordre.</p>'+
+       '<p><b>3.</b> Chaque navire est unique et possède un pouvoir spécial pour toute la partie.</p>'+
+       '<p><b>4.</b> Le dernier à choisir son navire commence la première enchère. L’ordre alterne ensuite.</p></div>'+
+       '<p>Équipage prêt : <b>'+(x.introReady||[]).length+'/'+view.players.length+'</b></p>'+
+       button("v3-intro-ready",(x.introReady||[]).includes(mine)?"✓ En attente des autres pirates":"⚔️ J’ai compris, commencer","primary",(x.introReady||[]).includes(mine))+
+       '</section>';
+    }
     const box=(title,inner)=>'<section class="online-card v3-card"><h2>'+title+'</h2>'+inner+'</section>';
     if(x.stage==="dice"||x.stage==="dice-tie"){
       const tied=x.stage==="dice-tie",eligible=tied?x.tiePlayers.includes(mine):x.rolls[mine]===undefined;
@@ -623,8 +646,9 @@
     if(a==="rules"){onlineRules();return;}
     if(a==="observation"&&view.players[view.yourSeat].observationUsed){peekOpen=!peekOpen;paint();return;}
     if(a==="v3-swap"){const first=Number(root.querySelector("#v3-swap-first")?.value),second=Number(root.querySelector("#v3-swap-second")?.value);if(first===second){note("Sélectionne deux positions différentes.");return;}await action("v3-observation-swap",{a:first,b:second});peekOpen=true;return;}
-    if(a==="v3-roll"){await action("v3-roll");return;}
+    if(a==="v3-roll"){const seat=view.yourSeat,name=view.players[seat]?.name;await action("v3-roll");const roll=view?.v3?.lastDice?.[seat];if(roll>=1&&roll<=6)await window.OPMERCATO_V3_DICE?.play(roll,name);return;}
     if(a.startsWith("v3-select-")){await action("v3-ship",{ship:a.slice(10)});return;}
+    if(a==="v3-intro-ready"){await action("v3-intro-ready");return;}
     if(a==="v3-morgans-ready"){await action("v3-morgans-ready");return;}
     if(a==="v3-morgans-guess"){await action("v3-morgans-guess",{guess:Number(root.querySelector("#v3-prediction")?.value)});return;}
     if(a==="v3-morgans-next"||a==="v3-morgans-wheel"||a==="v3-morgans-armament"||a==="v3-morgans-skip"){await action(a);return;}
@@ -657,6 +681,11 @@
   css.textContent=`
 
     .v3-peek-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.v3-peek-card{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;border:1px solid #638898;background:#16354a;padding:8px;border-radius:10px;font-size:11px;text-align:center}.v3-peek-card strong{font-size:11px;overflow-wrap:anywhere}.v3-peek-card small{font-size:10px;color:#c4d4dd}.v3-peek-card .portrait-tiny{width:48px;height:48px}.v3-swap-controls{display:grid;grid-template-columns:1fr 1fr;gap:8px}.v3-swap-controls select{width:100%;background:#183449;color:#fff;border-radius:8px;padding:8px;border:1px solid #6b8c9b}
+    .v3-start-intro{text-align:center;padding:24px 15px}
+    .v3-intro-symbols{font-size:74px;filter:drop-shadow(0 10px 14px #0008)}
+    .v3-intro-steps{display:grid;gap:8px;margin:20px 0;text-align:left}
+    .v3-intro-steps p{padding:12px;border:1px solid #b08a57;background:#1a3549;border-radius:11px;margin:0;line-height:1.5}
+    .v3-redforce-bonus{display:block;color:#f6cf86;font-size:10px;font-weight:800}
     .v3-ship-stamp{display:inline-flex;align-items:center;gap:5px;color:#fbd48f;font-size:11px;margin:5px 0}
     .v3-ship-stamp img{width:27px;height:27px;object-fit:cover;border-radius:50%;border:1px solid #d3a867}
     .v3-ship-stamp small{font-size:10px;color:#98e9b4}

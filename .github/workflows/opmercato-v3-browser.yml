@@ -2,8 +2,8 @@ name: OPMercato V3 Browser Smoke
 on:
   workflow_dispatch:
   push:
-    branches: [main, opmercato-v3-work-20261016]
-    paths: ['mercato-v3-local.js', 'mercato-online.js', 'index.html', '.github/workflows/opmercato-v3-browser.yml', 'opmercato-ships-sprite.webp']
+    branches: [main, opmercato-v3-work-20261016, opmercato-v3-polish-20261016]
+    paths: ['mercato-v3-local.js', 'mercato-online.js', 'index.html', '.github/workflows/opmercato-v3-browser.yml', 'opmercato-ships-sprite.webp', 'mercato-v3-dice.js']
 jobs:
   v3-browser:
     runs-on: ubuntu-latest
@@ -36,12 +36,15 @@ jobs:
             await page.evaluate(()=>localStorage.clear());
             await page.reload({waitUntil:"domcontentloaded"});
             await page.locator('[data-action="start"]').click();
-            if(await page.evaluate(()=>state?.v3?.phase)!=="dice")throw Error("V3 did not enter dice stage");
+            if(await page.evaluate(()=>state?.v3?.phase)!=="intro")throw Error("V3 introduction missing");
+            await page.locator('[data-action="v3-intro-continue"]').click();
+            if(await page.evaluate(()=>state?.v3?.phase)!=="dice")throw Error("Dice stage did not start");
             for(let i=0;i<90;i++){
               const phase=await page.evaluate(()=>state.v3.phase);
               if(phase==="ships")break;
               if(!["dice","dice-tie"].includes(phase))throw Error("Unexpected stage "+phase);
               await page.locator('[data-action="v3-roll"]').click();
+              await page.locator('.op-v3-dice-overlay').waitFor({state:'hidden',timeout:6500});
             }
             if(await page.evaluate(()=>state.v3.phase)!=="ships")throw Error("Dice ties not resolved");
             await page.locator('[data-action^="v3-ship-"]').first().click();

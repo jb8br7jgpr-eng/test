@@ -32,12 +32,13 @@ jobs:
             return obj;
           }
           const host=await request({action:"create",name:"V3 Production Test",budget:"10000000",teamSize:1,maxPlayers:2,spoilers:true});
-          if(host.room.v3?.version!==3||host.room.v3.stage!=="dice"||host.room.v3.morgans.id)
+          if(host.room.v3?.version!==3||host.room.v3.stage!=="intro"||host.room.v3.morgans.id)
             throw Error("Live server has not created a secret V3 room");
           const guest=await request({action:"join",name:"V3 Second Phone",code:host.room.code});
           const id=host.room.id,tokens=[host.token,guest.token];
           const act=async(seat,action,data={})=>(await request({action,roomId:id,token:tokens[seat],...data})).room;
           let room=await act(0,"start");
+          room=await act(0,"v3-intro-ready");room=await act(1,"v3-intro-ready");
           room=await act(0,"v3-roll");room=await act(1,"v3-roll");
           for(let guard=0;room.v3.stage==="dice-tie"&&guard<40;guard++)
             for(const seat of room.v3.tiePlayers)room=await act(seat,"v3-roll");
