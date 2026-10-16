@@ -132,8 +132,12 @@
     return '<button type="button" class="'+kind+'" data-online="'+id+'" '+(disabled?'disabled':'')+'>'+text+'</button>';
   }
   function shell(content){
-    root.innerHTML='<div class="online-shell"><div class="online-head"><div><div class="online-eyebrow">🏴‍☠️ OPMERCATO EN DIRECT</div><h1>Mercato multijoueur</h1></div>'+
-      button("back","✕ Fermer","online-text")+'</div>'+content+
+    const gameHeader=!!view&&view.status!=="lobby";
+    root.innerHTML='<div class="online-shell">'+(gameHeader?
+      '<div class="online-head online-head-game"><div class="op-logo-frame op-logo-header"><img src="./opmercato-logo.jpg?v=1" alt="Logo OPMercato"></div>'+
+      button("back","✕","online-text online-head-close")+'</div>':
+      '<div class="online-head"><div><div class="online-eyebrow">🏴‍☠️ OPMERCATO EN DIRECT</div><h1>Mercato multijoueur</h1></div>'+
+      button("back","✕ Fermer","online-text")+'</div>')+content+
       '<div class="online-notice" id="online-notice" role="status">'+escOnline(copyMessage)+'</div></div>';
     // Reutiliser exactement la meme chaine de portraits que le mode local.
     window.OPMERCATO_SHARED?.refreshImages?.();
@@ -191,6 +195,18 @@
     if(!view||view.status!=="playing")return "";
     return '<div class="op21-live-hud" aria-label="Budgets et scores en direct">'+view.players.map(p=>
       '<div class="op21-hud-player" title="'+label(p)+'"><span>'+label(p)+'</span><b>'+berrys(p.budget)+'</b><small>⭐ '+p.score+' pts · '+p.roster.length+'/'+view.teamSize+'</small>'+shipMark3(p,true)+'</div>').join('')+'</div>';
+  }
+  function onlineTradeImpactCard(p,before,after){
+    const known=before!==null&&before!==undefined;
+    const delta=known?after-before:0,kind=!known?'is-neutral':delta>0?'is-positive':delta<0?'is-negative':'is-neutral';
+    return '<div class="op-trade-player '+kind+'"><strong class="op-trade-player-name">'+label(p)+'</strong>'+
+      '<div class="op-trade-scores">'+(known?'<span>'+before+' pts</span><span class="op-trade-arrow" aria-hidden="true">→</span>':'')+
+      '<b>'+after+' pts</b></div><span class="op-trade-delta">'+
+      (known?(delta>0?'+':'')+delta+' points':'Score après échange')+'</span></div>';
+  }
+  function onlineTradeEffects(title,a,b,beforeA,afterA,beforeB,afterB){
+    return '<section class="op-trade-effects" aria-label="Impact de l’échange sur les deux joueurs"><h4 class="op-trade-title">'+title+'</h4>'+
+      onlineTradeImpactCard(a,beforeA,afterA)+onlineTradeImpactCard(b,beforeB,afterB)+'</section>';
   }
   function v3TradePerson(p,id){
     const c=CARDS[id],crew=window.MERCATO_EXPANSION?.details?.[id]?.crew||"Affiliation inconnue";
@@ -572,6 +588,8 @@
           '<h3>'+(o.accepted?'Échange accepté !':'Échange refusé')+'</h3>'+
           '<p>'+label(b)+(o.accepted?' a accepté':' a refusé')+' la proposition de '+label(a)+'.</p>'+
           '<p class="v3-transfer-result-pair">'+escOnline(CARDS[o.give]?.name||o.give)+' ⇄ '+escOnline(CARDS[o.take]?.name||o.take)+'</p>'+
+          onlineTradeEffects(o.accepted?'Scores après échange':'Aucun changement de score',a,b,
+            o.accepted?null:a.score,a.score,o.accepted?null:b.score,b.score)+
           '<p>'+(o.accepted?'Les équipages et les scores ont été actualisés.':'Les deux pirates conservent leurs personnages.')+'</p>'+
           (done?'<p>⏳ En attente des autres joueurs…</p>':button("v3-trade-continue","Continuer →","primary"))+
           '<small class="v3-transfer-ack">'+(o.ack||[]).length+'/'+view.players.length+' joueurs prêts</small></div>';
@@ -579,8 +597,7 @@
         const a=view.players[m.offer.from],b=view.players[m.offer.to],give=m.offer.give,take=m.offer.take;
         inner+='<p class="v3-transfer-intro">'+label(a)+' propose à '+label(b)+'</p>'+
          '<div class="v3-transfer-grid">'+v3TradePerson(a,give)+v3TradePerson(b,take)+'</div>'+
-         '<p class="v3-transfer-impact">Effets estimés : '+label(a)+' <b>'+(projected3(a,give,take)-a.score)+' pts</b> · '+
-         label(b)+' <b>'+(projected3(b,take,give)-b.score)+' pts</b></p>'+
+         onlineTradeEffects('Effets estimés',a,b,a.score,projected3(a,give,take),b.score,projected3(b,take,give))+
          (mine===m.offer.to?button("v3-trade-accept","✅ Accepter l’échange","primary")+
           button("v3-trade-reject","Refuser l’échange","btn-ghost"):'<p>En attente de la réponse du destinataire…</p>');
       }else if(m.order[m.step]===mine){
@@ -608,8 +625,7 @@
     if([...take.options].some(x=>x.value===old))take.value=old;
     const a=give.value,b=take.value,panel=root.querySelector("#v3-trade-preview");
     if(!a||!b||!panel)return;
-    panel.innerHTML='<p>Impact total (synergies comprises) : <b>'+label(mine)+' '+(projected3(mine,a,b)-mine.score)+
-      ' pts</b> · <b>'+label(other)+' '+(projected3(other,b,a)-other.score)+' pts</b></p>';
+    panel.innerHTML=onlineTradeEffects('Effets estimés (synergies comprises)',mine,other,mine.score,projected3(mine,a,b),other.score,projected3(other,b,a));
   }
 
   function sharedNotice(){
@@ -628,14 +644,18 @@
   function paint(){
     if(!showing)return;
     if(!view){landing();return;}
+    const footer=view.status==="lobby"?"":'<div class="footer-actions op-game-footer online-game-footer">'+
+      button("rules","📖 Règles","op-footer-btn op-footer-rules")+
+      button("leave-online","↻ Recommencer","op-footer-btn op-footer-restart")+
+      button("finish","Terminer","op-footer-btn op-footer-finish",!(view.host&&view.status==="playing"))+'</div>'+
+      (!view.host&&view.status==="playing"?'<p class="op-footer-note">Seul l’hôte peut terminer la partie pour tous.</p>':"");
     const main=view.status==="lobby"?waiting():
       '<div class="online-room-bar"><span>Salon <strong>'+escOnline(view.code)+'</strong></span><span>🌐 Synchronisation active</span></div>'+
-      liveHud()+'<div class="online-nav">'+button("catalog","📚 Catalogue ("+(window.OPMERCATO_SHARED?.catalogCount?.()??CHARACTERS.length)+" personnages)","btn-ghost")+button("rules","📖 Règles","btn-ghost")+'</div>'+
-      (view.status==="finished"?scoreboardEnd():view.v3&&view.v3.stage!=="auction"?v3Page():auction())+gameScore()+
-      (view.host&&view.status==="playing"?button("finish","Terminer cette partie","online-text"):"");
+      liveHud()+'<div class="online-nav">'+button("catalog","📚 Catalogue ("+(window.OPMERCATO_SHARED?.catalogCount?.()??CHARACTERS.length)+" personnages)","btn-ghost")+'</div>'+
+      (view.status==="finished"?scoreboardEnd():view.v3&&view.v3.stage!=="auction"?v3Page():auction())+gameScore()+footer;
     shell(main+(fx?'<div class="v2-fx"><div class="v2-fx-icon">'+(fx.type==="roll"?"🎲":"🪙")+'</div><strong>'+
       (fx.type==="roll"?"Dé : "+fx.outcome.roll+" · +"+fx.outcome.percent+" %":fx.outcome.pile?"PILE · +25":"FACE · −25")+
-      '</strong></div>':"")+(view?'<div class="online-back">'+button("leave-online","Quitter ce salon et créer une nouvelle partie","online-text")+'</div>':"")+(onlineDetailId?detail(onlineDetailId):"")+sharedNotice());
+      '</strong></div>':"")+(view?.status==="lobby"?'<div class="online-back">'+button("leave-online","Quitter le salon","online-text")+'</div>':"")+(onlineDetailId?detail(onlineDetailId):"")+sharedNotice());
     if(view?.v3?.stage==="market")v3RefreshTrade();
     if(peekOpen&&view?.v3)v3RefreshSwap();
   }
@@ -647,7 +667,7 @@
     const a=b.dataset.online;
     if(a==="open"){mode="choose";show();if(session)refresh();return;}
     if(a==="local"||a==="back"){hide();return;}
-    if(a==="leave-online"){if(confirm("Quitter ce salon sur ce téléphone ? Les autres joueurs pourront continuer leur partie.")){forget();show();}return;}
+    if(a==="leave-online"){if(confirm("Recommencer sur ce téléphone ? Tu quitteras le salon pour créer ou rejoindre une nouvelle partie. Les autres joueurs pourront continuer celle-ci.")){forget();show();}return;}
     if(a==="archive"){window.OP21_HISTORY?.open();return;}
     if(a==="create-form"){mode="create";paint();return;}
     if(a==="join-form"){mode="join";paint();return;}
@@ -802,7 +822,7 @@
     @keyframes v2Entrance{from{transform:scale(.85) rotate(-8deg);opacity:.5}to{transform:scale(1) rotate(8deg);opacity:1}}
 
     .online-open #modal{z-index:1600}
-    .online-nav{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+    .online-nav{display:grid;grid-template-columns:1fr;gap:8px;margin:12px 0}
     .online-nav .btn-ghost{color:#ffdf98;border-color:#a17f4b;font-size:12px}
     .online-roster .online-roster-character{display:flex;align-items:center;gap:6px;color:#f4f8fa;background:#275061;border:1px solid #446d79;border-radius:9px;padding:5px 8px;max-width:100%;text-align:left;font-size:11px}
     .online-roster .online-roster-character>span:last-child{overflow-wrap:anywhere}
@@ -812,6 +832,9 @@
       overflow-y:auto;overscroll-behavior:contain;color:#e8f1f3}
     .online-shell{max-width:760px;margin:auto;padding:calc(env(safe-area-inset-top) + 20px) 14px calc(env(safe-area-inset-bottom) + 60px)}
     .online-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:5px 0 20px}
+    .online-head-game{position:relative;align-items:center;justify-content:center;min-height:82px}
+    .online-head-game .op-logo-header{width:clamp(170px,49vw,220px)}
+    .online-head-close{position:absolute;right:0;top:0;min-width:34px;min-height:34px;font-size:17px!important}
     .online-head h1{font-size:clamp(21px,5vw,29px);margin:4px 0}
     .online-eyebrow{font-size:10px;letter-spacing:.17em;color:#f6c775;font-weight:900}
     .online-text{border:0;background:none;color:#bdd6dc;font-size:12px;font-weight:800;padding:8px}
