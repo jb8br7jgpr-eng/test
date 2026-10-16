@@ -4,7 +4,7 @@
   const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const clamp=x=>Math.min(100,Math.max(0,x));
   const num=x=>{const n=Number(x);return Number.isFinite(n)?n:0;};
-  const signed=x=>(x>0?'+':'')+x;
+  const signed=x=>x<0?'−'+Math.abs(x):x>0?'+'+x:'0';
   const affiliation=id=>window.MERCATO_EXPANSION?.details?.[id]?.crew?.trim()||'Affiliation non renseignée';
   const rank=x=>x>=95?'S':x>=80?'A':x>=65?'B':x>=50?'C':x>=35?'D':x>=20?'E':'F';
   function effects(p,id,v3){
