@@ -1,0 +1,71 @@
+name: OPMercato V3 Staging Smoke
+on:
+  workflow_dispatch:
+  push:
+    branches: [opmercato-v3-work-20261016]
+    paths:
+      - 'mercato-online.js'
+      - 'mercato-v3-local.js'
+      - 'mercato-features.js'
+      - 'supabase/functions/opmercato-online/index.ts'
+      - '.github/workflows/opmercato-v3-staging.yml'
+jobs:
+  v3-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: JavaScript syntax checks
+        run: |
+          for f in mercato-v3-local.js mercato-online.js mercato-features.js mercato-rules.js; do node --check "$f"; done
+      - name: Staging Edge Function integration
+        run: |
+          node --input-type=module <<'JS'
+          const api="https://nezqupnhcqwuewfilioa.supabase.co/functions/v1/opmercato-online-v3-staging";
+          const key="sb_publishable_rLlu872lFwupJfFw_f3alw_GhbR7Mok";
+          async function request(data){
+            const response=await fetch(api,{method:"POST",headers:{"content-type":"application/json",apikey:key},body:JSON.stringify(data)});
+            const value=await response.json();
+            if(!response.ok||value.error)throw Error(data.action+": "+JSON.stringify(value)+" HTTP "+response.status);
+            return value;
+          }
+          async function room(teamSize=1){
+            const host=await request({action:"create",name:"V3 Test 1",budget:"10000000",teamSize,maxPlayers:2,spoilers:true});
+            if(host.room.v3?.stage!=="dice"||host.room.v3.morgans.id)throw Error("Not V3 or Morgans leaked");
+            const guest=await request({action:"join",name:"V3 Test 2",code:host.room.code});
+            const tokens=[host.token,guest.token],id=host.room.id;
+            const act=async(seat,action,payload={})=>(await request({roomId:id,token:tokens[seat],action,...payload})).room;
+            const get=async(seat)=>(await request({roomId:id,token:tokens[seat],action:"get"})).room;
+            let r=await act(0,"start");
+            r=await act(0,"v3-roll");r=await act(1,"v3-roll");
+            let guard=0;
+            while(r.v3.stage==="dice-tie"&&guard++<40){
+              for(const seat of r.v3.tiePlayers)r=await act(seat,"v3-roll");
+            }
+            if(r.v3.stage!=="ships")throw Error("Dice result failed: "+r.v3.stage);
+            for(const [i,seat] of r.v3.choiceOrder.entries())r=await act(seat,"v3-ship",{ship:["sunny","redforce"][i]});
+            if(!r.players.every(p=>p.ship))throw Error("Not all ships selected");
+            return {r,act,get};
+          }
+          const {act,get,r:initial}=await room(1);
+          let r=initial;
+          if(r.v3.stage!=="morgans")throw Error("Expected early Morgans with teamSize=1, got "+r.v3.stage);
+          r=await act(0,"v3-morgans-ready");r=await act(1,"v3-morgans-ready");
+          r=await act(0,"v3-morgans-guess",{guess:34});
+          if((await get(1)).v3.morgans.id)throw Error("Morgans character revealed before all predictions");
+          r=await act(1,"v3-morgans-guess",{guess:66});
+          if(r.v3.morgans.stage!=="character"||!r.v3.morgans.id)throw Error("Morgans reveal failed");
+          r=await act(0,"v3-morgans-next");
+          r=await act(0,"v3-morgans-next");
+          r=await act(0,"v3-morgans-next");
+          if(r.v3.morgans.stage==="wheel")r=await act(0,"v3-morgans-wheel");
+          if(r.v3.morgans.stage!=="winner")throw Error("Morgans result missing");
+          r=await act(0,"v3-morgans-next");
+          const win=r.v3.morgans.winner;
+          r=await act(win,"v3-morgans-recruit",{accept:false});
+          if(r.v3.stage!=="auction")throw Error("Normal auction did not resume");
+          if(r.v3.market.order.length)throw Error("Market should be disabled with one recruit");
+          console.log("PASS: secret Morgans, dice, exclusive ships, stages, skip, no market with one recruit");
+          JS
