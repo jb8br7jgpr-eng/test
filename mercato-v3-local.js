@@ -98,7 +98,7 @@ function v3TradePerson(p,id){
    '<button type="button" class="v3-transfer-details" data-action="details" data-char-id="'+esc(id)+'">Voir la fiche →</button></article>';
 }
 function screen(){const v=V(),m=v.morgans,t=v.market;
- if(v.phase==='intro')return '<div class="v3-start-intro"><div class="v3-intro-symbols">🎲 ⛵</div><h2>Que l’aventure commence !</h2><p>Avant les enchères, chaque pirate lance un dé à six faces.</p><div class="v3-intro-steps"><p><b>1.</b> Tout le monde lance son dé. En cas d’égalité, seuls les ex æquo relancent.</p><p><b>2.</b> Le plus grand résultat choisit son navire en premier, puis les autres dans l’ordre.</p><p><b>3.</b> Chaque navire est unique et donne un pouvoir pour toute la partie.</p><p><b>4.</b> Le dernier à choisir son navire ouvre la première enchère. Ensuite les premiers enchérisseurs alternent.</p></div>'+btn('intro-continue','⚔️ Commencer les lancers')+'</div>';
+ if(v.phase==='intro')return '<div class="v3-start-intro">'+(window.OPMERCATO_ART?.logo()||'')+'<h2>Que l’aventure commence !</h2><p>Avant les enchères, chaque pirate lance un dé à six faces.</p><div class="v3-intro-steps"><p><b>1.</b> Tout le monde lance son dé. En cas d’égalité, seuls les ex æquo relancent.</p><p><b>2.</b> Le plus grand résultat choisit son navire en premier, puis les autres dans l’ordre.</p><p><b>3.</b> Chaque navire est unique et donne un pouvoir pour toute la partie.</p><p><b>4.</b> Le dernier à choisir son navire ouvre la première enchère. Ensuite les premiers enchérisseurs alternent.</p></div>'+btn('intro-continue','⚔️ Commencer les lancers')+'</div>';
  if(v.phase==='dice'||v.phase==='dice-tie'){
   const tied=v.phase==='dice-tie',group=tied?v.tieGroups[v.tieIndex]:state.players.map(p=>p.id);
   const rolls=tied?v.tieRolls:v.rolls,nextId=group.find(id=>rolls[id]===undefined);
@@ -111,7 +111,7 @@ function screen(){const v=V(),m=v.morgans,t=v.market;
   SHIPS.map(s=>'<div class="v3-ship"><img src="./opmercato-ships-sprite.webp" style="object-position:'+(SHIPS.findIndex(q=>q[0]===s[0])*25)+'% 50%" alt="'+s[1]+'"><b>'+s[2]+' '+s[1]+'</b><small>'+s[3]+'</small><p>'+s[4]+'</p>'+
   (state.players.some(p=>p.ship===s[0])?'<p>Indisponible</p>':btn('ship-'+s[0],'Choisir'))+'</div>').join('')+'</div>';}
  if(v.phase==='morgans'){
-  let h='<h2>📰 Prédictions de Morgans</h2><p>Devine la puissance initiale du personnage secret.</p>';
+  let h='<h2>📰 Prédictions de Morgans</h2>'+(m.phase==='intro'?(window.OPMERCATO_ART?.image('morgans')||''):'')+'<p>Devine la puissance initiale du personnage secret.</p>';
   if(m.phase==='intro')h+=btn('morgans-ready','Continuer');
   if(m.phase==='guess'){const p=state.players.find(p=>m.guesses[p.id]===undefined);h+='<h3>'+esc(p.name)+' : ta prédiction confidentielle</h3><input id="v3-guess" type="number" min="1" max="100">'+btn('morgans-guess','🔒 Confirmer');}
   if(!['intro','guess'].includes(m.phase)){h+='<div class="v3-morgans-portrait">'+charCard(CARDS[m.id])+'</div><h3>'+nm(m.id)+' · '+CARDS[m.id].power+' pts · rang '+tierOf(CARDS[m.id].power).tier+'</h3>';
@@ -126,11 +126,11 @@ function screen(){const v=V(),m=v.morgans,t=v.market;
   return h;
  }
  if(v.phase==='market'){
-  const p=player(t.order[t.idx]);let h='<h2>🔄 Marché des transferts</h2><h3>Proposition '+(t.idx+1)+'/'+t.order.length+' — '+esc(p.name)+'</h3>';
+  const p=player(t.order[t.idx]);let h='<h2>🔄 Marché des transferts</h2>'+(t.result||t.offer?'':(window.OPMERCATO_ART?.image('market',true)||''))+'<h3>Proposition '+(t.idx+1)+'/'+t.order.length+' — '+esc(p.name)+'</h3>';
   if(t.result){
     const o=t.result,a=player(o.from),b=player(o.to);
     return h+'<div class="v3-transfer-result '+(o.accepted?'is-accepted':'is-rejected')+'" role="status">'+
-      '<div class="v3-transfer-result-icon">'+(o.accepted?'✅':'❌')+'</div>'+
+      '<div class="v3-transfer-result-icon">'+(o.accepted?'✅':'❌')+'</div>'+(window.OPMERCATO_ART?.image(o.accepted?'accepted':'rejected',true)||'')+
       '<h3>'+(o.accepted?'Échange accepté !':'Échange refusé')+'</h3>'+
       '<p>'+esc(b.name)+(o.accepted?' a accepté':' a refusé')+' la proposition de '+esc(a.name)+'.</p>'+
       '<p class="v3-transfer-result-pair">'+nm(o.give)+' ⇄ '+nm(o.take)+'</p>'+
