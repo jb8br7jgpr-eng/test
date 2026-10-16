@@ -309,7 +309,7 @@
     }else if(!active){
       const rawCost=royal?BigInt(a.highBid)*2n:BigInt(a.highBid);const effectiveCost=leader?.ship==='mobydick'?((rawCost*90n+50n)/100n||1n):rawCost;
       const winner=leader?'🏆 '+label(leader)+' recrute '+escOnline(CARDS[a.charId]?.name||a.charId)+
-         (a.hakiWinner===leader.id?' gratuitement grâce au Haki des Rois':" pour "+berrys(effectiveCost)+(leader?.ship==='mobydick'?' · 🐋 Protection du Père : −'+berrys(rawCost-effectiveCost):''))) :
+         (a.hakiWinner===leader.id?' gratuitement grâce au Haki des Rois':" pour "+berrys(effectiveCost)+(leader?.ship==='mobydick'?' · 🐋 Protection du Père : −'+berrys(rawCost-effectiveCost):'')) :
          "🌊 Personnage invendu";
       actionHtml='<div class="online-turn online-winner">'+winner+'</div>'+
         (armamentPending?(leader.id===me.id?
