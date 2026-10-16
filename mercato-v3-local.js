@@ -60,7 +60,7 @@ function screen(){const v=V(),m=v.morgans,t=v.market;
   let h='<h2>📰 Prédictions de Morgans</h2><p>Devine la puissance initiale du personnage secret.</p>';
   if(m.phase==='intro')h+=btn('morgans-ready','Continuer');
   if(m.phase==='guess'){const p=state.players.find(p=>m.guesses[p.id]===undefined);h+='<h3>'+esc(p.name)+' : ta prédiction confidentielle</h3><input id="v3-guess" type="number" min="1" max="100">'+btn('morgans-guess','🔒 Confirmer');}
-  if(!['intro','guess'].includes(m.phase)){h+='<h3>'+nm(m.id)+' · '+CARDS[m.id].power+' pts · rang '+tierOf(CARDS[m.id].power).tier+'</h3>';
+  if(!['intro','guess'].includes(m.phase)){h+='<div class="v3-morgans-portrait">'+charCard(CARDS[m.id])+'</div><h3>'+nm(m.id)+' · '+CARDS[m.id].power+' pts · rang '+tierOf(CARDS[m.id].power).tier+'</h3>';
    const seen=m.phase==='character'?0:m.phase==='reveal'?m.shown:state.players.length;
    h+=state.players.map((p,i)=>'<p>'+esc(p.name)+' : '+(i<seen?m.guesses[p.id]+' · écart '+Math.abs(m.guesses[p.id]-CARDS[m.id].power):'🔒')+'</p>').join('');
   }
@@ -73,7 +73,7 @@ function screen(){const v=V(),m=v.morgans,t=v.market;
  }
  if(v.phase==='market'){
   const p=player(t.order[t.idx]);let h='<h2>🔄 Marché des transferts</h2><h3>Proposition '+(t.idx+1)+'/'+t.order.length+' — '+esc(p.name)+'</h3>';
-  if(t.offer){const o=t.offer,a=player(o.from),b=player(o.to);h+='<h3>'+nm(o.give)+' ⇄ '+nm(o.take)+'</h3>'+
+  if(t.offer){const o=t.offer,a=player(o.from),b=player(o.to);h+='<div class="v3-trade-cards">'+charCard(CARDS[o.give])+charCard(CARDS[o.take])+'</div><h3>'+nm(o.give)+' ⇄ '+nm(o.take)+'</h3>'+
     '<p>'+esc(a.name)+' '+(tradeScore(a,o.give,o.take)-getScore(a))+' pts · '+esc(b.name)+' '+(tradeScore(b,o.take,o.give)-getScore(b))+' pts</p>'+
     btn('trade-accept','Accepter')+btn('trade-reject','Refuser');
   }else{const people=state.players.filter(x=>x.id!==p.id&&x.roster.some(id=>!t.locked.includes(id)));
@@ -179,6 +179,6 @@ document.addEventListener('click',e=>{const b=e.target.closest('button[data-acti
  save();render();
 },true);
 const css=document.createElement('style');css.textContent='.v3-screen{text-align:center;padding:20px;margin:16px 0}.v3-screen h2{color:#f6d28f;font-size:26px}.v3-screen .primary{display:block;width:100%;margin:10px 0}.v3-screen input,.v3-screen select{width:100%;background:#163544;color:#fff;border:1px solid #b98e56;border-radius:10px;padding:12px;margin:8px 0}.v3-ship-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px}.v3-ship{display:grid;gap:7px;background:#23465c;padding:8px;border-radius:13px}.v3-ship img{width:100%;aspect-ratio:1;object-fit:cover}.v3-ship small,.v3-ship p{font-size:12px}.v3-players-mini{font-size:12px;padding:10px;color:#c5d4dd}.v3-ship-mini{font-size:11px;color:#f4ca87}.v3-wheel{font-size:80px;animation:v3spin 2s linear infinite}@keyframes v3spin{to{transform:rotate(360deg)}}';
-css.textContent+='.v3-oro-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.v3-oro-card{display:grid;gap:3px;padding:8px;border:1px solid #94764f;border-radius:10px;background:#183b50;font-size:11px}.v3-oro-card span,.v3-oro-card small{font-size:10px;color:#cfdeed}.v3-oro-pair{display:grid;grid-template-columns:1fr 1fr;gap:9px}';
+css.textContent+='.v3-morgans-portrait{max-width:400px;margin:10px auto}.v3-trade-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.v3-trade-cards .character-card{min-width:0;min-height:185px;padding:10px}.v3-trade-cards .character-name{font-size:18px;margin:20px 0 10px}.v3-trade-cards .power strong{font-size:23px}.v3-oro-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.v3-oro-card{display:grid;gap:3px;padding:8px;border:1px solid #94764f;border-radius:10px;background:#183b50;font-size:11px}.v3-oro-card span,.v3-oro-card small{font-size:10px;color:#cfdeed}.v3-oro-pair{display:grid;grid-template-columns:1fr 1fr;gap:9px}';
 document.head.appendChild(css);
 })();
