@@ -3,7 +3,7 @@ name: OPMercato V3 Deep Online Integration
 on:
   workflow_dispatch:
   push:
-    branches: [main, opmercato-v3-work-20261016, opmercato-v3-polish-20261016]
+    branches: [main, opmercato-v3-work-20261016, opmercato-v3-polish-20261016, opmercato-v3-trade-ui-20261016]
     paths:
       - '.github/workflows/opmercato-v3-deep.yml'
       - 'supabase/functions/opmercato-online/index.ts'
@@ -77,7 +77,7 @@ jobs:
             }
             throw Error("Auction event loop not resolved");
           }
-          let foundM=false,foundTrade=false,accepted=false;
+          let foundM=false,foundTrade=false,accepted=false,rejected=false,shownResults=0;
           for(let guard=0;guard<35;guard++){
             if(v.v3.stage==="morgans"){
               foundM=true;const m=v.v3.morgans;
@@ -96,7 +96,21 @@ jobs:
             }
             if(v.v3.stage==="market"){
               foundTrade=true;const t=v.v3.market;
-              if(t.offer){v=await act(t.offer.to,"v3-trade-accept");accepted=true;continue;}
+              if(t.result){
+                if(t.result.accepted){
+                  accepted=true;
+                  if(t.result.deltaFrom===undefined||t.result.deltaTo===undefined)throw Error("Missing accepted exchange score deltas");
+                }else{
+                  rejected=true;
+                  if(t.result.deltaFrom!==0||t.result.deltaTo!==0)throw Error("Declined exchange changed a score");
+                }
+                shownResults++;
+                for(let seat=0;seat<2;seat++){
+                  if(!t.result.ready.includes(seat))v=await act(seat,"v3-trade-continue");
+                }
+                continue;
+              }
+              if(t.offer){v=await act(t.offer.to,t.step===0?"v3-trade-reject":"v3-trade-accept");continue;}
               if(t.step>=t.order.length)throw Error("Finished market not advancing");
               const from=t.order[t.step],to=1-from;
               const give=v.players[from].roster.find(id=>!t.locked.includes(id));
@@ -112,7 +126,7 @@ jobs:
             }
             throw Error("Unexpected stage "+v.v3.stage);
           }
-          if(!foundM||!foundTrade||!accepted)throw Error("Journey incomplete "+JSON.stringify({foundM,foundTrade,accepted,stage:v.v3.stage,round:v.round,moves}));
+          if(!foundM||!foundTrade||!accepted||!rejected||shownResults!==2)throw Error("Journey incomplete "+JSON.stringify({foundM,foundTrade,accepted,rejected,shownResults,stage:v.v3.stage,round:v.round,moves}));
           const mirror=await get(1);
           if(mirror.v3.stage!==v.v3.stage||JSON.stringify(mirror.players.map(p=>p.roster))!==JSON.stringify(v.players.map(p=>p.roster)))
             throw Error("Two phones not in sync after trading");
