@@ -143,7 +143,7 @@
       '<h2>⚓ Créer un salon</h2><label>Ton pseudo<input id="online-name" maxlength="25" value="Pirate 1" autocomplete="nickname"></label>'+
       '<label>Nombre de pirates (2 à 5)<select id="online-players"><option value="2">2 joueurs</option><option value="3">3 joueurs</option><option value="4">4 joueurs</option><option value="5">5 joueurs</option></select></label>'+
       '<label>Budget initial en Berrys<input id="online-budget" inputmode="numeric" type="text" value="250000000"></label>'+
-      '<label>Personnages à recruter chacun<input id="online-team" inputmode="numeric" type="number" min="1" max="30" value="5"></label>'+
+      '<label>Personnages à recruter chacun<input id="online-team" inputmode="numeric" type="number" min="1" max="30" value="10"></label>'+
       '<label class="online-check"><input id="online-spoilers" type="checkbox" checked> Inclure les personnages manga récents (spoilers)</label>'+
       button("create-go","Créer le salon →")+
       '<p class="online-hint">Tu recevras un code à partager. La partie démarre quand tous les pirates sont dans le salon.</p>':
@@ -431,7 +431,7 @@
       '<p>'+escOnline(d.description||"")+'</p></div></div>';
   }
   function onlineRules(){
-    const num=view?.teamSize||5;
+    const num=view?.teamSize||10;
     const initial=view?.baseBid||"20",increment=view?.bidStep||"10";
     const rules=[
       'Chaque joueur commence avec le meme budget et doit recruter <b>'+num+' personnages</b>.',
@@ -617,16 +617,7 @@
     if(view?.v3?.stage==="market")v3RefreshTrade();
     if(peekOpen&&view?.v3)v3RefreshSwap();
   }
-  // Les portraits sont charges par OPMERCATO_SHARED.refreshImages (mode local).
-  const originalRender=render;
-  render=function(){
-    originalRender();
-    if(!showing){
-      const top=app.querySelector(".topbar");
-      if(top&&!top.querySelector("[data-online='open']"))
-        top.insertAdjacentHTML("beforeend",'<button class="online-entry" type="button" data-online="open">🌐 En ligne</button>');
-    }
-  };
+  // Le bouton Mode en ligne se trouve maintenant sur la page d'accueil, sous Lancer le mercato.
   document.addEventListener("click",async event=>{
     const b=event.target.closest("[data-online]");if(!b)return;
     event.preventDefault();event.stopImmediatePropagation();
@@ -781,8 +772,6 @@
     .online-roster .online-roster-character{display:flex;align-items:center;gap:6px;color:#f4f8fa;background:#275061;border:1px solid #446d79;border-radius:9px;padding:5px 8px;max-width:100%;text-align:left;font-size:11px}
     .online-roster .online-roster-character>span:last-child{overflow-wrap:anywhere}
     .online-roster .portrait-tiny{width:24px;height:24px;min-width:24px}
-    .online-entry{border:1px solid #d8ad60;border-radius:12px;background:#143847;color:#ffe1a0;
-      padding:10px;font-size:12px;font-weight:900;white-space:nowrap}
     body.online-open{overflow:hidden}
     #opmercato-online{position:fixed;inset:0;z-index:1100;background:#0a1c29;
       overflow-y:auto;overscroll-behavior:contain;color:#e8f1f3}
