@@ -2,7 +2,7 @@ name: OPMercato V3 Browser Smoke
 on:
   workflow_dispatch:
   push:
-    branches: [main, opmercato-v3-work-20261016, opmercato-v3-polish-20261016, opmercato-v3-visual-fixes-20261016]
+    branches: [main, opmercato-v3-work-20261016, opmercato-v3-polish-20261016, opmercato-v3-visual-fixes-20261016, opmercato-v3-transfer-recap-20261016]
     paths: ['mercato-v3-local.js', 'mercato-online.js', 'index.html', '.github/workflows/opmercato-v3-browser.yml', 'opmercato-ships-sprite.webp', 'mercato-v3-dice.js']
 jobs:
   v3-browser:
@@ -110,6 +110,12 @@ jobs:
             if(await page.evaluate(()=>state.v3.market.offer)===null)throw Error("Market offer not submitted");
             await page.locator('[data-action="v3-trade-accept"]').click();
             if(await page.evaluate(()=>state.v3.market.exchanges.length)!==1)throw Error("Trade not accepted");
+            await page.locator('.v3-trade-result').waitFor();
+            if(!await page.locator('.v3-trade-result').innerText().then(s=>s.includes("Échange accepté")))throw Error("Accepted result not visible");
+            if(await page.locator(".v3-trade-cards .character-card").count())throw Error("Old large character cards still shown in trade");
+            if(await page.locator(".v3-trade-mini").count()!==2)throw Error("Compact trade portraits missing");
+            await page.locator('[data-action="v3-trade-continue"]').click();
+            if(await page.evaluate(()=>state.v3.market.result))throw Error("Acknowledged result still active");
             console.log("PASS local V3 trade and bonus transfer UI");
             if(errors.length)throw Error("Browser exceptions: "+errors.join("; "));
           }finally{await browser.close();}
