@@ -63,10 +63,16 @@ jobs:
             if(!await host.locator('[data-online^="v3-select-"]').count())throw Error("Ship selection did not render");
             for(const id of ["sunny","redforce"]){
               let selectable=null;
-              for(const page of pages){const b=page.locator('[data-online="v3-select-'+id+'"]');if(await b.count()&&await b.isEnabled()){selectable=b;break;}}
-              if(!selectable)throw Error("Ship "+id+" cannot be selected");
+              for(let wait=0;wait<35&&!selectable;wait++){
+                for(const page of pages){
+                  const b=page.locator('[data-online="v3-select-'+id+'"]');
+                  if(await b.count()&&await b.isEnabled()){selectable=b;break;}
+                }
+                if(!selectable)await host.waitForTimeout(350);
+              }
+              if(!selectable)throw Error("Ship "+id+" cannot be selected even after synchronization");
               await selectable.click();
-              await host.waitForTimeout(600);
+              await host.waitForTimeout(300);
             }
             for(const page of pages){
               await page.locator('.online-round').waitFor({timeout:25000});
