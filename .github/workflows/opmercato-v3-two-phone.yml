@@ -38,6 +38,8 @@ jobs:
             const host=await device(),guest=await device();
             await host.locator('[data-online="open"]').click();
             await host.locator('[data-online="create-form"]').click();
+            if(await host.locator('#online-team').inputValue()!=="10")
+              throw Error("Online game must default to 10 recruits");
             await host.locator('#online-name').fill("V3 Capitaine");
             await host.locator('#online-team').fill("2");
             await host.locator('[data-online="create-go"]').click();
