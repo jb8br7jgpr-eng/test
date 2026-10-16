@@ -89,6 +89,16 @@ function swap(o){const a=player(o.from),b=player(o.to);
  V().market.locked.push(o.give,o.take);V().market.exchanges.push(o);
 }
 function nextTrade(){const t=V().market;t.offer=null;t.result=null;t.idx++;if(t.idx>=t.order.length){t.done=true;resume();}else{save();render();}}
+function v3TradeImpactCard(name,before,after){
+ const delta=after-before,kind=delta>0?'is-positive':delta<0?'is-negative':'is-neutral';
+ return '<div class="op-trade-player '+kind+'"><strong class="op-trade-player-name">'+esc(name)+'</strong>'+
+ '<div class="op-trade-scores"><span>'+before+' pts</span><span class="op-trade-arrow" aria-hidden="true">→</span><b>'+after+' pts</b></div>'+
+ '<span class="op-trade-delta">'+(delta>0?'+':'')+delta+' points</span></div>';
+}
+function v3TradeEffects(title,a,b,beforeA,afterA,beforeB,afterB){
+ return '<section class="op-trade-effects" aria-label="Impact de l’échange sur les deux joueurs"><h4 class="op-trade-title">'+title+'</h4>'+
+ v3TradeImpactCard(a.name,beforeA,afterA)+v3TradeImpactCard(b.name,beforeB,afterB)+'</section>';
+}
 function v3TradePerson(p,id){
  const c=CARDS[id],t=tierOf(c.power),crew=window.MERCATO_EXPANSION?.details?.[id]?.crew||'Affiliation inconnue';
  return '<article class="v3-transfer-person"><small class="v3-transfer-owner">'+esc(p.name)+'</small>'+
@@ -134,18 +144,21 @@ function screen(){const v=V(),m=v.morgans,t=v.market;
       '<h3>'+(o.accepted?'Échange accepté !':'Échange refusé')+'</h3>'+
       '<p>'+esc(b.name)+(o.accepted?' a accepté':' a refusé')+' la proposition de '+esc(a.name)+'.</p>'+
       '<p class="v3-transfer-result-pair">'+nm(o.give)+' ⇄ '+nm(o.take)+'</p>'+
+      v3TradeEffects(o.accepted?'Scores après échange':'Aucun changement de score',a,b,
+       o.scores?.aBefore??(o.accepted?tradeScore(a,o.take,o.give):getScore(a)),o.scores?.aAfter??getScore(a),
+       o.scores?.bBefore??(o.accepted?tradeScore(b,o.give,o.take):getScore(b)),o.scores?.bAfter??getScore(b))+
       '<p>'+(o.accepted?'Les équipages et les scores ont été actualisés.':'Les deux pirates conservent leurs personnages.')+'</p>'+
       btn('trade-continue','Continuer →')+'</div>';
   }
   if(t.offer){const o=t.offer,a=player(o.from),b=player(o.to);
     h+='<p class="v3-transfer-intro">'+esc(a.name)+' propose un échange à '+esc(b.name)+'</p>'+
       '<div class="v3-transfer-grid">'+v3TradePerson(a,o.give)+v3TradePerson(b,o.take)+'</div>'+
-      '<p class="v3-transfer-impact">Effets estimés : '+esc(a.name)+' <b>'+(tradeScore(a,o.give,o.take)-getScore(a))+' pts</b> · '+esc(b.name)+' <b>'+(tradeScore(b,o.take,o.give)-getScore(b))+' pts</b></p>'+
+      v3TradeEffects('Effets estimés',a,b,getScore(a),tradeScore(a,o.give,o.take),getScore(b),tradeScore(b,o.take,o.give))+
       btn('trade-accept','✅ Accepter l’échange')+btn('trade-reject','Refuser l’échange');
   }else{const people=state.players.filter(x=>x.id!==p.id&&x.roster.some(id=>!t.locked.includes(id)));
     h+='<label>Adversaire<select id="v3-target">'+people.map(x=>'<option value="'+x.id+'">'+esc(x.name)+'</option>').join('')+'</select></label>'+
     '<label>Ton personnage<select id="v3-give">'+p.roster.filter(id=>!t.locked.includes(id)).map(id=>'<option value="'+id+'">'+nm(id)+'</option>').join('')+'</select></label>'+
-    '<label>Personnage souhaité<select id="v3-take"></select></label><p id="v3-preview"></p>'+
+    '<label>Personnage souhaité<select id="v3-take"></select></label><div id="v3-preview" class="op-trade-preview"></div>'+
     btn('trade-offer','Proposer')+btn('trade-pass','Passer');}
   return h; }return '';
 }
@@ -153,7 +166,7 @@ function preview(){const v=V();if(v?.phase!=='market'||v.market.offer)return;
  const p=player(v.market.order[v.market.idx]),a=document.querySelector('#v3-target'),g=document.querySelector('#v3-give'),t=document.querySelector('#v3-take');if(!a||!g||!t)return;
  const target=player(Number(a.value)),prior=t.value;t.innerHTML=(target?.roster||[]).filter(id=>!v.market.locked.includes(id)).map(id=>'<option value="'+id+'">'+nm(id)+'</option>').join('');
  if([...t.options].some(x=>x.value===prior))t.value=prior;
- const x=document.querySelector('#v3-preview');if(x&&g.value&&t.value)x.textContent=p.name+' : '+(tradeScore(p,g.value,t.value)-getScore(p))+' pts · '+target.name+' : '+(tradeScore(target,t.value,g.value)-getScore(target))+' pts';
+ const x=document.querySelector('#v3-preview');if(x&&g.value&&t.value&&target)x.innerHTML=v3TradeEffects('Effets estimés',p,target,getScore(p),tradeScore(p,g.value,t.value),getScore(target),tradeScore(target,t.value,g.value));
 }
 let v3RestoringAuction=false;
 render=function(){
@@ -167,8 +180,8 @@ render=function(){
    return;
  }
  if(V()&&['intro','dice','ships','morgans','market'].includes(V().phase)){
- app.innerHTML=v3MiniHud()+'<section class="card v3-screen"><span class="eyebrow">OPMERCATO 3.0</span>'+screen()+'</section>'+
-  '<div class="v3-players-mini">'+state.players.map(p=>esc(p.name)+' : '+currency(p.budget)+' · '+getScore(p)+' pts').join('<hr>')+'</div>';preview();window.OPMERCATO_SHARED?.refreshImages?.();return;}
+ app.innerHTML=header()+v3MiniHud()+'<section class="card v3-screen"><span class="eyebrow">OPMERCATO 3.0</span>'+screen()+'</section>'+
+  '<div class="v3-players-mini">'+state.players.map(p=>esc(p.name)+' : '+currency(p.budget)+' · '+getScore(p)+' pts').join('<hr>')+'</div>'+gameFooter();preview();window.OPMERCATO_SHARED?.refreshImages?.();return;}
  oldRender();if(V()){app.querySelectorAll('.player-card').forEach((node,i)=>{const p=state.players[i],s=sh(p.ship);if(!s)return;
  node.querySelector('.player-header')?.insertAdjacentHTML('afterend','<div class="v3-team-ship"><img src="./opmercato-ships-sprite.webp" style="object-position:'+(SHIPS.findIndex(q=>q[0]===s[0])*25)+'% 50%" alt=""><span class="v3-team-ship-name"><strong>'+esc(s[1])+'</strong><small>'+esc(s[3])+'</small></span><span class="v3-team-ship-status">'+
  (p.ship==='sunny'?(8-p.passesUsed)+' refus':p.ship==='mobydick'?'−10 %':p.ship==='redforce'?'Actif':p.ship==='polartang'?(p.armamentUsed?'Utilisé':'Prêt'):(p.observationUsed?'Utilisé':'Prêt'))+'</span></div>');});}};
@@ -255,7 +268,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest('button[dat
  else if(a==='trade-continue'){if(!t.result)return;nextTrade();return;}
  else if(a==='trade-pass'){if(t.result)return;nextTrade();return;}
  else if(a==='trade-offer'){const p=player(t.order[t.idx]),to=Number(document.querySelector('#v3-target')?.value),give=document.querySelector('#v3-give')?.value,take=document.querySelector('#v3-take')?.value;if(!p.roster.includes(give)||!player(to)?.roster.includes(take))return;t.offer={from:p.id,to,give,take};}
- else if(a==='trade-accept'||a==='trade-reject'){if(!t.offer||t.result)return;const offer=t.offer,accepted=a==='trade-accept';if(accepted)swap(offer);t.result={...offer,accepted};t.offer=null;}
+ else if(a==='trade-accept'||a==='trade-reject'){if(!t.offer||t.result)return;const offer=t.offer,accepted=a==='trade-accept',from=player(offer.from),to=player(offer.to),aBefore=getScore(from),bBefore=getScore(to);if(accepted)swap(offer);t.result={...offer,accepted,scores:{aBefore,aAfter:getScore(from),bBefore,bAfter:getScore(to)}};t.offer=null;}
  save();render();
 },true);
 const css=document.createElement('style');css.textContent='.v3-screen{text-align:center;padding:20px;margin:16px 0}.v3-screen h2{color:#f6d28f;font-size:26px}.v3-screen .primary{display:block;width:100%;margin:10px 0}.v3-screen input,.v3-screen select{width:100%;background:#163544;color:#fff;border:1px solid #b98e56;border-radius:10px;padding:12px;margin:8px 0}.v3-ship-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px}.v3-ship{display:grid;gap:7px;background:#23465c;padding:8px;border-radius:13px}.v3-ship img{width:100%;aspect-ratio:1;object-fit:cover}.v3-ship small,.v3-ship p{font-size:12px}.v3-players-mini{font-size:12px;padding:10px;color:#c5d4dd}.v3-ship-mini{font-size:11px;color:#f4ca87}.v3-wheel{font-size:80px;animation:v3spin 2s linear infinite}@keyframes v3spin{to{transform:rotate(360deg)}}';
