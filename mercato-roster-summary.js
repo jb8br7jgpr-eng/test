@@ -136,6 +136,9 @@
     #opmercato-online .online-team .oprs-character{border-radius:13px}
     #opmercato-online .online-team .oprs-character span{background:transparent;padding:0;font-size:inherit;border-radius:0}
     #opmercato-online .online-team .oprs-character .oprs-effect{font-size:10px;padding:4px 6px;border-radius:6px}
+    #opmercato-online .online-team .oprs-character .oprs-positive{background:#154736;color:#bff6d7;border-color:#427b65}
+    #opmercato-online .online-team .oprs-character .oprs-negative{background:#482a34;color:#ffbbb7;border-color:#995864}
+    #opmercato-online .online-team .oprs-character .oprs-neutral{background:#294154;color:#dae4eb;border-color:#647d8b}
     #opmercato-online .online-team .oprs-character .oprs-no-effect{font-size:10px}
     #opmercato-online .online-team .oprs-character .oprs-portrait{background:#234b5b!important}
     #opmercato-online .online-team .oprs-character .oprs-character-score>b{font-size:22px}
