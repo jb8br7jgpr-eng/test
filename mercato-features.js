@@ -306,7 +306,7 @@
       .sort((a,b)=>effectivePower(p,a)-effectivePower(p,b))[0];
     const pile=Math.random()<.5,before=id?effectivePower(p,id):0,
       after=Math.max(0,Math.min(100,before+(pile?25:-25)));
-    if(id){p.smileModifiers=p.smileModifiers||{};p.smileModifiers[id]=after-(CARDS[id]?.power||0);}
+    if(id){p.smileModifiers=p.smileModifiers||{};p.smileModifiers[id]=state?.v3?Number(p.smileModifiers[id]||0)+(pile?25:-25):after-(CARDS[id]?.power||0);}
     e.flips.push({id:p.id,charId:id||null,pile,before,after});e.step++;
     if(e.step===state.players.length)e.stage='result';
     save();render();v2Fx('coin',p.name+' : '+(id?pile?'PILE · +25':'FACE · −25':'Aucune recrue à transformer'),pile);
@@ -393,14 +393,14 @@
     for(let offset=1;offset<=state.players.length;offset++){
       const p=state.players[(Number(from)+offset)%state.players.length];
       if(p.id===a.leader||a.passed.includes(p.id)||p.roster.length>=TEAM_SIZE)continue;
-      if(safeBig(p.budget)>=value*2n)return p.id;
+      if(safeBig(p.budget)>=(state?.v3&&p.ship==='mobydick'?(value*2n*90n+50n)/100n:value*2n)&&safeBig(p.budget)>=value)return p.id;
     }
     return null;
   };
   bid=function(value){
     if(v2Royal()&&v2Active().stage==='auction'){
       const p=player(state.auction?.turnId);
-      if(!p||safeBig(p.budget)<BigInt(Math.floor(Number(value)||0))*2n)
+      if(!p||safeBig(p.budget)<(state?.v3&&p.ship==='mobydick'?(BigInt(Math.floor(Number(value)||0))*2n*90n+50n)/100n:BigInt(Math.floor(Number(value)||0))*2n))
         return showToast('👑 Taxe royale : tu dois pouvoir payer le double de ta mise.');
     }
     return beforeRoyalBid(value);
@@ -639,7 +639,7 @@
     if(!p||p.armamentUsed||!c||c.power>60||a.armamentChoice)return;
     event.preventDefault();event.stopImmediatePropagation();
     if(b.dataset.action==='armament-recruit'){
-      p.armamentUsed=true;p.armamentId=a.charId;p.armamentBonus=20;a.armamentChoice='used';
+      p.armamentUsed=true;p.armamentId=a.charId;p.armamentBonus=state?.v3&&p.ship==='polartang'?40:20;a.armamentChoice='used';
       showToast('🛡 '+c.name+' gagne +20 points !');
     } else a.armamentChoice='skip';
     save();render();
