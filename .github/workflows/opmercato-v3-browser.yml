@@ -36,7 +36,9 @@ jobs:
             await page.evaluate(()=>localStorage.clear());
             await page.reload({waitUntil:"domcontentloaded"});
             await page.locator('[data-action="start"]').click();
-            if(await page.evaluate(()=>state?.v3?.phase)!=="dice")throw Error("V3 did not enter dice stage");
+            if(await page.evaluate(()=>state?.v3?.phase)!=="intro")throw Error("V3 introduction missing");
+            await page.locator('[data-action="v3-intro-continue"]').click();
+            if(await page.evaluate(()=>state?.v3?.phase)!=="dice")throw Error("Dice stage did not start");
             for(let i=0;i<90;i++){
               const phase=await page.evaluate(()=>state.v3.phase);
               if(phase==="ships")break;
