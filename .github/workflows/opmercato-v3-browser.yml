@@ -74,6 +74,41 @@ jobs:
             await page.locator('[data-action^="v3-ship-"]').nth(1).click();
             const shipRows=await page.locator('.player-card .v3-team-ship').count();
             if(shipRows!==2)throw Error("Ship information must be on its own row in each player summary: "+shipRows);
+            const specialChecks=await page.evaluate(()=>{
+              const snapshot=structuredClone(state),receipts=[];
+              const charId=Object.keys(CARDS).find(id=>CARDS[id].power>=80);
+              try {
+                for(const ship of ['sunny','mobydick']){
+                  const p=state.players[0];
+                  p.budget="1000";p.roster=[];p.purchases={};p.ship=ship;p.hakiUsed=true;
+                  state.v3.phase='auction';
+                  state.featureConfig.active={type:'reverie',stage:'auction'};
+                  state.auction={charId,highBid:"100",leader:0,turnId:1,firstTurnId:0,passed:[],outcome:null,hakiWinner:null};
+                  settle();
+                  receipts.push({ship,budget:String(p.budget),paid:String(p.purchases?.[charId]),
+                    visible:document.querySelector('.v3-reverie-receipt')?.textContent||''});
+                }
+              }finally{state=snapshot;save();render();}
+              const smile=window.OPMERCATO_SMILE_SUMMARY?.render(
+                [{id:0,charId:'robin',pile:true,before:76,after:100},
+                 {id:1,charId:'chopper',pile:false,before:70,after:45}],
+                [{id:0,name:'Pirate 1'},{id:1,name:'Pirate 2'}])||'';
+              const preview=document.createElement('div');preview.innerHTML=smile;
+              document.body.appendChild(preview);
+              const cards=[...preview.querySelectorAll('.smile-player')];
+              const circles=[...preview.querySelectorAll('.smile-avatar')].map(el=>el.getBoundingClientRect());
+              const overlap=cards.some((el,i)=>i>0&&el.getBoundingClientRect().top<cards[i-1].getBoundingClientRect().bottom-2);
+              preview.remove();
+              return {receipts,smileCards:cards.length,smileCircles:circles.map(r=>[r.width,r.height]),
+                smilePile:smile.includes('PILE'),smileFace:smile.includes('FACE'),smileOverlap:overlap};
+            });
+            if(specialChecks.receipts[0].budget!=="800"||specialChecks.receipts[0].paid!=="200"||
+               specialChecks.receipts[1].budget!=="820"||specialChecks.receipts[1].paid!=="180"||
+               specialChecks.receipts.some(x=>!x.visible.includes('Montant réellement payé'))||
+               specialChecks.smileCards!==2||specialChecks.smileCircles.some(x=>x[0]<45||x[1]<45)||
+               !specialChecks.smilePile||!specialChecks.smileFace||specialChecks.smileOverlap)
+              throw Error("Reverie actual payment or SMILE portrait results failed: "+JSON.stringify(specialChecks));
+            console.log("PASS local Reverie x2 (and Moby 10% discount), SMILE two-portrait mobile results");
             const portraitChecks=await page.evaluate(()=>{
               const backup={ship:state.players[0].ship,turn:state.auction?.turnId,peek:state.v3.oroPeek,lock:state.v3.oroLocked,openers:state.v3.oroOpeners,swapped:state.v3.oroSwapped,used:state.players[0].observationUsed};
               state.players[0].ship='orojackson';
