@@ -512,7 +512,7 @@
         '<p>Les recrues éliminées disparaissent définitivement. Leurs places se libèrent.</p>';
     }
     return header()+'<section class="v2-local-special v2-'+e.type+'"><small>✦ ÉVÉNEMENT SPÉCIAL ✦</small>'+
-      '<div class="v2-local-symbol">'+def[0]+'</div><h1>'+def[1]+'</h1>'+content+'</section>'+
+      '<div class="v2-local-symbol">'+def[0]+'</div>'+(window.OPMERCATO_ART?.image(e.type)||'')+'<h1>'+def[1]+'</h1>'+content+'</section>'+
       '<div class="v2-local-hint">Aucun événement ne disparaît automatiquement. Confirme pour continuer.</div>';
   }
 
