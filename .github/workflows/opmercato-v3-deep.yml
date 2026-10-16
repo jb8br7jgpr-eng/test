@@ -1,4 +1,5 @@
 name: OPMercato V3 Deep Online Integration
+# Rerun against staging version 4, including protected mystery event.
 on:
   workflow_dispatch:
   push:
