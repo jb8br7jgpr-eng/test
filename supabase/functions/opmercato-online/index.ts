@@ -567,7 +567,7 @@ Deno.serve(async(req:Request)=>{
      await ensureAffiliations(room.doc);
      return json({room:snapshot(room.doc,seat,room.version,room)});
    }
-   const allowed=["start","bid","pass","haki","observation","armament","armament-skip","next","roll","finish","event-ready","event-pick","event-eliminate","coin","burst-offer","burst-coin","v3-intro-ready","v3-roll","v3-ship","v3-morgans-ready","v3-morgans-guess","v3-morgans-next","v3-morgans-wheel","v3-morgans-recruit","v3-morgans-armament","v3-morgans-skip","v3-trade-pass","v3-trade-offer","v3-trade-accept","v3-trade-reject","v3-observation-swap"];
+   const allowed=["start","bid","pass","haki","observation","armament","armament-skip","next","roll","finish","event-ready","event-pick","event-eliminate","coin","burst-offer","burst-coin","v3-intro-ready","v3-roll","v3-ship","v3-morgans-ready","v3-morgans-guess","v3-morgans-next","v3-morgans-wheel","v3-morgans-recruit","v3-morgans-armament","v3-morgans-skip","v3-trade-pass","v3-trade-offer","v3-trade-accept","v3-trade-reject","v3-trade-continue","v3-observation-swap"];
    if(!allowed.includes(arg.action))throw Error("Action inconnue.");
    const doc=structuredClone(room.doc);
    await ensureAffiliations(doc);
@@ -595,7 +595,7 @@ function v3Create(s:any){
  const n=randomIndex(s.drawPile.length),secret=s.drawPile.splice(n,1)[0];
  s.v3={version:3,stage:"intro",introReady:[],rolls:{},lastDice:{},choiceOrder:[],choiceIndex:0,firstBidder:0,
    morgans:{id:secret,stage:"waiting",guesses:{},ready:[],shown:0,winner:null,bonus:null,done:false},
-   market:{done:false,order:[],step:0,offer:null,locked:[],exchanges:[]},swapUsed:false};
+   market:{done:false,order:[],step:0,offer:null,result:null,locked:[],exchanges:[]},swapUsed:false};
 }
 function v3Public(s:any){
  if(!isV3(s))return null;
@@ -619,7 +619,7 @@ function v3MarketDue(s:any){
 function v3Advance(s:any){
  if(v3MorgansDue(s)){s.v3.stage="morgans";s.v3.morgans.stage="intro";s.auction=null;return;}
  if(v3MarketDue(s)){
-  const t=s.v3.market;t.order=shuffle(s.players.map((p:any)=>p.id));t.step=0;t.locked=[];t.exchanges=[];
+  const t=s.v3.market;t.order=shuffle(s.players.map((p:any)=>p.id));t.step=0;t.offer=null;t.result=null;t.locked=[];t.exchanges=[];
   s.v3.stage="market";s.auction=null;return;
  }
  s.v3.stage="auction";
@@ -639,7 +639,7 @@ function v3SwapPeople(s:any,offer:any){
  s.v3.market.locked.push(one,two);s.v3.market.exchanges.push(offer);
 }
 function v3NextTrade(s:any){
- const t=s.v3.market;t.offer=null;t.step++;
+ const t=s.v3.market;t.offer=null;t.result=null;t.step++;
  if(t.step>=t.order.length){t.done=true;s.v3.stage="auction";v3Advance(s);}
 }
 function v3Act(s:any,seat:number,action:string,arg:any){
@@ -735,6 +735,15 @@ function v3Act(s:any,seat:number,action:string,arg:any){
   throw Error("Étape Morgans en attente.");
  }
  if(v.stage==="market"){
+  // Show a shared result screen until every connected player acknowledges it.
+  if(t.result){
+   if(action!=="v3-trade-continue")throw Error("Consulte le résultat du transfert.");
+   t.result.ready=t.result.ready||[];
+   if(t.result.ready.includes(seat))throw Error("Déjà prêt à continuer.");
+   t.result.ready.push(seat);
+   if(t.result.ready.length>=s.players.length)v3NextTrade(s);
+   return true;
+  }
   if(action==="v3-trade-pass"&&t.offer===null&&t.order[t.step]===seat){v3NextTrade(s);return true;}
   if(action==="v3-trade-offer"&&t.offer===null&&t.order[t.step]===seat){
    const to=Number(arg.to),give=String(arg.give||""),take=String(arg.take||"");
@@ -744,8 +753,15 @@ function v3Act(s:any,seat:number,action:string,arg:any){
    t.offer={from:seat,to,give,take};return true;
   }
   if(["v3-trade-accept","v3-trade-reject"].includes(action)&&t.offer?.to===seat){
-   if(action==="v3-trade-accept")v3SwapPeople(s,t.offer);
-   v3NextTrade(s);return true;
+   const o=t.offer,accepted=action==="v3-trade-accept";
+   const from=s.players[o.from],to=s.players[o.to];
+   const beforeFrom=score(s,from),beforeTo=score(s,to);
+   const givePower=effectivePower(s,from,o.give),takePower=effectivePower(s,to,o.take);
+   if(accepted)v3SwapPeople(s,o);
+   t.result={from:o.from,to:o.to,give:o.give,take:o.take,accepted,
+     givePower,takePower,deltaFrom:score(s,from)-beforeFrom,deltaTo:score(s,to)-beforeTo,ready:[]};
+   t.offer=null;
+   return true;
   }
   throw Error("Marché en attente.");
  }
