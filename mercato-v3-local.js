@@ -202,6 +202,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest('button[dat
  const a=b.dataset.action.slice(3),v=V(),m=v.morgans,t=v.market;
  if(a==='intro-continue'){v.phase='dice';}
  else if(a==='roll'){
+ if(b.disabled)return;b.disabled=true;b.setAttribute('aria-busy','true');
  const tied=v.phase==='dice-tie',group=tied?v.tieGroups[v.tieIndex]:state.players.map(p=>p.id);
  const rolls=tied?v.tieRolls:v.rolls,id=group.find(id=>rolls[id]===undefined);if(id===undefined)return;
  rolls[id]=1+Math.floor(Math.random()*6);
