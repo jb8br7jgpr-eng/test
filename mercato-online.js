@@ -171,7 +171,7 @@
   function classFor(n){return n>=95?"S":n>=80?"A":n>=65?"B":n>=50?"C":n>=35?"D":n>=20?"E":"F";}
   function gameScore(){
     return '<section class="online-teams"><h2>⚓ Vos équipages</h2>'+
-      view.players.map(p=>'<div class="online-team"><div class="online-team-top"><b>'+label(p)+'</b><strong>'+p.score+' pts</strong></div><div class="v3-team-ship-online">'+shipMark3(p)+'</div>'+
+      view.players.map(p=>'<div class="online-team"><div class="online-team-top"><b>'+label(p)+'</b><strong>'+p.score+' pts</strong></div>'+(p.ship?'<div class="v3-team-ship-online">'+shipMark3(p)+'</div>':'')+
         '<div class="online-team-meta">'+berrys(p.budget)+' restants · '+p.roster.length+'/'+view.teamSize+' recrues · '+p.passesUsed+'/'+(p.ship==='sunny'?8:5)+' refus</div>'+
         '<div class="online-roster">'+(p.roster.length?p.roster.map(id=>'<button type="button" data-action="details" data-char-id="'+escOnline(id)+'" class="online-roster-character">'+
           '<span class="portrait portrait-tiny"><span class="portrait-fallback">☠️</span><img class="portrait-photo" data-portrait-id="'+escOnline(id)+'" alt="" loading="lazy"></span>'+
