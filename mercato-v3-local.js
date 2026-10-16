@@ -7,6 +7,18 @@ const v3ShipStatus=p=>p.ship==='sunny'?(8-p.passesUsed)+' refus':p.ship==='redfo
 const v3ShipImage=p=>p.ship?'<img class="v3-hud-ship" src="./opmercato-ships-sprite.webp" style="object-position:'+(SHIPS.findIndex(x=>x[0]===p.ship)*25)+'% 50%" alt="">':'';
 const v3MiniHud=()=>'<div class="op21-local-hud v3-mini-hud">'+state.players.map(p=>'<div class="op21-hud-item"><b class="op21-hud-name">'+esc(p.name)+'</b><strong class="op21-hud-money">'+currency(p.budget)+'</strong><small class="op21-hud-stats">⭐ '+getScore(p)+' pts</small>'+(p.ship?'<small>'+v3ShipImage(p)+' '+v3ShipStatus(p)+'</small>':'')+'</div>').join('')+'</div>';
 const oldStart=start,oldDraw=drawNext,oldScore=getScore,oldSettle=settle,oldRender=render,oldPass=pass;
+const oldResolved=resolvedScreen;
+resolvedScreen=function(a,c){
+ let html=oldResolved(a,c);
+ if(!V()||a.outcome!=='sold'||a.leader===null||a.hakiWinner===a.leader)return html;
+ const p=player(a.leader);
+ if(!p||p.ship!=='mobydick'||!p.purchases?.[a.charId])return html;
+ const paid=BigInt(p.purchases[a.charId]),gross=BigInt(a.highBid)*(state.featureConfig?.active?.type==='reverie'?2n:1n);
+ const saved=gross-paid;
+ if(saved<=0n)return html;
+ html=html.replace('pour <strong>'+currency(a.highBid)+'</strong>', 'pour <strong>'+currency(paid)+'</strong>');
+ return html.replace('</p><button class="primary" data-action="next"', '</p><p>🐋 Protection du Père : −'+currency(saved)+' · Montant réellement payé : '+currency(paid)+'</p><button class="primary" data-action="next"');
+};
 const pow=(p,id)=>clamp((CARDS[id]?.power||0)+Number(p.smileModifiers?.[id]||0)+Number(p.shipBonus?.[id]||0)+(p.armamentId===id?Number(p.armamentBonus||0):0));
 function synergy(ids){const m=new Map();for(const id of ids){const crew=window.MERCATO_EXPANSION?.details?.[id]?.crew;if(crew)m.set(crew,(m.get(crew)||0)+1);}return [...m.values()].reduce((a,n)=>a+(n>=5?50:n>=2?(n-1)*10:0),0);}
 getScore=p=>V()?p.roster.reduce((s,id)=>s+pow(p,id),0)+synergy(p.roster):oldScore(p);
