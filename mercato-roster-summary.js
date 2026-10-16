@@ -149,4 +149,6 @@
     @media(max-width:360px){.oprs-character{grid-template-columns:36px minmax(0,1fr) auto;gap:7px;padding:9px 7px}.oprs-portrait.portrait{width:36px!important;height:46px!important;min-width:36px!important;min-height:46px!important}.oprs-character-score>b{font-size:19px}}
   `;
   document.head.appendChild(css);
+  // Rafraîchit immédiatement le résumé d'une partie locale déjà sauvegardée.
+  if(state)render();
 })();
