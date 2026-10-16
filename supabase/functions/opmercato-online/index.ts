@@ -217,7 +217,7 @@ function nextSeven(s:any){
  if(mystery)s.event.mysteryUsed=true;
  s.auction={charId,highBid:"0",leader:null,passed:[],turnId:null,firstTurnId:null,outcome:null,
    mystery,warGuaranteed:s.event.warRounds.includes(s.round),hakiWinner:null};
- const from=(s.round-2+s.players.length)%s.players.length;
+ const from=((isV3(s)?s.v3.firstBidder:0)+s.round-2+s.players.length)%s.players.length;
  const first=nextBidder(s,from);
  s.auction.turnId=first;s.auction.firstTurnId=first;
  if(first===null){
