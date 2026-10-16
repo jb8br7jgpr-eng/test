@@ -166,15 +166,32 @@ function legacyNext(s:any){
  s.auction={charId,highBid:"0",leader:null,passed:[],turnId:null,firstTurnId:null,
    outcome:null,mystery,warGuaranteed:s.event.warRounds.includes(s.round),hakiWinner:null};
  const from=((isV3(s)?s.v3.firstBidder:0)+s.round-2+s.players.length)%s.players.length;
- const first=nextBidder(s,from);
+ const forced=isV3(s)?s.v3.visionOpeners?.[s.auction.charId]:undefined;
+ const chosenFrom=forced===undefined?from:(Number(forced)+s.players.length-1)%s.players.length;
+ const first=nextBidder(s,chosenFrom);
  s.auction.turnId=first;s.auction.firstTurnId=first;
  if(first===null){s.status="finished";s.auction=null;}
 }
 
+function v3MoveUnlockedToFront(s:any,filter:(id:string)=>boolean,count:number){
+ if(!isV3(s)||!s.v3.visionLock?.length)return false;
+ const locked=new Set(s.v3.visionLock);
+ const possible=s.drawPile.slice(s.drawIndex).filter((id:string)=>!locked.has(id)&&filter(id));
+ if(possible.length<count)return false;
+ const chosen=possible.slice(0,count);
+ for(const id of chosen){const pos=s.drawPile.indexOf(id,s.drawIndex);s.drawPile.splice(pos,1);}
+ s.drawPile.splice(s.drawIndex,0,...chosen);return true;
+}
 function nextSeven(s:any){
  if(isComplete(s)||s.drawIndex>=s.drawPile.length){s.status="finished";s.auction=null;return;}
  s.event.active=null;s.round++;
  const spec=scheduledAt(s,s.round);
+ const protectedCards=isV3(s)&&s.v3.visionLock?.some((id:string)=>s.drawPile.includes(id));
+ if(spec&&protectedCards){
+  if(spec.type==="war"&&!v3MoveUnlockedToFront(s,id=>rank(power(s,id))==="S",2))spec.type="marine";
+  else if(spec.type==="black"&&!v3MoveUnlockedToFront(s,()=>true,3))spec.type="marine";
+  else if(spec.type==="burst"&&!v3MoveUnlockedToFront(s,id=>BURST_IDS.has(id),1))spec.type="marine";
+ }
  if(spec&&["smile","god"].includes(spec.type)&&s.players.some((p:any)=>p.roster.length===0)){
    // Les équipages vides rendent SMILE et God Valley impossibles.
    // Choisir un autre événement non prévu plutôt que bloquer la partie.
@@ -187,13 +204,13 @@ function nextSeven(s:any){
    const alternatives=(["mystery","marine","black","reverie"] as Special[]).filter(x=>!reserved.has(x));
    spec.type=alternatives[randomIndex(alternatives.length)]||"marine";
  }
- if(spec?.type==="war"&&!prepareWar(s)){
+ if(spec?.type==="war"&&!(protectedCards||prepareWar(s))){
    const reserved=new Set(s.event.schedule.map((e:any)=>e.type));
    const alternatives=(["marine","mystery","black","reverie"] as Special[]).filter(x=>!reserved.has(x));
    spec.type=alternatives[randomIndex(alternatives.length)]||"marine";
  }
  // La sélection Burst est limitée aux cartes non tirées : pas de doublon, Luffy Gear 5 inclus.
- if(spec?.type==="burst"){
+ if(spec?.type==="burst"&&!protectedCards){
    const choices=s.drawPile.map((id:string,i:number)=>BURST_IDS.has(id)&&i>=s.drawIndex?i:-1).filter((i:number)=>i>=0);
    if(choices.length){
      const chosen=choices[randomIndex(choices.length)];
@@ -218,7 +235,9 @@ function nextSeven(s:any){
  s.auction={charId,highBid:"0",leader:null,passed:[],turnId:null,firstTurnId:null,outcome:null,
    mystery,warGuaranteed:s.event.warRounds.includes(s.round),hakiWinner:null};
  const from=((isV3(s)?s.v3.firstBidder:0)+s.round-2+s.players.length)%s.players.length;
- const first=nextBidder(s,from);
+ const forced=isV3(s)?s.v3.visionOpeners?.[s.auction.charId]:undefined;
+ const chosenFrom=forced===undefined?from:(Number(forced)+s.players.length-1)%s.players.length;
+ const first=nextBidder(s,chosenFrom);
  s.auction.turnId=first;s.auction.firstTurnId=first;
  if(first===null){
    if(e?.type==="reverie"){s.auction.outcome="unsold";s.auction.turnId=null;}
@@ -397,8 +416,9 @@ function takeAction(s:any,seat:number,action:string,payload:any){
    if(p.observationUsed)throw Error("Haki de l'Observation déjà utilisé.");
    p.observationUsed=true;
    p.observationPeek=s.drawPile.slice(s.drawIndex,s.drawIndex+(isV3(s)&&p.ship==="orojackson"?6:3)).map((id:string,pos:number)=>({
-     id:(s.event.schedule?s.event.schedule.some((e:any)=>e.type==="mystery"&&e.round===s.round+pos+1):!s.event.mysteryUsed&&s.round+pos+1===s.event.mysteryRound)?null:id,
+     id:isV3(s)&&p.ship==="orojackson"?id:(s.event.schedule?s.event.schedule.some((e:any)=>e.type==="mystery"&&e.round===s.round+pos+1):!s.event.mysteryUsed&&s.round+pos+1===s.event.mysteryRound)?null:id,
      tier:rank(power(s,id)),power:power(s,id),firstSeat:((isV3(s)?s.v3.firstBidder:0)+s.round+pos)%s.players.length}));
+   if(isV3(s)&&p.ship==="orojackson"){s.v3.visionLock=p.observationPeek.map((x:any)=>x.id);s.v3.visionOpeners=Object.fromEntries(p.observationPeek.map((x:any)=>[x.id,x.firstSeat]));}
    return;
  }
  throw Error("Action inconnue.");
@@ -581,7 +601,7 @@ function v3Public(s:any){
  const v=s.v3,m=v.morgans,known=!["waiting","intro","guesses"].includes(m.stage);
  return {version:3,stage:v.stage,rolls:v.rolls,choiceOrder:v.choiceOrder,choiceIndex:v.choiceIndex,firstBidder:v.firstBidder,tiePlayers:v.stage==="dice-tie"?v.diceGroups?.[v.tieIdx]||[]:[],tieRolls:v.tieRolls||{},
   morgans:{stage:m.stage,ready:m.ready,submitted:Object.keys(m.guesses).map(Number),
-     id:known?m.id:null,guesses:known&&m.stage!=="character"?m.guesses:{},
+     id:known?m.id:null,guesses:m.stage==="reveal"?Object.fromEntries(Object.entries(m.guesses).slice(0,m.shown)):known&&m.stage!=="character"?m.guesses:{},
      shown:m.shown,winner:["winner","offer","armament","complete"].includes(m.stage)?m.winner:null,
      tied:m.stage==="wheel"?m.tied:[],bonus:m.stage==="offer"?m.bonus:null,done:m.done},
   market:v.market,swapUsed:v.swapUsed};
@@ -727,7 +747,10 @@ function v3Act(s:any,seat:number,action:string,arg:any){
    !Number.isInteger(a)||!Number.isInteger(b)||a<0||b<0||a>=peek.length||b>=peek.length||
    s.drawPile[s.drawIndex+a]!==peek[a].id||s.drawPile[s.drawIndex+b]!==peek[b].id)throw Error("Inversion indisponible.");
   [s.drawPile[s.drawIndex+a],s.drawPile[s.drawIndex+b]]=[s.drawPile[s.drawIndex+b],s.drawPile[s.drawIndex+a]];
-  [peek[a],peek[b]]=[peek[b],peek[a]];v.swapUsed=true;return true;
+  [peek[a].id,peek[b].id]=[peek[b].id,peek[a].id];
+  [peek[a].tier,peek[b].tier]=[peek[b].tier,peek[a].tier];
+  [peek[a].power,peek[b].power]=[peek[b].power,peek[a].power];
+  v.visionOpeners=Object.fromEntries(peek.map((x:any)=>[x.id,x.firstSeat]));v.swapUsed=true;return true;
  }
  return false;
 }
