@@ -108,9 +108,30 @@ jobs:
             if(await page.evaluate(()=>state.v3.phase)!=="market")throw Error("Market not triggered at halfway");
             await page.locator('[data-action="v3-trade-offer"]').click();
             if(await page.evaluate(()=>state.v3.market.offer)===null)throw Error("Market offer not submitted");
+            const layout=await page.evaluate(()=>{
+              const cards=[...document.querySelectorAll('.v3-transfer-person')], grid=document.querySelector('.v3-transfer-grid');
+              const g=grid?.getBoundingClientRect();
+              return {width:innerWidth,grid:g?{left:g.left,right:g.right,width:g.width}:null,
+                cards:cards.map(el=>{const b=el.getBoundingClientRect();return {left:b.left,right:b.right,width:b.width,scrollWidth:el.scrollWidth,clientWidth:el.clientWidth,name:el.querySelector('.v3-transfer-name')?.innerText};})};
+            });
+            if(layout.cards.length!==2||layout.cards.some(c=>c.right>layout.width+1||c.left<0||c.scrollWidth>c.clientWidth+2)
+              ||layout.cards[0].right>layout.cards[1].left)
+              throw Error("Transfer cards overlap on iPhone: "+JSON.stringify(layout));
             await page.locator('[data-action="v3-trade-accept"]').click();
             if(await page.evaluate(()=>state.v3.market.exchanges.length)!==1)throw Error("Trade not accepted");
-            console.log("PASS local V3 trade and bonus transfer UI");
+            if(!await page.getByText('Échange accepté !').count()||!await page.locator('[data-action="v3-trade-continue"]').count())
+              throw Error("Accepted result screen and Continue missing");
+            await page.reload({waitUntil:"domcontentloaded"});
+            if(!await page.getByText('Échange accepté !').count())throw Error("Accepted result not restored after refresh");
+            await page.locator('[data-action="v3-trade-continue"]').click();
+            if(await page.evaluate(()=>state.v3.phase)!=='market')throw Error("Second trade not offered after Continue");
+            await page.locator('[data-action="v3-trade-offer"]').click();
+            await page.locator('[data-action="v3-trade-reject"]').click();
+            if(!await page.getByText('Échange refusé').count())throw Error("Rejected result missing");
+            if(await page.evaluate(()=>state.v3.market.exchanges.length)!==1)throw Error("Refused transfer mutated roster");
+            await page.locator('[data-action="v3-trade-continue"]').click();
+            if(await page.evaluate(()=>state.v3.phase)!=='auction')throw Error("Auctions did not resume after trade");
+            console.log("PASS local V3 iPhone transfers: no overlaps, accept, reject, reload and Continue");
             if(errors.length)throw Error("Browser exceptions: "+errors.join("; "));
           }finally{await browser.close();}
           JS
