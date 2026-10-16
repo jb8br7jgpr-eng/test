@@ -11,8 +11,8 @@ let env=null;
 const e=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const img=id=>'<img class="v3-ship-img" src="./v3-ships/'+e(id)+'.webp" alt="">';
 const btn=(id,title,disabled=false)=>'<button type="button" data-v3="'+e(id)+'" class="primary" '+(disabled?'disabled':'')+'>'+title+'</button>';
-const scoreVal=(p,id)=>Math.max(0,Math.min(100,Number(window.CARDS?.[id]?.power||0)+Number(p?.smileModifiers?.[id]||0)+Number(p?.shipBonus?.[id]||0)+(p?.armamentId===id?Number(p.armamentBonus||0):0)));
-const affiliation=id=>window.MERCATO_EXPANSION?.details?.[id]?.crew||window.CARDS?.[id]?.affiliation||"";
+const scoreVal=(p,id)=>Math.max(0,Math.min(100,Number(env?.card(id)?.power||0)+Number(p?.smileModifiers?.[id]||0)+Number(p?.shipBonus?.[id]||0)+(p?.armamentId===id?Number(p.armamentBonus||0):0)));
+const affiliation=id=>window.MERCATO_EXPANSION?.details?.[id]?.crew||env?.card(id)?.affiliation||"";
 function score(p,roster,originals={}){
  const groups={};let sum=0;
  for(const id of roster){sum+=scoreVal(originals[id]||p,id);const crew=affiliation(id);if(crew)groups[crew]=(groups[crew]||0)+1;}
@@ -26,7 +26,7 @@ function changes(a,b,give,take){
  return [aScore-a.score,bScore-b.score];
 }
 const signed=n=>n>0?"+"+n:String(n);
-const card=id=>'<div class="v3-char"><div class="portrait portrait-medium"><img data-portrait-id="'+e(id)+'" class="portrait-photo" alt=""></div><b>'+e(window.CARDS?.[id]?.name||id)+'</b><small>'+Number(window.CARDS?.[id]?.power||0)+' pts · rang '+(Number(window.CARDS?.[id]?.power||0)>=95?"S":Number(window.CARDS?.[id]?.power||0)>=80?"A":Number(window.CARDS?.[id]?.power||0)>=65?"B":Number(window.CARDS?.[id]?.power||0)>=50?"C":Number(window.CARDS?.[id]?.power||0)>=35?"D":Number(window.CARDS?.[id]?.power||0)>=20?"E":"F")+'</small></div>';
+const card=id=>'<div class="v3-char"><div class="portrait portrait-medium"><img data-portrait-id="'+e(id)+'" class="portrait-photo" alt=""></div><b>'+e(env?.card(id)?.name||id)+'</b><small>'+Number(env?.card(id)?.power||0)+' pts · rang '+(Number(env?.card(id)?.power||0)>=95?"S":Number(env?.card(id)?.power||0)>=80?"A":Number(env?.card(id)?.power||0)>=65?"B":Number(env?.card(id)?.power||0)>=50?"C":Number(env?.card(id)?.power||0)>=35?"D":Number(env?.card(id)?.power||0)>=20?"E":"F")+'</small></div>';
 const name=p=>e(p?.name||"Pirate");
 function shipStatus(p){
  if(!p?.ship)return "";
@@ -49,7 +49,7 @@ function ships(v){
 }
 function morgans(v){
  const m=v.v3.morgans,me=v.players[v.yourSeat],winner=v.players[m.winner],id=m.id;
- const n=Number(window.CARDS?.[id]?.power||0);
+ const n=Number(env?.card(id)?.power||0);
  const reveal=id?'<div class="v3-focus">'+card(id)+'</div>':"";
  let html='<h2>📰 Les Prédictions de Morgans</h2>';
  if(m.stage==="intro")html+='<p>Devine la puissance d’origine du personnage mystère (entre 1 et 100).</p>'+
@@ -81,7 +81,7 @@ function tradePreview(v){
  if(!frm||!dst||!take||!out)return;
  const from=v.players[v.yourSeat],to=v.players[Number(dst.value)],prev=take.value;
  const options=to?.roster.filter(id=>!v.v3.market.locked.includes(id))||[];
- take.innerHTML=options.map(id=>'<option value="'+e(id)+'">'+e(window.CARDS?.[id]?.name||id)+' · '+scoreVal(to,id)+' pts</option>').join("");
+ take.innerHTML=options.map(id=>'<option value="'+e(id)+'">'+e(env?.card(id)?.name||id)+' · '+scoreVal(to,id)+' pts</option>').join("");
  if(options.includes(prev))take.value=prev;
  const d=changes(from,to,frm.value,take.value);
  out.innerHTML=d?'<b>'+name(from)+' : '+signed(d[0])+' pts | '+name(to)+' : '+signed(d[1])+' pts</b>':"";
@@ -99,13 +99,13 @@ function market(v){
   const targets=v.players.filter(p=>p.id!==me.id&&p.roster.some(id=>!t.locked.includes(id)));
   if(!chars.length||!targets.length)html+=btn("trade-pass","Passer (aucun échange disponible)");
   else html+='<h3>À toi de proposer un échange</h3>'+
-   '<label>Personnage proposé<select id="v3-give">'+chars.map(id=>'<option value="'+e(id)+'">'+e(window.CARDS?.[id]?.name||id)+' · '+scoreVal(me,id)+' pts</option>').join("")+'</select></label>'+
+   '<label>Personnage proposé<select id="v3-give">'+chars.map(id=>'<option value="'+e(id)+'">'+e(env?.card(id)?.name||id)+' · '+scoreVal(me,id)+' pts</option>').join("")+'</select></label>'+
    '<label>Destinataire<select id="v3-destination">'+targets.map(p=>'<option value="'+p.id+'">'+name(p)+'</option>').join("")+'</select></label>'+
    '<label>Personnage demandé<select id="v3-take"></select></label><div id="v3-preview"></div>'+
    btn("trade-offer","Proposer l’échange")+btn("trade-pass","Passer mon tour");
  }else html+='<p>Au tour de '+name(now)+' de faire sa proposition.</p>';
  if(t.exchanges?.length)html+='<h3>Échanges effectués</h3>'+t.exchanges.map(o=>
-  '<p>'+name(v.players[o.from])+' ↔ '+name(v.players[o.to])+' : '+e(window.CARDS?.[o.give]?.name||o.give)+' / '+e(window.CARDS?.[o.take]?.name||o.take)+'</p>').join("");
+  '<p>'+name(v.players[o.from])+' ↔ '+name(v.players[o.to])+' : '+e(env?.card(o.give)?.name||o.give)+' / '+e(env?.card(o.take)?.name||o.take)+'</p>').join("");
  return html;
 }
 function screen(){
