@@ -446,10 +446,16 @@
   function v3Page(){
     const x=view.v3,me=view.players[view.yourSeat],mine=view.yourSeat;
     const box=(title,inner)=>'<section class="online-card v3-card"><h2>'+title+'</h2>'+inner+'</section>';
-    if(x.stage==="dice"){
-      return box("🎲 Tirage au sort des navires",'<p>Chaque pirate lance un dé. Le meilleur résultat choisira son navire en premier. Le dernier commencera les enchères.</p>'+
-        '<div class="v3-rolls">'+view.players.map(p=>'<div><b>'+label(p)+'</b><span>'+(x.rolls[p.id]===undefined?"🎲 ?":"🎲 "+x.rolls[p.id])+'</span></div>').join("")+'</div>'+
-        button("v3-roll",x.rolls[mine]===undefined?"🎲 Lancer mon dé en 3D":"En attente des autres pirates…","primary",x.rolls[mine]!==undefined));
+    if(x.stage==="dice"||x.stage==="dice-tie"){
+      const tied=x.stage==="dice-tie",eligible=tied?x.tiePlayers.includes(mine):x.rolls[mine]===undefined;
+      const drawn=tied?x.tieRolls?.[mine]:x.rolls[mine];
+      const who=tied?x.tiePlayers.map(id=>view.players[id]):view.players;
+      return box(tied?"🎲 Égalité ! Nouvelle série de dés":"🎲 Tirage au sort des navires",
+        '<p>'+(tied?"Seuls les joueurs ex æquo relancent, jusqu’à départage complet.":
+        "Le meilleur résultat choisira en premier. Le dernier commencera les enchères.")+'</p>'+
+        '<div class="v3-rolls">'+who.map(p=>'<div><b>'+label(p)+'</b><span>🎲 '+
+        ((tied?x.tieRolls?.[p.id]:x.rolls[p.id])??"?")+'</span></div>').join("")+'</div>'+
+        button("v3-roll",eligible?"🎲 Lancer mon dé":drawn!==undefined?"✓ Dé lancé":"Attendre le départage","primary",!eligible));
     }
     if(x.stage==="ships"){
       const current=x.choiceOrder[x.choiceIndex],owner=view.players[current];
