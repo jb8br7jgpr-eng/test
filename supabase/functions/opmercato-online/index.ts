@@ -579,7 +579,7 @@ function v3Create(s:any){
 function v3Public(s:any){
  if(!isV3(s))return null;
  const v=s.v3,m=v.morgans,known=!["waiting","intro","guesses"].includes(m.stage);
- return {version:3,stage:v.stage,rolls:v.rolls,choiceOrder:v.choiceOrder,choiceIndex:v.choiceIndex,firstBidder:v.firstBidder,
+ return {version:3,stage:v.stage,rolls:v.rolls,choiceOrder:v.choiceOrder,choiceIndex:v.choiceIndex,firstBidder:v.firstBidder,tiePlayers:v.stage==="dice-tie"?v.diceGroups?.[v.tieIdx]||[]:[],tieRolls:v.tieRolls||{},
   morgans:{stage:m.stage,ready:m.ready,submitted:Object.keys(m.guesses).map(Number),
      id:known?m.id:null,guesses:known&&m.stage!=="character"?m.guesses:{},
      shown:m.shown,winner:["winner","offer","armament","complete"].includes(m.stage)?m.winner:null,
@@ -628,18 +628,28 @@ function v3Act(s:any,seat:number,action:string,arg:any){
   s.status="playing";v.stage="dice";return true;
  }
  if(action==="finish"){if(seat!==0)throw Error("Seul l'hôte peut terminer.");s.status="finished";return true;}
- if(v.stage==="dice"){
-  if(action!=="v3-roll"||v.rolls[seat]!==undefined)throw Error("Lancer de dé impossible.");
-  v.rolls[seat]=randomIndex(6)+1;
-  if(Object.keys(v.rolls).length===s.players.length){
-   const ranked=s.players.map((q:any)=>q.id).sort((a:number,b:number)=>v.rolls[b]-v.rolls[a]);
-   // Exact dice ties require a fair tiebreak later. Their original values never reorder other groups.
-   for(let i=0;i<ranked.length;){
-    let j=i+1;while(j<ranked.length&&v.rolls[ranked[j]]===v.rolls[ranked[i]])j++;
-    if(j-i>1)ranked.splice(i,j-i,...shuffle(ranked.slice(i,j)));
-    i=j;
+ if(v.stage==="dice"||v.stage==="dice-tie"){
+  if(action!=="v3-roll")throw Error("Lance ton dé avant de poursuivre.");
+  if(v.stage==="dice"){
+   if(v.rolls[seat]!==undefined)throw Error("Dé déjà lancé.");
+   v.rolls[seat]=randomIndex(6)+1;
+   if(Object.keys(v.rolls).length===s.players.length){
+    const buckets:any={};for(const [playerId,roll] of Object.entries(v.rolls))(buckets[roll as string]??=[]).push(Number(playerId));
+    v.diceGroups=Object.entries(buckets).sort((a,b)=>Number(b[0])-Number(a[0])).map(([_,ids])=>ids);
+    v.tieIdx=v.diceGroups.findIndex((g:any)=>g.length>1);v.tieRolls={};
+    if(v.tieIdx>=0)v.stage="dice-tie";
+    else {v.choiceOrder=v.diceGroups.flat();v.firstBidder=v.choiceOrder.at(-1);v.stage="ships";}
    }
-   v.choiceOrder=ranked;v.firstBidder=ranked[ranked.length-1];v.stage="ships";
+  }else{
+   const candidates=v.diceGroups[v.tieIdx];
+   if(!candidates.includes(seat)||v.tieRolls[seat]!==undefined)throw Error("Seuls les ex æquo relancent.");
+   v.tieRolls[seat]=randomIndex(6)+1;
+   if(Object.keys(v.tieRolls).length===candidates.length){
+    const buckets:any={};for(const id of candidates)(buckets[v.tieRolls[id]]??=[]).push(id);
+    const groups=Object.entries(buckets).sort((a,b)=>Number(b[0])-Number(a[0])).map(([_,ids])=>ids);
+    v.diceGroups.splice(v.tieIdx,1,...groups);v.tieIdx=v.diceGroups.findIndex((g:any)=>g.length>1);v.tieRolls={};
+    if(v.tieIdx<0){v.choiceOrder=v.diceGroups.flat();v.firstBidder=v.choiceOrder.at(-1);v.stage="ships";}
+   }
   }
   return true;
  }
