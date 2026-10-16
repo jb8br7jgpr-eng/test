@@ -478,6 +478,13 @@
     return ids.reduce((n,id)=>n+(id===add?Math.max(0,Math.min(100,Number(CARDS[id]?.power||0)+Number(view.players.find(x=>x.roster.includes(add))?.shipBonus?.[add]||0)+
        Number(view.players.find(x=>x.roster.includes(add))?.smileModifiers?.[add]||0))):v3Power(p,id)),0)+v3Synergy(ids);
   };
+  const v3TradeTile=(owner,id,shownPower)=>{
+    const c=CARDS[id]||{},rank=classFor(c.power||0),power=shownPower===undefined?v3Power(owner,id):shownPower;
+    return '<div class="v3-trade-person"><span class="v3-trade-face"><img class="portrait-photo v3-trade-face-img" data-portrait-id="'+escOnline(id)+'" alt="" loading="lazy"></span>'+
+     '<strong class="v3-trade-person-name">'+escOnline(c.name||id)+'</strong><small class="v3-trade-person-rank">Rang '+rank+' · <b>'+power+' pts</b></small></div>';
+  };
+  const v3TradeCompare=(a,b,give,take,givePower,takePower)=>'<div class="v3-trade-compact">'+v3TradeTile(a,give,givePower)+
+    '<span class="v3-trade-arrow" aria-hidden="true">⇄</span>'+v3TradeTile(b,take,takePower)+'</div>';
   function v3Page(){
     const x=view.v3,me=view.players[view.yourSeat],mine=view.yourSeat;
     if(x.stage==="intro"){
@@ -547,14 +554,25 @@
     if(x.stage==="market"){
       const m=x.market,owner=view.players[m.order[m.step]];
       let inner='<p>Une proposition par joueur, un personnage contre un personnage, sans Berrys.</p>'+
-        '<p>Proposition '+(m.step+1)+'/'+m.order.length+' · Au tour de <b>'+label(owner)+'</b></p>';
-      if(m.offer){
-        const a=view.players[m.offer.from],b=view.players[m.offer.to],give=m.offer.give,take=m.offer.take;
-        inner+='<div class="v3-trade-versus"><div>'+portraitCard(give)+'</div><span>⇄</span><div>'+portraitCard(take)+'</div></div>'+
-         '<p>'+label(a)+' propose à '+label(b)+'</p>'+
-         '<p>Effets estimés : '+label(a)+' <b>'+(projected3(a,give,take)-a.score)+' pts</b> · '+
-         label(b)+' <b>'+(projected3(b,take,give)-b.score)+' pts</b></p>'+
-         (mine===m.offer.to?button("v3-trade-accept","✅ Accepter l’échange","primary")+
+        '<p class="v3-trade-step">Proposition '+(m.step+1)+'/'+m.order.length+' · Au tour de <b>'+label(owner)+'</b></p>';
+      if(m.result){
+        const o=m.result,a=view.players[o.from],b=view.players[o.to];
+        inner+='<section class="v3-trade-decision" aria-live="polite"><div class="v3-trade-symbol">'+(o.accepted?'✅':'❌')+'</div>'+
+          '<h3>'+(o.accepted?'Échange accepté !':'Échange refusé')+'</h3>'+
+          '<p>'+label(a)+' et '+label(b)+'</p>'+
+          v3TradeCompare(a,b,o.give,o.take,o.givePower,o.takePower)+
+          (o.accepted?'<p class="v3-trade-effect">Bilan : <b>'+label(a)+' '+(o.deltaFrom>=0?'+':'')+o.deltaFrom+' pts</b> · <b>'+label(b)+' '+(o.deltaTo>=0?'+':'')+o.deltaTo+' pts</b></p>':
+          '<p class="v3-trade-effect">Les équipages restent inchangés.</p>')+
+          '<p class="v3-trade-readiness">'+(o.ready||[]).length+'/'+view.players.length+' pirates prêts à continuer</p>'+
+          button("v3-trade-continue",(o.ready||[]).includes(mine)?"✓ En attente des autres pirates":m.step+1>=m.order.length?"Continuer vers les enchères →":"Continuer le marché →",
+            "primary",(o.ready||[]).includes(mine))+'</section>';
+      }else if(m.offer){
+        const o=m.offer,a=view.players[o.from],b=view.players[o.to],give=o.give,take=o.take;
+        inner+='<p>'+label(a)+' propose un échange à '+label(b)+'</p>'+
+          v3TradeCompare(a,b,give,take)+
+          '<p class="v3-trade-effect">Impact estimé : <b>'+label(a)+' '+(projected3(a,give,take)-a.score)+' pts</b> · <b>'+
+          label(b)+' '+(projected3(b,take,give)-b.score)+' pts</b></p>'+
+          (mine===o.to?button("v3-trade-accept","✅ Accepter l’échange","primary")+
           button("v3-trade-reject","Refuser l’échange","btn-ghost"):'<p>En attente de la réponse du destinataire…</p>');
       }else if(m.order[m.step]===mine){
         const targets=view.players.filter(p=>p.id!==mine&&p.roster.some(id=>!m.locked.includes(id)));
@@ -655,7 +673,7 @@
     if(a==="v3-morgans-accept"||a==="v3-morgans-reject"){await action("v3-morgans-recruit",{accept:a==="v3-morgans-accept"});return;}
     if(a==="v3-trade-offer"){await action("v3-trade-offer",{to:Number(root.querySelector("#v3-trade-target")?.value),
        give:root.querySelector("#v3-trade-give")?.value,take:root.querySelector("#v3-trade-take")?.value});return;}
-    if(["v3-trade-pass","v3-trade-accept","v3-trade-reject"].includes(a)){await action(a);return;}
+    if(["v3-trade-pass","v3-trade-accept","v3-trade-reject","v3-trade-continue"].includes(a)){await action(a);return;}
     if(a==="armament-use"){await action("armament",{charId:view.auction?.charId});return;}
     if(a==="armament-skip"){await action("armament-skip");return;}
     if(a==="event-ready"){await action("event-ready");return;}
@@ -678,7 +696,7 @@
     if(["v3-swap-first","v3-swap-second"].includes(ev.target?.id))v3RefreshSwap();});
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&showing)refresh();});
   const css=document.createElement("style");
-  css.textContent=`
+  css.textContent=`\n    .v3-trade-step{font-size:13px;line-height:1.5;color:#bfd6e2}.v3-trade-compact{display:grid;width:100%;max-width:540px;margin:17px auto;grid-template-columns:minmax(0,1fr) 26px minmax(0,1fr);gap:6px;align-items:center}.v3-trade-person{min-width:0;width:100%;max-width:100%;display:flex;flex-direction:column;align-items:center;gap:7px;overflow:hidden;box-sizing:border-box;padding:12px 6px;background:#18374b;border:1px solid #957d62;border-radius:14px}.v3-trade-face{display:block;position:relative;width:72px;height:72px;max-width:100%;border-radius:50%;overflow:hidden;border:2px solid #d9b473;background:#29485c;flex:none}.v3-trade-face>.portrait-photo.v3-trade-face-img{position:absolute!important;inset:0!important;display:block!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:cover!important;object-position:center 22%!important;transform:none!important;border-radius:50%!important}.v3-trade-person-name{max-width:100%;font-size:clamp(12px,3.4vw,17px);line-height:1.3;overflow-wrap:anywhere;text-align:center}.v3-trade-person-rank{color:#cbdbe6;font-size:11px;line-height:1.4;text-align:center}.v3-trade-arrow{font-size:25px;color:#f8d594}.v3-trade-effect{color:#f9d991;font-size:13px;line-height:1.6;overflow-wrap:anywhere}.v3-trade-decision{border:1px solid #d4ad6c;border-radius:16px;background:#132e42;padding:14px 9px;margin:12px 0;text-align:center}.v3-trade-decision h3{color:#ffe0a5;font-size:23px}.v3-trade-symbol{font-size:44px}.v3-trade-readiness{font-size:12px;color:#ccdce6}
 
     .v3-face-clip{display:block!important;position:relative!important;width:60px!important;height:60px!important;max-width:60px!important;max-height:60px!important;overflow:hidden!important;contain:layout paint!important;border-radius:50%!important;border:2px solid #e0b76e;background:#24485a;margin:5px auto;flex:none!important}
     .v3-face-clip>.portrait-photo.v3-face-image{display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:cover!important;object-position:center 22%!important;transform:none!important;border-radius:50%!important}
