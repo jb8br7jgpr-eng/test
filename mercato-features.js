@@ -17,10 +17,10 @@
       name,count,points:affiliationBonus(count)
     })).filter(b=>b.points>0).sort((a,b)=>b.points-a.points||a.name.localeCompare(b.name,'fr'));
   };
-  function effectivePower(p,id){const base=CARDS[id]?.power||0;return p.smileModifiers?.[id]===undefined?base:Math.max(0,Math.min(100,base+p.smileModifiers[id]));}
+  function effectivePower(p,id){const base=CARDS[id]?.power||0;if(state?.v3)return Math.max(0,Math.min(100,base+Number(p.smileModifiers?.[id]||0)+Number(p.shipBonus?.[id]||0)+(p.armamentId===id?Number(p.armamentBonus||0):0)));return p.smileModifiers?.[id]===undefined?base:Math.max(0,Math.min(100,base+p.smileModifiers[id]));}
   const getBreakdown=p=>{
     const base=(p.roster||[]).reduce((sum,id)=>sum+effectivePower(p,id),0);
-    const armament=p.armamentId&&p.roster.includes(p.armamentId)?(p.armamentBonus??5):0;
+    const armament=state?.v3?0:p.armamentId&&p.roster.includes(p.armamentId)?(p.armamentBonus??5):0;
     const synergyItems=getPlayerBonuses(p);
     const synergy=synergyItems.reduce((sum,x)=>sum+x.points,0);
     return {base,armament,synergy,synergyItems,total:base+armament+synergy};
@@ -302,8 +302,7 @@
   }
   function v2Coin(){
     const e=v2Active();if(!e||e.type!=='smile'||e.stage!=='coin')return;
-    const p=state.players[e.step],id=p.roster.slice()
-      .sort((a,b)=>effectivePower(p,a)-effectivePower(p,b))[0];
+    const p=state.players[e.step],sorted=p.roster.slice().sort((a,b)=>effectivePower(p,a)-effectivePower(p,b));const tied=sorted.filter(id=>effectivePower(p,id)===effectivePower(p,sorted[0]));const id=state?.v3?tied[Math.floor(Math.random()*tied.length)]:sorted[0];
     const pile=Math.random()<.5,before=id?effectivePower(p,id):0,
       after=Math.max(0,Math.min(100,before+(pile?25:-25)));
     if(id){p.smileModifiers=p.smileModifiers||{};p.smileModifiers[id]=state?.v3?Number(p.smileModifiers[id]||0)+(pile?25:-25):after-(CARDS[id]?.power||0);}
@@ -543,7 +542,7 @@
       const winner=player(a.leader),card=CARDS[a.charId];
       if(winner&&!winner.armamentUsed&&card?.power<=60&&!a.armamentChoice){
         html=html.replace('data-action="next"','data-action="next" disabled aria-disabled="true"');
-        html+='<div class="op21-armament-overlay"><section class="card op21-armament-modal"><small>🛡 HAKI DE L’ARMEMENT</small><h2>'+esc(winner.name)+', renforce ta recrue !</h2><p>'+esc(card.name)+' possède '+card.power+' points. Veux-tu lui offrir <b>+20 points définitifs</b> ?</p><div class="op21-power-evolution">'+card.power+' <span>→</span> '+(card.power+20)+'</div><button class="primary" data-action="armament-recruit">🛡 Utiliser le Haki</button><button class="btn-ghost" data-action="armament-defer">Conserver pour plus tard</button></section></div>';
+        html+='<div class="op21-armament-overlay"><section class="card op21-armament-modal"><small>🛡 HAKI DE L’ARMEMENT</small><h2>'+esc(winner.name)+', renforce ta recrue !</h2><p>'+esc(card.name)+' possède '+card.power+' points. Veux-tu lui offrir <b>+'+(winner.ship==='polartang'?40:20)+' points</b> ?</p><div class="op21-power-evolution">'+card.power+' <span>→</span> '+Math.min(100,card.power+(winner.ship==='polartang'?40:20))+'</div><button class="primary" data-action="armament-recruit">🛡 Utiliser le Haki</button><button class="btn-ghost" data-action="armament-defer">Conserver pour plus tard</button></section></div>';
       }
     }
     return html;
@@ -560,7 +559,7 @@
       const powers='<span>👁 '+(p.observationUsed?'Utilisé':'Prêt')+'</span><span>🛡 '+(p.armamentUsed?'Utilisé':'Prêt')+'</span>';
       const smileHtml=(p.roster||[]).filter(id=>p.smileModifiers?.[id]!==undefined)
         .map(id=>'<span class="active-synergy">🍎 '+esc(CARDS[id]?.name||id)+
-          ' : '+effectivePower(p,id)+' pts · rang '+tierOf(effectivePower(p,id)).tier+'</span>').join('');
+          ' : '+effectivePower(p,id)+' pts · rang '+tierOf(CARDS[id]?.power||0).tier+'</span>').join('');
       const synergiesHtml=d.synergyItems.length?'<span class="active-synergy">🤝 '+d.synergyItems.map(s=>esc(s.name)+' ('+s.count+') +'+s.points).join(' · ')+'</span>':'';
       return '<div class="power-breakdown">Base '+d.base+(d.armament?' + '+d.armament+' Armement':'')+(d.synergy?' + '+d.synergy+' synergies':'')+' = <strong>'+d.total+' points</strong></div>'+
         (safeBig(p.marineAward)>0n?'<div class="power-breakdown">🎲 Prime de la Marine : +'+currency(p.marineAward)+'</div>':'')+
@@ -640,7 +639,7 @@
     event.preventDefault();event.stopImmediatePropagation();
     if(b.dataset.action==='armament-recruit'){
       p.armamentUsed=true;p.armamentId=a.charId;p.armamentBonus=state?.v3&&p.ship==='polartang'?40:20;a.armamentChoice='used';
-      showToast('🛡 '+c.name+' gagne +20 points !');
+      showToast('🛡 '+c.name+' gagne +'+p.armamentBonus+' points !');
     } else a.armamentChoice='skip';
     save();render();
   },true);
