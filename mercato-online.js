@@ -160,7 +160,7 @@
   function gameScore(){
     return '<section class="online-teams"><h2>⚓ Vos équipages</h2>'+
       view.players.map(p=>'<div class="online-team"><div class="online-team-top"><b>'+label(p)+'</b><strong>'+p.score+' pts</strong></div>'+shipMark3(p)+
-        '<div class="online-team-meta">'+berrys(p.budget)+' restants · '+p.roster.length+'/'+view.teamSize+' recrues · '+p.passesUsed+'/5 refus</div>'+
+        '<div class="online-team-meta">'+berrys(p.budget)+' restants · '+p.roster.length+'/'+view.teamSize+' recrues · '+p.passesUsed+'/'+(p.ship==='sunny'?8:5)+' refus</div>'+
         '<div class="online-roster">'+(p.roster.length?p.roster.map(id=>'<button type="button" data-action="details" data-char-id="'+escOnline(id)+'" class="online-roster-character">'+
           '<span class="portrait portrait-tiny"><span class="portrait-fallback">☠️</span><img class="portrait-photo" data-portrait-id="'+escOnline(id)+'" alt="" loading="lazy"></span>'+
           '<span>'+escOnline(CARDS[id]?.name||id)+(p.smileModifiers?.[id]!==undefined?'<small class="online-smile-buff">🍎 '+powerFor(p,id)+' pts (rang '+classFor(CARDS[id]?.power||0)+')</small>':'')+'</span></button>').join(""):
@@ -449,7 +449,7 @@
     const status=p.ship==="sunny"?(8-p.passesUsed)+" refus":p.ship==="redforce"?"Actif":p.ship==="mobydick"?"−10 %":
       p.ship==="polartang"?(p.armamentUsed?"Utilisé":"Prêt"):
       p.observationUsed?"Utilisé":"Prêt";
-    return '<span class="v3-ship-stamp"><img src="./opmercato-ship-'+sh.id+'.jpg" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'inline\'"><span class="v3-ship-emoji" style="display:none">'+sh.emoji+'</span>'+
+    return '<span class="v3-ship-stamp"><img src="./opmercato-ships-sprite.webp" style="object-position:'+(SHIPS3.findIndex(q=>q.id===sh.id)*25)+'% 50%" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'inline\'"><span class="v3-ship-emoji" style="display:none">'+sh.emoji+'</span>'+
       (compact?'':'<strong>'+escOnline(sh.name)+'</strong>')+'<small>'+escOnline(status)+'</small></span>';
   };
   const v3Power=(p,id)=>{
