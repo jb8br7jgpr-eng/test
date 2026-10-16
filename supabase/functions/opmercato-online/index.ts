@@ -593,14 +593,14 @@ function v3Recruit(s:any,p:any,id:string){
 }
 function v3Create(s:any){
  const n=randomIndex(s.drawPile.length),secret=s.drawPile.splice(n,1)[0];
- s.v3={version:3,stage:"intro",introReady:[],rolls:{},choiceOrder:[],choiceIndex:0,firstBidder:0,
+ s.v3={version:3,stage:"intro",introReady:[],rolls:{},lastDice:{},choiceOrder:[],choiceIndex:0,firstBidder:0,
    morgans:{id:secret,stage:"waiting",guesses:{},ready:[],shown:0,winner:null,bonus:null,done:false},
    market:{done:false,order:[],step:0,offer:null,locked:[],exchanges:[]},swapUsed:false};
 }
 function v3Public(s:any){
  if(!isV3(s))return null;
  const v=s.v3,m=v.morgans,known=!["waiting","intro","guesses"].includes(m.stage);
- return {version:3,stage:v.stage,introReady:v.introReady||[],rolls:v.rolls,choiceOrder:v.choiceOrder,choiceIndex:v.choiceIndex,firstBidder:v.firstBidder,tiePlayers:v.stage==="dice-tie"?v.diceGroups?.[v.tieIdx]||[]:[],tieRolls:v.tieRolls||{},
+ return {version:3,stage:v.stage,introReady:v.introReady||[],lastDice:v.lastDice||{},rolls:v.rolls,choiceOrder:v.choiceOrder,choiceIndex:v.choiceIndex,firstBidder:v.firstBidder,tiePlayers:v.stage==="dice-tie"?v.diceGroups?.[v.tieIdx]||[]:[],tieRolls:v.tieRolls||{},
   morgans:{stage:m.stage,ready:m.ready,submitted:Object.keys(m.guesses).map(Number),
      id:known?m.id:null,guesses:m.stage==="reveal"?Object.fromEntries(Object.entries(m.guesses).slice(0,m.shown)):known&&m.stage!=="character"?m.guesses:{},
      shown:m.shown,winner:["winner","offer","armament","complete"].includes(m.stage)?m.winner:null,
@@ -661,7 +661,7 @@ function v3Act(s:any,seat:number,action:string,arg:any){
   if(action!=="v3-roll")throw Error("Lance ton dé avant de poursuivre.");
   if(v.stage==="dice"){
    if(v.rolls[seat]!==undefined)throw Error("Dé déjà lancé.");
-   v.rolls[seat]=randomIndex(6)+1;
+   v.rolls[seat]=randomIndex(6)+1;(v.lastDice??={})[seat]=v.rolls[seat];
    if(Object.keys(v.rolls).length===s.players.length){
     const buckets:any={};for(const [playerId,roll] of Object.entries(v.rolls))(buckets[roll as string]??=[]).push(Number(playerId));
     v.diceGroups=Object.entries(buckets).sort((a,b)=>Number(b[0])-Number(a[0])).map(([_,ids])=>ids);
@@ -672,7 +672,7 @@ function v3Act(s:any,seat:number,action:string,arg:any){
   }else{
    const candidates=v.diceGroups[v.tieIdx];
    if(!candidates.includes(seat)||v.tieRolls[seat]!==undefined)throw Error("Seuls les ex æquo relancent.");
-   v.tieRolls[seat]=randomIndex(6)+1;
+   v.tieRolls[seat]=randomIndex(6)+1;(v.lastDice??={})[seat]=v.tieRolls[seat];
    if(Object.keys(v.tieRolls).length===candidates.length){
     const buckets:any={};for(const id of candidates)(buckets[v.tieRolls[id]]??=[]).push(id);
     const groups=Object.entries(buckets).sort((a,b)=>Number(b[0])-Number(a[0])).map(([_,ids])=>ids);
