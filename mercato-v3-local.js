@@ -54,7 +54,7 @@ function screen(){const v=V(),m=v.morgans,t=v.market;
     (nextId===undefined?'':'<h3>Au tour de '+esc(player(nextId).name)+'</h3>'+btn('roll','🎲 Lancer le dé'));
  }
  if(v.phase==='ships'){const p=player(v.order[v.idx]);return '<h2>⛵ Choix du navire</h2><h3>'+esc(p.name)+' choisit</h3><div class="v3-ship-grid">'+
-  SHIPS.map(s=>'<div class="v3-ship"><img src="./opmercato-ship-'+s[0]+'.jpg" alt="'+s[1]+'"><b>'+s[2]+' '+s[1]+'</b><small>'+s[3]+'</small><p>'+s[4]+'</p>'+
+  SHIPS.map(s=>'<div class="v3-ship"><img src="./opmercato-ships-sprite.webp" style="object-position:'+(SHIPS.findIndex(q=>q[0]===s[0])*25)+'% 50%" alt="'+s[1]+'"><b>'+s[2]+' '+s[1]+'</b><small>'+s[3]+'</small><p>'+s[4]+'</p>'+
   (state.players.some(p=>p.ship===s[0])?'<p>Indisponible</p>':btn('ship-'+s[0],'Choisir'))+'</div>').join('')+'</div>';}
  if(v.phase==='morgans'){
   let h='<h2>📰 Prédictions de Morgans</h2><p>Devine la puissance initiale du personnage secret.</p>';
@@ -94,7 +94,7 @@ render=function(){if(V()&&['dice','ships','morgans','market'].includes(V().phase
  app.innerHTML='<section class="card v3-screen"><span class="eyebrow">OPMERCATO 3.0</span>'+screen()+'</section>'+
   '<div class="v3-players-mini">'+state.players.map(p=>esc(p.name)+' : '+currency(p.budget)+' · '+getScore(p)+' pts').join('<hr>')+'</div>';preview();return;}
  oldRender();if(V()){app.querySelectorAll('.player-card').forEach((node,i)=>{const p=state.players[i],s=sh(p.ship);if(!s)return;
- node.querySelector('.player-header')?.insertAdjacentHTML('beforeend','<span class="v3-ship-mini">'+s[2]+' '+s[1]+' · '+
+ node.querySelector('.player-header')?.insertAdjacentHTML('beforeend','<span class="v3-ship-mini"><img src="./opmercato-ships-sprite.webp" style="width:26px;height:26px;border-radius:50%;object-fit:cover;object-position:'+(SHIPS.findIndex(q=>q[0]===s[0])*25)+'% 50%" alt="">'+s[1]+' · '+
  (p.ship==='sunny'?(8-p.passesUsed)+' refus':p.ship==='mobydick'?'−10 %':p.ship==='redforce'?'Actif':p.ship==='polartang'?(p.armamentUsed?'Utilisé':'Prêt'):(p.observationUsed?'Utilisé':'Prêt'))+'</span>');});}};
 
 function v3OroScreen(){
