@@ -17,10 +17,10 @@
       name,count,points:affiliationBonus(count)
     })).filter(b=>b.points>0).sort((a,b)=>b.points-a.points||a.name.localeCompare(b.name,'fr'));
   };
-  function effectivePower(p,id){const base=CARDS[id]?.power||0;return p.smileModifiers?.[id]===undefined?base:Math.max(0,Math.min(100,base+p.smileModifiers[id]));}
+  function effectivePower(p,id){const base=CARDS[id]?.power||0;if(state?.v3)return Math.max(0,Math.min(100,base+Number(p.smileModifiers?.[id]||0)+Number(p.shipBonus?.[id]||0)+(p.armamentId===id?Number(p.armamentBonus||0):0)));return p.smileModifiers?.[id]===undefined?base:Math.max(0,Math.min(100,base+p.smileModifiers[id]));}
   const getBreakdown=p=>{
     const base=(p.roster||[]).reduce((sum,id)=>sum+effectivePower(p,id),0);
-    const armament=p.armamentId&&p.roster.includes(p.armamentId)?(p.armamentBonus??5):0;
+    const armament=state?.v3?0:p.armamentId&&p.roster.includes(p.armamentId)?(p.armamentBonus??5):0;
     const synergyItems=getPlayerBonuses(p);
     const synergy=synergyItems.reduce((sum,x)=>sum+x.points,0);
     return {base,armament,synergy,synergyItems,total:base+armament+synergy};
@@ -89,6 +89,19 @@
       if(from<0)return false;
       [state.drawPile[target],state.drawPile[from]]=[state.drawPile[from],state.drawPile[target]];
     }
+    return true;
+  }
+  // V3: draw event cards from outside the six positions reserved by Oro Jackson.
+  // Previously announced character order remains intact, even when events interleave.
+  function v3MoveFreeToFront(predicate,count){
+    if(!state?.v3?.oroLocked?.length)return true;
+    const locks=new Set(state.v3.oroLocked);
+    const future=state.drawPile.slice(state.drawIndex);
+    const available=future.filter(id=>!locks.has(id)&&predicate(id));
+    if(available.length<count)return false;
+    const selected=available.slice(0,count);
+    for(const id of selected)state.drawPile.splice(state.drawPile.indexOf(id,state.drawIndex),1);
+    state.drawPile.splice(state.drawIndex,0,...selected);
     return true;
   }
   const oldSave=save;
@@ -165,6 +178,11 @@
         const pool=['mystery','marine','black','reverie'].filter(x=>!reserved.has(x));
         selected=pool[Math.floor(Math.random()*pool.length)]||'marine';
       }
+      if(state.v3?.oroLocked?.length && selected &&
+        ((selected==='war'&&!v3MoveFreeToFront(id=>tierOf(CARDS[id]?.power||0).tier==='S',2)) ||
+         (selected==='black'&&!v3MoveFreeToFront(()=>true,3)) ||
+         (selected==='burst'&&!v3MoveFreeToFront(id=>BURST_IDS.has(id),1)) ||
+         (selected==='mystery'&&!v3MoveFreeToFront(()=>true,1))))selected='marine';
       if(selected==='war'&&!prepareWarCards(upcoming)){
         const reserved=new Set(f.plan.map(x=>x.type));
         const pool=['marine','mystery','black','reverie'].filter(x=>!reserved.has(x));
@@ -177,7 +195,8 @@
       if(selected==='burst'){
         // Inclure la carte qui vient d'être tirée et les cartes futures, mais jamais les recrues
         // déjà achetées ni les cartes refusées dans les enchères précédentes.
-        const candidates=[a.charId,...state.drawPile.slice(state.drawIndex)].filter(id=>BURST_IDS.has(id));
+        const locked=new Set(state.v3?.oroLocked||[]);
+        const candidates=[a.charId,...state.drawPile.slice(state.drawIndex)].filter(id=>BURST_IDS.has(id)&&!locked.has(id));
         const chosen=candidates[Math.floor(Math.random()*candidates.length)];
         if(chosen&&chosen!==a.charId){
           const index=state.drawPile.indexOf(chosen,state.drawIndex);
@@ -302,11 +321,10 @@
   }
   function v2Coin(){
     const e=v2Active();if(!e||e.type!=='smile'||e.stage!=='coin')return;
-    const p=state.players[e.step],id=p.roster.slice()
-      .sort((a,b)=>effectivePower(p,a)-effectivePower(p,b))[0];
+    const p=state.players[e.step],sorted=p.roster.slice().sort((a,b)=>effectivePower(p,a)-effectivePower(p,b));const tied=sorted.filter(id=>effectivePower(p,id)===effectivePower(p,sorted[0]));const id=state?.v3?tied[Math.floor(Math.random()*tied.length)]:sorted[0];
     const pile=Math.random()<.5,before=id?effectivePower(p,id):0,
       after=Math.max(0,Math.min(100,before+(pile?25:-25)));
-    if(id){p.smileModifiers=p.smileModifiers||{};p.smileModifiers[id]=after-(CARDS[id]?.power||0);}
+    if(id){p.smileModifiers=p.smileModifiers||{};p.smileModifiers[id]=state?.v3?Number(p.smileModifiers[id]||0)+(pile?25:-25):after-(CARDS[id]?.power||0);}
     e.flips.push({id:p.id,charId:id||null,pile,before,after});e.step++;
     if(e.step===state.players.length)e.stage='result';
     save();render();v2Fx('coin',p.name+' : '+(id?pile?'PILE · +25':'FACE · −25':'Aucune recrue à transformer'),pile);
@@ -393,14 +411,14 @@
     for(let offset=1;offset<=state.players.length;offset++){
       const p=state.players[(Number(from)+offset)%state.players.length];
       if(p.id===a.leader||a.passed.includes(p.id)||p.roster.length>=TEAM_SIZE)continue;
-      if(safeBig(p.budget)>=value*2n)return p.id;
+      if(safeBig(p.budget)>=(state?.v3&&p.ship==='mobydick'?(value*2n*90n+50n)/100n:value*2n)&&safeBig(p.budget)>=value)return p.id;
     }
     return null;
   };
   bid=function(value){
     if(v2Royal()&&v2Active().stage==='auction'){
       const p=player(state.auction?.turnId);
-      if(!p||safeBig(p.budget)<BigInt(Math.floor(Number(value)||0))*2n)
+      if(!p||safeBig(p.budget)<(state?.v3&&p.ship==='mobydick'?(BigInt(Math.floor(Number(value)||0))*2n*90n+50n)/100n:BigInt(Math.floor(Number(value)||0))*2n))
         return showToast('👑 Taxe royale : tu dois pouvoir payer le double de ta mise.');
     }
     return beforeRoyalBid(value);
@@ -453,7 +471,7 @@
       content='<div class="v2-burst-card">'+charCard(CARDS[state.auction.charId])+'</div>'+
         '<h2>🚀 Révélation des offres !</h2>'+
         '<div class="v2-local-results">'+e.offers.map(o=>'<p>'+esc(player(o.id).name)+' : '+currency(o.amount)+'</p>').join('')+'</div>'+
-        '<p>'+(e.winner===null?'Personnage invendu.':'🏆 '+esc(player(e.winner).name)+' recrute '+esc(CARDS[state.auction.charId].name)+' pour '+currency(state.auction.highBid)+' !')+'</p>'+
+        '<p>'+(e.winner===null?'Personnage invendu.':'🏆 '+esc(player(e.winner).name)+' recrute '+esc(CARDS[state.auction.charId].name)+' pour '+currency(state?.v3?player(e.winner).purchases?.[state.auction.charId]??state.auction.highBid:state.auction.highBid)+(state?.v3&&player(e.winner).ship==='mobydick'?' · 🐋 Protection du Père : −'+currency(BigInt(state.auction.highBid)-BigInt(player(e.winner).purchases?.[state.auction.charId]??state.auction.highBid)):'')+' !')+'</p>'+
         '<button class="primary" data-action="v2-ready">Continuer →</button>';
     }else if(e.stage==='roll'){
       const p=my[e.step];content='<p>Au tour de <b>'+esc(p.name)+'</b> de lancer le dé !</p>'+
@@ -543,7 +561,7 @@
       const winner=player(a.leader),card=CARDS[a.charId];
       if(winner&&!winner.armamentUsed&&card?.power<=60&&!a.armamentChoice){
         html=html.replace('data-action="next"','data-action="next" disabled aria-disabled="true"');
-        html+='<div class="op21-armament-overlay"><section class="card op21-armament-modal"><small>🛡 HAKI DE L’ARMEMENT</small><h2>'+esc(winner.name)+', renforce ta recrue !</h2><p>'+esc(card.name)+' possède '+card.power+' points. Veux-tu lui offrir <b>+20 points définitifs</b> ?</p><div class="op21-power-evolution">'+card.power+' <span>→</span> '+(card.power+20)+'</div><button class="primary" data-action="armament-recruit">🛡 Utiliser le Haki</button><button class="btn-ghost" data-action="armament-defer">Conserver pour plus tard</button></section></div>';
+        html+='<div class="op21-armament-overlay"><section class="card op21-armament-modal"><small>🛡 HAKI DE L’ARMEMENT</small><h2>'+esc(winner.name)+', renforce ta recrue !</h2><p>'+esc(card.name)+' possède '+card.power+' points. Veux-tu lui offrir <b>+'+(winner.ship==='polartang'?40:20)+' points</b> ?</p><div class="op21-power-evolution">'+card.power+' <span>→</span> '+Math.min(100,card.power+(winner.ship==='polartang'?40:20))+'</div><button class="primary" data-action="armament-recruit">🛡 Utiliser le Haki</button><button class="btn-ghost" data-action="armament-defer">Conserver pour plus tard</button></section></div>';
       }
     }
     return html;
@@ -560,7 +578,7 @@
       const powers='<span>👁 '+(p.observationUsed?'Utilisé':'Prêt')+'</span><span>🛡 '+(p.armamentUsed?'Utilisé':'Prêt')+'</span>';
       const smileHtml=(p.roster||[]).filter(id=>p.smileModifiers?.[id]!==undefined)
         .map(id=>'<span class="active-synergy">🍎 '+esc(CARDS[id]?.name||id)+
-          ' : '+effectivePower(p,id)+' pts · rang '+tierOf(effectivePower(p,id)).tier+'</span>').join('');
+          ' : '+effectivePower(p,id)+' pts · rang '+tierOf(CARDS[id]?.power||0).tier+'</span>').join('');
       const synergiesHtml=d.synergyItems.length?'<span class="active-synergy">🤝 '+d.synergyItems.map(s=>esc(s.name)+' ('+s.count+') +'+s.points).join(' · ')+'</span>':'';
       return '<div class="power-breakdown">Base '+d.base+(d.armament?' + '+d.armament+' Armement':'')+(d.synergy?' + '+d.synergy+' synergies':'')+' = <strong>'+d.total+' points</strong></div>'+
         (safeBig(p.marineAward)>0n?'<div class="power-breakdown">🎲 Prime de la Marine : +'+currency(p.marineAward)+'</div>':'')+
@@ -639,8 +657,8 @@
     if(!p||p.armamentUsed||!c||c.power>60||a.armamentChoice)return;
     event.preventDefault();event.stopImmediatePropagation();
     if(b.dataset.action==='armament-recruit'){
-      p.armamentUsed=true;p.armamentId=a.charId;p.armamentBonus=20;a.armamentChoice='used';
-      showToast('🛡 '+c.name+' gagne +20 points !');
+      p.armamentUsed=true;p.armamentId=a.charId;p.armamentBonus=state?.v3&&p.ship==='polartang'?40:20;a.armamentChoice='used';
+      showToast('🛡 '+c.name+' gagne +'+p.armamentBonus+' points !');
     } else a.armamentChoice='skip';
     save();render();
   },true);

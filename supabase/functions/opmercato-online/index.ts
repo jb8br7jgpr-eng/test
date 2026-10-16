@@ -76,7 +76,7 @@ function sevenSchedule(players:number,teamSize:number){
  }
  return plan.sort((a,b)=>a.round-b.round);
 }
-const effectivePower=(s:any,p:any,id:string)=>p.smileModifiers?.[id]===undefined?power(s,id):Math.max(0,Math.min(100,power(s,id)+p.smileModifiers[id]));
+const effectivePower=(s:any,p:any,id:string)=>isV3(s)?v3Clamp(power(s,id)+Number(p.smileModifiers?.[id]||0)+Number(p.shipBonus?.[id]||0)+(p.armamentId===id?Number(p.armamentBonus||0):0)):(p.smileModifiers?.[id]===undefined?power(s,id):v3Clamp(power(s,id)+p.smileModifiers[id]));
 const armamentBonus=(p:any)=>p.armamentId&&p.roster.includes(p.armamentId)?Number(p.armamentBonus??5):0;
 const pendingArmament=(s:any)=>{const a=s.auction;return s.status==="playing"&&a?.outcome==="sold"&&a.leader!==null&&
  !!s.players[a.leader]&&!s.players[a.leader].armamentUsed&&!a.armamentChoice&&power(s,a.charId)<=60;};
@@ -93,11 +93,11 @@ function eventReady(s:any,seat:number){
 }
 
 const score=(s:any,p:any)=>p.roster.reduce((n:number,id:string)=>n+effectivePower(s,p,id),0)+
-  armamentBonus(p)+
+  (isV3(s)?0:armamentBonus(p))+
   affiliationBonuses(s,p).reduce((n,b)=>n+b.points,0);
 const publicPlayer=(s:any,p:any)=>({id:p.id,name:p.name,budget:p.budget,roster:p.roster,passesUsed:p.passesUsed,
   hakiUsed:p.hakiUsed,observationUsed:p.observationUsed,armamentUsed:p.armamentUsed,armamentId:p.armamentId||null,armamentBonus:armamentBonus(p),
-  smileModifiers:p.smileModifiers||{},
+  smileModifiers:p.smileModifiers||{},ship:p.ship||null,shipBonus:p.shipBonus||{},
   marineAward:p.marineAward,marineRoll:p.marineRoll??null,purchases:p.purchases,score:score(s,p),
   bonuses:affiliationBonuses(s,p)});
 function snapshot(s:any,seat:number,version:number,room:any){
@@ -113,7 +113,7 @@ function snapshot(s:any,seat:number,version:number,room:any){
  const secret=!!(a?.mystery&&a.outcome===null)||!!(e?.type==="burst"&&e.stage==="intro");
  return {id:room.id,code:room.code,topic:"opmercato:"+room.id+":"+s.channelSecret,version,status:s.status,
    yourSeat:seat,host:seat===0,maxPlayers:s.maxPlayers||2,teamSize:s.teamSize,initialBudget:s.initialBudget,baseBid:s.baseBid,bidStep:s.bidStep,
-   round:s.round,remaining:s.drawPile.length-s.drawIndex,event:eventPublic,
+   round:s.round,remaining:s.drawPile.length-s.drawIndex,event:eventPublic,v3:v3Public(s),
    players:s.players.map(x=>publicPlayer(s,x)),
    auction:a?{...a,charId:secret?null:a.charId,tier:rank(power(s,a.charId)),power:secret?null:power(s,a.charId)}:null,
    peek:p?.observationPeek||[],phase:s.status};
@@ -123,7 +123,7 @@ function nextBidder(s:any,from:number){
  for(let i=1;i<=s.players.length;i++){
    const p=s.players[(from+i)%s.players.length];
    if(p.id===a.leader||a.passed.includes(p.id)||p.roster.length>=s.teamSize)continue;
-   if((taxed(s)?canBid(s,p,min*2n):canBid(s,p,min))||(first&&!taxed(s)&&hasHaki(s,p)))return p.id;
+   if((isV3(s)?v3CanBid(s,p,min):(taxed(s)?canBid(s,p,min*2n):canBid(s,p,min)))||(first&&!taxed(s)&&hasHaki(s,p)))return p.id;
  }
  return null;
 }
@@ -134,10 +134,10 @@ function isComplete(s:any) {
 function settle(s:any){
  const a=s.auction;if(!a||a.outcome!==null)return;
  if(a.leader!==null){
-   const p=s.players[a.leader],cost=BigInt(a.highBid)*(taxed(s)?2n:1n);
+   const p=s.players[a.leader],cost=isV3(s)?v3Cost(s,p,BigInt(a.highBid)):BigInt(a.highBid)*(taxed(s)?2n:1n);
    if(p.roster.length>=s.teamSize||BigInt(p.budget)<cost)throw Error("Attribution invalide.");
    p.budget=(BigInt(p.budget)-cost).toString();
-   p.roster.push(a.charId);p.purchases[a.charId]=cost.toString();a.outcome="sold";
+   p.roster.push(a.charId);p.purchases[a.charId]=cost.toString();if(isV3(s))v3Recruit(s,p,a.charId);a.outcome="sold";
  } else a.outcome="unsold";
  a.turnId=null;
 }
@@ -165,16 +165,34 @@ function legacyNext(s:any){
  if(mystery)s.event.mysteryUsed=true;
  s.auction={charId,highBid:"0",leader:null,passed:[],turnId:null,firstTurnId:null,
    outcome:null,mystery,warGuaranteed:s.event.warRounds.includes(s.round),hakiWinner:null};
- const from=(s.round-2+s.players.length)%s.players.length;
- const first=nextBidder(s,from);
+ const from=((isV3(s)?s.v3.firstBidder:0)+s.round-2+s.players.length)%s.players.length;
+ const forced=isV3(s)?s.v3.visionOpeners?.[s.auction.charId]:undefined;
+ const chosenFrom=forced===undefined?from:(Number(forced)+s.players.length-1)%s.players.length;
+ const first=nextBidder(s,chosenFrom);
  s.auction.turnId=first;s.auction.firstTurnId=first;
  if(first===null){s.status="finished";s.auction=null;}
 }
 
+function v3MoveUnlockedToFront(s:any,filter:(id:string)=>boolean,count:number){
+ if(!isV3(s)||!s.v3.visionLock?.length)return false;
+ const locked=new Set(s.v3.visionLock);
+ const possible=s.drawPile.slice(s.drawIndex).filter((id:string)=>!locked.has(id)&&filter(id));
+ if(possible.length<count)return false;
+ const chosen=possible.slice(0,count);
+ for(const id of chosen){const pos=s.drawPile.indexOf(id,s.drawIndex);s.drawPile.splice(pos,1);}
+ s.drawPile.splice(s.drawIndex,0,...chosen);return true;
+}
 function nextSeven(s:any){
  if(isComplete(s)||s.drawIndex>=s.drawPile.length){s.status="finished";s.auction=null;return;}
  s.event.active=null;s.round++;
  const spec=scheduledAt(s,s.round);
+ const protectedCards=isV3(s)&&s.v3.visionLock?.some((id:string)=>s.drawPile.includes(id));
+ if(spec&&protectedCards){
+  if(spec.type==="war"&&!v3MoveUnlockedToFront(s,id=>rank(power(s,id))==="S",2))spec.type="marine";
+  else if(spec.type==="black"&&!v3MoveUnlockedToFront(s,()=>true,3))spec.type="marine";
+  else if(spec.type==="burst"&&!v3MoveUnlockedToFront(s,id=>BURST_IDS.has(id),1))spec.type="marine";
+  else if(spec.type==="mystery"&&!v3MoveUnlockedToFront(s,()=>true,1))spec.type="marine";
+ }
  if(spec&&["smile","god"].includes(spec.type)&&s.players.some((p:any)=>p.roster.length===0)){
    // Les équipages vides rendent SMILE et God Valley impossibles.
    // Choisir un autre événement non prévu plutôt que bloquer la partie.
@@ -187,13 +205,13 @@ function nextSeven(s:any){
    const alternatives=(["mystery","marine","black","reverie"] as Special[]).filter(x=>!reserved.has(x));
    spec.type=alternatives[randomIndex(alternatives.length)]||"marine";
  }
- if(spec?.type==="war"&&!prepareWar(s)){
+ if(spec?.type==="war"&&!(protectedCards||prepareWar(s))){
    const reserved=new Set(s.event.schedule.map((e:any)=>e.type));
    const alternatives=(["marine","mystery","black","reverie"] as Special[]).filter(x=>!reserved.has(x));
    spec.type=alternatives[randomIndex(alternatives.length)]||"marine";
  }
  // La sélection Burst est limitée aux cartes non tirées : pas de doublon, Luffy Gear 5 inclus.
- if(spec?.type==="burst"){
+ if(spec?.type==="burst"&&!protectedCards){
    const choices=s.drawPile.map((id:string,i:number)=>BURST_IDS.has(id)&&i>=s.drawIndex?i:-1).filter((i:number)=>i>=0);
    if(choices.length){
      const chosen=choices[randomIndex(choices.length)];
@@ -217,15 +235,17 @@ function nextSeven(s:any){
  if(mystery)s.event.mysteryUsed=true;
  s.auction={charId,highBid:"0",leader:null,passed:[],turnId:null,firstTurnId:null,outcome:null,
    mystery,warGuaranteed:s.event.warRounds.includes(s.round),hakiWinner:null};
- const from=(s.round-2+s.players.length)%s.players.length;
- const first=nextBidder(s,from);
+ const from=((isV3(s)?s.v3.firstBidder:0)+s.round-2+s.players.length)%s.players.length;
+ const forced=isV3(s)?s.v3.visionOpeners?.[s.auction.charId]:undefined;
+ const chosenFrom=forced===undefined?from:(Number(forced)+s.players.length-1)%s.players.length;
+ const first=nextBidder(s,chosenFrom);
  s.auction.turnId=first;s.auction.firstTurnId=first;
  if(first===null){
    if(e?.type==="reverie"){s.auction.outcome="unsold";s.auction.turnId=null;}
    else{s.status="finished";s.auction=null;}
  }
 }
-function next(s:any){if(s.event.schedule)return nextSeven(s);return legacyNext(s);}
+function next(s:any){if(isV3(s))return v3Advance(s);if(s.event.schedule)return nextSeven(s);return legacyNext(s);}
 function checkActor(s:any,seat:number){
  const a=s.auction;
  if(s.status!=="playing"||!a||a.outcome!==null)throw Error("Aucune enchère active.");
@@ -235,6 +255,7 @@ function checkActor(s:any,seat:number){
  return a;
 }
 function takeAction(s:any,seat:number,action:string,payload:any){
+ if(isV3(s)&&v3Act(s,seat,action,payload))return;
  const p=s.players[seat];
  if(!p)throw Error("Joueur introuvable.");
  if(action==="start"){
@@ -255,7 +276,7 @@ function takeAction(s:any,seat:number,action:string,payload:any){
    if(e.offers.some((o:any)=>o.id===seat))throw Error("Ton offre est déjà verrouillée.");
    const value=amount(payload.amount);
    if(value!==0n&&value<BigInt(s.baseBid))throw Error("Enchère inférieure à la mise de départ.");
-   if(value>0n&&(p.roster.length>=s.teamSize||BigInt(p.budget)<value))throw Error("Budget insuffisant ou équipage complet.");
+   if(value>0n&&(isV3(s)?!v3CanBid(s,p,value):(p.roster.length>=s.teamSize||BigInt(p.budget)<value)))throw Error("Budget insuffisant ou équipage complet.");
    e.offers.push({id:seat,amount:value.toString()});
    if(e.offers.length===s.players.length){
      const best=e.offers.reduce((v:bigint,o:any)=>BigInt(o.amount)>v?BigInt(o.amount):v,0n);
@@ -322,11 +343,11 @@ function takeAction(s:any,seat:number,action:string,payload:any){
    const e=s.event.active;
    if(!s.event.schedule||e?.type!=="smile"||e.stage!=="coin"||e.flips.some((x:any)=>x.id===seat))
      throw Error("Lancer SMILE indisponible.");
-   const id=p.roster.slice().sort((a:string,b:string)=>effectivePower(s,p,a)-effectivePower(s,p,b))[0];
+   const sorted=p.roster.slice().sort((a:string,b:string)=>effectivePower(s,p,a)-effectivePower(s,p,b));const weakest=sorted.filter((id:string)=>effectivePower(s,p,id)===effectivePower(s,p,sorted[0]));const id=isV3(s)?weakest[randomIndex(weakest.length)]:sorted[0];
    if(!id)throw Error("Aucun personnage à transformer.");
    const before=effectivePower(s,p,id),pile=randomIndex(2)===0,after=Math.max(0,Math.min(100,before+(pile?25:-25)));
    p.smileModifiers=p.smileModifiers||{};
-   p.smileModifiers[id]=after-power(s,id);
+   p.smileModifiers[id]=isV3(s)?Number(p.smileModifiers[id]||0)+(pile?25:-25):after-power(s,id);
    e.flips.push({id:seat,charId:id,pile,before,after});
    if(e.flips.length===s.players.length){e.stage="result";e.ready=[];}
    return;
@@ -365,21 +386,21 @@ function takeAction(s:any,seat:number,action:string,payload:any){
    if(!pendingArmament(s)||a.leader!==seat)throw Error("Haki de l’Armement indisponible.");
    if(action==="armament"){
      if(String(payload.charId||"")!==a.charId)throw Error("Cette recrue ne peut pas être renforcée.");
-     p.armamentUsed=true;p.armamentId=a.charId;p.armamentBonus=20;a.armamentChoice="used";
+     p.armamentUsed=true;p.armamentId=a.charId;p.armamentBonus=isV3(s)&&p.ship==="polartang"?40:20;a.armamentChoice="used";
    }else a.armamentChoice="skip";
    return;
  }
  const a=checkActor(s,seat);
  if(action==="bid"){
    const v=amount(payload.amount);
-   if(v<minBid(s,a)||!canBid(s,p,taxed(s)?v*2n:v))throw Error("Montant insuffisant ou budget dépassé.");
+   if(v<minBid(s,a)||(isV3(s)?!v3CanBid(s,p,v):!canBid(s,p,taxed(s)?v*2n:v)))throw Error("Montant insuffisant ou budget dépassé.");
    a.highBid=v.toString();a.leader=seat;
    a.turnId=nextBidder(s,seat);if(a.turnId===null)settle(s);return;
  }
  if(action==="pass"){
    if(taxed(s)&&a.leader===null)throw Error("Rêverie : une première mise est obligatoire avant de se retirer.");
    if(a.leader===null){
-     if(p.passesUsed>=5)throw Error("Tu as utilisé tes 5 refus avant enchère.");
+     if(p.passesUsed>=(isV3(s)?v3Limit(p):5))throw Error("Tous tes refus sont utilisés.");
      p.passesUsed++;
    }
    a.passed.push(seat);a.turnId=nextBidder(s,seat);
@@ -389,15 +410,16 @@ function takeAction(s:any,seat:number,action:string,payload:any){
    if(taxed(s))throw Error("Haki des Rois interdit durant la Rêverie.");
    if(p.hakiUsed||a.firstTurnId!==seat||a.leader!==null||a.highBid!=="0"||a.passed.length>0)
       throw Error("Haki des Rois indisponible.");
-   p.hakiUsed=true;p.roster.push(a.charId);p.purchases[a.charId]="0";
+   p.hakiUsed=true;p.roster.push(a.charId);p.purchases[a.charId]="0";if(isV3(s))v3Recruit(s,p,a.charId);
    a.leader=seat;a.hakiWinner=seat;a.highBid="0";a.outcome="sold";a.turnId=null;return;
  }
  if(action==="observation"){
    if(p.observationUsed)throw Error("Haki de l'Observation déjà utilisé.");
    p.observationUsed=true;
-   p.observationPeek=s.drawPile.slice(s.drawIndex,s.drawIndex+3).map((id:string,pos:number)=>({
-     id:(s.event.schedule?s.event.schedule.some((e:any)=>e.type==="mystery"&&e.round===s.round+pos+1):!s.event.mysteryUsed&&s.round+pos+1===s.event.mysteryRound)?null:id,
-     tier:rank(power(s,id))}));
+   p.observationPeek=s.drawPile.slice(s.drawIndex,s.drawIndex+(isV3(s)&&p.ship==="orojackson"?6:3)).map((id:string,pos:number)=>({
+     id:isV3(s)&&p.ship==="orojackson"?id:(s.event.schedule?s.event.schedule.some((e:any)=>e.type==="mystery"&&e.round===s.round+pos+1):!s.event.mysteryUsed&&s.round+pos+1===s.event.mysteryRound)?null:id,
+     tier:rank(power(s,id)),power:power(s,id),firstSeat:((isV3(s)?s.v3.firstBidder:0)+s.round+pos)%s.players.length}));
+   if(isV3(s)&&p.ship==="orojackson"){s.v3.visionLock=p.observationPeek.map((x:any)=>x.id);s.v3.visionOpeners=Object.fromEntries(p.observationPeek.map((x:any)=>[x.id,x.firstSeat]));}
    return;
  }
  throw Error("Action inconnue.");
@@ -441,7 +463,7 @@ Deno.serve(async(req:Request)=>{
      const starting=amount(arg.budget||"250000000");
      const teamSize=Number(arg.teamSize??5),maxPlayers=Number(arg.maxPlayers??2);
      if(starting<1n||!Number.isInteger(teamSize)||teamSize<1||teamSize>30||
-        !Number.isInteger(maxPlayers)||maxPlayers<2||maxPlayers>6)throw Error("Paramètres invalides.");
+        !Number.isInteger(maxPlayers)||maxPlayers<2||maxPlayers>5)throw Error("Paramètres invalides.");
      const source=await catalog();
      const available=source.characters.filter((c:any)=>arg.spoilers!==false||!c.spoiler);
      const byId=Object.fromEntries(available.map((c:any)=>[c.id,{power:c.power,name:c.name,affiliation:c.affiliation}]));
@@ -459,6 +481,7 @@ Deno.serve(async(req:Request)=>{
          schedule:plan,active:null,
          mysteryUsed:false,used:false,activatedRound:null,
          warRounds:[],awaitingRolls:false,rolls:[],rollIndex:0}};
+     v3Create(doc);
      const {data,error}=await db.from("op_mercato_rooms").insert({code:roomCode,host_token_hash:await hash(hostToken),doc}).select("id,code,version").single();
      if(error)throw Error("Création du salon impossible. "+error.message);
      return json({token:hostToken,room:snapshot(doc,0,data.version,data)});
@@ -544,7 +567,7 @@ Deno.serve(async(req:Request)=>{
      await ensureAffiliations(room.doc);
      return json({room:snapshot(room.doc,seat,room.version,room)});
    }
-   const allowed=["start","bid","pass","haki","observation","armament","armament-skip","next","roll","finish","event-ready","event-pick","event-eliminate","coin","burst-offer","burst-coin"];
+   const allowed=["start","bid","pass","haki","observation","armament","armament-skip","next","roll","finish","event-ready","event-pick","event-eliminate","coin","burst-offer","burst-coin","v3-roll","v3-ship","v3-morgans-ready","v3-morgans-guess","v3-morgans-next","v3-morgans-wheel","v3-morgans-recruit","v3-morgans-armament","v3-morgans-skip","v3-trade-pass","v3-trade-offer","v3-trade-accept","v3-trade-reject","v3-observation-swap"];
    if(!allowed.includes(arg.action))throw Error("Action inconnue.");
    const doc=structuredClone(room.doc);
    await ensureAffiliations(doc);
@@ -556,3 +579,179 @@ Deno.serve(async(req:Request)=>{
    return json({room:snapshot(doc,seat,room.version+1,room)});
  }catch(e){console.error("Mercato action error",String(e));return fail(e instanceof Error?e.message:"Erreur serveur.");}
 });
+
+
+/* OPMercato 3.0 game engine: protects existing V2 rooms through version checks. */
+const SHIP_IDS=["sunny","redforce","mobydick","polartang","orojackson"];
+const isV3=(s:any)=>s.v3?.version===3;
+const v3Clamp=(n:number)=>Math.max(0,Math.min(100,n));
+const v3Cost=(s:any,p:any,bid:bigint)=>{const gross=bid*(taxed(s)?2n:1n);return p.ship==="mobydick"?(gross*90n+50n)/100n||1n:gross;};
+const v3CanBid=(s:any,p:any,bid:bigint)=>!!p&&p.roster.length<s.teamSize&&bid<=BigInt(p.budget)&&v3Cost(s,p,bid)<=BigInt(p.budget);
+const v3Limit=(p:any)=>p.ship==="sunny"?8:5;
+function v3Recruit(s:any,p:any,id:string){
+ if(p.ship==="redforce"){p.shipBonus=p.shipBonus||{};if(p.shipBonus[id]===undefined)p.shipBonus[id]=randomIndex(3)+1;}
+}
+function v3Create(s:any){
+ const n=randomIndex(s.drawPile.length),secret=s.drawPile.splice(n,1)[0];
+ s.v3={version:3,stage:"dice",rolls:{},choiceOrder:[],choiceIndex:0,firstBidder:0,
+   morgans:{id:secret,stage:"waiting",guesses:{},ready:[],shown:0,winner:null,bonus:null,done:false},
+   market:{done:false,order:[],step:0,offer:null,locked:[],exchanges:[]},swapUsed:false};
+}
+function v3Public(s:any){
+ if(!isV3(s))return null;
+ const v=s.v3,m=v.morgans,known=!["waiting","intro","guesses"].includes(m.stage);
+ return {version:3,stage:v.stage,rolls:v.rolls,choiceOrder:v.choiceOrder,choiceIndex:v.choiceIndex,firstBidder:v.firstBidder,tiePlayers:v.stage==="dice-tie"?v.diceGroups?.[v.tieIdx]||[]:[],tieRolls:v.tieRolls||{},
+  morgans:{stage:m.stage,ready:m.ready,submitted:Object.keys(m.guesses).map(Number),
+     id:known?m.id:null,guesses:m.stage==="reveal"?Object.fromEntries(Object.entries(m.guesses).slice(0,m.shown)):known&&m.stage!=="character"?m.guesses:{},
+     shown:m.shown,winner:["winner","offer","armament","complete"].includes(m.stage)?m.winner:null,
+     tied:m.stage==="wheel"?m.tied:[],bonus:m.stage==="offer"?m.bonus:null,done:m.done},
+  market:v.market,swapUsed:v.swapUsed};
+}
+function v3MorgansDue(s:any){
+ const m=s.v3.morgans;
+ return !m.done&&m.stage==="waiting"&&s.players.every((p:any)=>p.roster.length<s.teamSize)&&
+ (s.teamSize===1||s.round>=Math.max(2,Math.floor(s.teamSize*s.players.length*.3))||
+ s.players.some((p:any)=>p.roster.length>=s.teamSize-1));
+}
+function v3MarketDue(s:any){
+ return !s.v3.market.done&&s.teamSize>=2&&s.players.every((p:any)=>p.roster.length>=Math.ceil(s.teamSize/2));
+}
+function v3Advance(s:any){
+ if(v3MorgansDue(s)){s.v3.stage="morgans";s.v3.morgans.stage="intro";s.auction=null;return;}
+ if(v3MarketDue(s)){
+  const t=s.v3.market;t.order=shuffle(s.players.map((p:any)=>p.id));t.step=0;t.locked=[];t.exchanges=[];
+  s.v3.stage="market";s.auction=null;return;
+ }
+ s.v3.stage="auction";
+ if(s.event.schedule)nextSeven(s);else legacyNext(s);
+}
+function v3SwapPeople(s:any,offer:any){
+ const from=s.players[offer.from],to=s.players[offer.to],one=offer.give,two=offer.take;
+ from.roster=from.roster.map((id:string)=>id===one?two:id);
+ to.roster=to.roster.map((id:string)=>id===two?one:id);
+ for(const key of ["smileModifiers","shipBonus"]){
+  from[key]=from[key]||{};to[key]=to[key]||{};
+  const first=from[key][one],second=to[key][two];delete from[key][one];delete to[key][two];
+  if(first!==undefined)to[key][one]=first;if(second!==undefined)from[key][two]=second;
+ }
+ if(from.armamentId===one)from.armamentId=null;
+ if(to.armamentId===two)to.armamentId=null;
+ s.v3.market.locked.push(one,two);s.v3.market.exchanges.push(offer);
+}
+function v3NextTrade(s:any){
+ const t=s.v3.market;t.offer=null;t.step++;
+ if(t.step>=t.order.length){t.done=true;s.v3.stage="auction";v3Advance(s);}
+}
+function v3Act(s:any,seat:number,action:string,arg:any){
+ const v=s.v3,m=v.morgans,t=v.market,p=s.players[seat];
+ if(action==="start"){
+  if(seat!==0||s.status!=="lobby"||s.players.length!==s.maxPlayers)throw Error("Salon incomplet.");
+  s.status="playing";v.stage="dice";return true;
+ }
+ if(action==="finish"){if(seat!==0)throw Error("Seul l'hôte peut terminer.");s.status="finished";return true;}
+ if(v.stage==="dice"||v.stage==="dice-tie"){
+  if(action!=="v3-roll")throw Error("Lance ton dé avant de poursuivre.");
+  if(v.stage==="dice"){
+   if(v.rolls[seat]!==undefined)throw Error("Dé déjà lancé.");
+   v.rolls[seat]=randomIndex(6)+1;
+   if(Object.keys(v.rolls).length===s.players.length){
+    const buckets:any={};for(const [playerId,roll] of Object.entries(v.rolls))(buckets[roll as string]??=[]).push(Number(playerId));
+    v.diceGroups=Object.entries(buckets).sort((a,b)=>Number(b[0])-Number(a[0])).map(([_,ids])=>ids);
+    v.tieIdx=v.diceGroups.findIndex((g:any)=>g.length>1);v.tieRolls={};
+    if(v.tieIdx>=0)v.stage="dice-tie";
+    else {v.choiceOrder=v.diceGroups.flat();v.firstBidder=v.choiceOrder.at(-1);v.stage="ships";}
+   }
+  }else{
+   const candidates=v.diceGroups[v.tieIdx];
+   if(!candidates.includes(seat)||v.tieRolls[seat]!==undefined)throw Error("Seuls les ex æquo relancent.");
+   v.tieRolls[seat]=randomIndex(6)+1;
+   if(Object.keys(v.tieRolls).length===candidates.length){
+    const buckets:any={};for(const id of candidates)(buckets[v.tieRolls[id]]??=[]).push(id);
+    const groups=Object.entries(buckets).sort((a,b)=>Number(b[0])-Number(a[0])).map(([_,ids])=>ids);
+    v.diceGroups.splice(v.tieIdx,1,...groups);v.tieIdx=v.diceGroups.findIndex((g:any)=>g.length>1);v.tieRolls={};
+    if(v.tieIdx<0){v.choiceOrder=v.diceGroups.flat();v.firstBidder=v.choiceOrder.at(-1);v.stage="ships";}
+   }
+  }
+  return true;
+ }
+ if(v.stage==="ships"){
+  if(action!=="v3-ship"||v.choiceOrder[v.choiceIndex]!==seat)throw Error("Ce n'est pas ton tour.");
+  const ship=String(arg.ship||"");
+  if(!SHIP_IDS.includes(ship)||s.players.some((q:any)=>q.ship===ship))throw Error("Navire indisponible.");
+  p.ship=ship;p.shipBonus={};v.choiceIndex++;
+  if(v.choiceIndex>=s.players.length)v3Advance(s);
+  return true;
+ }
+ if(v.stage==="morgans"){
+  if(action==="v3-morgans-ready"&&m.stage==="intro"){
+   if(m.ready.includes(seat))throw Error("Déjà prêt.");m.ready.push(seat);
+   if(m.ready.length===s.players.length)m.stage="guesses";return true;
+  }
+  if(action==="v3-morgans-guess"&&m.stage==="guesses"){
+   const n=Number(arg.guess);
+   if(m.guesses[seat]!==undefined||!Number.isInteger(n)||n<1||n>100)throw Error("Prédiction invalide.");
+   m.guesses[seat]=n;if(Object.keys(m.guesses).length===s.players.length)m.stage="character";return true;
+  }
+  if(action==="v3-morgans-next"&&seat===0){
+   if(m.stage==="character"){m.stage="reveal";return true;}
+   if(m.stage==="reveal"){
+    m.shown++;
+    if(m.shown>=s.players.length){
+     const distances=s.players.map((q:any)=>({seat:q.id,d:Math.abs(m.guesses[q.id]-power(s,m.id))}));
+     const minimum=Math.min(...distances.map((x:any)=>x.d));
+     m.tied=distances.filter((x:any)=>x.d===minimum).map((x:any)=>x.seat);
+     m.winner=m.tied.length===1?m.tied[0]:null;m.stage=m.tied.length===1?"winner":"wheel";
+    }
+    return true;
+   }
+   if(m.stage==="winner"){m.stage="offer";if(s.players[m.winner].ship==="redforce")m.bonus=randomIndex(3)+1;return true;}
+  }
+  if(action==="v3-morgans-wheel"&&m.stage==="wheel"&&seat===0){
+   m.winner=m.tied[randomIndex(m.tied.length)];m.stage="winner";return true;
+  }
+  if(action==="v3-morgans-recruit"&&m.stage==="offer"&&m.winner===seat){
+   if(arg.accept===true){
+    if(p.roster.length>=s.teamSize)throw Error("Équipage complet.");
+    p.roster.push(m.id);p.purchases[m.id]="0";
+    if(p.ship==="redforce")p.shipBonus[m.id]=m.bonus??randomIndex(3)+1;
+   }
+   m.done=true;
+   if(arg.accept===true&&!p.armamentUsed&&power(s,m.id)<=60)m.stage="armament";
+   else {m.stage="complete";v3Advance(s);}
+   return true;
+  }
+  if(["v3-morgans-armament","v3-morgans-skip"].includes(action)&&m.stage==="armament"&&m.winner===seat){
+   if(action==="v3-morgans-armament"){p.armamentUsed=true;p.armamentId=m.id;p.armamentBonus=p.ship==="polartang"?40:20;}
+   m.stage="complete";v3Advance(s);return true;
+  }
+  throw Error("Étape Morgans en attente.");
+ }
+ if(v.stage==="market"){
+  if(action==="v3-trade-pass"&&t.offer===null&&t.order[t.step]===seat){v3NextTrade(s);return true;}
+  if(action==="v3-trade-offer"&&t.offer===null&&t.order[t.step]===seat){
+   const to=Number(arg.to),give=String(arg.give||""),take=String(arg.take||"");
+   const recipient=s.players[to];
+   if(!recipient||to===seat||!p.roster.includes(give)||!recipient.roster.includes(take)||
+     t.locked.includes(give)||t.locked.includes(take))throw Error("Transfert impossible.");
+   t.offer={from:seat,to,give,take};return true;
+  }
+  if(["v3-trade-accept","v3-trade-reject"].includes(action)&&t.offer?.to===seat){
+   if(action==="v3-trade-accept")v3SwapPeople(s,t.offer);
+   v3NextTrade(s);return true;
+  }
+  throw Error("Marché en attente.");
+ }
+ if(v.stage!=="auction")throw Error("Phase en attente.");
+ if(action==="v3-observation-swap"){
+  const peek=p.observationPeek||[],a=Number(arg.a),b=Number(arg.b);
+  if(p.ship!=="orojackson"||v.swapUsed||!p.observationUsed||a===b||
+   !Number.isInteger(a)||!Number.isInteger(b)||a<0||b<0||a>=peek.length||b>=peek.length||
+   s.drawPile[s.drawIndex+a]!==peek[a].id||s.drawPile[s.drawIndex+b]!==peek[b].id)throw Error("Inversion indisponible.");
+  [s.drawPile[s.drawIndex+a],s.drawPile[s.drawIndex+b]]=[s.drawPile[s.drawIndex+b],s.drawPile[s.drawIndex+a]];
+  [peek[a].id,peek[b].id]=[peek[b].id,peek[a].id];
+  [peek[a].tier,peek[b].tier]=[peek[b].tier,peek[a].tier];
+  [peek[a].power,peek[b].power]=[peek[b].power,peek[a].power];
+  v.visionOpeners=Object.fromEntries(peek.map((x:any)=>[x.id,x.firstSeat]));v.swapUsed=true;return true;
+ }
+ return false;
+}

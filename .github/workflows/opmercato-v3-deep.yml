@@ -1,0 +1,121 @@
+name: OPMercato V3 Deep Online Integration
+# Rerun against staging version 4, including protected mystery event.
+on:
+  workflow_dispatch:
+  push:
+    branches: [opmercato-v3-work-20261016]
+    paths:
+      - '.github/workflows/opmercato-v3-deep.yml'
+      - 'supabase/functions/opmercato-online/index.ts'
+jobs:
+  full-journey:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Check browser JavaScript
+        run: |
+          for f in mercato-online.js mercato-v3-local.js mercato-features.js mercato-rules.js mercato-hud-21.js; do node --check "$f"; done
+      - name: Run real synced V3 multiplayer journey (staging)
+        run: |
+          node --input-type=module <<'JS'
+          const api="https://nezqupnhcqwuewfilioa.supabase.co/functions/v1/opmercato-online-v3-staging";
+          const key="sb_publishable_rLlu872lFwupJfFw_f3alw_GhbR7Mok";
+          async function send(data,expected=200){
+            const response=await fetch(api,{method:"POST",headers:{"content-type":"application/json",apikey:key},body:JSON.stringify(data)});
+            const json=await response.json();
+            if(response.status!==expected||(expected===200&&json.error))throw Error(data.action+" HTTP "+response.status+" "+JSON.stringify(json).slice(0,500));
+            return json;
+          }
+          const host=await send({action:"create",name:"Deep Host",budget:"250000000",teamSize:2,maxPlayers:2,spoilers:true});
+          const guest=await send({action:"join",name:"Deep Guest",code:host.room.code});
+          const tokens=[host.token,guest.token],roomId=host.room.id;
+          const act=async(seat,action,extra={})=>(await send({action,roomId,token:tokens[seat],...extra})).room;
+          const get=async(seat)=>(await send({action:"get",roomId,token:tokens[seat]})).room;
+          let v=await act(0,"start");
+          for(let seat=0;seat<2;seat++)v=await act(seat,"v3-roll");
+          for(let guard=0;v.v3.stage==="dice-tie"&&guard++<40;){
+            for(const seat of v.v3.tiePlayers)v=await act(seat,"v3-roll");
+          }
+          if(v.v3.stage!=="ships")throw Error("No ship phase");
+          v=await act(v.v3.choiceOrder[0],"v3-ship",{ship:"sunny"});
+          v=await act(v.v3.choiceOrder[1],"v3-ship",{ship:"redforce"});
+          if(v.v3.stage!=="auction")throw Error("Should start with auction: "+v.v3.stage);
+          const moves=[];
+          async function handleEvent(){
+            const e=v.event?.active;
+            if(!e||e.stage==="auction")return false;
+            if(["intro","result","god-result"].includes(e.stage)){
+              for(let seat=0;seat<2;seat++)if(!e.ready?.includes(seat))v=await act(seat,"event-ready");
+              return true;
+            }
+            if(e.stage==="roll"){v=await act(e.step,"roll");return true;}
+            if(e.stage==="coin"){const seat=[0,1].find(id=>!e.flips.some(f=>f.id===id));v=await act(seat,"coin");return true;}
+            if(e.stage==="select"){const seat=(v.auction.firstTurnId+e.step)%2;v=await act(seat,"event-pick",{charId:e.choices.find(id=>!e.removed.includes(id))});return true;}
+            if(e.stage==="eliminate"){const seat=(v.auction.firstTurnId+e.step)%2;v=await act(seat,"event-eliminate",{charId:""});return true;}
+            if(e.stage==="offers"){const seat=[0,1].find(id=>!e.offers.some(o=>o.id===id));v=await act(seat,"burst-offer",{amount:"0"});return true;}
+            if(e.stage==="tie"){v=await act(0,"burst-coin");return true;}
+            throw Error("Unhandled event stage "+e.stage);
+          }
+          async function resolveAuction(){
+            for(let guard=0;guard<25;guard++){
+              if(await handleEvent())continue;
+              const a=v.auction;
+              if(!a)throw Error("Auction missing");
+              if(a.outcome!==null){
+                if(a.outcome==="sold"&&a.power<=60&&!v.players[a.leader].armamentUsed&&!a.armamentChoice){
+                  v=await act(a.leader,"armament-skip");continue;
+                }
+                v=await act(0,"next");moves.push("auction");return;
+              }
+              if(a.turnId===null)throw Error("No bidder to act");
+              if(a.leader===null)v=await act(a.turnId,"bid",{amount:v.baseBid});
+              else v=await act(a.turnId,"pass");
+            }
+            throw Error("Auction event loop not resolved");
+          }
+          let foundM=false,foundTrade=false,accepted=false;
+          for(let guard=0;guard<35;guard++){
+            if(v.v3.stage==="morgans"){
+              foundM=true;const m=v.v3.morgans;
+              if(m.stage==="intro"){for(let seat=0;seat<2;seat++)if(!m.ready.includes(seat))v=await act(seat,"v3-morgans-ready");continue;}
+              if(m.stage==="guesses"){
+                for(let seat=0;seat<2;seat++)if(!m.submitted.includes(seat)){
+                  if((await get(1-seat)).v3.morgans.id)throw Error("Morgans identity leaked");
+                  v=await act(seat,"v3-morgans-guess",{guess:seat===0?35:80});
+                }continue;
+              }
+              if(["character","reveal","winner"].includes(m.stage)){v=await act(0,"v3-morgans-next");continue;}
+              if(m.stage==="wheel"){v=await act(0,"v3-morgans-wheel");continue;}
+              if(m.stage==="offer"){v=await act(m.winner,"v3-morgans-recruit",{accept:true});continue;}
+              if(m.stage==="armament"){v=await act(m.winner,"v3-morgans-skip");continue;}
+              throw Error("Unexpected Morgans stage "+m.stage);
+            }
+            if(v.v3.stage==="market"){
+              foundTrade=true;const t=v.v3.market;
+              if(t.offer){v=await act(t.offer.to,"v3-trade-accept");accepted=true;continue;}
+              if(t.step>=t.order.length)throw Error("Finished market not advancing");
+              const from=t.order[t.step],to=1-from;
+              const give=v.players[from].roster.find(id=>!t.locked.includes(id));
+              const take=v.players[to].roster.find(id=>!t.locked.includes(id));
+              if(give&&take)v=await act(from,"v3-trade-offer",{to,give,take});
+              else v=await act(from,"v3-trade-pass");
+              continue;
+            }
+            if(v.v3.stage==="auction"){
+              if(foundTrade)break;
+              await resolveAuction();
+              continue;
+            }
+            throw Error("Unexpected stage "+v.v3.stage);
+          }
+          if(!foundM||!foundTrade||!accepted)throw Error("Journey incomplete "+JSON.stringify({foundM,foundTrade,accepted,stage:v.v3.stage,round:v.round,moves}));
+          const mirror=await get(1);
+          if(mirror.v3.stage!==v.v3.stage||JSON.stringify(mirror.players.map(p=>p.roster))!==JSON.stringify(v.players.map(p=>p.roster)))
+            throw Error("Two phones not in sync after trading");
+          if(v.v3.market.exchanges.length!==1)throw Error("Missing exchange history");
+          if(v.players.some(p=>p.roster.length>2))throw Error("Roster overflow");
+          console.log("PASS V3 deep journey: dice, unique ships, secured Morgans, auctions, accepted trade, synchronized rosters",v.round);
+          JS

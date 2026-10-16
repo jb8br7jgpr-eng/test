@@ -129,7 +129,7 @@
     const prefill=new URLSearchParams(location.search).get("room");
     const form=mode==="create"?
       '<h2>⚓ Créer un salon</h2><label>Ton pseudo<input id="online-name" maxlength="25" value="Pirate 1" autocomplete="nickname"></label>'+
-      '<label>Nombre de pirates (2 à 6)<select id="online-players"><option value="2">2 joueurs</option><option value="3">3 joueurs</option><option value="4">4 joueurs</option><option value="5">5 joueurs</option><option value="6">6 joueurs</option></select></label>'+
+      '<label>Nombre de pirates (2 à 5)<select id="online-players"><option value="2">2 joueurs</option><option value="3">3 joueurs</option><option value="4">4 joueurs</option><option value="5">5 joueurs</option></select></label>'+
       '<label>Budget initial en Berrys<input id="online-budget" inputmode="numeric" type="text" value="250000000"></label>'+
       '<label>Personnages à recruter chacun<input id="online-team" inputmode="numeric" type="number" min="1" max="30" value="5"></label>'+
       '<label class="online-check"><input id="online-spoilers" type="checkbox" checked> Inclure les personnages manga récents (spoilers)</label>'+
@@ -139,7 +139,7 @@
       '<h2>🏴‍☠️ Rejoindre une partie</h2><label>Code du salon<input id="online-code" type="text" maxlength="8" autocapitalize="characters" value="'+escOnline(prefill||"")+'" placeholder="EX. PIRATE42"></label>'+
       '<label>Ton pseudo<input id="online-name" maxlength="25" value="Pirate 2" autocomplete="nickname"></label>'+
       button("join-go","Rejoindre le salon →"):
-      '<h2>Jouez de 2 à 6 sur vos téléphones !</h2><p>Un pirate crée le salon, les autres le rejoignent avec un code. Les enchères et les pouvoirs se synchronisent automatiquement.</p>'+
+      '<h2>Jouez de 2 à 5 sur vos téléphones !</h2><p>Un pirate crée le salon, les autres le rejoignent avec un code. Les enchères et les pouvoirs se synchronisent automatiquement.</p>'+
       button("create-form","⚓ Créer une partie")+button("join-form","🔑 Rejoindre une partie","btn-ghost")+button("archive","📜 Archives des Pirates","btn-ghost");
     shell('<section class="online-card">'+form+'</section><div class="online-back">'+button("local","← Mode classique sur un seul téléphone","online-text")+'</div>');
   }
@@ -155,18 +155,18 @@
         '<p class="online-hint">L’hôte lancera le mercato dès que tout le monde sera prêt.</p>')+
       '</section>';
   }
-  function powerFor(p,id){const base=CARDS[id]?.power||0;return p.smileModifiers?.[id]===undefined?base:Math.max(0,Math.min(100,base+p.smileModifiers[id]));}
+  function powerFor(p,id){if(view?.v3?.version===3)return v3Power(p,id);const base=CARDS[id]?.power||0;return p.smileModifiers?.[id]===undefined?base:Math.max(0,Math.min(100,base+p.smileModifiers[id]));}
   function classFor(n){return n>=95?"S":n>=80?"A":n>=65?"B":n>=50?"C":n>=35?"D":n>=20?"E":"F";}
   function gameScore(){
     return '<section class="online-teams"><h2>⚓ Vos équipages</h2>'+
-      view.players.map(p=>'<div class="online-team"><div class="online-team-top"><b>'+label(p)+'</b><strong>'+p.score+' pts</strong></div>'+
-        '<div class="online-team-meta">'+berrys(p.budget)+' restants · '+p.roster.length+'/'+view.teamSize+' recrues · '+p.passesUsed+'/5 refus</div>'+
+      view.players.map(p=>'<div class="online-team"><div class="online-team-top"><b>'+label(p)+'</b><strong>'+p.score+' pts</strong></div>'+shipMark3(p)+
+        '<div class="online-team-meta">'+berrys(p.budget)+' restants · '+p.roster.length+'/'+view.teamSize+' recrues · '+p.passesUsed+'/'+(p.ship==='sunny'?8:5)+' refus</div>'+
         '<div class="online-roster">'+(p.roster.length?p.roster.map(id=>'<button type="button" data-action="details" data-char-id="'+escOnline(id)+'" class="online-roster-character">'+
           '<span class="portrait portrait-tiny"><span class="portrait-fallback">☠️</span><img class="portrait-photo" data-portrait-id="'+escOnline(id)+'" alt="" loading="lazy"></span>'+
-          '<span>'+escOnline(CARDS[id]?.name||id)+(p.smileModifiers?.[id]!==undefined?'<small class="online-smile-buff">🍎 '+powerFor(p,id)+' pts (rang '+classFor(powerFor(p,id))+')</small>':'')+'</span></button>').join(""):
+          '<span>'+escOnline(CARDS[id]?.name||id)+(p.smileModifiers?.[id]!==undefined?'<small class="online-smile-buff">🍎 '+powerFor(p,id)+' pts (rang '+classFor(CARDS[id]?.power||0)+')</small>':'')+'</span></button>').join(""):
         '<span>Équipage vide</span>')+'</div>'+
         '<div class="online-small">Base '+p.roster.reduce((v,id)=>v+powerFor(p,id),0)+
-          (p.armamentId?' · Armement +'+(p.armamentBonus??5):'')+
+          (!view?.v3&&p.armamentId?' · Armement +'+(p.armamentBonus??5):'')+
           (p.bonuses?.length?' · Synergies +'+p.bonuses.reduce((v,x)=>v+x.points,0):'')+'</div>'+
         (p.marineAward&&BigInt(p.marineAward)>0n?'<div class="online-small">🎲 Prime Marine : +'+berrys(p.marineAward)+'</div>':'')+
         '<div class="online-small">👑 '+(p.hakiUsed?'Haki des Rois utilisé':'Disponible')+
@@ -177,7 +177,7 @@
   function liveHud(){
     if(!view||view.status!=="playing")return "";
     return '<div class="op21-live-hud" aria-label="Budgets et scores en direct">'+view.players.map(p=>
-      '<div class="op21-hud-player" title="'+label(p)+'"><span>'+label(p)+'</span><b>'+berrys(p.budget)+'</b><small>⭐ '+p.score+' pts · '+p.roster.length+'/'+view.teamSize+'</small></div>').join('')+'</div>';
+      '<div class="op21-hud-player" title="'+label(p)+'"><span>'+label(p)+'</span><b>'+berrys(p.budget)+'</b><small>⭐ '+p.score+' pts · '+p.roster.length+'/'+view.teamSize+'</small>'+shipMark3(p,true)+'</div>').join('')+'</div>';
   }
   function portraitCard(id){
     if(!id)return '<div class="online-mystery"><div>❔</div><h2>Enchère mystère</h2><p>Son rang est connu, mais pas son identité.</p></div>';
@@ -226,7 +226,7 @@
       content='<div class="v2-burst-card">'+portraitCard(view.auction.charId)+'</div>'+
         '<h3>🚀 Les offres sont révélées !</h3>'+
         '<div class="v2-results">'+e.offers.map(o=>'<p>'+label(view.players[o.id])+' : '+berrys(o.amount)+'</p>').join('')+'</div>'+
-        '<p>'+(e.winner===null?'Personnage invendu.':'🏆 '+label(view.players[e.winner])+' recrute '+escOnline(CARDS[view.auction.charId]?.name||"ce personnage")+' pour '+berrys(view.auction.highBid))+'</p>'+
+        '<p>'+(e.winner===null?'Personnage invendu.':'🏆 '+label(view.players[e.winner])+' recrute '+escOnline(CARDS[view.auction.charId]?.name||"ce personnage")+' pour '+berrys(view.v3?view.players[e.winner].purchases?.[view.auction.charId]??view.auction.highBid:view.auction.highBid)+(view.v3&&view.players[e.winner].ship==='mobydick'?' · 🐋 Protection du Père : −'+berrys(BigInt(view.auction.highBid)-BigInt(view.players[e.winner].purchases?.[view.auction.charId]??view.auction.highBid)):''))+'</p>'+
         button("event-ready",myReady?"✓ En attente des autres pirates…":"Continuer →","primary",myReady);
     }else if(e.stage==="result"){
       const items=e.type==="marine"?(view.event.rolls||[]).map(x=>{
@@ -296,7 +296,7 @@
     const leader=a.leader!==null?view.players[a.leader]:null;
     const minimum=BigInt(a.highBid)>0n?BigInt(a.highBid)+BigInt(view.bidStep):BigInt(view.baseBid);
     const royal=view.event?.active?.type==="reverie";
-    const canAfford=BigInt(me.budget)>=minimum*(royal?2n:1n)&&me.roster.length<view.teamSize;
+    const canAfford=BigInt(me.budget)>=minimum&&BigInt(me.budget)>=((me.ship==='mobydick'?minimum*(royal?2n:1n)*90n+50n:minimum*(royal?2n:1n)*100n)/100n)&&me.roster.length<view.teamSize;
     const canHaki=!royal&&turn&&!me.hakiUsed&&a.firstTurnId===me.id&&a.leader===null&&a.highBid==="0"&&a.passed.length===0;
     const armamentPending=a.outcome==="sold"&&leader&&!leader.armamentUsed&&Number(CARDS[a.charId]?.power??100)<=60&&!a.armamentChoice;
     const roll=view.event.awaitingRolls;
@@ -307,18 +307,19 @@
       actionHtml='<div class="online-turn">🎲 Au tour de <b>'+label(roller)+'</b> pour lancer son dé</div>'+
         button("roll","🎲 Lancer mon dé (5 à 30 %)","primary",!mine);
     }else if(!active){
+      const rawCost=royal?BigInt(a.highBid)*2n:BigInt(a.highBid);const effectiveCost=leader?.ship==='mobydick'?((rawCost*90n+50n)/100n||1n):rawCost;
       const winner=leader?'🏆 '+label(leader)+' recrute '+escOnline(CARDS[a.charId]?.name||a.charId)+
-         (a.hakiWinner===leader.id?' gratuitement grâce au Haki des Rois':" pour "+berrys(royal?BigInt(a.highBid)*2n:a.highBid)) :
+         (a.hakiWinner===leader.id?' gratuitement grâce au Haki des Rois':" pour "+berrys(effectiveCost)+(leader?.ship==='mobydick'?' · 🐋 Protection du Père : −'+berrys(rawCost-effectiveCost):'')) :
          "🌊 Personnage invendu";
       actionHtml='<div class="online-turn online-winner">'+winner+'</div>'+
         (armamentPending?(leader.id===me.id?
-          '<div class="op21-armament-online"><strong>🛡 Haki de l’Armement</strong><p>'+escOnline(CARDS[a.charId]?.name||a.charId)+' : '+CARDS[a.charId].power+' → '+(CARDS[a.charId].power+20)+' points. Utiliser ton Haki maintenant ?</p>'+button("armament-use","🛡 Renforcer de +20 points")+button("armament-skip","Conserver mon Haki","btn-ghost")+'</div>':
+          '<div class="op21-armament-online"><strong>🛡 Haki de l’Armement</strong><p>'+escOnline(CARDS[a.charId]?.name||a.charId)+' : '+CARDS[a.charId].power+' → '+Math.min(100,CARDS[a.charId].power+(leader.ship==='polartang'?40:20))+' points. Utiliser ton Haki maintenant ?</p>'+button("armament-use","🛡 Renforcer de +"+(leader.ship==='polartang'?40:20)+" points")+button("armament-skip","Conserver mon Haki","btn-ghost")+'</div>':
           '<div class="op21-armament-online">🛡 '+label(leader)+' choisit d’utiliser ou non son Haki de l’Armement…</div>'):'')+
         (view.host?button("next","Personnage suivant →","primary",Boolean(armamentPending)): '<div class="online-hint">L’hôte passe au prochain personnage…</div>');
     }else{
       const offerChoices=[0n,1n,5n,10n].map((factor)=>{
         const val=minimum+factor*BigInt(view.bidStep);
-        return button("bid-"+val.toString(),berrys(val), "online-offer",!turn||!canAfford||val*(royal?2n:1n)>BigInt(me.budget));
+        return button("bid-"+val.toString(),berrys(val), "online-offer",!turn||!canAfford||val>BigInt(me.budget)||((me.ship==='mobydick'?val*(royal?2n:1n)*90n+50n:val*(royal?2n:1n)*100n)/100n)>BigInt(me.budget));
       }).join("");
       actionHtml='<div class="online-turn"><span>AU TOUR DE</span><b>'+label(bidder)+'</b>'+
         (!turn?'<small>Patiente, l’autre pirate réfléchit !</small>':'<small>C’est à toi de jouer !</small>')+'</div>'+
@@ -330,7 +331,7 @@
         (canHaki?button("haki","👑 Haki des Rois — recruter gratuitement"): "")+
         (royal?'<div class="online-event">👑 Taxe royale ×2 : première mise obligatoire, puis retrait gratuit. Haki des Rois désactivé.</div>':"")+
         button("pass",a.leader!==null?"Se retirer (gratuit)":"Refuser ce personnage · "+(5-me.passesUsed)+"/5 restants",
-          "online-pass",!turn||(royal&&a.leader===null)||(a.leader===null&&me.passesUsed>=5))+
+          "online-pass",!turn||(royal&&a.leader===null)||(a.leader===null&&me.passesUsed>=(me.ship==='sunny'?8:5)))+
         '<div class="online-powers">'+
         button("observation",me.observationUsed?'👁 Revoir mes visions':'👁 Observation', "btn-ghost",!turn&&!me.observationUsed)+
         '<span class="op21-haki-hint">🛡 '+(me.armamentUsed?'Armement utilisé':'Armement : +20 proposé sur une recrue ≤60')+'</span></div>'+
@@ -341,11 +342,34 @@
       portraitCard(a.charId)+'<section class="online-card online-actions-area">'+actionHtml+'</section>';
   }
   function peekPanel(){
-    const me=view.players[view.yourSeat];
-    return '<div class="online-peek"><h3>👁 Tes 3 prochaines cartes</h3>'+
-      (view.peek.length?view.peek.map((x,i)=>'<p>'+(i+1)+'. '+(x.id?escOnline(CARDS[x.id]?.name||x.id):'🔒 Enchère mystère')+
-         ' — classe '+escOnline(x.tier)+'</p>').join(""):'<p>Aucune carte restante.</p>')+
-      '<small>Cette vision est privée : l’autre joueur ne la reçoit pas.</small></div>';
+    const me=view.players[view.yourSeat],oro=view.v3&&me.ship==="orojackson",items=view.peek||[];
+    let out='<div class="online-peek"><h3>👁 '+(oro?"Vision du Futur — ":"")+"Tes "+(oro?6:3)+" prochaines cartes</h3>";
+    out+='<div class="'+(oro?'v3-peek-grid':'v3-peek-list')+'">'+(items.length?items.map((x,i)=>{
+      const c=x.id?CARDS[x.id]:null;
+      return '<div class="v3-peek-card"><b>Position '+(i+1)+'</b>'+
+      (c?'<span class="portrait portrait-tiny"><img class="portrait-photo" data-portrait-id="'+escOnline(x.id)+'" alt=""></span>':'')+
+      '<strong>'+escOnline(c?.name||(x.id||'🔒 Enchère mystère'))+'</strong>'+
+      '<small>Rang '+escOnline(x.tier)+(x.power!==undefined?' · '+x.power+' pts':'')+'</small>'+
+      (oro?'<small>Début : '+label(view.players[x.firstSeat])+'</small>':'')+'</div>';
+    }).join(""):'<p>Aucun personnage restant.</p>')+'</div>';
+    if(oro&&!view.v3.swapUsed&&items.length>=2){
+       const selector=(id)=>'<select id="'+id+'">'+items.map((x,i)=>'<option value="'+i+'">'+(i+1)+'. '+escOnline(CARDS[x.id]?.name||x.id)+'</option>').join("")+'</select>';
+       out+='<h4>🔀 Inverser deux personnages (facultatif)</h4>'+
+         '<div class="v3-swap-controls"><label>Premier personnage'+selector("v3-swap-first")+'</label>'+
+         '<label>Second personnage'+selector("v3-swap-second")+'</label></div>'+
+         '<div id="v3-swap-preview" class="v3-trade-preview"></div>'+
+         button("v3-swap","Confirmer l’inversion","btn-ghost");
+    }else if(oro&&view.v3.swapUsed)out+='<p>✓ Inversion utilisée.</p>';
+    return out+'<small>Vision privée. Seul le joueur concerné reçoit ces informations.</small></div>';
+  }
+  function v3RefreshSwap(){
+    if(!view?.v3)return;const x=root.querySelector("#v3-swap-first"),y=root.querySelector("#v3-swap-second"),preview=root.querySelector("#v3-swap-preview");
+    if(!x||!y||!preview)return;
+    const a=Number(x.value),b=Number(y.value);
+    const p=view.peek||[];
+    preview.textContent=a===b?"Choisis deux positions différentes.":
+      "Aperçu : "+(a+1)+" → "+(b+1)+", "+(b+1)+" → "+(a+1)+
+      ". Les premiers enchérisseurs restent attachés à leur position.";
   }
   function scoreboardEnd(){
     const sorted=[...view.players].sort((a,b)=>b.score-a.score||
@@ -410,17 +434,147 @@
       rules.map(x=>'<li>'+x+'</li>').join('')+'</ul><button class="primary" data-action="close-modal">Compris !</button></section>';
     modal.classList.remove("hidden");
   }
+
+  // --- OPMercato 3.0 multiplayer screens ---
+  const SHIPS3=[
+    {id:"sunny",name:"Thousand Sunny",emoji:"☀️",power:"Coup de Vent",effect:"+3 refus supplémentaires"},
+    {id:"redforce",name:"Red Force",emoji:"🐉",power:"Terre Sainte",effect:"+1 à +3 points par recrue"},
+    {id:"mobydick",name:"Moby Dick",emoji:"🐋",power:"Protection du Père",effect:"−10 % sur les enchères gagnées"},
+    {id:"polartang",name:"Polar Tang",emoji:"💛",power:"Opération de Jouvence",effect:"Armement +40 au lieu de +20"},
+    {id:"orojackson",name:"Oro Jackson",emoji:"👑",power:"Vision du Futur",effect:"6 cartes et une inversion"}
+  ];
+  const sh3=id=>SHIPS3.find(x=>x.id===id);
+  const shipMark3=(p,compact=false)=>{
+    const sh=sh3(p?.ship);if(!sh)return "";
+    const status=p.ship==="sunny"?(8-p.passesUsed)+" refus":p.ship==="redforce"?"Actif":p.ship==="mobydick"?"−10 %":
+      p.ship==="polartang"?(p.armamentUsed?"Utilisé":"Prêt"):
+      p.observationUsed?"Utilisé":"Prêt";
+    return '<span class="v3-ship-stamp"><img src="./opmercato-ships-sprite.webp" style="object-position:'+(SHIPS3.findIndex(q=>q.id===sh.id)*25)+'% 50%" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'inline\'"><span class="v3-ship-emoji" style="display:none">'+sh.emoji+'</span>'+
+      (compact?'':'<strong>'+escOnline(sh.name)+'</strong>')+'<small>'+escOnline(status)+'</small></span>';
+  };
+  const v3Power=(p,id)=>{
+    const base=Number(CARDS[id]?.power||0),smile=Number(p.smileModifiers?.[id]||0),ship=Number(p.shipBonus?.[id]||0);
+    const haki=p.armamentId===id?Number(p.armamentBonus||0):0;
+    return Math.max(0,Math.min(100,base+smile+ship+haki));
+  };
+  const v3Synergy=ids=>{
+    const map=new Map();for(const id of ids){const crew=window.MERCATO_EXPANSION?.details?.[id]?.crew;if(crew)map.set(crew,(map.get(crew)||0)+1);}
+    return [...map.values()].reduce((a,n)=>a+(n>=5?50:n>=2?(n-1)*10:0),0);
+  };
+  const projected3=(p,remove,add)=>{
+    const ids=p.roster.map(id=>id===remove?add:id);
+    return ids.reduce((n,id)=>n+(id===add?Math.max(0,Math.min(100,Number(CARDS[id]?.power||0)+Number(view.players.find(x=>x.roster.includes(add))?.shipBonus?.[add]||0)+
+       Number(view.players.find(x=>x.roster.includes(add))?.smileModifiers?.[add]||0))):v3Power(p,id)),0)+v3Synergy(ids);
+  };
+  function v3Page(){
+    const x=view.v3,me=view.players[view.yourSeat],mine=view.yourSeat;
+    const box=(title,inner)=>'<section class="online-card v3-card"><h2>'+title+'</h2>'+inner+'</section>';
+    if(x.stage==="dice"||x.stage==="dice-tie"){
+      const tied=x.stage==="dice-tie",eligible=tied?x.tiePlayers.includes(mine):x.rolls[mine]===undefined;
+      const drawn=tied?x.tieRolls?.[mine]:x.rolls[mine];
+      const who=tied?x.tiePlayers.map(id=>view.players[id]):view.players;
+      return box(tied?"🎲 Égalité ! Nouvelle série de dés":"🎲 Tirage au sort des navires",
+        '<p>'+(tied?"Seuls les joueurs ex æquo relancent, jusqu’à départage complet.":
+        "Le meilleur résultat choisira en premier. Le dernier commencera les enchères.")+'</p>'+
+        '<div class="v3-rolls">'+who.map(p=>'<div><b>'+label(p)+'</b><span>🎲 '+
+        ((tied?x.tieRolls?.[p.id]:x.rolls[p.id])??"?")+'</span></div>').join("")+'</div>'+
+        button("v3-roll",eligible?"🎲 Lancer mon dé":drawn!==undefined?"✓ Dé lancé":"Attendre le départage","primary",!eligible));
+    }
+    if(x.stage==="ships"){
+      const current=x.choiceOrder[x.choiceIndex],owner=view.players[current];
+      const used=new Set(view.players.map(p=>p.ship).filter(Boolean));
+      return box("⛵ Choix des navires",'<p>Ordre du tirage : '+x.choiceOrder.map(id=>label(view.players[id])).join(" → ")+'</p>'+
+         '<h3>Au tour de '+label(owner)+'</h3><div class="v3-ship-grid">'+SHIPS3.map(sh=>
+          '<div class="v3-ship"><div class="v3-ship-art"><img src="./opmercato-ships-sprite.webp" style="object-position:'+(SHIPS3.findIndex(q=>q.id===sh.id)*25)+'% 50%" alt="'+escOnline(sh.name)+'" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'"><span style="display:none">'+sh.emoji+'</span></div>'+
+          '<strong>'+escOnline(sh.name)+'</strong><small>'+escOnline(sh.power)+'</small><p>'+escOnline(sh.effect)+'</p>'+
+          button("v3-select-"+sh.id,used.has(sh.id)?"Déjà choisi":"Choisir ce navire","primary",used.has(sh.id)||current!==mine)+'</div>').join("")+'</div>');
+    }
+    if(x.stage==="morgans"){
+      const m=x.morgans,stage=m.stage,id=m.id;
+      let inner='<div class="v3-morgans-logo">📰</div><p>Devine la puissance initiale du personnage secret entre 1 et 100.</p>';
+      if(stage==="intro")inner+='<p>'+m.ready.length+'/'+view.players.length+' pirates prêts.</p>'+
+        button("v3-morgans-ready",m.ready.includes(mine)?"En attente des autres…":"Continuer →","primary",m.ready.includes(mine));
+      if(stage==="guesses")inner+='<p>'+m.submitted.length+'/'+view.players.length+' prédictions enregistrées.</p>'+
+        (m.submitted.includes(mine)?"<p>Prédiction verrouillée. Attends les autres pirates.</p>":
+          '<label>Ta prédiction secrète<input id="v3-prediction" type="number" min="1" max="100" inputmode="numeric" placeholder="1 à 100"></label>'+button("v3-morgans-guess","🔒 Confirmer ma prédiction","primary"));
+      if(id)inner+='<div class="v3-prediction-card">'+portraitCard(id)+'</div><p><b>'+escOnline(CARDS[id]?.name||id)+
+        '</b> · Rang '+escOnline(view.auction?.tier||((n)=>n>=95?"S":n>=80?"A":n>=65?"B":n>=50?"C":n>=35?"D":n>=20?"E":"F")(Number(CARDS[id]?.power||0)))+
+        ' · Puissance originale : <b>'+Number(CARDS[id]?.power||0)+'</b></p>';
+      if(["character","reveal","wheel","winner","offer","armament"].includes(stage)){
+       const revealed=stage==="character"?0:stage==="reveal"?m.shown:view.players.length;
+       inner+='<div class="v3-predictions">'+view.players.map((p,i)=>
+         '<div><b>'+label(p)+'</b><span>'+(i<revealed?(m.guesses[p.id]+' · écart '+Math.abs(m.guesses[p.id]-Number(CARDS[id]?.power||0))):"🔒")+'</span></div>').join("")+'</div>';
+      }
+      if(["character","reveal","winner"].includes(stage))
+       inner+=view.host?button("v3-morgans-next","Continuer →","primary"):'<p>En attente de l’hôte…</p>';
+      if(stage==="wheel")inner+='<div class="v3-wheel">🎡</div><p>Égalité entre '+m.tied.map(id=>label(view.players[id])).join(" et ")+'</p>'+
+       (view.host?button("v3-morgans-wheel","Tourner la roue !","primary"):"<p>La roue sera lancée par l’hôte.</p>");
+      if(stage==="winner"||stage==="offer"||stage==="armament")inner+='<h3>🏆 '+label(view.players[m.winner])+' remporte la prédiction !</h3>';
+      if(stage==="offer"){
+       const owner=view.players[m.winner],buff=m.bonus||0,proposed=Math.min(100,Number(CARDS[id]?.power||0)+buff);
+       inner+='<p>Recrutement gratuit · '+(owner.ship==="redforce"?"🐉 Terre Sainte : +"+buff+" points · ":"")+
+        'Puissance projetée : '+proposed+' points · Gain total : <b>+'+(Math.min(100,Number(CARDS[id]?.power||0)+buff)+v3Synergy(owner.roster.concat(id))-v3Synergy(owner.roster))+' points</b> (synergies comprises).</p>';
+       inner+=mine===m.winner?button("v3-morgans-accept","✅ Recruter gratuitement","primary")+button("v3-morgans-reject","Refuser (sans refus consommé)","btn-ghost"):'<p>Le gagnant réfléchit…</p>';
+      }
+      if(stage==="armament")inner+=mine===m.winner?'<p>Haki de l’Armement disponible sur cette recrue.</p>'+
+        button("v3-morgans-armament","🛡 Renforcer ma recrue de +"+(me.ship==="polartang"?40:20),"primary")+
+        button("v3-morgans-skip","Conserver mon Haki","btn-ghost"):'<p>Choix du Haki en cours…</p>';
+      return box("📰 Prédictions de Morgans",inner);
+    }
+    if(x.stage==="market"){
+      const m=x.market,owner=view.players[m.order[m.step]];
+      let inner='<p>Une proposition par joueur, un personnage contre un personnage, sans Berrys.</p>'+
+        '<p>Proposition '+(m.step+1)+'/'+m.order.length+' · Au tour de <b>'+label(owner)+'</b></p>';
+      if(m.offer){
+        const a=view.players[m.offer.from],b=view.players[m.offer.to],give=m.offer.give,take=m.offer.take;
+        inner+='<div class="v3-trade-versus"><div>'+portraitCard(give)+'</div><span>⇄</span><div>'+portraitCard(take)+'</div></div>'+
+         '<p>'+label(a)+' propose à '+label(b)+'</p>'+
+         '<p>Effets estimés : '+label(a)+' <b>'+(projected3(a,give,take)-a.score)+' pts</b> · '+
+         label(b)+' <b>'+(projected3(b,take,give)-b.score)+' pts</b></p>'+
+         (mine===m.offer.to?button("v3-trade-accept","✅ Accepter l’échange","primary")+
+          button("v3-trade-reject","Refuser l’échange","btn-ghost"):'<p>En attente de la réponse du destinataire…</p>');
+      }else if(m.order[m.step]===mine){
+        const targets=view.players.filter(p=>p.id!==mine&&p.roster.some(id=>!m.locked.includes(id)));
+        const options=arr=>arr.map(p=>'<option value="'+p.id+'">'+label(p)+'</option>').join("");
+        inner+='<label>Adversaire<select id="v3-trade-target">'+options(targets)+'</select></label>'+
+          '<label>Ton personnage<select id="v3-trade-give">'+me.roster.filter(id=>!m.locked.includes(id)).map(id=>'<option value="'+id+'">'+escOnline(CARDS[id]?.name||id)+'</option>').join("")+'</select></label>'+
+          '<label>Personnage souhaité<select id="v3-trade-take"></select></label>'+
+          '<div class="v3-trade-preview" id="v3-trade-preview"></div>'+
+          button("v3-trade-offer","Proposer l’échange","primary",!targets.length)+
+          button("v3-trade-pass","Passer ma proposition","btn-ghost");
+      }else inner+='<p>En attente du joueur qui propose…</p>';
+      inner+='<div class="v3-trade-history">'+m.exchanges.map(t=>'<p>✅ '+escOnline(CARDS[t.give]?.name||t.give)+' ⇄ '+escOnline(CARDS[t.take]?.name||t.take)+'</p>').join("")+'</div>';
+      return box("🔄 Marché des transferts",inner);
+    }
+    return "";
+  }
+  function v3RefreshTrade(){
+    if(!view?.v3||view.v3.stage!=="market")return;
+    const target=root.querySelector("#v3-trade-target"),give=root.querySelector("#v3-trade-give"),take=root.querySelector("#v3-trade-take");
+    if(!target||!give||!take)return;
+    const other=view.players[Number(target.value)],mine=view.players[view.yourSeat],locked=view.v3.market.locked;
+    const old=take.value;
+    take.innerHTML=(other?.roster||[]).filter(id=>!locked.includes(id)).map(id=>'<option value="'+id+'">'+escOnline(CARDS[id]?.name||id)+'</option>').join("");
+    if([...take.options].some(x=>x.value===old))take.value=old;
+    const a=give.value,b=take.value,panel=root.querySelector("#v3-trade-preview");
+    if(!a||!b||!panel)return;
+    panel.innerHTML='<p>Impact total (synergies comprises) : <b>'+label(mine)+' '+(projected3(mine,a,b)-mine.score)+
+      ' pts</b> · <b>'+label(other)+' '+(projected3(other,b,a)-other.score)+' pts</b></p>';
+  }
+
   function paint(){
     if(!showing)return;
     if(!view){landing();return;}
     const main=view.status==="lobby"?waiting():
       '<div class="online-room-bar"><span>Salon <strong>'+escOnline(view.code)+'</strong></span><span>🌐 Synchronisation active</span></div>'+
       liveHud()+'<div class="online-nav">'+button("catalog","📚 Catalogue ("+(window.OPMERCATO_SHARED?.catalogCount?.()??CHARACTERS.length)+" personnages)","btn-ghost")+button("rules","📖 Règles","btn-ghost")+'</div>'+
-      (view.status==="finished"?scoreboardEnd():auction())+gameScore()+
+      (view.status==="finished"?scoreboardEnd():view.v3&&view.v3.stage!=="auction"?v3Page():auction())+gameScore()+
       (view.host&&view.status==="playing"?button("finish","Terminer cette partie","online-text"):"");
     shell(main+(fx?'<div class="v2-fx"><div class="v2-fx-icon">'+(fx.type==="roll"?"🎲":"🪙")+'</div><strong>'+
       (fx.type==="roll"?"Dé : "+fx.outcome.roll+" · +"+fx.outcome.percent+" %":fx.outcome.pile?"PILE · +25":"FACE · −25")+
       '</strong></div>':"")+(view?'<div class="online-back">'+button("leave-online","Quitter ce salon et créer une nouvelle partie","online-text")+'</div>':"")+(onlineDetailId?detail(onlineDetailId):""));
+    if(view?.v3?.stage==="market")v3RefreshTrade();
+    if(peekOpen&&view?.v3)v3RefreshSwap();
   }
   // Les portraits sont charges par OPMERCATO_SHARED.refreshImages (mode local).
   const originalRender=render;
@@ -468,6 +622,16 @@
     if(a==="catalog"){window.OPMERCATO_SHARED?.openCatalog?.();return;}
     if(a==="rules"){onlineRules();return;}
     if(a==="observation"&&view.players[view.yourSeat].observationUsed){peekOpen=!peekOpen;paint();return;}
+    if(a==="v3-swap"){const first=Number(root.querySelector("#v3-swap-first")?.value),second=Number(root.querySelector("#v3-swap-second")?.value);if(first===second){note("Sélectionne deux positions différentes.");return;}await action("v3-observation-swap",{a:first,b:second});peekOpen=true;return;}
+    if(a==="v3-roll"){await action("v3-roll");return;}
+    if(a.startsWith("v3-select-")){await action("v3-ship",{ship:a.slice(10)});return;}
+    if(a==="v3-morgans-ready"){await action("v3-morgans-ready");return;}
+    if(a==="v3-morgans-guess"){await action("v3-morgans-guess",{guess:Number(root.querySelector("#v3-prediction")?.value)});return;}
+    if(a==="v3-morgans-next"||a==="v3-morgans-wheel"||a==="v3-morgans-armament"||a==="v3-morgans-skip"){await action(a);return;}
+    if(a==="v3-morgans-accept"||a==="v3-morgans-reject"){await action("v3-morgans-recruit",{accept:a==="v3-morgans-accept"});return;}
+    if(a==="v3-trade-offer"){await action("v3-trade-offer",{to:Number(root.querySelector("#v3-trade-target")?.value),
+       give:root.querySelector("#v3-trade-give")?.value,take:root.querySelector("#v3-trade-take")?.value});return;}
+    if(["v3-trade-pass","v3-trade-accept","v3-trade-reject"].includes(a)){await action(a);return;}
     if(a==="armament-use"){await action("armament",{charId:view.auction?.charId});return;}
     if(a==="armament-skip"){await action("armament-skip");return;}
     if(a==="event-ready"){await action("event-ready");return;}
@@ -486,9 +650,32 @@
     if(["start","bid","pass","haki","observation","next","roll","finish"].includes(a)){await action(a);return;}
   },true);
   document.addEventListener("input",ev=>{if(ev.target?.id==="online-burst-amount")burstDraft=ev.target.value;});
+  document.addEventListener("change",ev=>{if(["v3-trade-target","v3-trade-give","v3-trade-take"].includes(ev.target?.id))v3RefreshTrade();
+    if(["v3-swap-first","v3-swap-second"].includes(ev.target?.id))v3RefreshSwap();});
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&showing)refresh();});
   const css=document.createElement("style");
   css.textContent=`
+
+    .v3-peek-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.v3-peek-card{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;border:1px solid #638898;background:#16354a;padding:8px;border-radius:10px;font-size:11px;text-align:center}.v3-peek-card strong{font-size:11px;overflow-wrap:anywhere}.v3-peek-card small{font-size:10px;color:#c4d4dd}.v3-peek-card .portrait-tiny{width:48px;height:48px}.v3-swap-controls{display:grid;grid-template-columns:1fr 1fr;gap:8px}.v3-swap-controls select{width:100%;background:#183449;color:#fff;border-radius:8px;padding:8px;border:1px solid #6b8c9b}
+    .v3-ship-stamp{display:inline-flex;align-items:center;gap:5px;color:#fbd48f;font-size:11px;margin:5px 0}
+    .v3-ship-stamp img{width:27px;height:27px;object-fit:cover;border-radius:50%;border:1px solid #d3a867}
+    .v3-ship-stamp small{font-size:10px;color:#98e9b4}
+    .v3-rolls,.v3-predictions{display:grid;gap:6px;margin:15px 0}
+    .v3-rolls>div,.v3-predictions>div{display:flex;justify-content:space-between;gap:10px;background:#243d50;padding:11px;border-radius:10px}
+    .v3-rolls span{font-size:22px;animation:v3die .6s ease both}
+    @keyframes v3die{from{transform:rotateX(600deg) rotateY(400deg) scale(.4)}to{transform:none}}
+    .v3-ship-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:9px}
+    .v3-ship{display:grid;gap:5px;background:#213e52;padding:8px;border:1px solid #ae8c58;border-radius:13px;text-align:center}
+    .v3-ship-art{width:100%;aspect-ratio:1;display:grid;place-items:center;background:#153146;border-radius:8px;font-size:57px}
+    .v3-ship-art img{width:100%;height:100%;object-fit:cover;border-radius:8px}
+    .v3-ship strong{font-size:13px}.v3-ship small{color:#e3bd7b;font-weight:700}.v3-ship p{font-size:11px}
+    .v3-prediction-card{max-width:320px;margin:14px auto}
+    .v3-morgans-logo,.v3-wheel{text-align:center;font-size:72px;animation:v3die 1.5s both}
+    .v3-wheel{animation:v3die 2s linear infinite}
+    .v3-trade-versus{display:grid;grid-template-columns:1fr 30px 1fr;align-items:center;gap:5px}
+    .v3-trade-versus .character-card{min-height:100px;padding:8px;margin:0}
+    .v3-trade-versus .character-name{font-size:16px;margin:2px}.v3-trade-versus .power strong{font-size:16px}
+    .v3-trade-preview{margin:10px 0;color:#fbd48f;font-size:13px}
     .online-smile-buff{display:block;font-size:10px;color:#f2cc7a;font-weight:800;margin-top:2px}
     .op21-live-hud{position:sticky;top:calc(env(safe-area-inset-top, 0px) + 8px);z-index:80;display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:5px;background:#081b29f5;border:1px solid #9e7d48;border-radius:14px;padding:8px 5px;box-shadow:0 7px 17px #0015;backdrop-filter:blur(13px)}
     .op21-hud-player{min-width:0;display:grid;gap:3px;text-align:center;padding:3px}

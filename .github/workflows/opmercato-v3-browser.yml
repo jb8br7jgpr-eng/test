@@ -1,0 +1,85 @@
+name: OPMercato V3 Browser Smoke
+on:
+  workflow_dispatch:
+  push:
+    branches: [opmercato-v3-work-20261016]
+    paths: ['mercato-v3-local.js', 'mercato-online.js', 'index.html', '.github/workflows/opmercato-v3-browser.yml', 'opmercato-ships-sprite.webp']
+jobs:
+  v3-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Check scripts
+        run: |
+          node --check mercato-online.js
+          node --check mercato-v3-local.js
+          node --check mercato-features.js
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+      - run: npm install --no-save playwright-core@1.57.0
+      - run: python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/v3-test.log 2>&1 &
+      - name: Mobile Chrome local V3 smoke
+        env:
+          CHROME_BINARY: ${{ steps.chrome.outputs.chrome-path }}
+        run: |
+          node --input-type=module <<'JS'
+          import {chromium} from "playwright-core";
+          const browser=await chromium.launch({executablePath:process.env.CHROME_BINARY,headless:true,args:["--no-sandbox"]});
+          const ctx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+          const page=await ctx.newPage(),errors=[];
+          page.on("pageerror",e=>errors.push(e.stack||e.message));
+          try{
+            await page.goto("http://127.0.0.1:8765/",{waitUntil:"domcontentloaded"});
+            await page.evaluate(()=>localStorage.clear());
+            await page.reload({waitUntil:"domcontentloaded"});
+            await page.locator('[data-action="start"]').click();
+            if(await page.evaluate(()=>state?.v3?.phase)!=="dice")throw Error("V3 did not enter dice stage");
+            for(let i=0;i<90;i++){
+              const phase=await page.evaluate(()=>state.v3.phase);
+              if(phase==="ships")break;
+              if(!["dice","dice-tie"].includes(phase))throw Error("Unexpected stage "+phase);
+              await page.locator('[data-action="v3-roll"]').click();
+            }
+            if(await page.evaluate(()=>state.v3.phase)!=="ships")throw Error("Dice ties not resolved");
+            await page.locator('[data-action^="v3-ship-"]').first().click();
+            await page.locator('[data-action^="v3-ship-"]').nth(1).click();
+            const result=await page.evaluate(()=>({phase:state.v3.phase,ships:state.players.map(p=>p.ship)}));
+            if(new Set(result.ships).size!==2||!result.ships.every(Boolean))throw Error("Ships not unique "+JSON.stringify(result));
+            const sprite=await page.evaluate(async()=>{const res=await fetch("./opmercato-ships-sprite.webp");return [res.status,(await res.arrayBuffer()).byteLength]});
+            if(sprite[0]!==200||sprite[1]<1000)throw Error("Ship artwork missing "+sprite);
+            if(errors.length)throw Error("JS crash "+errors.join("; "));
+            console.log("PASS local V3 dice, ships, image asset");
+            await page.evaluate(()=>{state.v3.phase='morgans';state.v3.morgans.phase='intro';save();render();});
+            await page.locator('[data-action="v3-morgans-ready"]').click();
+            await page.locator('#v3-guess').fill('30');
+            await page.locator('[data-action="v3-morgans-guess"]').click();
+            await page.locator('#v3-guess').fill('60');
+            await page.locator('[data-action="v3-morgans-guess"]').click();
+            await page.locator('[data-action="v3-morgans-next"]').click();
+            await page.locator('[data-action="v3-morgans-next"]').click();
+            await page.locator('[data-action="v3-morgans-next"]').click();
+            if(await page.evaluate(()=>state.v3.morgans.phase)==="wheel")
+              await page.locator('[data-action="v3-morgans-wheel"]').click();
+            await page.locator('[data-action="v3-morgans-next"]').click();
+            if(await page.evaluate(()=>state.v3.morgans.phase)!=="offer")throw Error("Morgans offer missing");
+            await page.locator('[data-action="v3-morgans-reject"]').click();
+            if(await page.evaluate(()=>state.v3.morgans.done)!==true)throw Error("Morgans refuse did not finish");
+            console.log("PASS local V3 Morgans predictions and refusal");
+            await page.evaluate(()=>{
+              const ids=Object.keys(CARDS).filter(id=>id!==state.v3.morgans.id).slice(0,6);
+              state.players[0].roster=ids.slice(0,3);state.players[1].roster=ids.slice(3,6);
+              state.v3.market.done=false;state.v3.phase='auction';state.auction.outcome='unsold';
+              drawNext();
+            });
+            if(await page.evaluate(()=>state.v3.phase)!=="market")throw Error("Market not triggered at halfway");
+            await page.locator('[data-action="v3-trade-offer"]').click();
+            if(await page.evaluate(()=>state.v3.market.offer)===null)throw Error("Market offer not submitted");
+            await page.locator('[data-action="v3-trade-accept"]').click();
+            if(await page.evaluate(()=>state.v3.market.exchanges.length)!==1)throw Error("Trade not accepted");
+            console.log("PASS local V3 trade and bonus transfer UI");
+            if(errors.length)throw Error("Browser exceptions: "+errors.join("; "));
+          }finally{await browser.close();}
+          JS
