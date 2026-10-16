@@ -2,7 +2,7 @@ name: OPMercato V3 Two-Phone Browser Journey
 on:
   workflow_dispatch:
   push:
-    branches: [opmercato-v3-work-20261016]
+    branches: [main, opmercato-v3-work-20261016]
     paths: ['.github/workflows/opmercato-v3-two-phone.yml', 'mercato-online.js', 'index.html']
 jobs:
   two-phones:
