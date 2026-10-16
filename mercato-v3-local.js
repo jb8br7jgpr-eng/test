@@ -34,7 +34,8 @@ drawNext=function(){if(!V())return oldDraw();if(V().phase!=='auction')return;
  if(dueM()){V().phase='morgans';V().morgans.phase='intro';state.auction=null;save();render();return;}
  if(dueT()){const t=V().market;t.order=shuffle(state.players.map(p=>p.id));t.idx=0;t.offer=null;t.locked=[];t.exchanges=[];V().phase='market';state.auction=null;save();render();return;}
  oldDraw();if(state.phase==='auction'&&state.auction){
- const wanted=(V().starter+state.round-1)%state.players.length;
+ const normal=(V().starter+state.round-1)%state.players.length;
+ const wanted=V().oroOpeners?.[state.auction.charId]??normal;
  const id=findNextBidder((wanted+state.players.length-1)%state.players.length,state.auction);
  state.auction.turnId=id;state.auction.firstTurnId=id;save();render();
  }};
