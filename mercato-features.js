@@ -91,6 +91,19 @@
     }
     return true;
   }
+  // V3: draw event cards from outside the six positions reserved by Oro Jackson.
+  // Previously announced character order remains intact, even when events interleave.
+  function v3MoveFreeToFront(predicate,count){
+    if(!state?.v3?.oroLocked?.length)return true;
+    const locks=new Set(state.v3.oroLocked);
+    const future=state.drawPile.slice(state.drawIndex);
+    const available=future.filter(id=>!locks.has(id)&&predicate(id));
+    if(available.length<count)return false;
+    const selected=available.slice(0,count);
+    for(const id of selected)state.drawPile.splice(state.drawPile.indexOf(id,state.drawIndex),1);
+    state.drawPile.splice(state.drawIndex,0,...selected);
+    return true;
+  }
   const oldSave=save;
   save=function(){
     if(state){
@@ -165,6 +178,11 @@
         const pool=['mystery','marine','black','reverie'].filter(x=>!reserved.has(x));
         selected=pool[Math.floor(Math.random()*pool.length)]||'marine';
       }
+      if(state.v3?.oroLocked?.length && selected &&
+        ((selected==='war'&&!v3MoveFreeToFront(id=>tierOf(CARDS[id]?.power||0).tier==='S',2)) ||
+         (selected==='black'&&!v3MoveFreeToFront(()=>true,3)) ||
+         (selected==='burst'&&!v3MoveFreeToFront(id=>BURST_IDS.has(id),1)) ||
+         (selected==='mystery'&&!v3MoveFreeToFront(()=>true,1))))selected='marine';
       if(selected==='war'&&!prepareWarCards(upcoming)){
         const reserved=new Set(f.plan.map(x=>x.type));
         const pool=['marine','mystery','black','reverie'].filter(x=>!reserved.has(x));
@@ -177,7 +195,8 @@
       if(selected==='burst'){
         // Inclure la carte qui vient d'être tirée et les cartes futures, mais jamais les recrues
         // déjà achetées ni les cartes refusées dans les enchères précédentes.
-        const candidates=[a.charId,...state.drawPile.slice(state.drawIndex)].filter(id=>BURST_IDS.has(id));
+        const locked=new Set(state.v3?.oroLocked||[]);
+        const candidates=[a.charId,...state.drawPile.slice(state.drawIndex)].filter(id=>BURST_IDS.has(id)&&!locked.has(id));
         const chosen=candidates[Math.floor(Math.random()*candidates.length)];
         if(chosen&&chosen!==a.charId){
           const index=state.drawPile.indexOf(chosen,state.drawIndex);
