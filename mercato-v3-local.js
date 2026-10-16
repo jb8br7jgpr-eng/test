@@ -7,6 +7,13 @@ const v3ShipStatus=p=>p.ship==='sunny'?(8-p.passesUsed)+' refus':p.ship==='redfo
 const v3ShipImage=p=>p.ship?'<img class="v3-hud-ship" src="./opmercato-ships-sprite.webp" style="object-position:'+(SHIPS.findIndex(x=>x[0]===p.ship)*25)+'% 50%" alt="">':'';
 const v3MiniHud=()=>'<div class="op21-local-hud v3-mini-hud">'+state.players.map(p=>'<div class="op21-hud-item"><b class="op21-hud-name">'+esc(p.name)+'</b><strong class="op21-hud-money">'+currency(p.budget)+'</strong><small class="op21-hud-stats">⭐ '+getScore(p)+' pts</small>'+(p.ship?'<small>'+v3ShipImage(p)+' '+v3ShipStatus(p)+'</small>':'')+'</div>').join('')+'</div>';
 const oldStart=start,oldDraw=drawNext,oldScore=getScore,oldSettle=settle,oldRender=render,oldPass=pass;
+const oldAuctionScreenV3=auctionScreen;
+auctionScreen=function(){
+ if(state?.v3&&state.phase==='auction'&&!state.auction){
+   return '<section class="card auction"><h2>⚓ Prochaine enchère</h2><p>Le personnage est en préparation…</p></section>';
+ }
+ return oldAuctionScreenV3();
+};
 const oldScoreBoardV3=scoreBoard;
 scoreBoard=function(){
  let html=oldScoreBoardV3();
