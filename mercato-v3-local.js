@@ -82,7 +82,12 @@ function swap(o){const a=player(o.from),b=player(o.to);
  if(a.armamentId===o.give)a.armamentId=null;if(b.armamentId===o.take)b.armamentId=null;
  V().market.locked.push(o.give,o.take);V().market.exchanges.push(o);
 }
-function nextTrade(){const t=V().market;t.offer=null;t.idx++;if(t.idx>=t.order.length){t.done=true;resume();}else{save();render();}}
+function nextTrade(){const t=V().market;t.offer=null;t.result=null;t.idx++;if(t.idx>=t.order.length){t.done=true;resume();}else{save();render();}}
+function v3TradePortrait(id,owner){
+ const c=CARDS[id]||{},r=tierOf(c.power||0).tier;
+ return '<article class="v3-trade-person"><span class="v3-trade-face"><img class="portrait-photo" data-portrait-id="'+esc(id)+'" alt="" loading="lazy"></span>'+
+ '<strong>'+esc(c.name||id)+'</strong><small>Rang '+r+' · '+(owner?pow(owner,id):c.power||0)+' pts</small></article>';
+}
 function screen(){const v=V(),m=v.morgans,t=v.market;
  if(v.phase==='intro')return '<div class="v3-start-intro"><div class="v3-intro-symbols">🎲 ⛵</div><h2>Que l’aventure commence !</h2><p>Avant les enchères, chaque pirate lance un dé à six faces.</p><div class="v3-intro-steps"><p><b>1.</b> Tout le monde lance son dé. En cas d’égalité, seuls les ex æquo relancent.</p><p><b>2.</b> Le plus grand résultat choisit son navire en premier, puis les autres dans l’ordre.</p><p><b>3.</b> Chaque navire est unique et donne un pouvoir pour toute la partie.</p><p><b>4.</b> Le dernier à choisir son navire ouvre la première enchère. Ensuite les premiers enchérisseurs alternent.</p></div>'+btn('intro-continue','⚔️ Commencer les lancers')+'</div>';
  if(v.phase==='dice'||v.phase==='dice-tie'){
@@ -112,9 +117,19 @@ function screen(){const v=V(),m=v.morgans,t=v.market;
   return h;
  }
  if(v.phase==='market'){
+  if(t.result){
+    const r=t.result,a=player(r.from),b=player(r.to);
+    return '<div class="v3-trade-result"><div class="v3-trade-result-symbol">'+(r.accepted?'✅':'❌')+'</div>'+
+      '<h2>Échange '+(r.accepted?'accepté !':'refusé')+'</h2>'+
+      '<p>'+esc(a.name)+' a proposé un échange à '+esc(b.name)+'.</p>'+
+      '<div class="v3-trade-versus">'+v3TradePortrait(r.give,r.accepted?b:a)+'<span class="v3-trade-arrow">⇄</span>'+v3TradePortrait(r.take,r.accepted?a:b)+'</div>'+
+      '<p class="v3-trade-result-detail">'+(r.accepted?'Les deux personnages ont rejoint leurs nouveaux équipages.':'Chaque personnage reste dans son équipage.')+'</p>'+
+      btn('trade-continue',t.idx+1>=t.order.length?'Continuer les enchères →':'Continuer le marché →')+'</div>';
+  }
   const p=player(t.order[t.idx]);let h='<h2>🔄 Marché des transferts</h2><h3>Proposition '+(t.idx+1)+'/'+t.order.length+' — '+esc(p.name)+'</h3>';
-  if(t.offer){const o=t.offer,a=player(o.from),b=player(o.to);h+='<div class="v3-trade-cards">'+charCard(CARDS[o.give])+charCard(CARDS[o.take])+'</div><h3>'+nm(o.give)+' ⇄ '+nm(o.take)+'</h3>'+
-    '<p>'+esc(a.name)+' '+(tradeScore(a,o.give,o.take)-getScore(a))+' pts · '+esc(b.name)+' '+(tradeScore(b,o.take,o.give)-getScore(b))+' pts</p>'+
+  if(t.offer){const o=t.offer,a=player(o.from),b=player(o.to);h+='<div class="v3-trade-versus">'+v3TradePortrait(o.give,a)+'<span class="v3-trade-arrow">⇄</span>'+v3TradePortrait(o.take,b)+'</div>'+
+    '<p class="v3-trade-names">'+esc(a.name)+' propose à '+esc(b.name)+'</p>'+
+    '<p class="v3-trade-impact">Effets estimés : <b>'+esc(a.name)+' '+(tradeScore(a,o.give,o.take)-getScore(a))+' pts</b> · <b>'+esc(b.name)+' '+(tradeScore(b,o.take,o.give)-getScore(b))+' pts</b></p>'+
     btn('trade-accept','Accepter')+btn('trade-reject','Refuser');
   }else{const people=state.players.filter(x=>x.id!==p.id&&x.roster.some(id=>!t.locked.includes(id)));
     h+='<label>Adversaire<select id="v3-target">'+people.map(x=>'<option value="'+x.id+'">'+esc(x.name)+'</option>').join('')+'</select></label>'+
@@ -229,10 +244,17 @@ document.addEventListener('click',async e=>{const b=e.target.closest('button[dat
  else if(a==='morgans-armament'||a==='morgans-skip'){if(a==='morgans-armament'){const p=player(m.winner);p.armamentId=m.id;p.armamentUsed=true;p.armamentBonus=p.ship==='polartang'?40:20;}m.phase='done';resume();return;}
  else if(a==='trade-pass'){nextTrade();return;}
  else if(a==='trade-offer'){const p=player(t.order[t.idx]),to=Number(document.querySelector('#v3-target')?.value),give=document.querySelector('#v3-give')?.value,take=document.querySelector('#v3-take')?.value;if(!p.roster.includes(give)||!player(to)?.roster.includes(take))return;t.offer={from:p.id,to,give,take};}
- else if(a==='trade-accept'||a==='trade-reject'){if(a==='trade-accept')swap(t.offer);nextTrade();return;}
+ else if(a==='trade-accept'||a==='trade-reject'){
+   if(!t.offer||t.result)return;
+   const offer={...t.offer},accepted=a==='trade-accept';
+   if(accepted)swap(offer);
+   t.result={...offer,accepted};t.offer=null;save();render();return;
+ }
+ else if(a==='trade-continue'){if(!t.result)return;nextTrade();return;}
  save();render();
 },true);
 const css=document.createElement('style');css.textContent='.v3-screen{text-align:center;padding:20px;margin:16px 0}.v3-screen h2{color:#f6d28f;font-size:26px}.v3-screen .primary{display:block;width:100%;margin:10px 0}.v3-screen input,.v3-screen select{width:100%;background:#163544;color:#fff;border:1px solid #b98e56;border-radius:10px;padding:12px;margin:8px 0}.v3-ship-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px}.v3-ship{display:grid;gap:7px;background:#23465c;padding:8px;border-radius:13px}.v3-ship img{width:100%;aspect-ratio:1;object-fit:cover}.v3-ship small,.v3-ship p{font-size:12px}.v3-players-mini{font-size:12px;padding:10px;color:#c5d4dd}.v3-ship-mini{font-size:11px;color:#f4ca87}.v3-wheel{font-size:80px;animation:v3spin 2s linear infinite}@keyframes v3spin{to{transform:rotate(360deg)}}';
 css.textContent+='.v3-face-clip{display:block!important;position:relative!important;width:60px!important;height:60px!important;max-width:60px!important;max-height:60px!important;flex:none!important;overflow:hidden!important;contain:layout paint!important;margin:4px auto!important;border:2px solid #d5ad68;border-radius:50%!important;background:#234258}.v3-face-clip>.portrait-photo.v3-face-image{position:absolute!important;inset:0!important;display:block!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;min-width:0!important;object-fit:cover!important;object-position:center 22%!important;border-radius:50%!important;transform:none!important}.v3-oro-card{min-width:0;overflow:hidden;align-items:center}.v3-oro-card b{overflow-wrap:anywhere;font-size:12px;line-height:1.2}.v3-oro-modal{max-width:660px;width:min(100%,660px);max-height:88dvh;overflow-y:auto;overflow-x:hidden;box-sizing:border-box}.v3-team-ship{display:flex;align-items:center;gap:9px;padding:9px 11px;margin-top:9px;background:#0d2636b8;border:1px solid #8d7557;border-radius:12px;min-width:0}.v3-team-ship>img{width:40px;height:40px;flex:none;object-fit:cover;border-radius:50%;border:1px solid #d2b17c}.v3-team-ship-name{display:grid;gap:2px;flex:1;min-width:0;color:#fce1ae}.v3-team-ship-name strong{font-size:13px;overflow-wrap:anywhere}.v3-team-ship-name small{font-size:11px;color:#c4d9e1}.v3-team-ship-status{font-size:11px;font-weight:800;color:#d6f5e0;background:#315647;border-radius:99px;padding:5px 8px;flex:none}.v3-ship{padding:11px;align-content:start;gap:8px}.v3-ship p{line-height:1.45;font-size:12px!important;color:#e5ecf0}.v3-redforce-result{padding:14px;text-align:center;background:#183b50;border:1px solid #e0af67;border-radius:12px;color:#ffdc93;font-size:14px;margin:12px auto}.v3-redforce-bonus{display:block;font-size:10px;font-weight:800;color:#eed092}.v3-intro-symbols{font-size:66px;filter:drop-shadow(0 8px 14px #0007);margin:12px 0}.v3-start-intro{max-width:620px;margin:auto}.v3-intro-steps{text-align:left;display:grid;gap:8px;margin:22px auto}.v3-intro-steps p{margin:0;padding:12px;border:1px solid #97794d;border-radius:12px;background:#1a3647;line-height:1.5}.v3-oro-photo{width:100%;height:auto;aspect-ratio:1;object-fit:cover;border-radius:8px;background:#31556a}.v3-hud-ship{width:24px;height:24px;border-radius:50%;object-fit:cover;display:inline-block;vertical-align:middle;margin-right:3px}.v3-mini-hud{margin-top:8px}.v3-morgans-portrait{max-width:400px;margin:10px auto}.v3-trade-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.v3-trade-cards .character-card{min-width:0;min-height:185px;padding:10px}.v3-trade-cards .character-name{font-size:18px;margin:20px 0 10px}.v3-trade-cards .power strong{font-size:23px}.v3-oro-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.v3-oro-card{display:grid;gap:3px;padding:8px;border:1px solid #94764f;border-radius:10px;background:#183b50;font-size:11px}.v3-oro-card span,.v3-oro-card small{font-size:10px;color:#cfdeed}.v3-oro-pair{display:grid;grid-template-columns:1fr 1fr;gap:9px}';
+css.textContent+='.v3-trade-versus{display:grid;grid-template-columns:minmax(0,1fr) 22px minmax(0,1fr);gap:6px;align-items:center;width:100%;max-width:530px;margin:14px auto}.v3-trade-person{min-width:0;overflow:hidden;display:flex;flex-direction:column;gap:7px;align-items:center;justify-content:center;background:#173b4e;border:1px solid #668195;border-radius:15px;padding:12px 5px;box-sizing:border-box}.v3-trade-person strong{display:block;max-width:100%;overflow-wrap:anywhere;font-size:clamp(11px,3.2vw,15px);line-height:1.25}.v3-trade-person small{color:#e6c58d;font-size:11px}.v3-trade-face{width:64px;height:64px;border-radius:50%;overflow:hidden;position:relative;background:#2b5366;border:2px solid #f6ce8b;display:block;flex-shrink:0}.v3-trade-face img{width:100%!important;height:100%!important;object-fit:cover!important;object-position:50% 24%;border-radius:50%}.v3-trade-arrow{font-size:22px;color:#fbd180}.v3-trade-impact{background:#17364b;border-radius:12px;padding:12px;font-size:13px;line-height:1.5}.v3-trade-impact b{white-space:normal}.v3-trade-names{font-size:13px}.v3-trade-result{text-align:center}.v3-trade-result-symbol{font-size:64px}.v3-trade-result-detail{font-size:14px;line-height:1.6;margin:18px 0}';
 document.head.appendChild(css);
 })();
