@@ -42,7 +42,16 @@ jobs:
             if(home.team!=="10"||home.nav.length!==2||!home.nav[0].includes("Catalogue")||
               !home.nav[1].includes("Règles")||home.online<55||home.oldOnline||home.duplicate)
               throw Error("Homepage layout or local default invalid: "+JSON.stringify(home));
-            console.log("PASS homepage top Catalogue / Règles, prominent online button and 10-player roster defaults");
+            await page.locator('.home-nav [data-action="catalog"]').click();
+            await page.locator('#modal .catalog-modal').waitFor({state:"visible"});
+            await page.locator('#modal [data-action="close-modal"]').first().click();
+            await page.locator('.home-nav [data-action="rules"]').click();
+            await page.locator('#modal h2').getByText('Règles du mercato').waitFor({state:"visible"});
+            await page.locator('#modal [data-action="close-modal"]').first().click();
+            await page.locator('.home-online-button').click();
+            await page.locator('[data-online="create-form"]').waitFor({state:"visible"});
+            await page.locator('[data-online="back"]').click();
+            console.log("PASS homepage Catalogue / Règles, online entry, and 10 recruits by default");
             await page.locator('[data-action="start"]').click();
             if(await page.evaluate(()=>state?.v3?.phase)!=="intro")throw Error("V3 introduction missing");
             await page.locator('[data-action="v3-intro-continue"]').click();
