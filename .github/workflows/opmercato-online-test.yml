@@ -1,11 +1,6 @@
 name: OPMercato Online Smoke Test
 on:
-  workflow_dispatch:
-  push:
-    paths:
-      - '.github/workflows/opmercato-online-test.yml'
-      - 'mercato-online.js'
-      - 'supabase/functions/opmercato-online/index.ts'
+  workflow_dispatch: # Legacy V2 test, manual only. V3 suites run on commits.
 jobs:
   online-integration:
     runs-on: ubuntu-latest
