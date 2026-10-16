@@ -478,6 +478,15 @@
     return ids.reduce((n,id)=>n+(id===add?Math.max(0,Math.min(100,Number(CARDS[id]?.power||0)+Number(view.players.find(x=>x.roster.includes(add))?.shipBonus?.[add]||0)+
        Number(view.players.find(x=>x.roster.includes(add))?.smileModifiers?.[add]||0))):v3Power(p,id)),0)+v3Synergy(ids);
   };
+  function v3TradeMini(id,holder){
+    const c=CARDS[id],base=Number(c?.power||0),points=holder?v3Power(holder,id):base;
+    return '<div class="v3-trade-mini">'+
+      '<span class="v3-trade-avatar"><img class="portrait-photo" data-portrait-id="'+escOnline(id)+'" alt="" loading="lazy"></span>'+
+      '<strong>'+escOnline(c?.name||id)+'</strong>'+
+      '<small>Rang '+escOnline(classFor(base))+' · '+points+' pts</small>'+
+      (holder?.shipBonus?.[id]?'<small>🐉 Terre Sainte +'+holder.shipBonus[id]+'</small>':'')+
+      '</div>';
+  }
   function v3Page(){
     const x=view.v3,me=view.players[view.yourSeat],mine=view.yourSeat;
     if(x.stage==="intro"){
@@ -546,11 +555,24 @@
     }
     if(x.stage==="market"){
       const m=x.market,owner=view.players[m.order[m.step]];
+      if(m.result){
+        const result=m.result,o=result.offer,accepted=result.accepted;
+        const from=view.players[o.from],to=view.players[o.to],ready=result.ready||[];
+        const fromHolder=accepted?to:from,toHolder=accepted?from:to;
+        const outcome='<div class="v3-trade-result-mark">'+(accepted?'✅':'❌')+'</div>'+
+          '<h3>'+ (accepted?'Échange accepté !':'Échange refusé') +'</h3>'+
+          '<p>'+(accepted?'Les personnages ont rejoint leurs nouveaux équipages.':'Chaque personnage reste dans son équipage.')+'</p>'+
+          '<div class="v3-trade-versus">'+v3TradeMini(o.give,fromHolder)+'<span class="v3-trade-arrow">⇄</span>'+v3TradeMini(o.take,toHolder)+'</div>'+
+          '<p>'+label(from)+' ↔ '+label(to)+'</p>'+
+          '<p class="v3-trade-wait">'+ready.length+'/'+view.players.length+' joueurs prêts à poursuivre</p>'+
+          button("v3-trade-continue",ready.includes(mine)?"✓ En attente des autres…":"Continuer →","primary",ready.includes(mine));
+        return box("🔄 Résultat du transfert",'<div class="v3-trade-result">'+outcome+'</div>');
+      }
       let inner='<p>Une proposition par joueur, un personnage contre un personnage, sans Berrys.</p>'+
         '<p>Proposition '+(m.step+1)+'/'+m.order.length+' · Au tour de <b>'+label(owner)+'</b></p>';
       if(m.offer){
         const a=view.players[m.offer.from],b=view.players[m.offer.to],give=m.offer.give,take=m.offer.take;
-        inner+='<div class="v3-trade-versus"><div>'+portraitCard(give)+'</div><span>⇄</span><div>'+portraitCard(take)+'</div></div>'+
+        inner+='<div class="v3-trade-versus">'+v3TradeMini(give,a)+'<span class="v3-trade-arrow">⇄</span>'+v3TradeMini(take,b)+'</div>'+
          '<p>'+label(a)+' propose à '+label(b)+'</p>'+
          '<p>Effets estimés : '+label(a)+' <b>'+(projected3(a,give,take)-a.score)+' pts</b> · '+
          label(b)+' <b>'+(projected3(b,take,give)-b.score)+' pts</b></p>'+
@@ -655,7 +677,7 @@
     if(a==="v3-morgans-accept"||a==="v3-morgans-reject"){await action("v3-morgans-recruit",{accept:a==="v3-morgans-accept"});return;}
     if(a==="v3-trade-offer"){await action("v3-trade-offer",{to:Number(root.querySelector("#v3-trade-target")?.value),
        give:root.querySelector("#v3-trade-give")?.value,take:root.querySelector("#v3-trade-take")?.value});return;}
-    if(["v3-trade-pass","v3-trade-accept","v3-trade-reject"].includes(a)){await action(a);return;}
+    if(["v3-trade-pass","v3-trade-accept","v3-trade-reject","v3-trade-continue"].includes(a)){await action(a);return;}
     if(a==="armament-use"){await action("armament",{charId:view.auction?.charId});return;}
     if(a==="armament-skip"){await action("armament-skip");return;}
     if(a==="event-ready"){await action("event-ready");return;}
@@ -710,9 +732,18 @@
     .v3-prediction-card{max-width:320px;margin:14px auto}
     .v3-morgans-logo,.v3-wheel{text-align:center;font-size:72px;animation:v3die 1.5s both}
     .v3-wheel{animation:v3die 2s linear infinite}
-    .v3-trade-versus{display:grid;grid-template-columns:1fr 30px 1fr;align-items:center;gap:5px}
-    .v3-trade-versus .character-card{min-height:100px;padding:8px;margin:0}
-    .v3-trade-versus .character-name{font-size:16px;margin:2px}.v3-trade-versus .power strong{font-size:16px}
+    .v3-trade-versus{display:grid;grid-template-columns:minmax(0,1fr) 23px minmax(0,1fr);align-items:center;gap:6px;width:100%;max-width:480px;margin:14px auto}
+    .v3-trade-mini{box-sizing:border-box;min-width:0;max-width:100%;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border:1px solid #5e8796;background:#1b3a4e;padding:11px 5px;border-radius:14px;text-align:center}
+    .v3-trade-mini strong{font-size:clamp(12px,3.5vw,15px);line-height:1.25;overflow-wrap:anywhere;word-break:normal;max-width:100%}
+    .v3-trade-mini small{font-size:11px;color:#e3d4b9;overflow-wrap:anywhere}
+    .v3-trade-arrow{font-size:22px;color:#edcd8b;text-align:center}
+    .v3-trade-avatar{width:64px;height:64px;max-width:64px;max-height:64px;flex:none;position:relative;overflow:hidden;contain:layout paint;border:2px solid #d3a95b;border-radius:50%;background:#23475b}
+    .v3-trade-avatar>.portrait-photo{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;display:block!important;object-fit:cover!important;object-position:center 22%!important;transform:none!important;border-radius:50%!important}
+    .v3-trade-result{text-align:center;max-width:530px;margin:0 auto}
+    .v3-trade-result-mark{font-size:64px;line-height:1;margin:12px 0}
+    .v3-trade-result h3{font-size:23px;margin:8px 0;color:#fbd48f}
+    .v3-trade-result p{line-height:1.55}
+    .v3-trade-wait{font-size:12px;color:#b2c7d5}
     .v3-trade-preview{margin:10px 0;color:#fbd48f;font-size:13px}
     .online-smile-buff{display:block;font-size:10px;color:#f2cc7a;font-weight:800;margin-top:2px}
     .op21-live-hud{position:sticky;top:calc(env(safe-area-inset-top, 0px) + 8px);z-index:80;display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:5px;background:#081b29f5;border:1px solid #9e7d48;border-radius:14px;padding:8px 5px;box-shadow:0 7px 17px #0015;backdrop-filter:blur(13px)}
