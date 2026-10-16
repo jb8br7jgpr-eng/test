@@ -170,21 +170,21 @@
   function powerFor(p,id){if(view?.v3?.version===3)return v3Power(p,id);const base=CARDS[id]?.power||0;return p.smileModifiers?.[id]===undefined?base:Math.max(0,Math.min(100,base+p.smileModifiers[id]));}
   function classFor(n){return n>=95?"S":n>=80?"A":n>=65?"B":n>=50?"C":n>=35?"D":n>=20?"E":"F";}
   function gameScore(){
+    const summary=window.OPMERCATO_ROSTER_SUMMARY;
+    const activeLosses=view.event?.active?.type==="god"?view.event.active.removed||[]:[];
+    const losses=view.event?.godLosses?.length?view.event.godLosses:activeLosses;
+    const teamSize=view.teamSize||10;
     return '<section class="online-teams"><h2>⚓ Vos équipages</h2>'+
-      view.players.map(p=>'<div class="online-team"><div class="online-team-top"><b>'+label(p)+'</b><strong>'+p.score+' pts</strong></div>'+(p.ship?'<div class="v3-team-ship-online">'+shipMark3(p)+'</div>':'')+
-        '<div class="online-team-meta">'+berrys(p.budget)+' restants · '+p.roster.length+'/'+view.teamSize+' recrues · '+p.passesUsed+'/'+(p.ship==='sunny'?8:5)+' refus</div>'+
-        '<div class="online-roster">'+(p.roster.length?p.roster.map(id=>'<button type="button" data-action="details" data-char-id="'+escOnline(id)+'" class="online-roster-character">'+
-          '<span class="portrait portrait-tiny"><span class="portrait-fallback">☠️</span><img class="portrait-photo" data-portrait-id="'+escOnline(id)+'" alt="" loading="lazy"></span>'+
-          '<span>'+escOnline(CARDS[id]?.name||id)+(view.v3&&p.shipBonus?.[id]?'<small class="v3-redforce-bonus">🐉 Terre Sainte +'+p.shipBonus[id]+' · '+powerFor(p,id)+' pts</small>':'')+(p.smileModifiers?.[id]!==undefined?'<small class="online-smile-buff">🍎 '+powerFor(p,id)+' pts (rang '+classFor(CARDS[id]?.power||0)+')</small>':'')+'</span></button>').join(""):
-        '<span>Équipage vide</span>')+'</div>'+
-        '<div class="online-small">Base '+p.roster.reduce((v,id)=>v+powerFor(p,id),0)+
-          (!view?.v3&&p.armamentId?' · Armement +'+(p.armamentBonus??5):'')+
-          (p.bonuses?.length?' · Synergies +'+p.bonuses.reduce((v,x)=>v+x.points,0):'')+'</div>'+
-        (p.marineAward&&BigInt(p.marineAward)>0n?'<div class="online-small">🎲 Prime Marine : +'+berrys(p.marineAward)+'</div>':'')+
-        '<div class="online-small">👑 '+(p.hakiUsed?'Haki des Rois utilisé':'Disponible')+
-        ' · 👁 '+(p.observationUsed?'Utilisé':'Disponible')+' · 🛡 '+(p.armamentUsed?'Utilisé':'Disponible')+'</div>'+
-        (p.bonuses?.length?'<div class="online-synergy">🤝 '+p.bonuses.map(x=>escOnline(x.name)+' ('+x.count+') +'+x.points).join(", ")+'</div>':'')+
-      '</div>').join("")+'</section>';
+      view.players.map(p=>'<div class="online-team"><div class="online-team-top"><b>'+label(p)+'</b><strong>'+p.score+' pts</strong></div>'+
+        (p.ship?'<div class="v3-team-ship-online">'+shipMark3(p)+'</div>':'')+
+        '<div class="online-team-meta">'+berrys(p.budget)+' restants · '+p.roster.length+'/'+teamSize+' recrues · '+p.passesUsed+'/'+(p.ship==='sunny'?8:5)+' refus</div>'+
+        (summary?summary.crew(p,{v3:view.v3?.version===3,online:true,score:p.score,losses}):
+          '<p class="online-small">'+p.roster.length+' personnages · '+p.score+' points</p>')+
+        (p.marineAward&&BigInt(p.marineAward)>0n?'<div class="oprs-finance">🎲 Prime de la Marine : +'+berrys(p.marineAward)+' (Berrys, sans points de puissance)</div>':'')+
+        '<div class="oprs-status">👑 Rois '+(p.hakiUsed?'utilisé':'prêt')+
+          ' · 👁 Observation '+(p.observationUsed?'utilisée':'prête')+
+          ' · 🛡 Armement '+(p.armamentUsed?'utilisé':'prêt')+'</div>'+
+        '</div>').join('')+'</section>';
   }
   function liveHud(){
     if(!view||view.status!=="playing")return "";
