@@ -2,7 +2,7 @@ name: OPMercato V3 Browser Smoke
 on:
   workflow_dispatch:
   push:
-    branches: [main, opmercato-v3-work-20261016, opmercato-v3-polish-20261016, opmercato-v3-visual-fixes-20261016]
+    branches: [main, opmercato-v3-work-20261016, opmercato-v3-polish-20261016, opmercato-v3-visual-fixes-20261016, opmercato-v3-trade-ui-20261016]
     paths: ['mercato-v3-local.js', 'mercato-online.js', 'index.html', '.github/workflows/opmercato-v3-browser.yml', 'opmercato-ships-sprite.webp', 'mercato-v3-dice.js']
 jobs:
   v3-browser:
@@ -108,8 +108,16 @@ jobs:
             if(await page.evaluate(()=>state.v3.phase)!=="market")throw Error("Market not triggered at halfway");
             await page.locator('[data-action="v3-trade-offer"]').click();
             if(await page.evaluate(()=>state.v3.market.offer)===null)throw Error("Market offer not submitted");
+            const compact=page.locator('.v3-trade-compact');
+            await compact.waitFor({timeout:10000});
+            if(await compact.locator('.character-card').count())throw Error("Old oversized recruit cards still shown in market");
+            const overflow=await page.evaluate(()=>{const x=document.querySelector('.v3-trade-compact');return x.scrollWidth>x.clientWidth+3});
+            if(overflow)throw Error("Compact trade cards overflow horizontally");
             await page.locator('[data-action="v3-trade-accept"]').click();
             if(await page.evaluate(()=>state.v3.market.exchanges.length)!==1)throw Error("Trade not accepted");
+            await page.locator('.v3-trade-decision').waitFor({timeout:10000});
+            if(!((await page.locator('.v3-trade-decision').innerText()).includes("Échange accepté")))throw Error("Missing accepted exchange result");
+            await page.locator('[data-action="v3-trade-continue"]').click();
             console.log("PASS local V3 trade and bonus transfer UI");
             if(errors.length)throw Error("Browser exceptions: "+errors.join("; "));
           }finally{await browser.close();}
