@@ -25,7 +25,7 @@
     const hud='<div class="op21-local-hud" aria-label="Budgets et points des pirates">'+
       state.players.map(p=>'<div class="op21-hud-item"><span class="op21-hud-name">'+esc(p.name)+'</span>'+
         '<strong class="op21-hud-money">'+currency(p.budget)+'</strong>'+
-        '<small class="op21-hud-stats">⭐ '+getScore(p)+' pts · '+p.roster.length+'/'+TEAM_SIZE+'</small></div>').join('')+'</div>';
+        '<small class="op21-hud-stats">⭐ '+getScore(p)+' pts · '+p.roster.length+'/'+TEAM_SIZE+'</small>'+(p.ship?'<small>⛵ '+esc(({sunny:'☀️ '+(8-p.passesUsed)+' refus',redforce:'🐉 Actif',mobydick:'🐋 −10 %',polartang:'💛 '+(p.armamentUsed?'Utilisé':'Prêt'),orojackson:'👑 '+(p.observationUsed?'Utilisé':'Prêt')})[p.ship]||'')+'</small>':'')+'</div>').join('')+'</div>';
     top.insertAdjacentHTML('afterend',hud);
   };
   render();
