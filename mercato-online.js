@@ -155,7 +155,7 @@
         '<p class="online-hint">L’hôte lancera le mercato dès que tout le monde sera prêt.</p>')+
       '</section>';
   }
-  function powerFor(p,id){const base=CARDS[id]?.power||0;return p.smileModifiers?.[id]===undefined?base:Math.max(0,Math.min(100,base+p.smileModifiers[id]));}
+  function powerFor(p,id){if(view?.v3?.version===3)return v3Power(p,id);const base=CARDS[id]?.power||0;return p.smileModifiers?.[id]===undefined?base:Math.max(0,Math.min(100,base+p.smileModifiers[id]));}
   function classFor(n){return n>=95?"S":n>=80?"A":n>=65?"B":n>=50?"C":n>=35?"D":n>=20?"E":"F";}
   function gameScore(){
     return '<section class="online-teams"><h2>⚓ Vos équipages</h2>'+
@@ -543,6 +543,7 @@
     shell(main+(fx?'<div class="v2-fx"><div class="v2-fx-icon">'+(fx.type==="roll"?"🎲":"🪙")+'</div><strong>'+
       (fx.type==="roll"?"Dé : "+fx.outcome.roll+" · +"+fx.outcome.percent+" %":fx.outcome.pile?"PILE · +25":"FACE · −25")+
       '</strong></div>':"")+(view?'<div class="online-back">'+button("leave-online","Quitter ce salon et créer une nouvelle partie","online-text")+'</div>':"")+(onlineDetailId?detail(onlineDetailId):""));
+    if(view?.v3?.stage==="market")v3RefreshTrade();
   }
   // Les portraits sont charges par OPMERCATO_SHARED.refreshImages (mode local).
   const originalRender=render;
