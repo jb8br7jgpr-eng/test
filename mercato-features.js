@@ -471,7 +471,7 @@
       content='<div class="v2-burst-card">'+charCard(CARDS[state.auction.charId])+'</div>'+
         '<h2>🚀 Révélation des offres !</h2>'+
         '<div class="v2-local-results">'+e.offers.map(o=>'<p>'+esc(player(o.id).name)+' : '+currency(o.amount)+'</p>').join('')+'</div>'+
-        '<p>'+(e.winner===null?'Personnage invendu.':'🏆 '+esc(player(e.winner).name)+' recrute '+esc(CARDS[state.auction.charId].name)+' pour '+currency(state.auction.highBid)+' !')+'</p>'+
+        '<p>'+(e.winner===null?'Personnage invendu.':'🏆 '+esc(player(e.winner).name)+' recrute '+esc(CARDS[state.auction.charId].name)+' pour '+currency(state?.v3?player(e.winner).purchases?.[state.auction.charId]??state.auction.highBid:state.auction.highBid)+(state?.v3&&player(e.winner).ship==='mobydick'?' · 🐋 Protection du Père : −'+currency(BigInt(state.auction.highBid)-BigInt(player(e.winner).purchases?.[state.auction.charId]??state.auction.highBid)):'')+' !')+'</p>'+
         '<button class="primary" data-action="v2-ready">Continuer →</button>';
     }else if(e.stage==='roll'){
       const p=my[e.step];content='<p>Au tour de <b>'+esc(p.name)+'</b> de lancer le dé !</p>'+
