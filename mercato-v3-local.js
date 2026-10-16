@@ -96,7 +96,56 @@ render=function(){if(V()&&['dice','ships','morgans','market'].includes(V().phase
  oldRender();if(V()){app.querySelectorAll('.player-card').forEach((node,i)=>{const p=state.players[i],s=sh(p.ship);if(!s)return;
  node.querySelector('.player-header')?.insertAdjacentHTML('beforeend','<span class="v3-ship-mini">'+s[2]+' '+s[1]+' · '+
  (p.ship==='sunny'?(8-p.passesUsed)+' refus':p.ship==='mobydick'?'−10 %':p.ship==='redforce'?'Actif':p.ship==='polartang'?(p.armamentUsed?'Utilisé':'Prêt'):(p.observationUsed?'Utilisé':'Prêt'))+'</span>');});}};
+
+function v3OroScreen(){
+ const v=V(),items=v.oroPeek||[];
+ const make=(key,initial)=>'<select id="'+key+'">'+items.map((x,i)=>'<option value="'+i+'" '+(i===initial?'selected':'')+'>'+(i+1)+'. '+nm(x.id)+'</option>').join('')+'</select>';
+ modal.innerHTML='<section class="card modal-content v3-oro-modal"><span class="eyebrow">👑 Vision du Futur</span>'+
+ '<h2>Les '+items.length+' prochaines cartes</h2><div class="v3-oro-grid">'+items.map((x,i)=>
+  '<div class="v3-oro-card"><small>Position '+(i+1)+'</small><b>'+nm(x.id)+'</b>'+
+  '<span>Rang '+tierOf(CARDS[x.id].power).tier+' · '+CARDS[x.id].power+' pts</span>'+
+  '<small>Premier à miser : '+esc(player(x.first).name)+'</small></div>').join('')+'</div>'+
+ (items.length>=2&&!v.oroSwapped?'<h3>🔀 Échanger deux positions</h3><div class="v3-oro-pair">'+make('v3-oro-a',0)+make('v3-oro-b',1)+'</div>'+
+ '<p id="v3-oro-preview">Aperçu : positions 1 et 2 échangées ; premiers enchérisseurs inchangés.</p>'+
+ '<button class="primary" data-action="v3-oro-confirm">Confirmer l’inversion</button>':'')+
+ '<button class="btn-ghost" data-action="close-modal">Continuer sans autre inversion</button></section>';
+ modal.classList.remove('hidden');
+}
+function v3UseOro(){
+ const a=state?.auction,p=a?.turnId!==null?player(a?.turnId):null;
+ if(!V()||!p||p.ship!=='orojackson'||p.observationUsed||a.outcome!==null)return false;
+ p.observationUsed=true;
+ V().oroPeek=state.drawPile.slice(state.drawIndex,state.drawIndex+6).map((id,i)=>({id,first:(V().starter+state.round+i)%state.players.length}));
+ V().oroLocked=V().oroPeek.map(x=>x.id);
+ V().oroOpeners=Object.fromEntries(V().oroPeek.map(x=>[x.id,x.first]));
+ V().oroSwapped=false;
+ save();render();v3OroScreen();return true;
+}
+
 document.addEventListener('change',e=>{if(['v3-target','v3-give','v3-take'].includes(e.target.id))preview();},true);
+document.addEventListener('change',e=>{
+ if(['v3-oro-a','v3-oro-b'].includes(e.target.id)){
+ const a=Number(document.querySelector('#v3-oro-a')?.value),b=Number(document.querySelector('#v3-oro-b')?.value);
+ const out=document.querySelector('#v3-oro-preview');
+ if(out)out.textContent=a===b?'Choisis deux positions distinctes.':'Aperçu : '+(a+1)+' et '+(b+1)+' échangées, sans changer les premiers enchérisseurs.';
+ }
+},true);
+document.addEventListener('click',e=>{
+ const b=e.target.closest('button[data-action]');if(!b||!V())return;
+ if(b.dataset.action==='observation'&&state.auction?.turnId!==null&&player(state.auction.turnId)?.ship==='orojackson'){
+  e.preventDefault();e.stopImmediatePropagation();v3UseOro();return;
+ }
+ if(b.dataset.action==='v3-oro-confirm'){
+  e.preventDefault();e.stopImmediatePropagation();
+  const a=Number(document.querySelector('#v3-oro-a')?.value),c=Number(document.querySelector('#v3-oro-b')?.value);
+  const v=V();if(!Number.isInteger(a)||!Number.isInteger(c)||a===c||v.oroSwapped)return showToast('Choisis deux positions différentes.');
+  const first=state.drawIndex+a,second=state.drawIndex+c;
+  [state.drawPile[first],state.drawPile[second]]=[state.drawPile[second],state.drawPile[first]];
+  [v.oroPeek[a].id,v.oroPeek[c].id]=[v.oroPeek[c].id,v.oroPeek[a].id];
+  v.oroOpeners=Object.fromEntries(v.oroPeek.map(x=>[x.id,x.first]));v.oroSwapped=true;
+  save();render();v3OroScreen();return;
+ }
+},true);
 document.addEventListener('click',e=>{const b=e.target.closest('button[data-action^="v3-"]');if(!b||!V())return;e.preventDefault();e.stopImmediatePropagation();
  const a=b.dataset.action.slice(3),v=V(),m=v.morgans,t=v.market;
  if(a==='roll'){
@@ -130,5 +179,6 @@ document.addEventListener('click',e=>{const b=e.target.closest('button[data-acti
  save();render();
 },true);
 const css=document.createElement('style');css.textContent='.v3-screen{text-align:center;padding:20px;margin:16px 0}.v3-screen h2{color:#f6d28f;font-size:26px}.v3-screen .primary{display:block;width:100%;margin:10px 0}.v3-screen input,.v3-screen select{width:100%;background:#163544;color:#fff;border:1px solid #b98e56;border-radius:10px;padding:12px;margin:8px 0}.v3-ship-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px}.v3-ship{display:grid;gap:7px;background:#23465c;padding:8px;border-radius:13px}.v3-ship img{width:100%;aspect-ratio:1;object-fit:cover}.v3-ship small,.v3-ship p{font-size:12px}.v3-players-mini{font-size:12px;padding:10px;color:#c5d4dd}.v3-ship-mini{font-size:11px;color:#f4ca87}.v3-wheel{font-size:80px;animation:v3spin 2s linear infinite}@keyframes v3spin{to{transform:rotate(360deg)}}';
+css.textContent+='.v3-oro-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.v3-oro-card{display:grid;gap:3px;padding:8px;border:1px solid #94764f;border-radius:10px;background:#183b50;font-size:11px}.v3-oro-card span,.v3-oro-card small{font-size:10px;color:#cfdeed}.v3-oro-pair{display:grid;grid-template-columns:1fr 1fr;gap:9px}';
 document.head.appendChild(css);
 })();
