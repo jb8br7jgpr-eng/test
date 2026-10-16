@@ -478,6 +478,15 @@
     return ids.reduce((n,id)=>n+(id===add?Math.max(0,Math.min(100,Number(CARDS[id]?.power||0)+Number(view.players.find(x=>x.roster.includes(add))?.shipBonus?.[add]||0)+
        Number(view.players.find(x=>x.roster.includes(add))?.smileModifiers?.[add]||0))):v3Power(p,id)),0)+v3Synergy(ids);
   };
+  const v3TradeFace=(id,p,caption)=>{
+    const c=CARDS[id],power=c?.power||0,pts=v3Power(p,id),bonus=p?.shipBonus?.[id];
+    return '<div class="v3-trade-person"><span class="v3-trade-side">'+escOnline(caption)+'</span>'+
+      '<span class="v3-trade-face"><span class="portrait-fallback">☠️</span><img class="portrait-photo" data-portrait-id="'+escOnline(id)+'" alt="" loading="lazy"></span>'+
+      '<strong class="v3-trade-name">'+escOnline(c?.name||id)+'</strong><span class="v3-trade-meta">Rang '+escOnline(classFor(power))+' · '+pts+' pts</span>'+
+      (bonus?'<small class="v3-trade-bonus">🐉 Terre Sainte +'+bonus+'</small>':'')+'</div>';
+  };
+  const v3TradeDeltas=(a,deltaA,b,deltaB)=>'<div class="v3-trade-impact"><span>'+label(a)+' : <b>'+(deltaA>0?'+':'')+deltaA+' pts</b></span>'+
+    '<span>'+label(b)+' : <b>'+(deltaB>0?'+':'')+deltaB+' pts</b></span></div>';
   function v3Page(){
     const x=view.v3,me=view.players[view.yourSeat],mine=view.yourSeat;
     if(x.stage==="intro"){
@@ -548,14 +557,24 @@
       const m=x.market,owner=view.players[m.order[m.step]];
       let inner='<p>Une proposition par joueur, un personnage contre un personnage, sans Berrys.</p>'+
         '<p>Proposition '+(m.step+1)+'/'+m.order.length+' · Au tour de <b>'+label(owner)+'</b></p>';
-      if(m.offer){
+      if(m.result){
+        const r=m.result,o=r.offer,a=view.players[o.from],b=view.players[o.to];
+        inner+='<div class="v3-trade-decision '+(r.accepted?'is-accepted':'is-rejected')+'">'+
+          '<div class="v3-trade-decision-icon">'+(r.accepted?'✅':'❌')+'</div><h3>Échange '+(r.accepted?'accepté':'refusé')+' !</h3>'+
+          '<p>'+label(a)+' a proposé un échange à '+label(b)+'.</p>'+
+          '<div class="v3-trade-line">'+v3TradeFace(o.give,r.accepted?b:a,a.name)+'<span class="v3-trade-arrow">⇄</span>'+
+          v3TradeFace(o.take,r.accepted?a:b,b.name)+'</div>'+
+          (r.accepted?v3TradeDeltas(a,r.deltaFrom,b,r.deltaTo):'<p class="v3-trade-result-points">Aucun changement dans les équipages.</p>')+
+          '<p>'+(m.step+1<m.order.length?'Le marché continue avec le prochain joueur.':'Le marché est terminé : reprise des enchères.')+'</p>'+
+          (view.host?button("v3-trade-continue","Continuer →","primary"):'<p>En attente du bouton Continuer de l’hôte…</p>')+
+          '</div>';
+      }else if(m.offer){
         const a=view.players[m.offer.from],b=view.players[m.offer.to],give=m.offer.give,take=m.offer.take;
-        inner+='<div class="v3-trade-versus"><div>'+portraitCard(give)+'</div><span>⇄</span><div>'+portraitCard(take)+'</div></div>'+
+        inner+='<div class="v3-trade-line">'+v3TradeFace(give,a,a.name)+'<span class="v3-trade-arrow">⇄</span>'+v3TradeFace(take,b,b.name)+'</div>'+
          '<p>'+label(a)+' propose à '+label(b)+'</p>'+
-         '<p>Effets estimés : '+label(a)+' <b>'+(projected3(a,give,take)-a.score)+' pts</b> · '+
-         label(b)+' <b>'+(projected3(b,take,give)-b.score)+' pts</b></p>'+
+         v3TradeDeltas(a,projected3(a,give,take)-a.score,b,projected3(b,take,give)-b.score)+
          (mine===m.offer.to?button("v3-trade-accept","✅ Accepter l’échange","primary")+
-          button("v3-trade-reject","Refuser l’échange","btn-ghost"):'<p>En attente de la réponse du destinataire…</p>');
+          button("v3-trade-reject","❌ Refuser l’échange","btn-ghost"):'<p>En attente de la réponse du destinataire…</p>');
       }else if(m.order[m.step]===mine){
         const targets=view.players.filter(p=>p.id!==mine&&p.roster.some(id=>!m.locked.includes(id)));
         const options=arr=>arr.map(p=>'<option value="'+p.id+'">'+label(p)+'</option>').join("");
@@ -581,8 +600,8 @@
     if([...take.options].some(x=>x.value===old))take.value=old;
     const a=give.value,b=take.value,panel=root.querySelector("#v3-trade-preview");
     if(!a||!b||!panel)return;
-    panel.innerHTML='<p>Impact total (synergies comprises) : <b>'+label(mine)+' '+(projected3(mine,a,b)-mine.score)+
-      ' pts</b> · <b>'+label(other)+' '+(projected3(other,b,a)-other.score)+' pts</b></p>';
+    panel.innerHTML='<div class="v3-trade-line">'+v3TradeFace(a,mine,mine.name)+'<span class="v3-trade-arrow">⇄</span>'+v3TradeFace(b,other,other.name)+'</div>'+
+      v3TradeDeltas(mine,projected3(mine,a,b)-mine.score,other,projected3(other,b,a)-other.score);
   }
 
   function paint(){
@@ -655,7 +674,7 @@
     if(a==="v3-morgans-accept"||a==="v3-morgans-reject"){await action("v3-morgans-recruit",{accept:a==="v3-morgans-accept"});return;}
     if(a==="v3-trade-offer"){await action("v3-trade-offer",{to:Number(root.querySelector("#v3-trade-target")?.value),
        give:root.querySelector("#v3-trade-give")?.value,take:root.querySelector("#v3-trade-take")?.value});return;}
-    if(["v3-trade-pass","v3-trade-accept","v3-trade-reject"].includes(a)){await action(a);return;}
+    if(["v3-trade-pass","v3-trade-accept","v3-trade-reject","v3-trade-continue"].includes(a)){await action(a);return;}
     if(a==="armament-use"){await action("armament",{charId:view.auction?.charId});return;}
     if(a==="armament-skip"){await action("armament-skip");return;}
     if(a==="event-ready"){await action("event-ready");return;}
@@ -710,6 +729,25 @@
     .v3-prediction-card{max-width:320px;margin:14px auto}
     .v3-morgans-logo,.v3-wheel{text-align:center;font-size:72px;animation:v3die 1.5s both}
     .v3-wheel{animation:v3die 2s linear infinite}
+    .v3-trade-line{display:grid;grid-template-columns:minmax(0,1fr) 24px minmax(0,1fr);align-items:center;gap:6px;margin:15px auto;max-width:520px}
+    .v3-trade-person{box-sizing:border-box;min-width:0;display:flex;align-items:center;flex-direction:column;gap:7px;border:1px solid #698b98;border-radius:16px;background:#153448;padding:12px 7px;text-align:center;overflow:hidden}
+    .v3-trade-side{font-size:11px;color:#e6eff1;overflow-wrap:anywhere;font-weight:700}
+    .v3-trade-face{position:relative;display:block;overflow:hidden;width:80px;height:80px;flex:none;border:2px solid #d8b978;border-radius:50%;background:#284d60}
+    .v3-trade-face>.portrait-photo{position:absolute!important;inset:0!important;display:block!important;width:100%!important;height:100%!important;min-width:0!important;max-width:100%!important;max-height:100%!important;object-fit:cover!important;object-position:center 23%!important;border-radius:50%!important;transform:none!important}
+    .v3-trade-name{font-size:clamp(12px,3.8vw,16px);line-height:1.25;overflow-wrap:anywhere;word-break:normal;max-width:100%}
+    .v3-trade-meta{color:#f6d994;font-size:12px;font-weight:800}
+    .v3-trade-bonus{color:#d8eaae;font-size:10px}
+    .v3-trade-arrow{font-size:23px;color:#ffda8e;text-align:center}
+    .v3-trade-impact{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;text-align:center;margin:12px 0 22px}
+    .v3-trade-impact span{overflow-wrap:anywhere;font-size:12px;border-radius:10px;padding:10px 5px;background:#0c293b}
+    .v3-trade-impact b{display:block;color:#f6d494;margin-top:4px}
+    .v3-trade-decision{text-align:center}
+    .v3-trade-decision-icon{font-size:48px}
+    .v3-trade-decision h3{font-size:24px;color:#fff2d6}
+    .v3-trade-decision.is-accepted h3{color:#bdf3cd}
+    .v3-trade-decision.is-rejected h3{color:#ffd3c9}
+    .v3-trade-result-points{font-weight:750;color:#f3d492}
+    @media(max-width:390px){.v3-card:has(.v3-trade-line){padding:12px 7px}.v3-trade-face{width:64px;height:64px}.v3-trade-person{padding:10px 5px}}
     .v3-trade-versus{display:grid;grid-template-columns:1fr 30px 1fr;align-items:center;gap:5px}
     .v3-trade-versus .character-card{min-height:100px;padding:8px;margin:0}
     .v3-trade-versus .character-name{font-size:16px;margin:2px}.v3-trade-versus .power strong{font-size:16px}
