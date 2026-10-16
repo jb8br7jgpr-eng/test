@@ -1,0 +1,79 @@
+name: OPMercato V3 Two-Phone Browser Journey
+on:
+  workflow_dispatch:
+  push:
+    branches: [opmercato-v3-work-20261016]
+    paths: ['.github/workflows/opmercato-v3-two-phone.yml', 'mercato-online.js', 'index.html']
+jobs:
+  two-phones:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+      - run: npm install --no-save playwright-core@1.57.0
+      - run: python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/v3-two-phone.log 2>&1 &
+      - name: Two independent simulated iPhones against V3 staging backend
+        env:
+          CHROME_BINARY: ${{ steps.chrome.outputs.chrome-path }}
+        run: |
+          node --input-type=module <<'JS'
+          import {chromium} from "playwright-core";
+          const browser=await chromium.launch({executablePath:process.env.CHROME_BINARY,headless:true,args:["--no-sandbox"]});
+          const pages=[],errors=[];
+          const live="https://nezqupnhcqwuewfilioa.supabase.co/functions/v1/opmercato-online";
+          const staging=live+"-v3-staging";
+          async function device(){
+            const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:2});
+            const page=await context.newPage();
+            page.on("pageerror",e=>errors.push(e.stack||e.message));
+            await page.route(live,r=>r.continue({url:staging}));
+            await page.goto("http://127.0.0.1:8765/",{waitUntil:"domcontentloaded"});
+            pages.push(page);return page;
+          }
+          try {
+            const host=await device(),guest=await device();
+            await host.locator('[data-online="open"]').click();
+            await host.locator('[data-online="create-form"]').click();
+            await host.locator('#online-name').fill("V3 Capitaine");
+            await host.locator('#online-team').fill("2");
+            await host.locator('[data-online="create-go"]').click();
+            await host.locator('.online-code').waitFor({timeout:25000});
+            const code=(await host.locator('.online-code').innerText()).trim();
+            await guest.locator('[data-online="open"]').click();
+            await guest.locator('[data-online="join-form"]').click();
+            await guest.locator('#online-code').fill(code);
+            await guest.locator('#online-name').fill("V3 Invite");
+            await guest.locator('[data-online="join-go"]').click();
+            await guest.locator('.online-code').waitFor({timeout:25000});
+            await host.locator('[data-online="start"]').click();
+            for(const page of pages)await page.locator('[data-online="v3-roll"]').waitFor({timeout:25000});
+            for(const page of pages)await page.locator('[data-online="v3-roll"]').click();
+            for(let guard=0;guard<40;guard++){
+              await host.waitForTimeout(500);
+              if(await host.locator('[data-online^="v3-select-"]').count())break;
+              for(const page of pages){
+                const button=page.locator('[data-online="v3-roll"]');
+                if(await button.count()&&await button.isEnabled())await button.click();
+              }
+            }
+            if(!await host.locator('[data-online^="v3-select-"]').count())throw Error("Ship selection did not render");
+            for(const id of ["sunny","redforce"]){
+              let selectable=null;
+              for(const page of pages){const b=page.locator('[data-online="v3-select-'+id+'"]');if(await b.count()&&await b.isEnabled()){selectable=b;break;}}
+              if(!selectable)throw Error("Ship "+id+" cannot be selected");
+              await selectable.click();
+              await host.waitForTimeout(600);
+            }
+            for(const page of pages){
+              await page.locator('.online-round').waitFor({timeout:25000});
+              const ships=await page.locator(".v3-ship-stamp").count();
+              if(ships<2)throw Error("Ship HUD missing on one phone: "+ships);
+            }
+            if(errors.length)throw Error("Browser exceptions: "+errors.join("\n"));
+            console.log("PASS browser V3 on two iPhones: lobby, dice, exclusive ships, auction and ship HUD");
+          }finally{await browser.close();}
+          JS
