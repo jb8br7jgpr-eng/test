@@ -191,6 +191,14 @@
     return '<div class="op21-live-hud" aria-label="Budgets et scores en direct">'+view.players.map(p=>
       '<div class="op21-hud-player" title="'+label(p)+'"><span>'+label(p)+'</span><b>'+berrys(p.budget)+'</b><small>⭐ '+p.score+' pts · '+p.roster.length+'/'+view.teamSize+'</small>'+shipMark3(p,true)+'</div>').join('')+'</div>';
   }
+  function v3TradePerson(p,id){
+    const c=CARDS[id],crew=window.MERCATO_EXPANSION?.details?.[id]?.crew||"Affiliation inconnue";
+    return '<article class="v3-transfer-person"><small class="v3-transfer-owner">'+label(p)+'</small>'+
+      '<span class="v3-transfer-avatar"><span class="portrait-fallback">☠️</span><img class="portrait-photo" data-portrait-id="'+escOnline(id)+'" alt="Portrait de '+escOnline(c.name)+'" loading="eager"></span>'+
+      '<strong class="v3-transfer-name">'+escOnline(c.name)+'</strong><small class="v3-transfer-crew">'+escOnline(crew)+'</small>'+
+      '<div class="v3-transfer-stats"><span>Rang <b>'+classFor(c.power)+'</b></span><span>Puissance <b>'+powerFor(p,id)+'/100</b></span></div>'+
+      '<button type="button" class="v3-transfer-details" data-online="details" data-char-id="'+escOnline(id)+'">Voir la fiche →</button></article>';
+  }
   function portraitCard(id){
     if(!id)return '<div class="online-mystery"><div>❔</div><h2>Enchère mystère</h2><p>Son rang est connu, mais pas son identité.</p></div>';
     const c=CARDS[id];
@@ -548,11 +556,21 @@
       const m=x.market,owner=view.players[m.order[m.step]];
       let inner='<p>Une proposition par joueur, un personnage contre un personnage, sans Berrys.</p>'+
         '<p>Proposition '+(m.step+1)+'/'+m.order.length+' · Au tour de <b>'+label(owner)+'</b></p>';
-      if(m.offer){
+      if(m.result){
+        const o=m.result,a=view.players[o.from],b=view.players[o.to],done=(o.ack||[]).includes(mine);
+        inner+='<div class="v3-transfer-result '+(o.accepted?'is-accepted':'is-rejected')+'" role="status">'+
+          '<div class="v3-transfer-result-icon">'+(o.accepted?'✅':'❌')+'</div>'+
+          '<h3>'+(o.accepted?'Échange accepté !':'Échange refusé')+'</h3>'+
+          '<p>'+label(b)+(o.accepted?' a accepté':' a refusé')+' la proposition de '+label(a)+'.</p>'+
+          '<p class="v3-transfer-result-pair">'+escOnline(CARDS[o.give]?.name||o.give)+' ⇄ '+escOnline(CARDS[o.take]?.name||o.take)+'</p>'+
+          '<p>'+(o.accepted?'Les équipages et les scores ont été actualisés.':'Les deux pirates conservent leurs personnages.')+'</p>'+
+          (done?'<p>⏳ En attente des autres joueurs…</p>':button("v3-trade-continue","Continuer →","primary"))+
+          '<small class="v3-transfer-ack">'+(o.ack||[]).length+'/'+view.players.length+' joueurs prêts</small></div>';
+      }else if(m.offer){
         const a=view.players[m.offer.from],b=view.players[m.offer.to],give=m.offer.give,take=m.offer.take;
-        inner+='<div class="v3-trade-versus"><div>'+portraitCard(give)+'</div><span>⇄</span><div>'+portraitCard(take)+'</div></div>'+
-         '<p>'+label(a)+' propose à '+label(b)+'</p>'+
-         '<p>Effets estimés : '+label(a)+' <b>'+(projected3(a,give,take)-a.score)+' pts</b> · '+
+        inner+='<p class="v3-transfer-intro">'+label(a)+' propose à '+label(b)+'</p>'+
+         '<div class="v3-transfer-grid">'+v3TradePerson(a,give)+v3TradePerson(b,take)+'</div>'+
+         '<p class="v3-transfer-impact">Effets estimés : '+label(a)+' <b>'+(projected3(a,give,take)-a.score)+' pts</b> · '+
          label(b)+' <b>'+(projected3(b,take,give)-b.score)+' pts</b></p>'+
          (mine===m.offer.to?button("v3-trade-accept","✅ Accepter l’échange","primary")+
           button("v3-trade-reject","Refuser l’échange","btn-ghost"):'<p>En attente de la réponse du destinataire…</p>');
@@ -655,7 +673,7 @@
     if(a==="v3-morgans-accept"||a==="v3-morgans-reject"){await action("v3-morgans-recruit",{accept:a==="v3-morgans-accept"});return;}
     if(a==="v3-trade-offer"){await action("v3-trade-offer",{to:Number(root.querySelector("#v3-trade-target")?.value),
        give:root.querySelector("#v3-trade-give")?.value,take:root.querySelector("#v3-trade-take")?.value});return;}
-    if(["v3-trade-pass","v3-trade-accept","v3-trade-reject"].includes(a)){await action(a);return;}
+    if(["v3-trade-pass","v3-trade-accept","v3-trade-reject","v3-trade-continue"].includes(a)){await action(a);return;}
     if(a==="armament-use"){await action("armament",{charId:view.auction?.charId});return;}
     if(a==="armament-skip"){await action("armament-skip");return;}
     if(a==="event-ready"){await action("event-ready");return;}
@@ -710,6 +728,7 @@
     .v3-prediction-card{max-width:320px;margin:14px auto}
     .v3-morgans-logo,.v3-wheel{text-align:center;font-size:72px;animation:v3die 1.5s both}
     .v3-wheel{animation:v3die 2s linear infinite}
+    .v3-transfer-ack{display:block;color:#b4d4cf;font-size:11px;margin-top:12px}
     .v3-trade-versus{display:grid;grid-template-columns:1fr 30px 1fr;align-items:center;gap:5px}
     .v3-trade-versus .character-card{min-height:100px;padding:8px;margin:0}
     .v3-trade-versus .character-name{font-size:16px;margin:2px}.v3-trade-versus .power strong{font-size:16px}
