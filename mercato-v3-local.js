@@ -45,9 +45,14 @@ function swap(o){const a=player(o.from),b=player(o.to);
 }
 function nextTrade(){const t=V().market;t.offer=null;t.idx++;if(t.idx>=t.order.length){t.done=true;resume();}else{save();render();}}
 function screen(){const v=V(),m=v.morgans,t=v.market;
- if(v.phase==='dice'){const p=state.players.find(p=>v.rolls[p.id]===undefined);return '<h2>🎲 Lancer de dé initial</h2><p>Le plus grand résultat choisit le navire en premier. Le dernier commence les enchères.</p>'+
-  state.players.map(x=>'<p>'+esc(x.name)+' : 🎲 '+(v.rolls[x.id]??'?')+'</p>').join('')+
-  (p?'<h3>Au tour de '+esc(p.name)+'</h3>'+btn('roll','Lancer le dé'):'');}
+ if(v.phase==='dice'||v.phase==='dice-tie'){
+  const tied=v.phase==='dice-tie',group=tied?v.tieGroups[v.tieIndex]:state.players.map(p=>p.id);
+  const rolls=tied?v.tieRolls:v.rolls,nextId=group.find(id=>rolls[id]===undefined);
+  return '<h2>🎲 '+(tied?'Égalité : relance entre ex æquo':'Lancer de dé initial')+'</h2>'+
+    '<p>Le meilleur résultat choisit le navire en premier, le dernier commence les enchères.</p>'+
+    group.map(id=>'<p>'+esc(player(id).name)+' : 🎲 '+(rolls[id]??'?')+'</p>').join('')+
+    (nextId===undefined?'':'<h3>Au tour de '+esc(player(nextId).name)+'</h3>'+btn('roll','🎲 Lancer le dé'));
+ }
  if(v.phase==='ships'){const p=player(v.order[v.idx]);return '<h2>⛵ Choix du navire</h2><h3>'+esc(p.name)+' choisit</h3><div class="v3-ship-grid">'+
   SHIPS.map(s=>'<div class="v3-ship"><img src="./opmercato-ship-'+s[0]+'.jpg" alt="'+s[1]+'"><b>'+s[2]+' '+s[1]+'</b><small>'+s[3]+'</small><p>'+s[4]+'</p>'+
   (state.players.some(p=>p.ship===s[0])?'<p>Indisponible</p>':btn('ship-'+s[0],'Choisir'))+'</div>').join('')+'</div>';}
@@ -94,8 +99,21 @@ render=function(){if(V()&&['dice','ships','morgans','market'].includes(V().phase
 document.addEventListener('change',e=>{if(['v3-target','v3-give','v3-take'].includes(e.target.id))preview();},true);
 document.addEventListener('click',e=>{const b=e.target.closest('button[data-action^="v3-"]');if(!b||!V())return;e.preventDefault();e.stopImmediatePropagation();
  const a=b.dataset.action.slice(3),v=V(),m=v.morgans,t=v.market;
- if(a==='roll'){const p=state.players.find(p=>v.rolls[p.id]===undefined);if(!p)return;v.rolls[p.id]=1+Math.floor(Math.random()*6);if(Object.keys(v.rolls).length===state.players.length){
-  v.order=state.players.map(p=>p.id).sort((a,b)=>v.rolls[b]-v.rolls[a]);v.starter=v.order.at(-1);v.phase='ships';}}
+ if(a==='roll'){
+ const tied=v.phase==='dice-tie',group=tied?v.tieGroups[v.tieIndex]:state.players.map(p=>p.id);
+ const rolls=tied?v.tieRolls:v.rolls,id=group.find(id=>rolls[id]===undefined);if(id===undefined)return;
+ rolls[id]=1+Math.floor(Math.random()*6);
+ window.OPMERCATO_EVENT_FX?.('die',player(id).name+' : 🎲 '+rolls[id],rolls[id]);
+ if(group.every(who=>rolls[who]!==undefined)){
+  const buckets=new Map();
+  for(const who of group){const n=rolls[who];buckets.set(n,[...(buckets.get(n)||[]),who]);}
+  const newGroups=[...buckets.entries()].sort((x,y)=>y[0]-x[0]).map(([n,ids])=>ids);
+  if(!tied)v.tieGroups=newGroups;else v.tieGroups.splice(v.tieIndex,1,...newGroups);
+  v.tieIndex=v.tieGroups.findIndex(xs=>xs.length>1);v.tieRolls={};
+  if(v.tieIndex<0){v.order=v.tieGroups.flat();v.starter=v.order.at(-1);v.phase='ships';}
+  else v.phase='dice-tie';
+ }
+ }
  else if(a.startsWith('ship-')){const id=a.slice(5),p=player(v.order[v.idx]);if(!sh(id)||state.players.some(q=>q.ship===id))return;p.ship=id;p.shipBonus={};v.idx++;if(v.idx>=state.players.length){resume();return;}}
  else if(a==='morgans-ready')m.phase='guess';
  else if(a==='morgans-guess'){const n=Number(document.querySelector('#v3-guess')?.value),p=state.players.find(p=>m.guesses[p.id]===undefined);if(!p||!Number.isInteger(n)||n<1||n>100)return showToast('Entre 1 et 100');m.guesses[p.id]=n;if(Object.keys(m.guesses).length===state.players.length)m.phase='character';}
