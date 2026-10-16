@@ -160,7 +160,7 @@ render=function(){
    app.innerHTML='<section class="card v3-screen"><h2>⚓ Prochain recrutement</h2><p>Le prochain personnage est en préparation.</p><button class="primary" data-action="next">Continuer →</button></section>';
    return;
  }
- if(V()&&['intro','dice','ships','morgans','market'].includes(V().phase)){
+ if(V()&&['intro','dice','dice-tie','ships','morgans','market'].includes(V().phase)){
  app.innerHTML=v3MiniHud()+'<section class="card v3-screen"><span class="eyebrow">OPMERCATO 3.0</span>'+screen()+'</section>'+
   '<div class="v3-players-mini">'+state.players.map(p=>esc(p.name)+' : '+currency(p.budget)+' · '+getScore(p)+' pts').join('<hr>')+'</div>';preview();window.OPMERCATO_SHARED?.refreshImages?.();return;}
  oldRender();if(V()){app.querySelectorAll('.player-card').forEach((node,i)=>{const p=state.players[i],s=sh(p.ship);if(!s)return;
