@@ -279,15 +279,16 @@ jobs:
             if(await local.locator('.v2-burst-card').count())throw Error("Burst card shown before intro");
             await local.locator('[data-action="v2-ready"]').click();
             if(!await local.locator('.v2-burst-card').count())throw Error("Burst character card missing after intro");
-            await local.locator('#v2-burst-amount').fill('50');
+            const burstBid=await local.evaluate(()=>String(state.baseBid));
+            await local.locator('#v2-burst-amount').fill(burstBid);
             await local.locator('[data-action="v2-burst-offer"]').click();
             const hidden=await local.evaluate(()=>({
               stage:state.featureConfig.active.stage,offers:state.featureConfig.active.offers.length,
               screen:document.querySelector('.v2-local-special')?.innerText||''
             }));
-            if(hidden.stage!=='offers'||hidden.offers!==1||hidden.screen.includes('50 ฿'))
+            if(hidden.stage!=='offers'||hidden.offers!==1||hidden.screen.includes('Offres révélées'))
               throw Error("First local Burst bid must stay hidden: "+JSON.stringify(hidden));
-            await local.locator('#v2-burst-amount').fill('50');
+            await local.locator('#v2-burst-amount').fill(burstBid);
             await local.locator('[data-action="v2-burst-offer"]').click();
             if(!await local.locator('[data-action="v2-burst-coin"]').count())
               throw Error("Equal secret Burst bids did not trigger a coin toss");
@@ -300,7 +301,7 @@ jobs:
               prices:state.players.map(p=>p.purchases?.[state.auction.charId]||'0')
             }));
             if(burstOutcome.stage!=='result'||burstOutcome.auction!=='sold'||
-              burstOutcome.roster.filter(Boolean).length!==1||!burstOutcome.prices.includes('50'))
+              burstOutcome.roster.filter(Boolean).length!==1||!burstOutcome.prices.includes(burstBid))
               throw Error("Burst settlement failed: "+JSON.stringify(burstOutcome));
             // Test local déterministe : Rêverie interdit le refus initial, puis autorise le retrait gratuit.
             await local.goto(home+'&reverie=local-regression',{waitUntil:'domcontentloaded',timeout:30000});
