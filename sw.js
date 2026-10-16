@@ -1,6 +1,6 @@
 // OPMercato: network-first app shell, offline fallback for classic local play.
 // Do not intercept Supabase's API, authentication or real-time WebSocket traffic.
-const CACHE = 'opmercato-shell-pwa-v37-20261016-shared-confirm1';
+const CACHE = 'opmercato-shell-pwa-v38-20261016-event-fx2';
 const ROOT=new URL("./",self.location.href);
 const ASSETS=[
   "./","./index.html","./manifest.webmanifest",
@@ -8,7 +8,7 @@ const ASSETS=[
   "./icon-512.png","./icon-512-maskable.png","./favicon-32.png",
   "./characters-data.js","./portrait-map.js","./opmercato-custom-portraits.js",
   "./mercato-upgrade.js","./mercato-rules.js","./mercato-features.js",
-  "./mercato-card-premium.js","./mercato-hud-21.js","./mercato-v3-dice.js","./mercato-v3-local.js","./mercato-roster-summary.js","./opmercato-ships-sprite.webp","./mercato-history-21.js","./mercato-online.js"
+  "./mercato-card-premium.js","./mercato-hud-21.js","./mercato-v3-dice.js","./mercato-v3-local.js","./mercato-roster-summary.js","./mercato-smile-summary.js","./opmercato-ships-sprite.webp","./mercato-history-21.js","./mercato-online.js"
 ];
 self.addEventListener("install",event=>{
   event.waitUntil(caches.open(CACHE).then(async cache=>{
