@@ -163,7 +163,7 @@
         '<div class="online-team-meta">'+berrys(p.budget)+' restants · '+p.roster.length+'/'+view.teamSize+' recrues · '+p.passesUsed+'/5 refus</div>'+
         '<div class="online-roster">'+(p.roster.length?p.roster.map(id=>'<button type="button" data-action="details" data-char-id="'+escOnline(id)+'" class="online-roster-character">'+
           '<span class="portrait portrait-tiny"><span class="portrait-fallback">☠️</span><img class="portrait-photo" data-portrait-id="'+escOnline(id)+'" alt="" loading="lazy"></span>'+
-          '<span>'+escOnline(CARDS[id]?.name||id)+(p.smileModifiers?.[id]!==undefined?'<small class="online-smile-buff">🍎 '+powerFor(p,id)+' pts (rang '+classFor(powerFor(p,id))+')</small>':'')+'</span></button>').join(""):
+          '<span>'+escOnline(CARDS[id]?.name||id)+(p.smileModifiers?.[id]!==undefined?'<small class="online-smile-buff">🍎 '+powerFor(p,id)+' pts (rang '+classFor(CARDS[id]?.power||0)+')</small>':'')+'</span></button>').join(""):
         '<span>Équipage vide</span>')+'</div>'+
         '<div class="online-small">Base '+p.roster.reduce((v,id)=>v+powerFor(p,id),0)+
           (p.armamentId?' · Armement +'+(p.armamentBonus??5):'')+
@@ -296,7 +296,7 @@
     const leader=a.leader!==null?view.players[a.leader]:null;
     const minimum=BigInt(a.highBid)>0n?BigInt(a.highBid)+BigInt(view.bidStep):BigInt(view.baseBid);
     const royal=view.event?.active?.type==="reverie";
-    const canAfford=BigInt(me.budget)>=minimum*(royal?2n:1n)&&me.roster.length<view.teamSize;
+    const canAfford=BigInt(me.budget)>=minimum&&BigInt(me.budget)>=((me.ship==='mobydick'?minimum*(royal?2n:1n)*90n+50n:minimum*(royal?2n:1n)*100n)/100n)&&me.roster.length<view.teamSize;
     const canHaki=!royal&&turn&&!me.hakiUsed&&a.firstTurnId===me.id&&a.leader===null&&a.highBid==="0"&&a.passed.length===0;
     const armamentPending=a.outcome==="sold"&&leader&&!leader.armamentUsed&&Number(CARDS[a.charId]?.power??100)<=60&&!a.armamentChoice;
     const roll=view.event.awaitingRolls;
@@ -307,18 +307,19 @@
       actionHtml='<div class="online-turn">🎲 Au tour de <b>'+label(roller)+'</b> pour lancer son dé</div>'+
         button("roll","🎲 Lancer mon dé (5 à 30 %)","primary",!mine);
     }else if(!active){
+      const rawCost=royal?BigInt(a.highBid)*2n:BigInt(a.highBid);const effectiveCost=leader?.ship==='mobydick'?((rawCost*90n+50n)/100n||1n):rawCost;
       const winner=leader?'🏆 '+label(leader)+' recrute '+escOnline(CARDS[a.charId]?.name||a.charId)+
-         (a.hakiWinner===leader.id?' gratuitement grâce au Haki des Rois':" pour "+berrys(royal?BigInt(a.highBid)*2n:a.highBid)) :
+         (a.hakiWinner===leader.id?' gratuitement grâce au Haki des Rois':" pour "+berrys(effectiveCost)+(leader?.ship==='mobydick'?' · 🐋 Protection du Père : −'+berrys(rawCost-effectiveCost):''))) :
          "🌊 Personnage invendu";
       actionHtml='<div class="online-turn online-winner">'+winner+'</div>'+
         (armamentPending?(leader.id===me.id?
-          '<div class="op21-armament-online"><strong>🛡 Haki de l’Armement</strong><p>'+escOnline(CARDS[a.charId]?.name||a.charId)+' : '+CARDS[a.charId].power+' → '+(CARDS[a.charId].power+20)+' points. Utiliser ton Haki maintenant ?</p>'+button("armament-use","🛡 Renforcer de +20 points")+button("armament-skip","Conserver mon Haki","btn-ghost")+'</div>':
+          '<div class="op21-armament-online"><strong>🛡 Haki de l’Armement</strong><p>'+escOnline(CARDS[a.charId]?.name||a.charId)+' : '+CARDS[a.charId].power+' → '+Math.min(100,CARDS[a.charId].power+(leader.ship==='polartang'?40:20))+' points. Utiliser ton Haki maintenant ?</p>'+button("armament-use","🛡 Renforcer de +"+(leader.ship==='polartang'?40:20)+" points")+button("armament-skip","Conserver mon Haki","btn-ghost")+'</div>':
           '<div class="op21-armament-online">🛡 '+label(leader)+' choisit d’utiliser ou non son Haki de l’Armement…</div>'):'')+
         (view.host?button("next","Personnage suivant →","primary",Boolean(armamentPending)): '<div class="online-hint">L’hôte passe au prochain personnage…</div>');
     }else{
       const offerChoices=[0n,1n,5n,10n].map((factor)=>{
         const val=minimum+factor*BigInt(view.bidStep);
-        return button("bid-"+val.toString(),berrys(val), "online-offer",!turn||!canAfford||val*(royal?2n:1n)>BigInt(me.budget));
+        return button("bid-"+val.toString(),berrys(val), "online-offer",!turn||!canAfford||val>BigInt(me.budget)||((me.ship==='mobydick'?val*(royal?2n:1n)*90n+50n:val*(royal?2n:1n)*100n)/100n)>BigInt(me.budget));
       }).join("");
       actionHtml='<div class="online-turn"><span>AU TOUR DE</span><b>'+label(bidder)+'</b>'+
         (!turn?'<small>Patiente, l’autre pirate réfléchit !</small>':'<small>C’est à toi de jouer !</small>')+'</div>'+
@@ -330,7 +331,7 @@
         (canHaki?button("haki","👑 Haki des Rois — recruter gratuitement"): "")+
         (royal?'<div class="online-event">👑 Taxe royale ×2 : première mise obligatoire, puis retrait gratuit. Haki des Rois désactivé.</div>':"")+
         button("pass",a.leader!==null?"Se retirer (gratuit)":"Refuser ce personnage · "+(5-me.passesUsed)+"/5 restants",
-          "online-pass",!turn||(royal&&a.leader===null)||(a.leader===null&&me.passesUsed>=5))+
+          "online-pass",!turn||(royal&&a.leader===null)||(a.leader===null&&me.passesUsed>=(me.ship==='sunny'?8:5)))+
         '<div class="online-powers">'+
         button("observation",me.observationUsed?'👁 Revoir mes visions':'👁 Observation', "btn-ghost",!turn&&!me.observationUsed)+
         '<span class="op21-haki-hint">🛡 '+(me.armamentUsed?'Armement utilisé':'Armement : +20 proposé sur une recrue ≤60')+'</span></div>'+
@@ -483,7 +484,7 @@
       if(stage==="offer"){
        const owner=view.players[m.winner],buff=m.bonus||0,proposed=Math.min(100,Number(CARDS[id]?.power||0)+buff);
        inner+='<p>Recrutement gratuit · '+(owner.ship==="redforce"?"🐉 Terre Sainte : +"+buff+" points · ":"")+
-        'Puissance projetée : '+proposed+' points.</p>';
+        'Puissance projetée : '+proposed+' points · Gain total : <b>+'+(Math.min(100,Number(CARDS[id]?.power||0)+buff)+v3Synergy(owner.roster.concat(id))-v3Synergy(owner.roster))+' points</b> (synergies comprises).</p>';
        inner+=mine===m.winner?button("v3-morgans-accept","✅ Recruter gratuitement","primary")+button("v3-morgans-reject","Refuser (sans refus consommé)","btn-ghost"):'<p>Le gagnant réfléchit…</p>';
       }
       if(stage==="armament")inner+=mine===m.winner?'<p>Haki de l’Armement disponible sur cette recrue.</p>'+
