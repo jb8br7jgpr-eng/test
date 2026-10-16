@@ -76,7 +76,7 @@ function sevenSchedule(players:number,teamSize:number){
  }
  return plan.sort((a,b)=>a.round-b.round);
 }
-const effectivePower=(s:any,p:any,id:string)=>v3Clamp(power(s,id)+Number(p.smileModifiers?.[id]||0)+Number(p.shipBonus?.[id]||0)+(p.armamentId===id?Number(p.armamentBonus||0):0));
+const effectivePower=(s:any,p:any,id:string)=>isV3(s)?v3Clamp(power(s,id)+Number(p.smileModifiers?.[id]||0)+Number(p.shipBonus?.[id]||0)+(p.armamentId===id?Number(p.armamentBonus||0):0)):(p.smileModifiers?.[id]===undefined?power(s,id):v3Clamp(power(s,id)+p.smileModifiers[id]));
 const armamentBonus=(p:any)=>p.armamentId&&p.roster.includes(p.armamentId)?Number(p.armamentBonus??5):0;
 const pendingArmament=(s:any)=>{const a=s.auction;return s.status==="playing"&&a?.outcome==="sold"&&a.leader!==null&&
  !!s.players[a.leader]&&!s.players[a.leader].armamentUsed&&!a.armamentChoice&&power(s,a.charId)<=60;};
@@ -93,6 +93,7 @@ function eventReady(s:any,seat:number){
 }
 
 const score=(s:any,p:any)=>p.roster.reduce((n:number,id:string)=>n+effectivePower(s,p,id),0)+
+  (isV3(s)?0:armamentBonus(p))+
   affiliationBonuses(s,p).reduce((n,b)=>n+b.points,0);
 const publicPlayer=(s:any,p:any)=>({id:p.id,name:p.name,budget:p.budget,roster:p.roster,passesUsed:p.passesUsed,
   hakiUsed:p.hakiUsed,observationUsed:p.observationUsed,armamentUsed:p.armamentUsed,armamentId:p.armamentId||null,armamentBonus:armamentBonus(p),
