@@ -96,6 +96,7 @@ jobs:
             }
             if(v.v3.stage==="market"){
               foundTrade=true;const t=v.v3.market;
+              if(t.result){if(!t.result.accepted)throw Error("Trade decision incorrect");v=await act(0,"v3-trade-continue");continue;}
               if(t.offer){v=await act(t.offer.to,"v3-trade-accept");accepted=true;continue;}
               if(t.step>=t.order.length)throw Error("Finished market not advancing");
               const from=t.order[t.step],to=1-from;
