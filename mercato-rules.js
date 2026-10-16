@@ -5,7 +5,7 @@
   const MAX_RECRUITS=30;
 
   const safeCount=value=>Number.isInteger(Number(value)) ? Number(value):5;
-  const passUsed=p=>Math.min(MAX_PASSES,Math.max(0,Number.isInteger(p?.passesUsed)?p.passesUsed:0));
+  const passUsed=p=>Math.min(MAX_PASSES+(p?.ship==='sunny'?3:0),Math.max(0,Number.isInteger(p?.passesUsed)?p.passesUsed:0));
   const hasHaki=p=>!!p && !p.hakiUsed && p.roster.length<TEAM_SIZE;
   const minForAuction=a=>BigInt(a.highBid||0)>0n?BigInt(a.highBid)+BigInt(state.bidStep??10):BigInt(state.baseBid??20);
   const canHakiNow=(a,p)=>Boolean(
@@ -88,7 +88,7 @@
     const p=player(a.turnId);
     if(!p)return;
     const skipWithoutBid=isUnbid(a);
-    if(skipWithoutBid && passUsed(p)>=MAX_PASSES){
+    if(skipWithoutBid && passUsed(p)>=MAX_PASSES+(p.ship==='sunny'?3:0)){
       showToast('5 refus sans enchère utilisés. Tu dois miser ou utiliser ton Haki des Rois si disponible.');
       return;
     }
@@ -105,6 +105,7 @@
     }
     p.hakiUsed=true;
     p.roster.push(a.charId);
+    if(state?.v3&&p.ship==='redforce'){p.shipBonus=p.shipBonus||{};p.shipBonus[a.charId]=1+Math.floor(Math.random()*3);}
     a.leader=p.id;
     a.highBid='0';
     a.hakiWinner=p.id;
@@ -120,7 +121,8 @@
     if(!a||a.outcome!==null||a.turnId===null)return html;
     const p=player(a.turnId);
     if(!p)return html;
-    const remaining=Math.max(0,MAX_PASSES-passUsed(p));
+    const maxPasses=MAX_PASSES+(p.ship==='sunny'?3:0);
+    const remaining=Math.max(0,maxPasses-passUsed(p));
     const canPower=canHakiNow(a,p);
     const powerButton=canPower?
       '<button class="haki-btn" data-action="haki">👑 Haki des Rois — recruter gratuitement !'+
@@ -131,7 +133,7 @@
       powerButton+'<button class="pass-btn" data-action="pass" '+(unavailable?'disabled':'')+'>'+
       (freeWithdrawal?'Arrêter d’enchérir (gratuit)':unavailable?
         '⛔ Plus de refus sans enchère disponibles':
-        'Refuser ce personnage · '+remaining+'/'+MAX_PASSES+' restants')+'</button>');
+        'Refuser ce personnage · '+remaining+'/'+maxPasses+' restants')+'</button>');
     html=html.replace("Passer t'exclut uniquement des enchères pour ce personnage.",
       freeWithdrawal?
       'Se retirer d’une enchère déjà commencée ne consomme aucune de tes 5 passes.':
