@@ -1,0 +1,48 @@
+name: OPMercato V3 Production Smoke
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/opmercato-v3-production-smoke.yml','index.html','supabase/functions/opmercato-online/index.ts']
+jobs:
+  production:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Verify live GitHub Pages and actual Supabase V3 room
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          const page="https://jb8br7jgpr-eng.github.io/test/";
+          let published=false;
+          for(let attempt=0;attempt<16;attempt++){
+            try{
+              const html=await (await fetch(page+"?v=3-prod-"+Date.now(),{cache:"no-store"})).text();
+              if(html.includes("mercato-v3-local.js")&&html.includes("20261016-v3-1")){published=true;break;}
+            }catch(e){console.log("Waiting for Pages",e.message);}
+            await new Promise(r=>setTimeout(r,10000));
+          }
+          if(!published)throw Error("GitHub Pages has not published the V3 scripts");
+          const api="https://nezqupnhcqwuewfilioa.supabase.co/functions/v1/opmercato-online";
+          const key="sb_publishable_rLlu872lFwupJfFw_f3alw_GhbR7Mok";
+          async function request(data){
+            const response=await fetch(api,{method:"POST",headers:{"content-type":"application/json",apikey:key},body:JSON.stringify(data)});
+            const obj=await response.json();
+            if(!response.ok||obj.error)throw Error(data.action+" "+response.status+" "+JSON.stringify(obj));
+            return obj;
+          }
+          const host=await request({action:"create",name:"V3 Production Test",budget:"10000000",teamSize:1,maxPlayers:2,spoilers:true});
+          if(host.room.v3?.version!==3||host.room.v3.stage!=="dice"||host.room.v3.morgans.id)
+            throw Error("Live server has not created a secret V3 room");
+          const guest=await request({action:"join",name:"V3 Second Phone",code:host.room.code});
+          const id=host.room.id,tokens=[host.token,guest.token];
+          const act=async(seat,action,data={})=>(await request({action,roomId:id,token:tokens[seat],...data})).room;
+          let room=await act(0,"start");
+          room=await act(0,"v3-roll");room=await act(1,"v3-roll");
+          for(let guard=0;room.v3.stage==="dice-tie"&&guard<40;guard++)
+            for(const seat of room.v3.tiePlayers)room=await act(seat,"v3-roll");
+          if(room.v3.stage!=="ships")throw Error("No live exclusive ship selection");
+          for(const [i,seat] of room.v3.choiceOrder.entries())room=await act(seat,"v3-ship",{ship:["sunny","mobydick"][i]});
+          if(room.v3.stage!=="morgans"||room.v3.morgans.id)throw Error("Morgans stage or secret invalid");
+          console.log("PASS OPMercato V3 live GitHub Pages + Supabase: 2 players, dice, ships, secret Morgans");
+          JS
