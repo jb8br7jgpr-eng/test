@@ -106,7 +106,18 @@ function preview(){const v=V();if(v?.phase!=='market'||v.market.offer)return;
  if([...t.options].some(x=>x.value===prior))t.value=prior;
  const x=document.querySelector('#v3-preview');if(x&&g.value&&t.value)x.textContent=p.name+' : '+(tradeScore(p,g.value,t.value)-getScore(p))+' pts · '+target.name+' : '+(tradeScore(target,t.value,g.value)-getScore(target))+' pts';
 }
-render=function(){if(V()&&['dice','ships','morgans','market'].includes(V().phase)){
+let v3RestoringAuction=false;
+render=function(){
+ if(V()?.phase==='auction'&&state.phase==='auction'&&!state.auction){
+   if(!v3RestoringAuction){
+     v3RestoringAuction=true;
+     try{drawNext();}finally{v3RestoringAuction=false;}
+     if(state.auction||state.phase==='finished'||V()?.phase!=='auction')return;
+   }
+   app.innerHTML='<section class="card v3-screen"><h2>⚓ Prochain recrutement</h2><p>Le prochain personnage est en préparation.</p><button class="primary" data-action="next">Continuer →</button></section>';
+   return;
+ }
+ if(V()&&['dice','ships','morgans','market'].includes(V().phase)){
  app.innerHTML=v3MiniHud()+'<section class="card v3-screen"><span class="eyebrow">OPMERCATO 3.0</span>'+screen()+'</section>'+
   '<div class="v3-players-mini">'+state.players.map(p=>esc(p.name)+' : '+currency(p.budget)+' · '+getScore(p)+' pts').join('<hr>')+'</div>';preview();window.OPMERCATO_SHARED?.refreshImages?.();return;}
  oldRender();if(V()){app.querySelectorAll('.player-card').forEach((node,i)=>{const p=state.players[i],s=sh(p.ship);if(!s)return;
