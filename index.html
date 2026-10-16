@@ -41,6 +41,12 @@
     .op-logo-home-wrap {display:flex; justify-content:center; margin:0 auto 24px;}
     .topbar.home-header {justify-content:flex-end; margin-bottom:5px;}
     .topbar.home-header .brand {display:none;}
+    .home-nav {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:100%;min-width:0;}
+    .home-nav .btn-ghost {width:100%;min-height:46px;font-size:13px;font-weight:850;border-color:rgba(247,202,114,.4);color:#ffe2a5;background:#183748;white-space:normal;}
+    .home-online-button {display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;width:100%;min-height:64px;margin-top:11px;padding:12px 16px;border:1px solid rgba(125,227,211,.65);border-radius:14px;background:linear-gradient(120deg,#1f5868,#113647);color:#f7faf3;font-size:16px;font-weight:950;box-shadow:0 8px 22px #08121a80;}
+    .home-online-button small {font-size:11px;color:#bce8e6;font-weight:700;}
+    .home-online-button:hover {filter:brightness(1.08);}
+    .home-online-button:focus-visible {outline:3px solid var(--gold);outline-offset:3px;}
     @media (max-width:420px) {
       .op-logo-header {width:clamp(168px,49vw,212px);}
       .op-logo-home {border-radius:12px;}
@@ -197,7 +203,7 @@
   ].map(([id,name,power])=>({id,name,power})).concat(window.MERCATO_EXPANSION?.characters || []);
   const CARDS = Object.fromEntries(CHARACTERS.map(c=>[c.id,c]));
   const MAX_PLAYERS=5, MIN_PLAYERS=2, OPEN_BID=20, BID_STEP=10, STORE_KEY='mercato-pirates-v1';
-  let TEAM_SIZE=5;
+  let TEAM_SIZE=10;
   const TIERS = [
     {min:95,tier:'S',label:'Légendaire',color:'#ffd171',background:'rgba(255,209,113,.16)',glow:'rgba(255,181,63,.24)'},
     {min:80,tier:'A',label:'Élite',color:'#e99dfa',background:'rgba(233,157,250,.13)',glow:'rgba(216,102,248,.18)'},
@@ -224,13 +230,13 @@
   function getScore(p) {return [...p.roster].sort((a,b)=>CARDS[b].power-CARDS[a].power).slice(0,TEAM_SIZE).reduce((s,id)=>s+CARDS[id].power,0);}
   function ranking() {return [...state.players].sort((a,b)=>getScore(b)-getScore(a)||b.budget-a.budget||a.id-b.id);}
   function isComplete(){return state.players.every(p=>p.roster.length===TEAM_SIZE) || !state.players.some(p=>canParticipate(p,OPEN_BID));}
-  function header(){return `<div class="topbar${!state?' home-header':''}"><div class="brand"><div class="op-logo-frame op-logo-header"><img src="./opmercato-logo.jpg?v=1" alt="OPMercato, la boussole des pirates" /></div></div><button class="btn-ghost" data-action="rules" aria-label="Afficher les règles">Règles ?</button></div>`;}
+  function header(){return `<div class="topbar${!state?' home-header':''}"><div class="brand"><div class="op-logo-frame op-logo-header"><img src="./opmercato-logo.jpg?v=1" alt="OPMercato, la boussole des pirates" /></div></div>${!state?'<nav class="home-nav" aria-label="Navigation"><button class="btn-ghost" data-action="catalog" type="button">📚 Catalogue</button><button class="btn-ghost" data-action="rules" type="button">📖 Règles</button></nav>':'<button class="btn-ghost" data-action="rules" aria-label="Afficher les règles">Règles ?</button>'}</div>`;}
   function setupScreen(){
-    return `${header()}<section class="intro"><div class="op-logo-home-wrap"><div class="op-logo-frame op-logo-home"><img src="./opmercato-logo.jpg?v=1" alt="Logo OPMercato" /></div></div><span class="eyebrow">Le jeu d'enchères des mers</span><h1>Forme l'équipage<br/>le plus puissant.</h1><p>Recrute des personnages One Piece aux enchères, gère ton budget et affronte tes amis. Celui qui a le plus de points avec ses <strong>5 personnages</strong> remporte la partie.</p></section>
+    return `${header()}<section class="intro"><div class="op-logo-home-wrap"><div class="op-logo-frame op-logo-home"><img src="./opmercato-logo.jpg?v=1" alt="Logo OPMercato" /></div></div><span class="eyebrow">Le jeu d'enchères des mers</span><h1>Forme l'équipage<br/>le plus puissant.</h1><p>Recrute des personnages One Piece aux enchères, gère ton budget et affronte tes amis. Celui qui a le plus de points avec ses <strong>${TEAM_SIZE} personnages</strong> remporte la partie.</p></section>
       <section class="card settings"><span class="section-label">Combien de pirates ?</span><div class="settings-row"><span class="hint" style="margin:0">De 2 à 5 joueurs</span><div class="counter"><button class="round-button" data-action="less" aria-label="Moins de joueurs">−</button><span id="numPlayers" class="count">${playerCount}</span><button class="round-button" data-action="more" aria-label="Plus de joueurs">+</button></div></div>
       <span class="section-label">Noms des joueurs</span><div id="names" class="players-inputs">${names.slice(0,playerCount).map((n,i)=>`<div class="field"><label for="name-${i}">Joueur ${i+1}</label><input id="name-${i}" type="text" data-player-input="${i}" maxlength="25" value="${esc(n)}" autocomplete="off" /></div>`).join('')}</div>
       <div class="field field-budget"><label for="budget">Budget de départ (฿)</label><input id="budget" type="number" min="100" max="100000" step="100" value="${startingBudget}" inputmode="numeric" /></div>
-      <button class="primary" data-action="start">⚓ Lancer le mercato</button><p class="hint">Un seul téléphone suffit : à chaque tour, l'écran indique qui doit enchérir. Le classement et la progression sont sauvegardés sur cet appareil.</p></section><footer class="footer-actions"><button class="text-btn" data-action="rules">Lire toutes les règles</button></footer>`;
+      <button class="primary" data-action="start">⚓ Lancer le mercato</button><button class="home-online-button" data-online="open" type="button">🌐 Mode en ligne <small>Jouer chacun sur son téléphone</small></button><p class="hint">Un seul téléphone suffit : à chaque tour, l'écran indique qui doit enchérir. Le classement et la progression sont sauvegardés sur cet appareil.</p></section><footer class="footer-actions"><button class="text-btn" data-action="rules">Lire toutes les règles</button></footer>`;
   }
   function charCard(character) {
     const t=tierOf(character.power);
@@ -340,7 +346,7 @@
   modal.addEventListener('click',event=>{if(event.target===modal)closeModal();});
   document.addEventListener('keydown',event=>{if(event.key==='Escape')closeModal();});
   if('serviceWorker' in navigator && window.location.protocol==='https:'){
-    window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=pwa-20261016-v3-transfer1').catch(()=>{}));
+    window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=pwa-20261016-home-nav1').catch(()=>{}));
   }
   render();
   </script>
@@ -354,6 +360,6 @@
   <script src="./mercato-v3-local.js?v=20261016-v3-transfer1"></script>
   <script src="./mercato-history-21.js?v=20261013-op21-1"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script defer src="./mercato-online.js?v=20261016-v3-transfer1"></script>
+  <script defer src="./mercato-online.js?v=20261016-home-nav1"></script>
 </body>
 </html>
