@@ -203,7 +203,17 @@
     rocks:'op-portrait-rocks.jpg',
     shanks:'op-portrait-shanks.jpg',
     teach:'op-portrait-teach.jpg',
-    bigmom:'op-portrait-bigmom.jpg'
+    bigmom:'op-portrait-bigmom.jpg',
+    kaido:'op-portrait-kaido.jpg',
+    oden:'op-portrait-oden.jpg',
+    kid:'op-portrait-kid.jpg',
+    law:'op-portrait-law.jpg',
+    katakuri:'op-portrait-katakuri.jpg',
+    crocodile:'op-portrait-crocodile.jpg',
+    doflamingo:'op-portrait-doflamingo.jpg',
+    marco:'op-portrait-marco.jpg',
+    kuma:'op-portrait-kuma.jpg',
+    coby:'op-portrait-coby.jpg'
   });
   const imageCandidates = new Map();
   function candidatesFor(id){
