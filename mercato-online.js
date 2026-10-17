@@ -575,9 +575,11 @@
         '</b> · Rang '+escOnline(view.auction?.tier||((n)=>n>=95?"S":n>=80?"A":n>=65?"B":n>=50?"C":n>=35?"D":n>=20?"E":"F")(Number(CARDS[id]?.power||0)))+
         ' · Puissance originale : <b>'+Number(CARDS[id]?.power||0)+'</b></p>';
       if(["character","reveal","wheel","winner","offer","armament"].includes(stage)){
-       const revealed=stage==="character"?0:stage==="reveal"?m.shown:view.players.length;
-       inner+='<div class="v3-predictions">'+view.players.map((p,i)=>
-         '<div><b>'+label(p)+'</b><span>'+(i<revealed?(m.guesses[p.id]+' · écart '+Math.abs(m.guesses[p.id]-Number(CARDS[id]?.power||0))):"🔒")+'</span></div>').join("")+'</div>';
+       // Les réponses restent secrètes sur l'écran du personnage, puis apparaissent ensemble.
+       const revealed=stage!=="character";
+       inner+=(revealed?'<h3>📣 Toutes les prédictions</h3>':'')+
+         '<div class="v3-predictions">'+view.players.map(p=>
+         '<div><b>'+label(p)+'</b><span>'+(revealed?(m.guesses[p.id]+' · écart '+Math.abs(m.guesses[p.id]-Number(CARDS[id]?.power||0))):"🔒")+'</span></div>').join("")+'</div>';
       }
       if(["character","reveal","winner"].includes(stage))
        inner+=view.host?button("v3-morgans-next","Continuer →","primary"):'<p>En attente de l’hôte…</p>';
@@ -798,7 +800,8 @@
     .v3-ship-stamp img{width:27px;height:27px;object-fit:cover;border-radius:50%;border:1px solid #d3a867}
     .v3-ship-stamp small{font-size:10px;color:#98e9b4}
     .v3-rolls,.v3-predictions{display:grid;gap:6px;margin:15px 0}
-    .v3-rolls>div,.v3-predictions>div{display:flex;justify-content:space-between;gap:10px;background:#243d50;padding:11px;border-radius:10px}
+    .v3-rolls>div,.v3-predictions>div{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;background:#243d50;padding:11px;border-radius:10px;overflow-wrap:anywhere}
+    .v3-predictions>div span{font-weight:850;color:#f7d593}
     .v3-rolls span{font-size:22px;animation:v3die .6s ease both}
     @keyframes v3die{from{transform:rotateX(600deg) rotateY(400deg) scale(.4)}to{transform:none}}
     .v3-ship-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:9px}
