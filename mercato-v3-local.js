@@ -125,8 +125,11 @@ function screen(){const v=V(),m=v.morgans,t=v.market;
   if(m.phase==='intro')h+=btn('morgans-ready','Continuer');
   if(m.phase==='guess'){const p=state.players.find(p=>m.guesses[p.id]===undefined);h+='<h3>'+esc(p.name)+' : ta prédiction confidentielle</h3><input id="v3-guess" type="number" min="1" max="100">'+btn('morgans-guess','🔒 Confirmer');}
   if(!['intro','guess'].includes(m.phase)){h+='<div class="v3-morgans-portrait">'+charCard(CARDS[m.id])+'</div><h3>'+nm(m.id)+' · '+CARDS[m.id].power+' pts · rang '+tierOf(CARDS[m.id].power).tier+'</h3>';
-   const seen=m.phase==='character'?0:m.phase==='reveal'?m.shown:state.players.length;
-   h+=state.players.map((p,i)=>'<p>'+esc(p.name)+' : '+(i<seen?m.guesses[p.id]+' · écart '+Math.abs(m.guesses[p.id]-CARDS[m.id].power):'🔒')+'</p>').join('');
+   const revealed=m.phase!=='character';
+   if(revealed)h+='<h3>📣 Toutes les prédictions</h3>';
+   h+='<div class="v3-predictions">'+state.players.map(p=>
+     '<div><b>'+esc(p.name)+'</b><span>'+(revealed?m.guesses[p.id]+' · écart '+Math.abs(m.guesses[p.id]-CARDS[m.id].power):'🔒')+'</span></div>'
+   ).join('')+'</div>';
   }
   if(['character','reveal','winner'].includes(m.phase))h+=btn('morgans-next','Continuer');
   if(m.phase==='wheel')h+='<div class="v3-wheel">🎡</div>'+btn('morgans-wheel','Tourner la roue');
@@ -258,8 +261,9 @@ document.addEventListener('click',async e=>{const b=e.target.closest('button[dat
  else if(a.startsWith('ship-')){const id=a.slice(5),p=player(v.order[v.idx]);if(!sh(id)||state.players.some(q=>q.ship===id))return;p.ship=id;p.shipBonus={};v.idx++;if(v.idx>=state.players.length){resume();return;}}
  else if(a==='morgans-ready')m.phase='guess';
  else if(a==='morgans-guess'){const n=Number(document.querySelector('#v3-guess')?.value),p=state.players.find(p=>m.guesses[p.id]===undefined);if(!p||!Number.isInteger(n)||n<1||n>100)return showToast('Entre 1 et 100');m.guesses[p.id]=n;if(Object.keys(m.guesses).length===state.players.length)m.phase='character';}
- else if(a==='morgans-next'){if(m.phase==='character'){m.phase='reveal';m.shown=1;}else if(m.phase==='reveal'){m.shown++;if(m.shown>=state.players.length){
-  const dist=state.players.map(p=>({id:p.id,d:Math.abs(m.guesses[p.id]-CARDS[m.id].power)})),min=Math.min(...dist.map(x=>x.d));m.ties=dist.filter(x=>x.d===min).map(x=>x.id);m.winner=m.ties.length===1?m.ties[0]:null;m.phase=m.ties.length===1?'winner':'wheel';}}
+ else if(a==='morgans-next'){if(m.phase==='character'){m.phase='reveal';m.shown=state.players.length;}else if(m.phase==='reveal'){
+  m.shown=state.players.length;
+  const dist=state.players.map(p=>({id:p.id,d:Math.abs(m.guesses[p.id]-CARDS[m.id].power)})),min=Math.min(...dist.map(x=>x.d));m.ties=dist.filter(x=>x.d===min).map(x=>x.id);m.winner=m.ties.length===1?m.ties[0]:null;m.phase=m.ties.length===1?'winner':'wheel';}
   else if(m.phase==='winner'){m.phase='offer';if(player(m.winner).ship==='redforce')m.bonus=1+Math.floor(Math.random()*3);}}
  else if(a==='morgans-wheel'){m.winner=m.ties[Math.floor(Math.random()*m.ties.length)];m.phase='winner';}
  else if(a==='morgans-accept'||a==='morgans-reject'){const p=player(m.winner);if(a==='morgans-accept'){p.roster.push(m.id);p.purchases[m.id]='0';recruit(p,m.id,m.bonus);}m.done=true;
