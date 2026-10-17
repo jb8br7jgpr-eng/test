@@ -1,7 +1,6 @@
 (function upgradeMercato(){
   'use strict';
   const portraits = new Map();
-  const blocked = new Set(['higuma','fullbody','pearl','mohji','cabaji','jango','ginrummy','numbers-giant','speed','stronger','shachi','penguin','or-lumbus','conis','satori','gedatsu','shura','ohm','hogback','chaka','koza','heat','wire','richie','cabaji2','dragon-kuma','daz-bones','galdino','helmeppo2','shishilian']);
   const aliases = {
     'prime-wb':'Edward Newgate','prime-garp':'Monkey D. Garp','sengoku':'Sengoku',
     'luffy':'Monkey D. Luffy','teach':'Marshall D. Teach','bigmom':'Charlotte Linlin',
@@ -86,7 +85,7 @@
     startingBudget=b.toString();
     const initial=b>=1000n?b/50n:20n;
     const increment=b>=1000n?b/100n:10n;
-    const pool=CHARACTERS.filter(c=>!blocked.has(c.id)&&(spoilManga||!getDetails(c.id).spoiler));
+    const pool=CHARACTERS.filter(c=>spoilManga||!getDetails(c.id).spoiler);
     state={version:1,phase:'auction',
       players:names.slice(0,playerCount).map((name,id)=>({id,name,budget:startingBudget,roster:[]})),
       drawPile:shuffle(pool.map(c=>c.id)),drawIndex:0,round:0,auction:null,
@@ -153,7 +152,7 @@
     oldRender();
     const top=app.querySelector('.topbar');
     if(top && state){
-      top.insertAdjacentHTML('afterend','<div class="game-nav"><button class="btn-ghost" data-action="catalog">📚 Catalogue ('+CHARACTERS.filter(c=>!blocked.has(c.id)).length+' personnages)</button><span>🎲 Enchères entre amis</span></div>');
+      top.insertAdjacentHTML('afterend','<div class="game-nav"><button class="btn-ghost" data-action="catalog">📚 Catalogue ('+CHARACTERS.length+' personnages)</button><span>🎲 Enchères entre amis</span></div>');
     }
     refreshImages();
   };
@@ -243,7 +242,6 @@
     const q=norm(modal.querySelector('#catalog-search')?.value||'');
     const filter=modal.querySelector('#catalog-tier')?.value||'all';
     const people=CHARACTERS.filter(c=>{
-      if(blocked.has(c.id))return false;
       const d=getDetails(c.id);
       if(!spoilManga&&d.spoiler)return false;
       if(filter!=='all'&&tierOf(c.power).tier!==filter)return false;
@@ -370,6 +368,6 @@
     }
   },true);
   // Les deux modes partagent le meme chargeur d'images, les fiches et le catalogue.
-  window.OPMERCATO_SHARED = Object.freeze({refreshImages,openCatalog,openDetail,portraitMarkup,getDetails,catalogCount:()=>CHARACTERS.filter(c=>!blocked.has(c.id)).length});
+  window.OPMERCATO_SHARED = Object.freeze({refreshImages,openCatalog,openDetail,portraitMarkup,getDetails,catalogCount:()=>CHARACTERS.length});
   render();
 })();
