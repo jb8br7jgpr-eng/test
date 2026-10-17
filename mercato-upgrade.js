@@ -267,15 +267,38 @@
     container.innerHTML='<div class="catalog-count">'+people.length+' personnages</div><div class="catalog-grid">'+people.map(cardEntry).join('')+'</div>';
     refreshImages();
   }
+  // Preserve the actual catalog DOM to keep its query, filters, and scroll position.
+  let catalogReturn=null;
   function openCatalog(){
+    catalogReturn=null;
     modal.innerHTML='<section class="card modal-content catalog-modal"><div class="catalog-heading"><div><span class="eyebrow">Grand Line · Encyclopédie</span><h2>Les personnages</h2></div><button data-action="close-modal" class="btn-ghost">Fermer ✕</button></div><p>Explore les pirates, alliés, Marines et adversaires. Les puissances sont subjectives.</p><div class="catalog-controls"><input id="catalog-search" type="search" placeholder="Rechercher un personnage ou un équipage…" aria-label="Rechercher" /><select id="catalog-tier" aria-label="Filtrer par classe"><option value="all">Toutes les classes</option>'+['S','A','B','C','D','E','F'].map(t=>'<option>'+t+'</option>').join('')+'</select></div><label class="spoiler-choice"><input type="checkbox" id="catalog-manga" '+(spoilManga?'checked':'')+' /> Afficher les spoilers manga (Egghead / Elbaf)</label><div id="catalog-results"></div></section>';
     modal.classList.remove('hidden');
     catalogResults();
   }
+  function returnToCatalog(){
+    if(!catalogReturn)return;
+    const saved=catalogReturn;
+    catalogReturn=null;
+    modal.replaceChildren(saved.element);
+    modal.classList.remove('hidden');
+    requestAnimationFrame(()=>{
+      if(!saved.element.isConnected)return;
+      saved.element.scrollTop=saved.scrollTop;
+      if(saved.focus?.isConnected)saved.focus.focus({preventScroll:true});
+    });
+  }
   function openDetail(id){
     const c=CARDS[id];if(!c)return;
+    const catalog=modal.querySelector('.catalog-modal');
+    catalogReturn=catalog?{
+      element:catalog,
+      scrollTop:catalog.scrollTop,
+      focus:catalog.contains(document.activeElement)?document.activeElement:null
+    }:null;
+    const detailAction=catalogReturn?'catalog-back':'close-modal';
+    const detailLabel=catalogReturn?'← Retour au catalogue':'✕ Fermer';
     const d=getDetails(id),t=tierOf(c.power);
-    modal.innerHTML='<section class="card modal-content detail-modal"><button class="detail-close btn-ghost" data-action="close-modal">✕ Fermer</button><div class="detail-hero">'+portraitMarkup(id,'portrait-detail')+'<div><span class="eyebrow">Fiche personnage</span><h2>'+esc(c.name)+'</h2><span class="tier" style="--tier-border:'+t.color+';--tier-color:'+t.color+'">Classe '+t.tier+' · '+c.power+'/100</span></div></div><p class="detail-desc">'+esc(d.description)+'</p><dl class="detail-list"><div><dt>Équipage / camp</dt><dd>'+esc(d.crew)+'</dd></div><div><dt>Pouvoirs / style de combat</dt><dd>'+esc(d.ability)+'</dd></div><div><dt>Taille</dt><dd>'+esc(d.height)+'</dd></div></dl>'+(d.spoiler?'<p class="spoiler-warning">⚠️ Contient des éléments des arcs manga récents.</p>':'')+'<p class="image-credit">Illustrations tirées des cartes ONE PIECE CARD GAME, selon disponibilité. Images © Eiichiro Oda, Shueisha, Toei Animation et Bandai.</p></section>';
+    modal.innerHTML='<section class="card modal-content detail-modal"><button class="detail-close btn-ghost" data-action="'+detailAction+'">'+detailLabel+'</button><div class="detail-hero">'+portraitMarkup(id,'portrait-detail')+'<div><span class="eyebrow">Fiche personnage</span><h2>'+esc(c.name)+'</h2><span class="tier" style="--tier-border:'+t.color+';--tier-color:'+t.color+'">Classe '+t.tier+' · '+c.power+'/100</span></div></div><p class="detail-desc">'+esc(d.description)+'</p><dl class="detail-list"><div><dt>Équipage / camp</dt><dd>'+esc(d.crew)+'</dd></div><div><dt>Pouvoirs / style de combat</dt><dd>'+esc(d.ability)+'</dd></div><div><dt>Taille</dt><dd>'+esc(d.height)+'</dd></div></dl>'+(d.spoiler?'<p class="spoiler-warning">⚠️ Contient des éléments des arcs manga récents.</p>':'')+'<p class="image-credit">Illustrations tirées des cartes ONE PIECE CARD GAME, selon disponibilité. Images © Eiichiro Oda, Shueisha, Toei Animation et Bandai.</p></section>';
     modal.classList.remove('hidden');refreshImages();
   }
   const prevModal=openModal;
@@ -376,6 +399,8 @@
       e.preventDefault();e.stopImmediatePropagation();openCatalog();
     }else if(action==='details'){
       e.preventDefault();e.stopImmediatePropagation();openDetail(button.dataset.charId);
+    }else if(action==='catalog-back'&&modal.contains(button)){
+      e.preventDefault();e.stopImmediatePropagation();returnToCatalog();
     }else if(action==='less'||action==='more'){
       e.preventDefault();e.stopImmediatePropagation();
       document.querySelectorAll('[data-player-input]').forEach(input=>{names[Number(input.dataset.playerInput)]=input.value;});
