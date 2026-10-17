@@ -199,11 +199,11 @@
   // Classement ludique et subjectif, entièrement modifiable ci-dessous.
   // Format : [identifiant, nom, puissance (de 1 à 100)]. Le rang est calculé automatiquement.
   const CHARACTERS = [
-    ['roger','Gol D. Roger',100], ['prime-wb','Barbe Blanche (prime)',100], ['luffy','Monkey D. Luffy',96],
-    ['shanks','Shanks',99], ['prime-garp','Monkey D. Garp (prime)',100], ['kaido','Kaido',95],
+    ['roger','Gol D. Roger',100], ['prime-wb','Barbe Blanche',100], ['luffy','Monkey D. Luffy',96],
+    ['shanks','Shanks',99], ['prime-garp','Monkey D. Garp',100], ['kaido','Kaido',95],
     ['mihawk','Dracule Mihawk',93], ['teach','Barbe Noire',97], ['akainu','Akainu',95],
-    ['bigmom','Big Mom',95], ['sengoku','Sengoku (prime)',94], ['kuzan','Kuzan',92],
-    ['rayleigh','Silvers Rayleigh (prime)',96], ['kizaru','Kizaru',91], ['oden','Kozuki Oden',93],
+    ['bigmom','Big Mom',95], ['sengoku','Sengoku',94], ['kuzan','Kuzan',92],
+    ['rayleigh','Silvers Rayleigh',96], ['kizaru','Kizaru',91], ['oden','Kozuki Oden',93],
     ['fujitora','Fujitora',91], ['ryokugyu','Ryokugyu',90], ['beckman','Benn Beckman',89],
     ['sabo','Sabo',92], ['zoro','Roronoa Zoro',95], ['yamato','Yamato',89],
     ['law','Trafalgar Law',91], ['kid','Eustass Kid',91], ['marco','Marco',86],
@@ -376,12 +376,12 @@
   modal.addEventListener('click',event=>{if(event.target===modal)closeModal();});
   document.addEventListener('keydown',event=>{if(event.key==='Escape')closeModal();});
   if('serviceWorker' in navigator && window.location.protocol==='https:'){
-    window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=pwa-20261017-catalog-back1').catch(()=>{}));
+    window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=pwa-20261017-portraits21-names1').catch(()=>{}));
   }
   render();
   </script>
   <script src="./opmercato-custom-portraits.js?v=20261013-portraits-2"></script>
-  <script src="./mercato-upgrade.js?v=20261017-catalog-back1"></script>
+  <script src="./mercato-upgrade.js?v=20261017-portraits21-names1"></script>
   <script src="./mercato-rules.js?v=20261016-v3-1"></script>
   <script src="./mercato-art.js?v=20261017-no-emoji-flash"></script>
   <script src="./mercato-features.js?v=20261017-art1"></script>
