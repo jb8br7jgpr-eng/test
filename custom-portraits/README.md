@@ -40,3 +40,26 @@ directement dans ce dossier (`custom-portraits/`), sans les convertir ni les ren
 Le code charge ces fichiers en premier et conserve les illustrations existantes
 comme secours si les JPG n'ont pas encore été téléversés. La mention « (prime) »
 a été retirée des quatre noms affichés, **pas** des identifiants internes.
+
+## Dix nouveaux portraits approuvés (2026-10-18)
+
+Décompresser `OPMercato_10_portraits_Supernovas.zip` puis transférer **les 10 JPG**
+directement dans ce dossier (pas l'archive ZIP). Les images sont les originaux
+transmis par le créateur, JPEG 864 × 1200 pixels, sans altération :
+
+| Nom affiché | ID interne | Image |
+|---|---|---|
+| Kaido | kaido | op-portrait-kaido.jpg |
+| Kozuki Oden | oden | op-portrait-oden.jpg |
+| Eustass Kid | kid | op-portrait-kid.jpg |
+| Trafalgar Law | law | op-portrait-law.jpg |
+| Charlotte Katakuri | katakuri | op-portrait-katakuri.jpg |
+| Crocodile | crocodile | op-portrait-crocodile.jpg |
+| Donquixote Doflamingo | doflamingo | op-portrait-doflamingo.jpg |
+| Marco | marco | op-portrait-marco.jpg |
+| Bartholomew Kuma | kuma | op-portrait-kuma.jpg |
+| Koby | coby | op-portrait-coby.jpg |
+
+Note : **Koby utilise l'ID interne `coby`**, qui est volontairement différent
+de son nom affiché. Les portraits des séries précédentes sont inchangés ;
+une image absente utilise automatiquement l'ancien portrait.
