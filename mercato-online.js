@@ -7,7 +7,7 @@
   const escOnline=x=>String(x??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
   const berrys=x=>{try{return BigInt(String(x??0)).toLocaleString("fr-FR")+" ฿";}catch{return "0 ฿";}};
   let session=null,view=null,showing=undefined,loading=false,channel=null,poll=null,topic="",onlineDetailId=null;
-  let mode="choose",client=null,busy=false,loaded=false,copyMessage="",peekOpen=false,fx=null,burstDraft="";
+  let mode="choose",client=null,busy=false,loaded=false,copyMessage="",peekOpen=false,fx=null,burstDraft="",onlineDicePlaying=false;
   const root=document.createElement("section");root.id="opmercato-online";
   root.style.display="none";document.body.appendChild(root);
   try{const stored=JSON.parse(localStorage.getItem(KEY)||"null");if(stored?.roomId&&stored?.token)session=stored;}catch{}
@@ -109,6 +109,7 @@
       if(action==="observation")peekOpen=true;
       copyMessage="";
       paint();
+      return res.room || true;
 
     }catch(e){
       if(action==="v3-intro-ready"&&String(e.message).includes("évolué")){
@@ -543,15 +544,15 @@
     }
     const box=(title,inner)=>'<section class="online-card v3-card"><h2>'+title+'</h2>'+inner+'</section>';
     if(x.stage==="dice"||x.stage==="dice-tie"){
-      const tied=x.stage==="dice-tie",eligible=tied?x.tiePlayers.includes(mine):x.rolls[mine]===undefined;
-      const drawn=tied?x.tieRolls?.[mine]:x.rolls[mine];
-      const who=tied?x.tiePlayers.map(id=>view.players[id]):view.players;
+      const tied=x.stage==="dice-tie",tiePlayers=x.tiePlayers||[],drawn=tied?x.tieRolls?.[mine]:x.rolls?.[mine];
+      const eligible=(tied?tiePlayers.includes(mine):true)&&drawn===undefined&&!onlineDicePlaying;
+      const who=tied?tiePlayers.map(id=>view.players[id]).filter(Boolean):view.players;
       return box(tied?"🎲 Égalité ! Nouvelle série de dés":"🎲 Tirage au sort des navires",
         '<p>'+(tied?"Seuls les joueurs ex æquo relancent, jusqu’à départage complet.":
         "Le meilleur résultat choisira en premier. Le dernier commencera les enchères.")+'</p>'+
         '<div class="v3-rolls">'+who.map(p=>'<div><b>'+label(p)+'</b><span>🎲 '+
         ((tied?x.tieRolls?.[p.id]:x.rolls[p.id])??"?")+'</span></div>').join("")+'</div>'+
-        button("v3-roll",eligible?"🎲 Lancer mon dé":drawn!==undefined?"✓ Dé lancé":"Attendre le départage","primary",!eligible));
+        button("v3-roll",eligible?"🎲 Lancer mon dé":onlineDicePlaying?"🎲 Dé en cours…":drawn!==undefined?"✓ Dé lancé · En attente des autres":tied&&!tiePlayers.includes(mine)?"Départage entre les ex æquo":"Attendre les autres pirates","primary",!eligible));
     }
     if(x.stage==="ships"){
       const current=x.choiceOrder[x.choiceIndex],owner=view.players[current];
@@ -715,7 +716,23 @@
     if(a==="rules"){onlineRules();return;}
     if(a==="observation"&&view.players[view.yourSeat].observationUsed){peekOpen=!peekOpen;paint();return;}
     if(a==="v3-swap"){const first=Number(root.querySelector("#v3-swap-first")?.value),second=Number(root.querySelector("#v3-swap-second")?.value);if(first===second){note("Sélectionne deux positions différentes.");return;}await action("v3-observation-swap",{a:first,b:second});peekOpen=true;return;}
-    if(a==="v3-roll"){const seat=view.yourSeat,name=view.players[seat]?.name;await action("v3-roll");const roll=view?.v3?.lastDice?.[seat];if(roll>=1&&roll<=6)await window.OPMERCATO_V3_DICE?.play(roll,name);return;}
+    if(a==="v3-roll"){
+      if(onlineDicePlaying||busy||!view?.v3)return;
+      const seat=view.yourSeat,name=view.players[seat]?.name,v=view.v3;
+      const pending=v.stage==="dice"?v.rolls?.[seat]===undefined:
+        v.stage==="dice-tie"&&(v.tiePlayers||[]).includes(seat)&&v.tieRolls?.[seat]===undefined;
+      if(!pending)return;
+      onlineDicePlaying=true;
+      try{
+        const confirmed=await action("v3-roll");
+        const roll=confirmed?.v3?.lastDice?.[seat];
+        if(confirmed&&roll>=1&&roll<=6)await window.OPMERCATO_V3_DICE?.play(roll,name);
+      }finally{
+        onlineDicePlaying=false;
+        if(showing)paint();
+      }
+      return;
+    }
     if(a.startsWith("v3-select-")){await action("v3-ship",{ship:a.slice(10)});return;}
     if(a==="v3-intro-ready"){await action("v3-intro-ready");return;}
     if(a==="v3-notice-continue"){await action("v3-notice-continue");return;}
