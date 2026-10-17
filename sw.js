@@ -1,6 +1,6 @@
 // OPMercato: network-first app shell, offline fallback for classic local play.
 // Do not intercept Supabase's API, authentication or real-time WebSocket traffic.
-const CACHE = 'opmercato-shell-pwa-v42-20261017-ui3';
+const CACHE = 'opmercato-shell-pwa-v43-20261017-dice-tie-fix';
 const ROOT=new URL("./",self.location.href);
 const ASSETS=[
   "./","./index.html","./manifest.webmanifest",
