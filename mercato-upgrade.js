@@ -193,14 +193,24 @@
     franky:'op-portrait-franky.jpg',
     brook:'op-portrait-brook.jpg',
     jinbe:'op-portrait-jinbe.jpg',
-    'luffy-gear5':'op-portrait-luffy-gear5.jpg'
+    'luffy-gear5':'op-portrait-luffy-gear5.jpg',
+    ace:'op-portrait-ace.jpg',
+    sabo:'op-portrait-sabo.jpg',
+    roger:'op-portrait-roger.jpg',
+    rayleigh:'op-portrait-rayleigh.jpg',
+    'prime-wb':'op-portrait-whitebeard.jpg',
+    'prime-garp':'op-portrait-garp.jpg',
+    rocks:'op-portrait-rocks.jpg',
+    shanks:'op-portrait-shanks.jpg',
+    teach:'op-portrait-teach.jpg',
+    bigmom:'op-portrait-bigmom.jpg'
   });
   const imageCandidates = new Map();
   function candidatesFor(id){
     if(imageCandidates.has(id))return imageCandidates.get(id);
     const cards=window.MERCATO_IMAGE_CARDS?.[id]||[];
     const out=[];
-    // Les 11 cartes JPG originales sont prioritaires, pour les deux modes de jeu.
+    // Les portraits JPG originaux sont prioritaires, pour les deux modes de jeu.
     if(creatorPortraitFiles[id])out.push('./custom-portraits/'+creatorPortraitFiles[id]);
     // Portraits approuvés par le créateur du jeu : priorité absolue.
     const custom=window.MERCATO_CUSTOM_PORTRAITS?.[id];
