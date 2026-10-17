@@ -196,6 +196,23 @@
     return '<div class="op21-live-hud" aria-label="Budgets et scores en direct">'+view.players.map(p=>
       '<div class="op21-hud-player" title="'+label(p)+'"><span>'+label(p)+'</span><b>'+berrys(p.budget)+'</b><small>⭐ '+p.score+' pts · '+p.roster.length+'/'+view.teamSize+'</small>'+shipMark3(p,true)+'</div>').join('')+'</div>';
   }
+  // Mémoriser les scores affichés lors de la proposition pour un bilan exact,
+  // même après rechargement du téléphone, sans changer la logique serveur.
+  function tradeSnapshotKey(m,o){
+    return 'opmercato-trade-impact:'+view.id+':'+m.step+':'+o.from+':'+o.to+':'+o.give+':'+o.take;
+  }
+  function tradeSnapshot(m,o){
+    try {
+      const saved=JSON.parse(localStorage.getItem(tradeSnapshotKey(m,o))||'null');
+      return saved&&Number.isFinite(saved.a)&&Number.isFinite(saved.b)?saved:null;
+    }catch{return null;}
+  }
+  function rememberTradeSnapshot(m,o){
+    try {
+      if(!tradeSnapshot(m,o))localStorage.setItem(tradeSnapshotKey(m,o),
+        JSON.stringify({a:view.players[o.from].score,b:view.players[o.to].score}));
+    }catch{}
+  }
   function onlineTradeImpactCard(p,before,after){
     const known=before!==null&&before!==undefined;
     const delta=known?after-before:0,kind=!known?'is-neutral':delta>0?'is-positive':delta<0?'is-negative':'is-neutral';
@@ -582,19 +599,20 @@
       let inner=(m.offer||m.result?'':(window.OPMERCATO_ART?.image('market',true)||''))+'<p>Une proposition par joueur, un personnage contre un personnage, sans Berrys.</p>'+
         '<p>Proposition '+(m.step+1)+'/'+m.order.length+' · Au tour de <b>'+label(owner)+'</b></p>';
       if(m.result){
-        const o=m.result,a=view.players[o.from],b=view.players[o.to],done=(o.ack||[]).includes(mine);
+        const o=m.result,a=view.players[o.from],b=view.players[o.to],done=(o.ack||[]).includes(mine),before=tradeSnapshot(m,o);
         inner+='<div class="v3-transfer-result '+(o.accepted?'is-accepted':'is-rejected')+'" role="status">'+
           '<div class="v3-transfer-result-icon">'+(o.accepted?'✅':'❌')+'</div>'+(window.OPMERCATO_ART?.image(o.accepted?'accepted':'rejected',true)||'')+
           '<h3>'+(o.accepted?'Échange accepté !':'Échange refusé')+'</h3>'+
           '<p>'+label(b)+(o.accepted?' a accepté':' a refusé')+' la proposition de '+label(a)+'.</p>'+
           '<p class="v3-transfer-result-pair">'+escOnline(CARDS[o.give]?.name||o.give)+' ⇄ '+escOnline(CARDS[o.take]?.name||o.take)+'</p>'+
           onlineTradeEffects(o.accepted?'Scores après échange':'Aucun changement de score',a,b,
-            o.accepted?null:a.score,a.score,o.accepted?null:b.score,b.score)+
+            o.accepted?(before?.a??null):a.score,a.score,o.accepted?(before?.b??null):b.score,b.score)+
           '<p>'+(o.accepted?'Les équipages et les scores ont été actualisés.':'Les deux pirates conservent leurs personnages.')+'</p>'+
           (done?'<p>⏳ En attente des autres joueurs…</p>':button("v3-trade-continue","Continuer →","primary"))+
           '<small class="v3-transfer-ack">'+(o.ack||[]).length+'/'+view.players.length+' joueurs prêts</small></div>';
       }else if(m.offer){
         const a=view.players[m.offer.from],b=view.players[m.offer.to],give=m.offer.give,take=m.offer.take;
+        rememberTradeSnapshot(m,m.offer);
         inner+='<p class="v3-transfer-intro">'+label(a)+' propose à '+label(b)+'</p>'+
          '<div class="v3-transfer-grid">'+v3TradePerson(a,give)+v3TradePerson(b,take)+'</div>'+
          onlineTradeEffects('Effets estimés',a,b,a.score,projected3(a,give,take),b.score,projected3(b,take,give))+
