@@ -180,11 +180,28 @@
   }
   // Illustrations officielles du jeu de cartes, associées à chaque personnage hors ligne.
   // Les <img> n'ont pas besoin de CORS. Les sources externes ne sont pas garanties à 100 %.
+  // Illustrations choisies et envoyées par le créateur : fichiers originaux.
+  // Un fichier absent n'empêche jamais le chargement du portrait précédent.
+  const creatorPortraitFiles=Object.freeze({
+    luffy:'op-portrait-luffy.jpg',
+    zoro:'op-portrait-zoro.jpg',
+    nami:'op-portrait-nami.jpg',
+    usopp:'op-portrait-usopp.jpg',
+    sanji:'op-portrait-sanji.jpg',
+    chopper:'op-portrait-chopper.jpg',
+    robin:'op-portrait-robin.jpg',
+    franky:'op-portrait-franky.jpg',
+    brook:'op-portrait-brook.jpg',
+    jinbe:'op-portrait-jinbe.jpg',
+    'luffy-gear5':'op-portrait-luffy-gear5.jpg'
+  });
   const imageCandidates = new Map();
   function candidatesFor(id){
     if(imageCandidates.has(id))return imageCandidates.get(id);
     const cards=window.MERCATO_IMAGE_CARDS?.[id]||[];
     const out=[];
+    // Les 11 cartes JPG originales sont prioritaires, pour les deux modes de jeu.
+    if(creatorPortraitFiles[id])out.push('./custom-portraits/'+creatorPortraitFiles[id]);
     // Portraits approuvés par le créateur du jeu : priorité absolue.
     const custom=window.MERCATO_CUSTOM_PORTRAITS?.[id];
     if(typeof custom==='string' && /^(?:data:image\/webp;base64,)?[A-Za-z0-9+/]+=*$/.test(custom) && custom.length>100) {
