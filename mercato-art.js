@@ -31,16 +31,23 @@
   window.OPMERCATO_ART=Object.freeze({image,logo});
   const style=document.createElement('style');
   style.textContent=`
-    .op-art{display:none;box-sizing:border-box;width:min(100%,360px);margin:12px auto 16px;
-      overflow:hidden;border:1px solid rgba(247,202,114,.75);border-radius:14px;
+    /* The image slot exists from the first frame; no emoji flash or layout jump. */
+    .op-art{display:block;position:relative;box-sizing:border-box;width:min(100%,360px);
+      aspect-ratio:4/3;margin:12px auto 16px;overflow:hidden;
+      border:1px solid rgba(247,202,114,.75);border-radius:14px;
       box-shadow:0 10px 25px #0005;background:#0a2230;}
-    .op-art.is-ready{display:block}
-    .op-art img{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:contain}
+    .op-art img{display:block;position:absolute;inset:0;width:100%;height:100%;
+      object-fit:contain;opacity:0;}
+    .op-art.is-ready img{opacity:1}
     .op-art-compact{width:min(100%,300px);margin:10px auto 14px}
     .op-art-logo{display:block;width:min(100%,290px);max-width:100%;
       aspect-ratio:2.5/1;margin:0 auto 17px;border-radius:14px}
-    .v2-local-special:has(.op-art.is-ready)>.v2-local-symbol,
-    .v2-special:has(.op-art.is-ready)>.v2-symbol{display:none}
+    /* When an illustration exists, the original large icon stays hidden even
+       during loading. If the image fails, onerror removes the frame and
+       the icon naturally returns as a fallback. */
+    .v2-local-special:has(> .op-art) > .v2-local-symbol,
+    .v2-special:has(> .op-art) > .v2-symbol,
+    .v3-transfer-result:has(> .op-art) > .v3-transfer-result-icon{display:none}
     @media(max-height:740px){.op-art{width:min(100%,285px)}.op-art-compact{width:min(100%,255px)}}
     @media(min-width:700px){.op-art{width:min(100%,440px)}.op-art-compact{width:min(100%,340px)}}
   `;
