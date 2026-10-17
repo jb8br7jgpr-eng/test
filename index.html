@@ -377,7 +377,7 @@
   modal.addEventListener('click',event=>{if(event.target===modal)closeModal();});
   document.addEventListener('keydown',event=>{if(event.key==='Escape')closeModal();});
   if('serviceWorker' in navigator && window.location.protocol==='https:'){
-    window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=pwa-20261017-ui3').catch(()=>{}));
+    window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=pwa-20261017-dice-tie-fix').catch(()=>{}));
   }
   render();
   </script>
@@ -389,7 +389,7 @@
   <script src="./mercato-card-premium.js?v=20261013-premium-2"></script>
   <script src="./mercato-hud-21.js?v=20261016-v3-1"></script>
   <script src="./mercato-v3-dice.js?v=20261016-v3-hd"></script>
-  <script src="./mercato-v3-local.js?v=20261017-ui2"></script>
+  <script src="./mercato-v3-local.js?v=20261017-dice-tie-fix"></script>
   <script src="./mercato-smile-summary.js?v=20261016-smile2"></script>
   <script src="./mercato-roster-summary.js?v=20261016-roster2"></script>
   <script src="./mercato-history-21.js?v=20261013-op21-1"></script>
