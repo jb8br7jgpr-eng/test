@@ -318,3 +318,107 @@ a{color:inherit}p{line-height:1.45}.app{width:min(100%,760px);margin:0 auto;padd
  .match-faceoff .match-duelist-position,.match-faceoff .match-duelist-rating{padding:4px;font-size:9px}
  .match-faceoff .character-portrait.faceoff-portrait{width:66px;height:66px}
 }
+
+
+/* OPFC — terrain de football commun à TOUS les écrans.
+ * 2 x 7 joueurs sur terrain complet, ou demi-terrain pendant le recrutement.
+ * Le dessin et les pions n'empiètent pas sur la logique d'assignation des postes. */
+.slot-field,
+.slot-field.slot-field-single{
+ position:relative;isolation:isolate;overflow:hidden;
+ padding:9px 9px 12px;
+ border:2px solid #a7d1b7a8;border-radius:16px;
+ background:linear-gradient(180deg,#102c2060,#0e2c1f29),
+ repeating-linear-gradient(0deg,#1b613e 0px,#1b613e 38px,#175537 39px,#175537 76px);
+ box-shadow:inset 0 0 34px #061b1494,0 10px 20px #0004;
+}
+.slot-field::before,.slot-field::after{display:none!important}
+.slot-field .pitch-markings{position:absolute;inset:8px 8px;z-index:0;pointer-events:none;color:#f9fff1;--field-line:rgba(244,251,245,.78)}
+.slot-field .pitch-markings>span{position:absolute;display:block;box-sizing:border-box}
+.slot-field .pitch-outline{inset:0;border:2px solid var(--field-line);border-radius:2px}
+.slot-field .pitch-center-line{top:50%;left:0;right:0;border-top:2px solid var(--field-line);transform:translateY(-50%)}
+.slot-field .pitch-center-circle{top:50%;left:50%;width:74px;height:74px;border-radius:50%;border:2px solid var(--field-line);transform:translate(-50%,-50%)}
+.slot-field .pitch-center-spot{top:50%;left:50%;width:5px;height:5px;border-radius:50%;background:var(--field-line);transform:translate(-50%,-50%)}
+.slot-field .pitch-penalty-area{left:17%;width:66%;height:18%;border:2px solid var(--field-line)}
+.slot-field .pitch-penalty-top{top:0;border-top:0}
+.slot-field .pitch-penalty-bottom{bottom:0;border-bottom:0}
+.slot-field .pitch-goal-area{left:32%;width:36%;height:8%;border:2px solid var(--field-line)}
+.slot-field .pitch-goal-area-top{top:0;border-top:0}
+.slot-field .pitch-goal-area-bottom{bottom:0;border-bottom:0}
+.slot-field .pitch-penalty-spot{left:50%;width:5px;height:5px;background:var(--field-line);border-radius:50%;transform:translateX(-50%)}
+.slot-field .pitch-penalty-spot-top{top:12%}
+.slot-field .pitch-penalty-spot-bottom{bottom:12%}
+.slot-field .pitch-goal{left:38%;width:24%;height:10px;border:2px solid #f8fff5;
+ background:repeating-linear-gradient(90deg,transparent 0 7px,#ffffff35 8px 9px),#d0e5da27;
+ box-shadow:0 2px 5px #001f13a8}
+.slot-field .pitch-goal-top{top:0;border-top:0}
+.slot-field .pitch-goal-bottom{bottom:0;border-bottom:0}
+.slot-field .pitch-corner{width:13px;height:13px;border:1.5px solid var(--field-line)}
+.slot-field .pitch-corner-tl{top:0;left:0;border-left:0;border-top:0;border-bottom-right-radius:100%}
+.slot-field .pitch-corner-tr{top:0;right:0;border-right:0;border-top:0;border-bottom-left-radius:100%}
+.slot-field .pitch-corner-bl{bottom:0;left:0;border-left:0;border-bottom:0;border-top-right-radius:100%}
+.slot-field .pitch-corner-br{bottom:0;right:0;border-right:0;border-bottom:0;border-top-left-radius:100%}
+/* Demi-terrain : une cage en haut et la ligne médiane en bas. */
+.slot-field-single .pitch-center-line{top:auto;bottom:0;transform:none}
+.slot-field-single .pitch-center-circle{top:auto;bottom:-37px;transform:translateX(-50%)}
+.slot-field-single .pitch-center-spot{top:auto;bottom:0}
+.slot-field-single .pitch-penalty-bottom,
+.slot-field-single .pitch-goal-area-bottom,
+.slot-field-single .pitch-penalty-spot-bottom,
+.slot-field-single .pitch-goal-bottom,
+.slot-field-single .pitch-corner-bl,
+.slot-field-single .pitch-corner-br{display:none}
+.slot-field-single .pitch-penalty-top{height:29%}
+.slot-field-single .pitch-goal-area-top{height:13%}
+.slot-field-single .pitch-penalty-spot-top{top:19%}
+/* Alignements compacts : jusqu'à TROIS pions sans débordement sur iPhone 375. */
+.slot-field .field-half{position:relative;z-index:2;min-width:0}
+.slot-field .field-half-top,.slot-field .field-half-bottom{display:flex;flex-direction:column;gap:2px}
+.slot-field .field-divider{height:8px;background:transparent;margin:0;position:relative;z-index:1}
+.slot-field .field-label{padding:5px 9px;margin:2px 4px;gap:8px;flex:0 0 auto;
+ background:rgba(5,33,27,.80);border-radius:6px;color:#f1faec;font-size:10px;
+ border-left-width:3px;border-left-style:solid;text-shadow:0 1px 3px #001b0e}
+.slot-field .field-label.psg{border-left-color:#ed6983}
+.slot-field .field-label.om{border-left-color:#9ae5f8}
+.slot-field .pitch-row{display:flex;align-items:center;justify-content:space-around;
+ flex:0 0 auto;gap:4px;min-height:69px;margin:0 6px}
+.slot-field .pitch-player{
+ width:72px;max-width:72px;min-width:0;flex:0 1 72px;
+ min-height:60px;height:60px;padding:3px 2px;gap:2px;
+ display:flex;flex-direction:column;align-items:center;justify-content:center;
+ color:#f4fcf6;background:rgba(4,36,31,.87);
+ border:1px solid #e7e8ccaf;border-radius:12px;
+ box-shadow:0 3px 10px #071f198e;
+ font-size:10px;line-height:1.15;cursor:pointer;touch-action:manipulation;
+}
+.slot-field .pitch-player.empty{background:#0b422fa8;border:1px dashed #d6ead1af}
+.slot-field .pitch-player.selected{border:2px solid #ffe4a7;box-shadow:0 0 0 2px #f2ce70ac,0 4px 12px #0006}
+.slot-field .pitch-player:disabled{cursor:default;opacity:1}
+.slot-field .pitch-player .player-mininame{display:none}
+.slot-field .pitch-avatar,.slot-field .character-portrait.pitch-avatar{
+ width:30px;height:30px;flex:0 0 30px;min-width:30px;
+ border:1.5px solid #eed39d;border-radius:50%;
+ box-shadow:0 1px 5px #001a1399;
+}
+.slot-field .pitch-avatar-empty{display:grid;place-items:center;font-size:14px;color:#bfe3cf}
+.slot-field .pitch-player-badges{display:flex;gap:3px;align-items:center;justify-content:center;max-width:100%;min-width:0;line-height:1}
+.slot-field .pitch-player .position{font-size:9px;line-height:1;font-weight:900;color:#e6ebff;background:#48376d;
+ padding:2px 3px;border-radius:4px;white-space:nowrap}
+.slot-field .pitch-player .rating{font-size:11px;line-height:1;font-weight:950;color:#ffe1a4;background:#40331b;
+ padding:2px 3px;border-radius:4px;white-space:nowrap}
+.slot-field .pitch-player .out{font-size:10px;color:#fff;border-radius:50%;
+ background:#bd3c51;width:14px;height:14px;display:grid;place-items:center;line-height:1;font-weight:950;margin:0}
+/* Jusqu'à 3 joueurs sur une même ligne sans retoucher le contenu des fiches. */
+@media(max-width:390px){
+ .slot-field,.slot-field.slot-field-single{padding:7px 5px 9px}
+ .slot-field .pitch-row{margin:0 4px;gap:3px;min-height:66px}
+ .slot-field .pitch-player{width:65px;max-width:65px;flex-basis:65px;min-height:58px;height:58px}
+ .slot-field .pitch-avatar,.slot-field .character-portrait.pitch-avatar{width:28px;height:28px;flex-basis:28px;min-width:28px}
+ .slot-field .pitch-player .position{font-size:8px}
+ .slot-field .pitch-player .rating{font-size:10px}
+}
+@media(max-width:350px){
+ .slot-field .pitch-player{width:60px;max-width:60px;flex-basis:60px}
+ .slot-field .pitch-row{gap:2px;margin:0 2px}
+ .slot-field .pitch-player-badges{gap:2px}
+}
