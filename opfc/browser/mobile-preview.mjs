@@ -157,7 +157,12 @@ try{
  };
  await checkMobileLayout('placement');
  await take('03-placement');
- assert.ok(await placeCurrent());
+ // Une fermeture/reprise Safari ne doit pas faire perdre le placement de recrue.
+ const recruiter=(await game()).lastResult.winner;
+ await page.reload({waitUntil:'domcontentloaded'});
+ await page.locator('.placement-intro').waitFor();
+ assert.equal(await page.locator('.slot-field').getAttribute('data-top-club'),recruiter);
+ assert.ok(await placeCurrent(),'Le placement doit reprendre après rechargement');
  for(let iteration=0;await phase()==='mercato';iteration++){
   assert.ok(iteration<130,'Le mercato reste bloqué');
   const s=await game();
