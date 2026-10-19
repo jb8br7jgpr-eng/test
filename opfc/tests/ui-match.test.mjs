@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {createGame} from '../engine.mjs';
 import {matchPublicView} from '../match.mjs';
 import {calculateOpenPlay} from '../open-play.mjs';
+import {lineupDetails} from '../rules.mjs';
 import {renderMatchScreen,dispatchOpenMatch,matchTurnOwner,matchRequiresPrivacy} from '../ui-match.mjs';
 
 const PSG=['chopper','jinbe','kaido','shanks','nami','luffy','zoro'];
@@ -39,6 +40,46 @@ test('Affichage de match : minute, score, club qui attaque, sans score inventé'
  assert.match(out,/Commencer cette action/);
  assert.match(out,/Jeu ouvert/);
  assert.equal(s.match.history.length,0);
+});
+test('Les trois types de situations du moteur sont annoncés en vert, orange et rouge, avec le club attaquant',()=>{
+ for(const [draw,context,grade,label] of [
+  [.1,'FRANCHE','franche','OCCASION FRANCHE'],
+  [.4,'BONNE','bonne','BONNE OCCASION'],
+  [.9,'DIFFICILE','difficile','ACTION DIFFICILE']
+ ]){
+  const s=dispatchOpenMatch(openFirst(),'begin-open',{rng:()=>draw});
+  assert.equal(s.match.action.context,context);
+  const out=renderMatchScreen(s);
+  assert.match(out,new RegExp('match-action-type type-'+grade));
+  assert.ok(out.includes(label));
+  assert.ok(out.includes('aria-label="Équipe attaquante : '+s.match.action.attacker+'"'));
+  assert.match(out,/À L’ATTAQUE/);
+  assert.match(out,/EN DÉFENSE/);
+  assert.doesNotMatch(out,/data-choice=/);
+  const duelist=dispatchOpenMatch(
+   dispatchOpenMatch(s,'choose',{choice:'COMBINER'}),'choose',{choice:'CONTENIR'});
+  const duel=renderMatchScreen(duelist);
+  assert.ok(duel.includes(label),'Le contexte coloré doit persister durant le duel');
+ }
+});
+test('Les deux portraits de duel affichent leur club, poste et note effective, sans révéler les tactiques',()=>{
+ let s=prepped();
+ s=dispatchOpenMatch(s,'choose',{choice:'COMBINER'});
+ s=dispatchOpenMatch(s,'choose',{choice:'INTERCEPTER'});
+ const out=renderMatchScreen(s),a=s.match.action;
+ assert.match(out,/match-duel-ready-heading/);
+ assert.match(out,/match-faceoff/);
+ assert.match(out,/match-duelist-position/);
+ assert.match(out,/match-duelist-rating/);
+ assert.equal((out.match(/class="match-duelist /g)||[]).length,2);
+ for(const [role,club] of [[a.roles.carrier,a.attacker],[a.roles.defender,a.defender]]){
+  const team=s.teams.find(t=>t.club===club);
+  const player=lineupDetails(team).find(p=>p?.cardId===role.cardId);
+  assert.ok(player);
+  assert.ok(out.includes(player.position));
+  assert.ok(out.includes('NOTE '+player.rating));
+ }
+ assert.doesNotMatch(out,/COMBINER|INTERCEPTER/);
 });
 test('Transmission obligatoire en local pour une tactique secrète',()=>{
  const s=prepped();
