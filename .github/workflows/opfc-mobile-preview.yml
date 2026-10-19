@@ -5,6 +5,7 @@ on:
     paths:
       - 'opfc/ui*.mjs'
       - 'opfc/ui.css'
+      - 'opfc/ui-classic-auction.css'
       - 'opfc/browser/**'
       - 'opfc.html'
       - 'portraits_opfc/**'
