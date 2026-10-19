@@ -1,6 +1,7 @@
 /**
  * OPFC / bloc 10A1 — Edge Function Supabase, NON DÉPLOYÉE.
- * Salon privé : create / join / get, sans moteur d'actions de match pour l'instant.
+ * Salon privé et actions de jeu : create / join / get / market / lineup / match.
+ * Les commandes sont validées par les transitions officielles du moteur.
  * Aucun changement aux fonctions ou aux tables du jeu classique.
  *
  * Avant déploiement sur un projet OPFC dédié : appliquer opfc-schema.sql,
@@ -29,7 +30,7 @@ function headers(){
   'Content-Type':'application/json; charset=utf-8',
   'Access-Control-Allow-Origin':origin,
   'Access-Control-Allow-Methods':'POST, OPTIONS',
-  'Access-Control-Allow-Headers':'Content-Type, apikey, Authorization',
+  'Access-Control-Allow-Headers':'Content-Type, Cache-Control, apikey, Authorization',
   'Vary':'Origin',
   'Cache-Control':'no-store'
  };
