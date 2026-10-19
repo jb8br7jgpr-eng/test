@@ -115,8 +115,13 @@ try{
  assert.equal(new Set(playerCardLayout.colors).size,5,'Les cinq couleurs de statistiques doivent être distinctes');
  assert.ok(['GAR','DEF','MIL','ATT'].includes(playerCardLayout.position));
  assert.ok(['DIAMANT','OR','ARGENT','BRONZE'].includes(playerCardLayout.tier));
+ // La version compacte conserve les six statistiques et réduit le portrait du mercato.
+ assert.ok(playerCardLayout.photo.width<=190,'Portrait du mercato trop grand');
  await checkMobileLayout('mercato');
  assert.equal(await page.locator('.slot-field').count(),0,'Terrain masqué initialement');
+ assert.equal(await page.locator('.opfc-auction .offer-btn').count(),4);
+ assert.match(await page.locator('.opfc-auction .refusal-counter').textContent(),/Refus utilisés : 0\/5.*Refus restants : 5/);
+ assert.equal(await page.locator('.haki-auction .btn').count(),2);
  await take('01-mercato');
 
  // Ouverture facultative des équipes : le club concerné est orienté vers le haut.
@@ -128,8 +133,8 @@ try{
  assert.equal(await page.locator('.slot-field').count(),0);
 
  // Véritable enchère jusqu'à l'écran de vente avec portrait.
- await press('bid');
- await press('bid');
+ await press('bid-quick');
+ await press('bid-quick');
  await press('pass');
  await page.locator('.sale-result-portrait img').waitFor();
  await page.locator('.sale-result-portrait img').evaluate(img=>img.decode());
@@ -143,6 +148,17 @@ try{
   const s=await game(),club=s.lastResult?.winner;
   assert.ok(club,'Une fenêtre de placement nécessite une recrue gagnée');
   assert.equal(await page.locator('.slot-field').getAttribute('data-top-club'),club);
+  assert.equal(await page.locator('.slot-field-single .field-half').count(),1,'Une seule moitié doit apparaître');
+  assert.equal(await page.locator('.slot-field-single .field-label').count(),1);
+  assert.equal(await page.locator('.team-panel').count(),2,'Les deux listes restent visibles');
+  assert.ok(await page.locator('.placement-metadata .roster-position').count()===1);
+  assert.ok(await page.locator('.placement-metadata .roster-rating').count()===1);
+  assert.ok(await page.locator('.placement-metadata .roster-tier').count()===1);
+  const recruited=page.locator('.team-panel .team-chip[data-card="'+s.lastResult.cardId+'"]');
+  assert.ok(await recruited.locator('.chip-portrait img').count()===1);
+  assert.ok(await recruited.locator('.roster-position').count()===1);
+  assert.ok(await recruited.locator('.roster-rating').count()===1);
+  assert.ok(await recruited.locator('.roster-tier').count()===1);
   const t=s.teams.find(t=>t.club===club);
   const free=t.slots.indexOf(null);
   assert.ok(free>=0,'Une case doit être disponible pour la recrue');
@@ -167,7 +183,7 @@ try{
   assert.ok(iteration<130,'Le mercato reste bloqué');
   const s=await game();
   if(s.auction.solo)await press('solo');
-  else if(s.auction.highestBid<6)await press('bid');
+  else if(s.auction.highestBid<6)await press('bid-quick');
   else await press('pass');
   if(await page.locator('.modal [data-action="close"]').count())await press('close');
   await placeCurrent();
