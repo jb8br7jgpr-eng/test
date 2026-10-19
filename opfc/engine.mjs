@@ -147,6 +147,6 @@ export function ready(state,club){
   return s;
 }
 export function publicView(state){
-  const {deck,cursor, ...visible}=state;
+  const {deck,cursor,onlinePrivate, ...visible}=state;
   return clone(visible);
 }

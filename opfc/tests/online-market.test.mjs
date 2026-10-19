@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createGame} from '../engine.mjs';
+import {createGame,publicView} from '../engine.mjs';
 import {onlineMarketPublicView,applyOnlineMarketCommand,marketCommandActor} from '../online-market.mjs';
 import {readFileSync} from 'node:fs';
 
@@ -152,4 +152,12 @@ test('La fonction Edge exige session, rôle, version CAS et renvoie uniquement u
  ])assert.ok(edge.includes(phrase),phrase);
  assert.doesNotMatch(edge,/response\(\{[^}]*private_state|response\(row\)/);
  assert.doesNotMatch(edge,/Math\.random/);
+});
+
+test('Le filtre public général cache aussi les secrets d’Observation après la future entrée en match',()=>{
+ const s=game();
+ s.onlinePrivate={observations:{PSG:['TOP-SECRET-CARD']}};
+ const visible=publicView(s);
+ assert.equal(visible.onlinePrivate,undefined);
+ assert.equal(JSON.stringify(visible).includes('TOP-SECRET-CARD'),false);
 });
