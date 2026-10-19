@@ -71,11 +71,11 @@ test('Accueil : club au choix, deux formations, mode en ligne annoncé non prêt
  assert.match(app.innerHTML,/data-amount="6"/);
  assert.match(app.innerHTML,/data-amount="10"/);
  assert.match(app.innerHTML,/data-amount="15"/);
- assert.match(app.innerHTML,/Autre montant \\(฿\\)/);
+ assert.ok(app.innerHTML.includes('Autre montant (฿)'));
  assert.match(app.innerHTML,/250 000 000 ฿/);
  assert.match(app.innerHTML,/5 000 000 ฿/);
  assert.match(app.innerHTML,/6 000 000 ฿/);
- assert.match(app.innerHTML,/\\+1 palier\\(s\\)/);
+ assert.ok(app.innerHTML.includes('+1 palier(s)'));
  assert.match(app.innerHTML,/value="5000000"/);
  // Ordre précis du modèle : saisie, refus pleine largeur, deux pouvoirs.
  const html=app.innerHTML,custom=html.indexOf('class="custom-bid"'),
