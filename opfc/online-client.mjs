@@ -81,7 +81,7 @@ export function createOnlineClient({
   if(withMatch){
    const m=payload.match;
    const matchFields=['index','minute','score','statistics','goals',
-    'history','lastResult','winner','victory','currentMoment','action'];
+    'history','lastResult','winner','victory','currentMoment','action','shootout'];
    if(!m||typeof m!=='object'||Array.isArray(m)||
     Object.keys(m).some(k=>!matchFields.includes(k))||
     !Number.isInteger(m.index)||m.index<0||
@@ -98,6 +98,23 @@ export function createOnlineClient({
      ['choices','chemistryBonus','shotResult','originalDuel','schedule',
       'shotDirection','keeperDirection'].some(k=>Object.hasOwn(m.action,k)))
      fail('Action de match contenant des secrets');
+   }
+   if(m.shootout!==undefined){
+    const sh=m.shootout,allowedShootout=['phase','stage','winner',
+     'firstClub','nextClub','score','attempts','timeline','active',
+     'confirmed','lastResult'];
+    const attemptAllowed=['club','shotNumber','shooterId','keeperId',
+     'shotDirection','keeperDirection','result','scored'];
+    const safeAttempt=a=>a&&typeof a==='object'&&!Array.isArray(a)&&
+     Object.keys(a).every(k=>attemptAllowed.includes(k));
+    if(!sh||typeof sh!=='object'||Array.isArray(sh)||
+     Object.keys(sh).some(k=>!allowedShootout.includes(k))||
+     !Array.isArray(sh.timeline)||!sh.score||!sh.attempts||!sh.confirmed||
+     sh.timeline.some(a=>!safeAttempt(a))||
+     (sh.lastResult!==null&&!safeAttempt(sh.lastResult))||
+     (sh.active!==null&&(!sh.active||typeof sh.active!=='object'||
+       Object.keys(sh.active).some(k=>!['club','shotNumber','shooterId','keeperId'].includes(k)))))
+     fail('Séance contenant des informations privées ou invalides');
    }
   }
   return structuredClone(payload);
@@ -193,7 +210,8 @@ export function createOnlineClient({
    return sendCommand('lineup',command);
   },
   async matchAction(command){
-   if(!marketGame||!['match','moment-result'].includes(marketGame.phase))
+   if(!marketGame||!['match','moment-result','half-time','resume-ready',
+     'shootout-ready','shootout','finished'].includes(marketGame.phase))
     fail('Actualise le match avant de jouer une action');
    return sendCommand('match',command);
   },

@@ -88,3 +88,43 @@ conflits de version et résultats synchronisés).
 **Les fonctionnalités restantes :** synchroniser la mi-temps, les tirs au but
 et le résultat final (10A3B2c), puis connecter l'interface graphique des
 deux téléphones au véritable salon (10A4). Le backend OPFC n'est pas déployé.
+
+
+## 10A3B2c — Mi-temps, tirs au but et résultat final en ligne
+
+Actions \`POST action:"match"\` ajoutées :
+\`half-formation\` (\`formation\`), \`half-place\` (\`cardId\`, \`slot\`),
+\`half-ready\`, \`resume\`, \`begin-shootout\`, \`shootout-choose\`
+(\`choice\` = \`GAUCHE\`, \`CENTRE\` ou \`DROITE\`),
+\`shootout-reveal\`, \`shootout-continue\`.
+
+- **Mi-temps :** chaque club change uniquement ses propres placements
+  et sa formation. Quand il confirme, l'équipe devient verrouillée.
+  Les deux validations ouvrent \`resume-ready\`. Seul l'hôte
+  reprend la seconde période ; le calendrier ne change pas.
+- **Après 90 minutes :** si le score est égal, l'hôte lance le tirage
+  initial côté serveur. Les titulaires et le classement des tireurs
+  sont déterminés par le moteur existant et ne peuvent plus être modifiés.
+- **Un tir :** direction du tireur → direction du gardien → révélation
+  calculée côté serveur → écran de résultat → « Continuer ».
+  Le client ne peut pas choisir le tireur, le résultat ou le hasard.
+- **Confidentialité :** avant la révélation, la vue \`shootout\` montre
+  les deux confirmations mais **jamais les directions**. Après le tir,
+  seules les tentatives résolues entrent dans l'historique public ;
+  les probabilités et ordres de tireurs ne sont pas transmis.
+- **Fin :** vainqueur, score du match, statistiques et score
+  de séance séparé sont disponibles dans la vue réseau,
+  y compris après une reconnexion. Le dernier tir reste affiché
+  jusqu'à « Continuer ».
+- **Concurrence :** l'API \`match\` accepte les phases \`half-time\`,
+  \`resume-ready\`, \`shootout-ready\`, \`shootout\` et \`finished\`
+  et utilise le verrou de version du salon déjà en place.
+
+Modules : \`opfc/online-endgame.mjs\`, \`opfc/online-match.mjs\`,
+\`opfc/online-client.mjs\`, \`supabase/functions/opfc-online/index.ts\`.
+Tests : \`opfc/tests/online-endgame.test.mjs\` et
+\`opfc/tests/online-endgame-client.test.mjs\`.
+
+**Reste le bloc 10A4 : raccordement des vraies interfaces iPhone et
+déploiement/test réel d'un projet Supabase OPFC dédié après accord.**
+Aucun projet Supabase ni site public n'a été modifié.

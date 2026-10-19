@@ -11,6 +11,7 @@ import {
 } from './match-actions.mjs';
 import {secureRandomBytes} from './online-protocol.mjs';
 import {SET_PIECE_TYPES,handlesOnlineSetPiece,applyOnlineSetPieceTransition} from './online-set-piece.mjs';
+import {ONLINE_ENDGAME_COMMANDS,applyOnlineEndgameTransition,onlineShootoutView} from './online-endgame.mjs';
 
 const fail=message=>{throw Error(message);};
 const other=c=>c==='PSG'?'OM':'PSG';
@@ -49,7 +50,8 @@ export function onlineMatchView(state,club){
    lastResult:m.lastResult?structuredClone(m.lastResult):null,
    winner:m.winner??null,victory:m.victory??null,
    currentMoment:m.currentMoment??null,
-   action:m.action?structuredClone(m.action):null
+   action:m.action?structuredClone(m.action):null,
+   ...(state.match.shootout?{shootout:onlineShootoutView(state)}:{})
   }
  };
 }
@@ -68,11 +70,12 @@ const TYPES={
  'continue-duel':['type'],
  'reveal-shot':['type'],
  'continue-result':['type'],
- ...SET_PIECE_TYPES
+ ...SET_PIECE_TYPES,
+ ...ONLINE_ENDGAME_COMMANDS
 };
-export function applyOnlineOpenPlayCommand(state,club,command,{rng=cryptoRng}={}){
+export function applyOnlineOpenPlayCommand(state,club,command,{rng=cryptoRng,hostClub=null}={}){
  clubValid(club);
- if(!state||!['match','moment-result'].includes(state.phase)||!state.match)
+ if(!state||!PHASES.includes(state.phase)||!state.match)
   fail('Aucune action de match disponible');
  if(!command||typeof command!=='object'||Array.isArray(command)||
   !Object.hasOwn(TYPES,command.type))
@@ -83,7 +86,9 @@ export function applyOnlineOpenPlayCommand(state,club,command,{rng=cryptoRng}={}
   fail('Paramètre de match interdit');
  const type=command.type;
  let next;
- if(type==='continue-result'){
+ if(Object.hasOwn(ONLINE_ENDGAME_COMMANDS,type)){
+  next=applyOnlineEndgameTransition(state,club,command,{hostClub,rng});
+ }else if(type==='continue-result'){
   if(state.phase!=='moment-result'||state.match.lastResult?.attacker!==club)
    fail('Seul le club attaquant peut continuer ce résultat');
   next=continueMatch(state);

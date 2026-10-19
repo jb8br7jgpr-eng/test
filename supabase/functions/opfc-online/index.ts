@@ -129,7 +129,8 @@ async function mutate(body,kind){
   return error('Le mercato n’est plus actif',409);
  if(kind==='lineup'&&!['lineup','kickoff-ready'].includes(row.private_state?.phase))
   return error('La composition n’est pas disponible',409);
- if(kind==='match'&&!['match','moment-result'].includes(row.private_state?.phase))
+ if(kind==='match'&&!['match','moment-result','half-time','resume-ready',
+    'shootout-ready','shootout','finished'].includes(row.private_state?.phase))
   return error('L’action de match n’est pas disponible',409);
  let transition;
  try{
@@ -137,7 +138,7 @@ async function mutate(body,kind){
    applyOnlineMarketCommand(row.private_state,club,body.command):
    kind==='lineup'?
     applyOnlineLineupCommand(row.private_state,club,body.command,{hostClub:row.host_club}):
-    applyOnlineOpenPlayCommand(row.private_state,club,body.command);
+    applyOnlineOpenPlayCommand(row.private_state,club,body.command,{hostClub:row.host_club});
  }catch(e){
   return error(e instanceof Error?e.message:'Action illégale',400);
  }
