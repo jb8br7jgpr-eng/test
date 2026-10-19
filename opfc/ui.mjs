@@ -154,59 +154,63 @@ function cardPanel(info){
  '<span class="player-tier tier-'+info.rarity.toLowerCase()+'">'+rar[info.rarity]+'</span>'+
  '</div><div class="stats-grid">'+stats+'</div></div>';
 }
+// Valeurs internes en millions de Berrys ; l'interface affiche les Berrys entiers.
+const fullBerrys=millions=>{
+ const value=Number(millions)*1000000;
+ if(!Number.isSafeInteger(value)||value<0)throw Error('Montant invalide');
+ return String(value).replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' ฿';
+};
 function sale(){
- // Reprise COSMÉTIQUE du véritable OPMercato classique :
- // classique.html (bid-title, turn-banner, offers, pass-btn),
- // mercato-upgrade.js (custom-bid), mercato-rules.js (haki-btn 👑),
- // mercato-features.js (extra-power 👁).
- // Toutes les actions, disponibilités et règles restent celles du moteur OPFC.
+ // Reproduction du panneau d'enchères approuvé pour OPFC (cosmétique seulement).
+ // Les incréments sont ceux du moteur OPFC : 1 M par palier, contrairement au jeu classique.
  const context=uiAuction(game),a=context.auction,t=context.team;
  const min=context.minimum,max=context.maximum,remaining=Math.max(0,5-t.refusals);
- const increments=[0,20,50,100]; // Presets propres à OPFC ; seul leur habillage est partagé.
- const withdrawal=context.everOffered;
- const label=withdrawal?'Arrêter d’enchérir (gratuit)':
+ const steps=[0,1,5,10],withdrawal=context.everOffered;
+ const refusal=withdrawal?'Arrêter d’enchérir (gratuit)':
   context.canPass?'Refuser ce personnage · '+remaining+'/5 restants':
   '⛔ Plus de refus sans enchère disponibles';
- const observationHint=t.hakis.observation?'Déjà utilisé':'Voir les 5 prochaines cartes';
+ const kingInfo=t.hakis.kings?'Déjà utilisé':
+  context.canKings?'Utilisable une seule fois':'Disponible seulement en premier';
+ const eyeInfo=t.hakis.observation?'Déjà utilisé':'Voir les 5 prochaines cartes';
  return '<div class="opfc-auction-stage"><div class="auction-top"><span class="eyebrow">Mercato · '+
  game.teams.reduce((n,team)=>n+team.roster.length,0)+'/14</span>'+
  '<span class="turn-pill">Enchère en cours</span></div>'+
  cardPanel(context.card)+
- '<section class="opfc-auction card auction"><div class="bid-title"><div>'+
+ '<section class="opfc-auction card auction" aria-label="Enchères OPFC"><div class="bid-title"><div>'+
  '<span class="kicker">Meilleure offre</span>'+
- '<strong class="bid-amount">'+(a.highestBid?a.highestBid+' M':'Aucune')+'</strong></div>'+
+ '<strong class="bid-amount">'+(a.highestBid?fullBerrys(a.highestBid):'Aucune')+'</strong></div>'+
  '<div class="bid-leader">'+(a.highestClub?'En tête : <strong>'+esc(clubName(a.highestClub))+'</strong>':
- 'Mise de départ : <strong>'+min+' M</strong>')+'</div></div>'+
+ 'Mise de départ : <strong>'+fullBerrys(min)+'</strong>')+'</div></div>'+
  '<div class="turn-banner"><div><span>AU TOUR DE</span><strong>'+esc(clubName(a.turn))+'</strong></div>'+
- '<div class="turn-budget">'+t.budget+' M<br><span>disponibles</span></div></div>'+
+ '<div class="turn-budget">'+fullBerrys(t.budget)+'<br><span>disponibles</span></div></div>'+
  (a.king?'<p class="warning-copy">👑 Haki des Rois activé par '+a.king.holder+'.</p>':'')+
- (a.solo?'<div class="solo-auction"><p>Une seule équipe recrute encore : prix fixe 5 M.</p>'+
- '<button class="primary" data-action="solo">Recruter · 5 M</button></div>':
- '<div class="offers">'+increments.map(add=>{
-  const amount=min+add;
+ (a.solo?'<div class="solo-auction"><p>Une seule équipe recrute encore : prix fixe '+fullBerrys(5)+'.</p>'+
+ '<button class="primary" data-action="solo">Recruter · '+fullBerrys(5)+'</button></div>':
+ '<div class="offers">'+steps.map(step=>{
+  const amount=min+step;
   return '<button class="offer-btn" type="button" data-action="bid-quick" data-amount="'+amount+
-  '" '+(context.canBid&&amount<=max?'':'disabled')+'><b>'+amount+' M</b><small>'+
-  (add===0?'Offre minimale':'Offre +'+add+' M')+'</small></button>';
+  '" '+(context.canBid&&amount<=max?'':'disabled')+'><b>'+fullBerrys(amount)+'</b><small>'+
+  (step===0?'Offre minimale':'+'+step+' palier(s)')+'</small></button>';
  }).join('')+'</div>'+
- '<div class="custom-bid"><label for="bid-value">Autre montant (M Berrys)</label>'+
- '<div><input id="bid-value" type="number" inputmode="numeric" min="'+min+'" max="'+max+
- '" step="1" placeholder="'+min+'" value="'+min+'" '+(context.canBid?'':'disabled')+'>'+
+ '<div class="custom-bid"><label for="bid-value">Autre montant (฿)</label>'+
+ '<div><input id="bid-value" type="text" inputmode="numeric" autocomplete="off" pattern="[0-9]*"'+
+ ' aria-label="Montant personnalisé en Berrys" placeholder="'+(min*1000000)+'" value="'+(min*1000000)+'" '+
+ (context.canBid?'':'disabled')+'>'+
  '<button type="button" class="btn-ghost" data-action="bid" '+(context.canBid?'':'disabled')+
  '>Enchérir</button></div></div>'+
- (context.canKings?'<button class="haki-btn" type="button" data-action="kings">'+
- '👑 Haki des Rois'+
- '<small>Activer · une fois par partie, uniquement en premier.</small></button>':'')+
- '<div class="extra-powers"><button class="extra-power" type="button" data-action="observation" '+
- (context.canObserve?'':'disabled')+'>👁 Observation<small>'+observationHint+'</small></button></div>'+
  '<button class="pass-btn" type="button" data-action="pass" '+(context.canPass?'':'disabled')+
- '>'+label+'</button>'+
- '<p class="refusal-counter">Refus utilisés : <strong>'+t.refusals+'/5</strong>'+
- ' · Refus restants : <strong>'+remaining+'/5</strong></p>'+
+ '>'+refusal+'</button>'+
+ '<div class="auction-hakis"><button class="haki-btn" type="button" data-action="kings"'+
+ (context.canKings?'':' disabled')+'>'+
+ '👑 Haki des Rois<small>'+kingInfo+'</small></button>'+
+ '<button class="extra-power" type="button" data-action="observation"'+
+ (context.canObserve?'':' disabled')+'>👁 Observation<small>'+eyeInfo+'</small></button></div>'+
  '<p class="notice">'+(withdrawal?
- 'Se retirer d’une enchère déjà commencée ne consomme aucun refus.':
- 'Seul un refus avant ta première offre consomme un de tes 5 refus.')+'</p>')+
- '<p class="opfc-auction-limit">Priorité : '+a.priority+' · Mise légale : '+min+' à '+max+
- ' M. Réserve de 5 M par recrue restante.</p></section></div>';
+ 'Se retirer après une mise ne consomme aucun refus.':
+ 'Seul un refus avant la première offre consomme un de tes 5 refus.')+
+ '<span class="refusal-counter">Refus utilisés : <strong>'+t.refusals+'/5</strong>'+
+ ' · Restants : <strong>'+remaining+'/5</strong></span></p>')+
+ '</section></div>';
 }
 function fieldHalf(team,top){
  const u=uiTeam(team),positions=top?['GAR','DEF','MIL','ATT']:['ATT','MIL','DEF','GAR'];
@@ -459,14 +463,20 @@ function clicked(button){
  if(action.startsWith('amount-')){
   const input=document.getElementById('bid-value'),context=uiAuction(game);
   if(!input||!context)return;
-  input.value=String(action==='amount-min'?context.minimum:action==='amount-max'?context.maximum:
-  Math.min(context.maximum,Math.max(context.minimum,Number(input.value)+5)));
+  const raw=Number(String(input.value).replace(/[\s\u00a0\u202f]/g,''))/1000000;
+  const selected=action==='amount-min'?context.minimum:action==='amount-max'?context.maximum:
+   Math.min(context.maximum,Math.max(context.minimum,(Number.isFinite(raw)?raw:context.minimum)+5));
+  input.value=String(Math.round(selected)*1000000);
   return;
  }
  if(action==='bid'){
-  const value=document.getElementById('bid-value')?.value;
-  if(!/^\d+$/.test(value??''))throw Error('Saisis une mise entière valide.');
-  change(s=>bid(s,s.auction.turn,Number(value)));return;
+  const raw=String(document.getElementById('bid-value')?.value??'');
+  const value=raw.replace(/[\s\u00a0\u202f]/g,'');
+  if(!/^\d+$/.test(value))throw Error('Saisis un montant entier en Berrys.');
+  const amount=Number(value);
+  if(!Number.isSafeInteger(amount)||amount%1000000!==0)
+   throw Error('Les offres OPFC doivent être un multiple de 1 000 000 ฿.');
+  change(s=>bid(s,s.auction.turn,amount/1000000));return;
  }
  if(action==='pass'){change(s=>pass(s,s.auction.turn));return;}
  if(action==='solo'){change(s=>acceptSolo(s,s.auction.turn));return;}
