@@ -7,6 +7,8 @@ import {CARD_BY_ID} from './catalog.mjs';
 import {matchPublicView,kickoffMatch,continueMatch,resumeMatch} from './match.mjs';
 import {beginOpenPlayAction,lockOpenPlayChoice,revealOpenPlayDuel,continueOpenPlayDuel,revealOpenPlayShot} from './match-actions.mjs';
 import {isSetPieceKind,setPieceTurnOwner,dispatchSetPieceMatch,renderSetPieceAction} from './ui-set-piece.mjs';
+import {shootoutTurnOwner,dispatchShootout,renderShootoutScreen} from './ui-shootout.mjs';
+import {renderFinalResult} from './ui-final.mjs';
 
 const html=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const name=id=>CARD_BY_ID.get(id)?.name??id??'—';
@@ -32,6 +34,7 @@ const stageLabels={
 const button=(act,text,attr='')=>'<button class="btn primary full" data-action="'+act+'" '+attr+'>'+html(text)+'</button>';
 /** Retourne le club qui doit recevoir physiquement le téléphone maintenant. */
 export function matchTurnOwner(state){
+ if(state?.phase==='shootout')return shootoutTurnOwner(state);
  if(state?.phase!=='match')return null;
  const a=state.match?.action;
  if(!a)return null;
@@ -52,6 +55,8 @@ export function dispatchOpenMatch(state,command,{choice,takerId,rng=Math.random}
  if(command==='resume'&&state?.phase==='resume-ready')
   return resumeMatch(state);
  if(command==='continue-result')return continueMatch(state);
+ if(['begin-shootout','shootout-choose','shootout-reveal','shootout-continue'].includes(command))
+  return dispatchShootout(state,command,{choice,rng});
  if(command==='begin-setpiece')return dispatchSetPieceMatch(state,command,{choice,takerId,rng});
  const a=state?.match?.action;
  if(isSetPieceKind(a?.kind))return dispatchSetPieceMatch(state,command,{choice,takerId,rng});
@@ -138,13 +143,15 @@ export function renderMatchScreen(state,{uncovered=false}={}){
  if(!m)return '<section class="panel match-stage"><h2>Aucun match en cours</h2></section>';
  let out=scoreBoard(m);
  if(state.phase==='half-time')return out+'<div class="ready-banner"><h2>Mi-temps · 45e minute</h2>'+
-  '<p>Les deux joueurs peuvent réorganiser leur composition. Le calendrier est conservé.</p></div>';
+  '<p>Les deux clubs peuvent modifier leur formation et échanger des joueurs. Le programme des actions à venir ne change pas.</p>'+
+  '<p class="caption">'+state.teams.map(t=>t.club+' : '+(t.ready?'✓ composition validée':'composition à valider')).join(' · ')+'</p></div>';
  if(state.phase==='resume-ready')return out+'<section class="panel match-stage">'+
   '<h2>Les deux compositions sont validées</h2>'+button('match-resume','Reprendre la deuxième mi-temps')+'</section>';
- if(state.phase==='shootout-ready')return out+'<section class="panel match-stage"><h2>Égalité à 90 minutes</h2>'+
-  '<p>Le départage aux tirs au but sera relié à l’interface dans le prochain bloc.</p></section>';
- if(state.phase==='finished')return out+'<section class="panel match-stage"><h2>Fin du match</h2>'+
-  '<p>Vainqueur : '+html(m.winner)+'</p></section>';
+ if(state.phase==='shootout-ready'||state.phase==='shootout')return out+renderShootoutScreen(state,{uncovered});
+ if(state.phase==='finished'){
+  if(state.match.shootoutLastResult)return out+renderShootoutScreen(state,{uncovered});
+  return renderFinalResult(state);
+ }
  if(state.phase==='moment-result')return out+scoreStats(m)+resultView(m);
  const moment=m.currentMoment;
  if(!m.action){

@@ -154,6 +154,8 @@ export function matchPublicView(state){
  const view=publicView(state);
  if(view.match){
   delete view.match.schedule;
+  // Les directions de TAB confirmées restent privées jusqu'au tir effectué.
+  delete view.match.shootoutPending;
   view.match.currentMoment=currentMatchMoment(state);
   // Liste blanche : ne jamais renvoyer au client les décisions secrètes,
   // les tirages internes ni les probabilités avant confirmation des deux.

@@ -101,7 +101,7 @@ function pitch(){
  '<div class="slot-field">'+fieldHalf(first,true)+'<div class="field-divider"></div>'+fieldHalf(other,false)+'</div></section>';
 }
 function teamPanel(team){
- const u=uiTeam(team),editable=['mercato','lineup','half-time'].includes(game.phase);
+ const u=uiTeam(team),editable=['mercato','lineup','half-time'].includes(game.phase)&&!team.ready;
  return '<section class="panel team-panel"><div class="team-heading"><h2><span class="club-bullet">'+team.club+'</span>'+esc(clubName(team.club))+
  '</h2><small>'+u.rosterCount+'/7</small></div><div class="team-tools"><span class="caption">Entente '+u.entente+'/10</span>'+
  '<select data-action="formation" data-club="'+team.club+'" aria-label="Formation '+team.club+'" '+(editable?'':'disabled')+'>'+
@@ -137,7 +137,7 @@ function matchPage(){
  const middle=renderMatchScreen(game,{uncovered:matchUncovered});
  return shell()+'<main class="ready-layout">'+middle+
  (game.phase==='half-time'?teams():'')+
- '<p class="footer-note">Prototype local du match · Les phases arrêtées seront reliées au bloc 9B2.</p></main>';
+ '<div class="gameplay-nav"><span class="caption">Grandline Cup · Mode local</span>'+btn('confirm-reset','Nouvelle partie','ghost small')+'</div></main>';
 }
 function popup(){
  if(!modal)return '';
@@ -202,11 +202,15 @@ function clicked(button){
    'match-reveal-setpiece-duel':'reveal-setpiece-duel',
    'match-continue-setpiece-duel':'continue-setpiece-duel',
    'match-finish-corner':'finish-corner',
-   'match-reveal-penalty':'reveal-penalty'
+   'match-reveal-penalty':'reveal-penalty',
+   'match-begin-shootout':'begin-shootout',
+   'match-shootout-choose':'shootout-choose',
+   'match-shootout-reveal':'shootout-reveal',
+   'match-shootout-continue':'shootout-continue'
   };
   const command=commands[action];
   if(!command)throw Error('Action de match non disponible');
-  if(['choose','select-taker'].includes(command)&&!matchUncovered)
+  if(['choose','select-taker','shootout-choose'].includes(command)&&!matchUncovered)
    throw Error('Le joueur doit d’abord confirmer la transmission du téléphone.');
   const choice=button.dataset.choice,takerId=button.dataset.card;
   matchUncovered=false; // masque immédiatement toute décision précédente
