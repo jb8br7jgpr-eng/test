@@ -1062,3 +1062,63 @@ a{color:inherit}p{line-height:1.45}.app{width:min(100%,760px);margin:0 auto;padd
  .final-score .final-scoreline{padding:10px 2px}
  .final-penalty-score>strong{gap:8px}
 }
+
+
+/* 10A4 — parties en réseau : le même habillage premium que le jeu local. */
+.online-wrapper:has(+ .online-game-content){padding-bottom:0}
+.online-wrapper:has(+ .online-game-content) .online-lobby-card{margin-bottom:5px}
+.online-wrapper:has(+ .online-game-content) .online-members{
+ grid-template-columns:1fr 1fr;gap:8px;margin:12px 0
+}
+.online-wrapper:has(+ .online-game-content) .online-room-code{
+ font-size:clamp(23px,7vw,32px)!important;padding:9px 7px
+}
+.online-game-content{
+ max-width:580px;margin:14px auto 25px;min-width:0
+}
+.online-game-heading{
+ display:flex;justify-content:space-between;align-items:center;gap:10px;
+ margin:10px 0;padding:10px 11px;border:1px solid #eac78462;
+ border-radius:12px;background:#173446bb
+}
+.online-game-heading>.eyebrow{letter-spacing:.08em}
+.online-game-heading>strong{text-align:right;color:#ffe0ac;font-size:11px}
+.online-market{max-width:100%}
+.online-market .online-wait-inline{
+ padding:12px;text-align:center;color:#f6d59c;font-size:12px
+}
+.online-market .online-observation{margin-top:12px}
+.online-observation>strong{color:#ffe1a8;font-size:13px}
+.online-observation-row{
+ display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+ gap:4px;margin-top:9px
+}
+.online-observation-row>div{
+ display:flex;flex-direction:column;align-items:center;gap:4px;
+ text-align:center;min-width:0
+}
+.online-observation-row .character-portrait{
+ width:clamp(36px,10vw,54px);height:clamp(36px,10vw,54px)
+}
+.online-observation-row span:last-child{
+ color:#dfedf0;font-size:9px;overflow-wrap:anywhere
+}
+.online-turn-wait{
+ text-align:center;border-color:#d7bc796c;
+ padding:23px 14px;
+ margin:12px 0
+}
+.online-turn-wait h2{color:#ffe0a6;font-size:19px;margin:9px 0}
+.online-turn-wait>p{color:#bad0dc;font-size:12px}
+.online-match-stage{margin:12px 0}
+.online-team-overview{margin-top:17px}
+.online-team-overview .team-panel select:disabled,
+.online-team-overview .team-chip:disabled{opacity:.65}
+.online-game-content .match-tactical-choices{margin-top:12px}
+.online-game-content .halftime-statuses{margin:12px 0}
+@media(max-width:390px){
+ .online-game-heading{display:block;text-align:center;padding:9px 6px}
+ .online-game-heading>strong{display:block;margin-top:3px;font-size:12px}
+ .online-wrapper:has(+ .online-game-content) .online-members{margin:8px 0}
+ .online-game-content{margin-top:9px}
+}
