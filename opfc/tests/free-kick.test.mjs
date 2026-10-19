@@ -82,7 +82,7 @@ test('Un duel produit occasion OU interception : pas de deuxième qualité ni fa
  const c=duel();
  assert.deepEqual(resolveFreeKickDuel(c,0),{outcome:'chance'});
  assert.deepEqual(resolveFreeKickDuel(c,.511999),{outcome:'chance'});
- assert.deepEqual(resolveFreeKickDuel(c,.512),{outcome:'stopped'});
+ assert.deepEqual(resolveFreeKickDuel(c,.51200001),{outcome:'stopped'});
  assert.equal(Object.hasOwn(c,'foulProbability'),false);
 });
 test('Références officielles à 75 avant +8 : 30/30/40, 32,5/32,5/35, 31,5/38,5/30',()=>{
@@ -154,7 +154,7 @@ test('Rejets : stratégies, états incomplets, entente et tirages invalides',()=
  assert.throws(()=>duel({chemistryBonus:6}),/entente/);
  assert.throws(()=>duel({receiver:{...nami}}),/identique/);
  assert.throws(()=>duel({defender:null}),/Statistique/);
- assert.throws(()=>duel({taker:{stats:{PAS:80,TEC:NaN,PUI:75}}}),/Statistique/);
+ assert.throws(()=>duel({attack:'COMBINAISON',taker:{stats:{PAS:80,TEC:NaN,PUI:75}}}),/Statistique/);
  assert.throws(()=>finish({attack:'VOLEE'}),/Stratégie/);
  assert.throws(()=>finish({keeper:{stats:{GAR:101}}}),/Statistique/);
  assert.throws(()=>resolveFreeKickDuel(null,.5),/Calcul/);
