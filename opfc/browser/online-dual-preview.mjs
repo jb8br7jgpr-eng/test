@@ -95,9 +95,15 @@ function shootoutReady(){
  assert.equal(s.phase,'shootout-ready');
  return s;
 }
+async function refresh(page){
+ await page.locator('[data-action="online-refresh"]').click();
+ // Le clic réseau est asynchrone. Attendre que le bouton, désactivé pendant
+ // la requête, soit de nouveau disponible : la vue reçue est alors affichée.
+ await page.locator('[data-action="online-refresh"]:not([disabled])').waitFor();
+}
 async function updateBoth(host,guest){
- await host.locator('[data-action="online-refresh"]').click();
- await guest.locator('[data-action="online-refresh"]').click();
+ await refresh(host);
+ await refresh(guest);
 }
 async function replaceServer(game,host,guest){
  state.game=game;state.version++;
@@ -168,7 +174,7 @@ try{
  assert.equal(await defender.locator('[data-action="online-bid"]').count(),0);
  await attacker.locator('[data-action="online-bid"]').first().click();
  assert.ok(state.game.auction.highestBid>=5);
- await defender.locator('[data-action="online-refresh"]').click();
+ await refresh(defender);
  assert.match(await defender.locator('.bid-amount').textContent(),/5 000 000|6 000 000/);
  await fit(attacker,'mercato réseau');
  await attacker.locator('.online-market').screenshot({
@@ -185,7 +191,7 @@ try{
  await host.locator('[data-action="pick"][data-club="PSG"][data-card="luffy"]').click();
  await host.locator('[data-action="slot"][data-club="PSG"][data-slot="5"]').click();
  assert.equal(state.game.teams.find(t=>t.club==='PSG').slots[5],'luffy');
- await guest.locator('[data-action="online-refresh"]').click();
+ await refresh(guest);
  assert.equal(await guest.locator('.pitch-player[data-club="PSG"][data-slot="5"] img').count(),1);
  await fit(host,'compositions réseau');
  await host.locator('.online-team-overview').screenshot({
@@ -197,15 +203,15 @@ try{
  const a=match.match.schedule[0].attacker==='PSG'?host:guest;
  const d=a===host?guest:host;
  await a.locator('[data-type="begin-open"]').click();
- await d.locator('[data-action="online-refresh"]').click();
+ await refresh(d);
  assert.equal(await a.locator('[data-action="online-choice"][data-choice="COMBINER"]').count(),1);
  assert.equal(await d.locator('[data-action="online-choice"]').count(),0);
  await a.locator('[data-action="online-choice"][data-choice="COMBINER"]').click();
- await d.locator('[data-action="online-refresh"]').click();
+ await refresh(d);
  assert.equal(await d.locator('[data-action="online-choice"][data-choice="PRESSER"]').count(),1);
  assert.doesNotMatch(await d.locator('.online-game-content').textContent(),/Combiner/);
  await d.locator('[data-action="online-choice"][data-choice="CONTENIR"]').click();
- await a.locator('[data-action="online-refresh"]').click();
+ await refresh(a);
  assert.equal(await a.locator('[data-type="reveal-duel"]').count(),1);
  await fit(a,'duel réseau');
  await a.locator('.online-match-stage').screenshot({
@@ -231,17 +237,17 @@ try{
  assert.equal(await host.locator('[data-type="begin-shootout"]').count(),1);
  assert.equal(await guest.locator('[data-type="begin-shootout"]').count(),0);
  await host.locator('[data-type="begin-shootout"]').click();
- await guest.locator('[data-action="online-refresh"]').click();
+ await refresh(guest);
  const first=state.game.match.shootout.nextClub==='PSG'?host:guest;
  const other=first===host?guest:host;
  assert.equal(await first.locator('[data-action="online-choice"][data-shootout="true"]').count(),3);
  assert.equal(await other.locator('[data-action="online-choice"][data-shootout="true"]').count(),0);
  await first.locator('[data-action="online-choice"][data-choice="GAUCHE"]').click();
- await other.locator('[data-action="online-refresh"]').click();
+ await refresh(other);
  assert.equal(await other.locator('[data-action="online-choice"][data-shootout="true"]').count(),3);
  assert.doesNotMatch(await other.locator('.online-game-content').textContent(),/shotDirection|keeperDirection/);
  await other.locator('[data-action="online-choice"][data-choice="DROITE"]').click();
- await first.locator('[data-action="online-refresh"]').click();
+ await refresh(first);
  await first.locator('[data-type="shootout-reveal"]').click();
  assert.equal(state.game.match.shootout.timeline.length,1);
  assert.equal(await first.locator('.shootout-mark--goal').count(),1);
@@ -265,7 +271,7 @@ try{
  const winner=state.game.match.winner==='PSG'?host:guest;
  assert.equal(await winner.locator('[data-type="shootout-continue"]').count(),1);
  await winner.locator('[data-type="shootout-continue"]').click();
- await (winner===host?guest:host).locator('[data-action="online-refresh"]').click();
+ await refresh(winner===host?guest:host);
  assert.equal(await winner.locator('.final-screen').count(),1);
  assert.equal(await winner.locator('.final-penalty-score').count(),1);
  await fit(winner,'finale réseau');
