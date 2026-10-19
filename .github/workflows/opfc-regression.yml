@@ -1,0 +1,20 @@
+name: OPFC regression tests
+on:
+  push:
+    branches: [opfc-development]
+    paths:
+      - 'opfc/**'
+      - '.github/workflows/opfc-regression.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Run OPFC tests
+        run: node --test opfc/tests/*.test.mjs
