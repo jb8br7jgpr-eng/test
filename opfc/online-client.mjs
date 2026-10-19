@@ -65,15 +65,24 @@ export function createOnlineClient({
  const validSnapshot=(payload)=>{
   if(payload===null||payload===undefined)return null;
   if(!payload||typeof payload!=='object'||Array.isArray(payload)||
-   !['mercato','lineup','kickoff-ready'].includes(payload.phase)||
+   !['mercato','lineup','kickoff-ready','match'].includes(payload.phase)||
    !Array.isArray(payload.teams)||payload.teams.length!==2||
    !Number.isInteger(payload.version)||payload.version!==1)
    fail('Vue de mercato reçue invalide');
-  const allowed=['version','phase','teams','dice','auction','lastResult','myObservation'];
+  const allowed=payload.phase==='match'?['version','phase','teams','dice','match']:
+   ['version','phase','teams','dice','auction','lastResult','myObservation'];
   if(Object.keys(payload).some(k=>!allowed.includes(k)))fail('Vue de mercato contenant des secrets');
   if(!Array.isArray(payload.dice)||payload.dice.length!==2||
    payload.teams.some(t=>!t||!['PSG','OM'].includes(t.club)))
-   fail('Vue de mercato incohérente');
+   fail('Vue de partie incohérente');
+  if(payload.phase==='match'){
+   const m=payload.match;
+   if(!m||typeof m!=='object'||Array.isArray(m)||
+    Object.keys(m).some(k=>!['index','minute','score','statistics','goals','currentMoment'].includes(k))||
+    m.index!==0||!Array.isArray(m.goals)||m.goals.length!==0||
+    !m.score||!m.statistics||!m.currentMoment)
+    fail('Vue du coup d’envoi invalide');
+  }
   return structuredClone(payload);
  };
  const persist=()=>{try{if(session)storage?.setItem(ONLINE_SESSION_KEY,JSON.stringify(session));else storage?.removeItem(ONLINE_SESSION_KEY);}catch{/* Stockage indisponible : session en mémoire uniquement. */}};
@@ -106,10 +115,30 @@ export function createOnlineClient({
   if(persistSession)persist();
   return room;
  };
+ const sendCommand=async(action,command)=>{
+  ensureOnline();
+  if(!session||!room||room.status!=='ready')
+   fail('Actualise d’abord un salon avec deux joueurs');
+  if(!command||typeof command!=='object'||Array.isArray(command))
+   fail('Commande de jeu invalide');
+  const before=room.version;
+  const data=await request({action,roomId:session.roomId,token:session.token,
+   expectedVersion:before,command});
+  const nextRoom=validRoom(data.room,session);
+  if(nextRoom.version!==before+1)
+   fail('Version de confirmation de la partie invalide');
+  const nextGame=validSnapshot(data.game);
+  if(!nextGame)fail('Réponse de partie incomplète');
+  // Une actualisation plus récente ne doit jamais être remplacée par
+  // une réponse réseau plus ancienne terminée en retard.
+  if(room.version<=nextRoom.version){room=nextRoom;marketGame=nextGame;}
+  return marketGame;
+ };
  return Object.freeze({
   get configured(){return !!url;},
   get room(){return room;},
   get marketGame(){return marketGame;},
+  get game(){return marketGame;},
   get hasSession(){return session!==null;},
   get sessionRole(){return session?.role??null;},
   loadSession(){
@@ -139,17 +168,12 @@ export function createOnlineClient({
    return room;
   },
   async marketAction(command){
-   ensureOnline();
-   if(!session||!room||room.status!=='ready')fail('Actualise d’abord un salon avec deux joueurs');
-   if(!command||typeof command!=='object'||Array.isArray(command))fail('Commande de mercato invalide');
-   const data=await request({action:'market',roomId:session.roomId,token:session.token,
-    expectedVersion:room.version,command});
-   const nextRoom=validRoom(data.room,session);
-   if(nextRoom.version!==room.version+1)fail('Version de confirmation du mercato invalide');
-   const nextGame=validSnapshot(data.game);
-   if(!nextGame)fail('Réponse de mercato incomplète');
-   room=nextRoom;marketGame=nextGame;
-   return marketGame;
+   return sendCommand('market',command);
+  },
+  async lineupAction(command){
+   if(!marketGame||!['lineup','kickoff-ready'].includes(marketGame.phase))
+    fail('Actualise la partie avant de modifier les compositions');
+   return sendCommand('lineup',command);
   },
   leaveDevice(){
    session=null;room=null;marketGame=null;persist(); // Ne ferme pas le salon distant.

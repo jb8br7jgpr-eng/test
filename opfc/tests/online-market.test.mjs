@@ -146,8 +146,8 @@ test('La fonction Edge exige session, rôle, version CAS et renvoie uniquement u
   ".eq('version',row.version)",
   ".eq('status','ready')",
   'expectedVersion',
-  'onlineMarketPublicView(row.private_state,club)',
-  "if(body.action==='market')return await mutate(body)",
+  'onlinePreMatchView(row.private_state,club)',
+  "if(body.action==='market')return await mutate(body,'market')",
   'game:transition.publicForActor'
  ])assert.ok(edge.includes(phrase),phrase);
  assert.doesNotMatch(edge,/response\(\{[^}]*private_state|response\(row\)/);

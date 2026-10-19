@@ -13,7 +13,8 @@ import {
  generateServerGame,sha256Token,authenticateRoom,lobbyPublicView,
  normalizeRoomCode,validateRoomId,validateClub,validateSessionToken
 } from '../../../opfc/online-protocol.mjs';
-import {applyOnlineMarketCommand,onlineMarketPublicView} from '../../../opfc/online-market.mjs';
+import {applyOnlineMarketCommand} from '../../../opfc/online-market.mjs';
+import {applyOnlineLineupCommand,onlinePreMatchView} from '../../../opfc/online-lineup.mjs';
 
 const origin=Deno.env.get('OPFC_ALLOWED_ORIGIN')??'https://jb8br7jgpr-eng.github.io';
 const supabaseUrl=Deno.env.get('SUPABASE_URL');
@@ -105,9 +106,8 @@ async function authenticatedRoom(body){
 }
 function playerGameView(row,club){
  // Les vues de match propres à chaque joueur seront ajoutées en 10A3B.
- if(row.status!=='ready'||!['mercato','lineup','kickoff-ready'].includes(row.private_state?.phase))
-  return null;
- return onlineMarketPublicView(row.private_state,club);
+ if(row.status!=='ready')return null;
+ return onlinePreMatchView(row.private_state,club);
 }
 async function get(body){
  const auth=await authenticatedRoom(body);
@@ -115,7 +115,7 @@ async function get(body){
  return response({room:roomView(auth.row,auth.role),
   game:playerGameView(auth.row,auth.club)});
 }
-async function mutate(body){
+async function mutate(body,kind){
  const auth=await authenticatedRoom(body);
  if(auth.error)return auth.error;
  const {row,role,club}=auth;
@@ -124,16 +124,19 @@ async function mutate(body){
   return error('Version attendue invalide');
  if(row.version!==body.expectedVersion)
   return error('Salon modifié : actualise la partie',409);
- if(row.private_state?.phase!=='mercato')
+ if(kind==='market'&&row.private_state?.phase!=='mercato')
   return error('Le mercato n’est plus actif',409);
+ if(kind==='lineup'&&!['lineup','kickoff-ready'].includes(row.private_state?.phase))
+  return error('La composition n’est pas disponible',409);
  let transition;
  try{
-  transition=applyOnlineMarketCommand(row.private_state,club,body.command);
+  transition=kind==='market'?
+   applyOnlineMarketCommand(row.private_state,club,body.command):
+   applyOnlineLineupCommand(row.private_state,club,body.command,{hostClub:row.host_club});
  }catch(e){
   return error(e instanceof Error?e.message:'Action illégale',400);
  }
- // UPDATE conditionnel : un seul des deux appels concurrents peut gagner.
- // On renvoie un conflit plutôt que d'écraser le coup d'un autre joueur.
+ // Mise à jour atomique avec contrôle strict de la version et du statut.
  const {data:updated,error:writeErr}=await db.from('opfc_rooms')
   .update({
    private_state:transition.state,
@@ -143,12 +146,9 @@ async function mutate(body){
   .eq('id',row.id).eq('version',row.version).eq('status','ready')
   .select('id,code,host_club,guest_token_hash,status,version,expires_at')
   .maybeSingle();
- if(writeErr)throw new Error('Sauvegarde du mercato indisponible');
+ if(writeErr)throw new Error('Sauvegarde de la partie indisponible');
  if(!updated)return error('Salon modifié : actualise la partie',409);
- return response({
-  room:roomView(updated,role),
-  game:transition.publicForActor
- });
+ return response({room:roomView(updated,role),game:transition.publicForActor});
 }
 Deno.serve(async req=>{
  // Un origin absent est admis pour clients non navigateurs, mais AUCUN droit
@@ -168,7 +168,8 @@ Deno.serve(async req=>{
   if(body.action==='create')return await create(body);
   if(body.action==='join')return await join(body);
   if(body.action==='get')return await get(body);
-  if(body.action==='market')return await mutate(body);
+  if(body.action==='market')return await mutate(body,'market');
+  if(body.action==='lineup')return await mutate(body,'lineup');
   return error('Action inconnue');
  }catch(e){
   console.error('opfc-online:',e instanceof Error?e.message:'server error');
