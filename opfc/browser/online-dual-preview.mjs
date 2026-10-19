@@ -96,10 +96,15 @@ function shootoutReady(){
  return s;
 }
 async function refresh(page){
+ // La disponibilité du bouton avant le clic ne prouve pas que le GET est fini.
+ // Attendre explicitement la réponse HTTP puis la fin du rendu asynchrone.
+ const got=page.waitForResponse(r=>r.url()===API&&
+  r.request().method()==='POST'&&
+  r.request().postDataJSON()?.action==='get');
  await page.locator('[data-action="online-refresh"]').click();
- // Le clic réseau est asynchrone. Attendre que le bouton, désactivé pendant
- // la requête, soit de nouveau disponible : la vue reçue est alors affichée.
- await page.locator('[data-action="online-refresh"]:not([disabled])').waitFor();
+ const response=await got;
+ assert.equal(response.status(),200,'Actualisation serveur indisponible');
+ await page.waitForFunction(()=>document.querySelector('[data-action="online-refresh"]')?.disabled===false);
 }
 async function updateBoth(host,guest){
  await refresh(host);
