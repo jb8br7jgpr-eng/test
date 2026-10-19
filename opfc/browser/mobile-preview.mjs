@@ -650,6 +650,26 @@ try{
    'Le tireur et le gardien doivent être visibles sur '+kind);
   assert.equal(await page.locator('.match-tactical-choices .match-choice').count(),3);
   assert.equal(await page.locator('.match-shot-faceoff img').count(),2);
+  if(kind==='penalty')assert.equal(await page.locator('.receiver-card').count(),0,
+   'Aucun réceptionneur lors d’un penalty direct');
+  else{
+   assert.equal(await page.locator('.receiver-card').count(),1,'Réceptionneur annoncé pour '+kind);
+   assert.equal(await page.locator('.receiver-card .receiver-portrait img').count(),1);
+   const placement=await page.locator('.match-stage').first().evaluate(panel=>{
+    const receiver=panel.querySelector('.receiver-card'),buttons=panel.querySelector('.match-tactical-choices');
+    const a=receiver.getBoundingClientRect(),b=buttons.getBoundingClientRect();
+    return {height:a.height,ends:a.bottom,begins:b.top,overflow:receiver.scrollWidth>receiver.clientWidth+1,
+      name:receiver.querySelector('.receiver-card-name')?.textContent,
+      rating:receiver.querySelector('.receiver-card-rating')?.textContent};
+   });
+   assert.ok(placement.height<=120,'Carte réception trop haute '+kind);
+   assert.ok(placement.ends<=placement.begins+1,'La réception doit précéder les boutons '+kind);
+   assert.ok(!placement.overflow,'Débordement horizontal réception '+kind);
+   assert.ok(placement.name&&placement.rating,'Réceptionneur sans nom ou note '+kind);
+   await page.locator('.receiver-card .receiver-portrait img').evaluate(async img=>{img.loading='eager';await img.decode();});
+   await page.locator('.receiver-card').screenshot({
+    path:shots+'/12-reception-'+kind+'.png',animations:'disabled'});
+  }
   await checkCenteredTacticalChoices('phase arrêtée '+kind);
   await checkMobileLayout('choix tactiques '+kind);
   await page.locator('.match-stage').first().screenshot({
@@ -690,6 +710,65 @@ try{
  assert.equal(await page.locator('[data-action="match-shootout-reveal"]').count(),1);
  assert.equal(await page.locator('.match-shot-faceoff .match-duelist').count(),2);
  console.log('PASS coups de pied arrêtés et TAB iPhone : mêmes boutons et portraits en choix secret');
+
+ // Mi-temps complète avec statistiques du VRAI moteur et deux confirmations.
+ const statsAtHalf=await page.evaluate(async({prepared,key})=>{
+  const {kickoffMatch,resolveMatchMoment,continueMatch}=await import('/opfc/match.mjs');
+  const random=seed=>()=>((seed=(Math.imul(1664525,seed)+1013904223)>>>0)/4294967296);
+  const holder=JSON.parse(prepared);let s=kickoffMatch(holder.game,random(11));
+  for(let n=0;n<20&&s.phase==='match';n++){
+   const event=s.match.schedule[s.match.index],score=n===0;
+   const scorerId=score?s.teams.find(t=>t.club===event.attacker).slots[5]:null;
+   s=resolveMatchMoment(s,{outcome:score?'goal':'stopped',scorerId});
+   s=continueMatch(s);
+  }
+  if(s.phase!=='half-time')throw Error('Aucune mi-temps avec statistiques calculées');
+  holder.game=s;localStorage.setItem(key,JSON.stringify(holder));
+  return {stats:s.match.statistics,score:s.match.score,calendar:s.match.schedule};
+ },{prepared,key});
+ await page.reload({waitUntil:'domcontentloaded'});
+ assert.equal(await phase(),'half-time');
+ assert.equal(await page.locator('.halftime-header').count(),1);
+ assert.equal(await page.locator('.halftime-screen .match-scoreboard').count(),1);
+ assert.equal(await page.locator('.halftime-stat-row').count(),3);
+ assert.equal(await page.locator('.halftime-tactics').count(),1);
+ assert.equal(await page.locator('.halftime-team-status.is-pending').count(),2);
+ assert.equal(await page.locator('.match-team-overview .pitch-player img').count(),14);
+ assert.equal(await page.locator('.match-team-overview .team-chip').count(),14);
+ assert.equal(await page.locator('[data-action="match-resume"]').count(),0);
+ const uiStats=await page.locator('.halftime-stat-row').evaluateAll(rows=>rows.map(row=>({
+  title:row.querySelector('span')?.textContent,
+  psg:row.querySelector('strong:first-child')?.textContent,
+  om:row.querySelector('strong:last-child')?.textContent
+ })));
+ for(const [label,keyStat] of [['Tirs','shots'],['Tirs cadrés','onTarget'],['Arrêts','saves']]){
+  const got=uiStats.find(x=>x.title===label);
+  assert.equal(got.psg,String(statsAtHalf.stats.PSG[keyStat]));
+  assert.equal(got.om,String(statsAtHalf.stats.OM[keyStat]));
+ }
+ await checkMobileLayout('bilan de mi-temps');
+ await page.locator('.halftime-screen').screenshot({
+  path:shots+'/13-mi-temps-bilan.png',animations:'disabled'});
+ await page.locator('.match-team-overview select[data-club="PSG"]').selectOption('3-1-2');
+ assert.equal((await game()).teams.find(t=>t.club==='PSG').formation,'3-1-2');
+ await press('ready','[data-club="PSG"]');
+ assert.equal(await page.locator('.halftime-team-status.is-ready').count(),1);
+ assert.equal(await page.locator('[data-action="match-resume"]').count(),0);
+ await checkMobileLayout('mi-temps : une seule équipe prête');
+ await page.locator('.halftime-tactics').screenshot({
+  path:shots+'/13b-mi-temps-une-equipe-prete.png',animations:'disabled'});
+ await press('ready','[data-club="OM"]');
+ assert.equal(await phase(),'resume-ready');
+ assert.equal(await page.locator('.halftime-team-status.is-ready').count(),2);
+ assert.equal(await page.locator('[data-action="match-resume"]').count(),1);
+ await checkMobileLayout('mi-temps deux équipes prêtes');
+ await page.locator('.halftime-screen').screenshot({
+  path:shots+'/13c-mi-temps-reprise-prete.png',animations:'disabled'});
+ await press('match-resume');
+ assert.equal(await phase(),'match');
+ assert.deepEqual((await game()).match.schedule,statsAtHalf.calendar,
+  'La mi-temps ne doit jamais modifier le calendrier des actions');
+ console.log('PASS mi-temps iPhone : score, chiffres du moteur, terrain, formations et reprise conditionnelle');
 
  // Parcourt la simulation moteur en conditions identiques aux tests unitaires.
  const result=await page.evaluate(async({key,prepared})=>{
