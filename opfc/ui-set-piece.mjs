@@ -4,6 +4,7 @@
  * Les choix sont verrouillés et jamais affichés avant la double confirmation.
  */
 import {CARD_BY_ID} from './catalog.mjs';
+import {renderCharacterPortrait} from './ui-portraits.mjs';
 import {beginSetPieceAction,selectSetPieceTaker,lockSetPieceChoice,
  revealSetPieceDuel,continueSetPieceDuel,finishSetPieceCorner,revealSetPiecePenalty} from './set-piece-actions.mjs';
 const escape=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -66,7 +67,7 @@ export function renderSetPieceAction(state,viewAction,{uncovered=false}={}){
   return section('Choisis le tireur · '+a.attacker,
    '<p class="muted">Un des sept titulaires, gardien compris. Son choix sera annoncé avant les tactiques.</p>'+
    '<div class="match-choice-grid">'+ids.map(id=>
-    '<button class="btn match-choice" data-action="match-taker" data-card="'+escape(id)+'">'+escape(name(id))+'</button>').join('')+'</div>',type);
+    '<button class="btn match-choice setpiece-taker" data-action="match-taker" data-card="'+escape(id)+'">'+renderCharacterPortrait(id,'setpiece-taker-portrait')+escape(name(id))+'</button>').join('')+'</div>',type);
  }
  if(a.stage==='attack-choice'||a.stage==='defense-choice'){
   const attacking=a.stage==='attack-choice',role=attacking?'attack':'defense';
@@ -74,8 +75,9 @@ export function renderSetPieceAction(state,viewAction,{uncovered=false}={}){
   const actor=attacking?a.attacker:a.defender;
   return section(desc+' · '+actor,
    '<p class="muted">La tactique choisie est verrouillée. Elle reste invisible pour l’adversaire.</p>'+
+   '<div class="setpiece-feature">'+renderCharacterPortrait(a.actors?.taker?.cardId,'setpiece-player-feature')+
    '<p class="caption">Tireur : '+escape(name(a.actors?.taker?.cardId))+
-   (a.actors?.receiver?' · Réceptionneur : '+escape(name(a.actors.receiver.cardId)):'')+'</p>'+
+   (a.actors?.receiver?' · Réceptionneur : '+escape(name(a.actors.receiver.cardId)):'')+'</p></div>'+
    choices(options[a.kind][role]),type);
  }
  if(a.stage==='duel-ready')
