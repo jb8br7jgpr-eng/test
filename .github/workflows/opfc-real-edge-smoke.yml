@@ -1,0 +1,23 @@
+name: OPFC - smoke test Supabase réel
+on:
+  workflow_dispatch:
+  push:
+    branches: [opfc-development]
+    paths:
+      - 'opfc/browser/real-edge-smoke.mjs'
+      - '.github/workflows/opfc-real-edge-smoke.yml'
+permissions:
+  contents: read
+jobs:
+  edge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier OPFC sur le vrai serveur privé (aucun site déployé)
+        env:
+          OPFC_REAL_EDGE_URL: https://cihzwaxernachchpjktj.supabase.co/functions/v1/opfc-online
+        run: node opfc/browser/real-edge-smoke.mjs
