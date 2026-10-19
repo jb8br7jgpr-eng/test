@@ -31,7 +31,7 @@ const change=(action,club,value)=>{
 };
 await import('../ui.mjs');
 
-test('Accueil : club au choix, deux formations, mode en ligne annoncé non prêt',()=>{
+test('Accueil : club au choix, deux formations, salon en ligne disponible',()=>{
  assert.match(app.innerHTML,/La Grandline Cup/);
  assert.match(app.innerHTML,/Jouer en local/);
  assert.match(app.innerHTML,/Mode en ligne · salons privés/);
@@ -40,8 +40,8 @@ test('Accueil : club au choix, deux formations, mode en ligne annoncé non prêt
  assert.match(app.innerHTML,/Créer une partie/);
  assert.match(app.innerHTML,/Rejoindre une partie/);
  click('online-create-screen');
- assert.match(app.innerHTML,/n’est pas encore déployé/);
- assert.match(app.innerHTML,/disabled aria-disabled="true"/);
+ assert.match(app.innerHTML,/Générer le code du salon/);
+ assert.match(app.innerHTML,/data-action="online-create"/);
  click('online-back');
  click('online-back');
  assert.match(app.innerHTML,/La Grandline Cup/);
