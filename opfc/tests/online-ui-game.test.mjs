@@ -121,7 +121,7 @@ for(const kind of ['corner','free-kick','penalty']){
   const defense=ui(onlinePreMatchView(s,defender),defender);
   assert.match(defense,/data-type="choose"/);
   assert.match(defense,/Réponse défensive/);
- }
+ });
 }
 test('Réseau : mi-temps, reprise, mort subite et score final sans fuite de calendrier',()=>{
  let s=opening('open');
