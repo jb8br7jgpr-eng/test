@@ -78,6 +78,8 @@ test('Les trois phases commencent au bon moment, conservent minute et calendrier
   const display=renderMatchScreen(s,{uncovered:true});
   assert.match(display,/Choisis le tireur/);
   assert.equal((display.match(/data-action="match-taker"/g)??[]).length,7);
+  assert.match(display,/match-tactical-choices/);
+  assert.equal((display.match(/class="btn match-choice setpiece-taker"/g)||[]).length,7);
  }
 });
 test('Le tireur réel est annoncé avant les tactiques (gardien également disponible)',()=>{
@@ -90,6 +92,11 @@ test('Le tireur réel est annoncé avant les tactiques (gardien également dispo
   const view=renderMatchScreen(s,{uncovered:true});
   assert.match(view,new RegExp(CARD_BY_ID.get(t.slots[0]).name));
   assert.match(view,/data-action="match-choose"/);
+  assert.match(view,/match-tactical-choices/);
+  assert.match(view,/match-shot-faceoff/);
+  assert.equal((view.match(/class="match-duelist /g)||[]).length,2);
+  assert.match(view,/match-duelist-position/);
+  assert.match(view,/match-duelist-rating/);
   assert.equal(matchPublicView(s).match.action.choices,undefined);
  }
 });
@@ -111,6 +118,8 @@ test('Premier choix verrouillé : l’adversaire ne voit pas la décision préc�
   // le texte d'une option n'indique donc pas le choix adverse.
   if(kind==='free-kick')assert.doesNotMatch(unwrapped,/data-choice="DIRECT"/);
   assert.match(unwrapped,/data-choice=/);
+  assert.match(unwrapped,/match-tactical-choices/);
+  assert.equal((unwrapped.match(/class="match-duelist /g)||[]).length,2);
   assertNoSecrets(s,covered);
   s=dispatchOpenMatch(s,'choose',{choice:defenseChoice[kind]});
   assert.equal(matchTurnOwner(s),null);
