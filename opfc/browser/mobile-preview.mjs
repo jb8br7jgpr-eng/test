@@ -78,6 +78,34 @@ try{
  await press('close');
  await page.locator('.portrait-card img').first().evaluate(img=>img.decode());
  assert.ok(await page.locator('.portrait-card img').count()>0);
+ const playerCardLayout=await page.locator('.opfc-player-card').first().evaluate(card=>{
+  const rect=selector=>{const r=card.querySelector(selector)?.getBoundingClientRect();return r?{top:r.top,left:r.left,width:r.width,height:r.height}:null;};
+  const stats=[...card.querySelectorAll('.opfc-stat')].map(el=>{
+   const r=el.getBoundingClientRect();return {top:r.top,left:r.left,grade:el.querySelector('strong')?.className};
+  });
+  const colors=['elite','high','medium','low','weak'].map(level=>{
+   const element=document.createElement('strong');
+   element.className='opfc-stat-value stat-'+level;
+   card.appendChild(element);
+   const color=getComputedStyle(element).backgroundColor;
+   element.remove();return color;
+  });
+  return {photo:rect('.portrait-shell-photo'),identity:rect('.player-identity-row'),
+   rating:rect('.player-rating'),grid:rect('.stats-grid'),stats,colors,
+   position:card.querySelector('.player-position')?.textContent,
+   tier:card.querySelector('.player-tier')?.textContent};
+ });
+ assert.ok(playerCardLayout.photo&&playerCardLayout.identity&&playerCardLayout.rating&&playerCardLayout.grid);
+ assert.ok(playerCardLayout.photo.top<playerCardLayout.identity.top&&
+  playerCardLayout.identity.top<playerCardLayout.rating.top&&
+  playerCardLayout.rating.top<playerCardLayout.grid.top,
+  'L’ordre des blocs de la carte est incorrect : '+JSON.stringify(playerCardLayout));
+ assert.equal(playerCardLayout.stats.length,6);
+ assert.ok(Math.abs(playerCardLayout.stats[0].top-playerCardLayout.stats[2].top)<2);
+ assert.ok(playerCardLayout.stats[3].top>playerCardLayout.stats[0].top+10);
+ assert.equal(new Set(playerCardLayout.colors).size,5,'Les cinq couleurs de statistiques doivent être distinctes');
+ assert.ok(['GAR','DEF','MIL','ATT'].includes(playerCardLayout.position));
+ assert.ok(['DIAMANT','OR','ARGENT','BRONZE'].includes(playerCardLayout.tier));
  await checkMobileLayout('mercato');
  await take('01-mercato');
 
