@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {CARD_BY_ID} from '../catalog.mjs';
+import {uiRoster} from '../ui-model.mjs';
 
 const storage=new Map(),listeners=new Map();
 let manualBidText=null;
@@ -191,9 +192,17 @@ test('Depuis l’interface réelle, le coup d’envoi affiche le score et conser
    .map(m=>m[1]);
   // La liste et les pions sont tous cliquables, donc extraire seulement les 7 éléments de liste.
   assert.equal(roster.length,7);
-  const ranks={GAR:0,DEF:1,MIL:2,ATT:3};
-  const positions=roster.map(id=>CARD_BY_ID.get(id).position);
-  assert.deepEqual(positions,[...positions].sort((a,b)=>ranks[a]-ranks[b]));
+  const expected=uiRoster(team);
+  assert.deepEqual(roster,expected.map(p=>p.cardId));
+  // Vérifier poste et note EFFECTIFS écrits sous la photo, et non ceux du catalogue.
+  for(const p of expected){
+   const start=app.innerHTML.indexOf('data-action="inspect-player" data-club="'+team.club+'" data-card="'+p.cardId+'"');
+   assert.ok(start>=0);
+   const chunk=app.innerHTML.slice(start,app.innerHTML.indexOf('</button>',start));
+   assert.ok(chunk.includes('class="roster-position">'+(p.position??'À placer')+'</span>'));
+   assert.ok(chunk.includes('class="roster-rating" title="Note effective">'+p.rating+'</span>'));
+   if(p.outOfPosition)assert.match(chunk,/roster-warning/);
+  }
  }
  const firstId=next.teams[0].roster[0],playerName=CARD_BY_ID.get(firstId).name;
  click('inspect-player',{card:firstId});
