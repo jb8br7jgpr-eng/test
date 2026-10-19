@@ -4,11 +4,85 @@ import {CARD_BY_ID} from './catalog.mjs';
 import {effectiveRating,lineupDetails} from './rules.mjs';
 import {FORMATION_NAMES,uiAuction,uiTeam,cardStats,currentAuctionEnding,clubName} from './ui-model.mjs';
 import {renderMatchScreen,matchRequiresPrivacy,dispatchOpenMatch} from './ui-match.mjs';
+import {createOnlineClient} from './online-client.mjs';
+import {renderOnlineLobby,normalizeJoinCodeInput} from './ui-online.mjs';
 
 const app=document.getElementById('opfc-app');
 const STORAGE='opfc-v08-local-dev';
 let game=null,firstClub='PSG',selection=null,modal=null,error='',beforeForm={PSG:'2-2-2',OM:'2-2-2'};
 let matchUncovered=false;
+// L'état du salon et sa session sont séparés de la sauvegarde du mode local.
+const onlineClient=createOnlineClient();
+let onlineVisible=false,onlineStage='choose',onlineJoinCode='',onlineBusy=false,onlineError='';
+let onlineTimer=null;
+function stopOnlinePoll(){
+ if(onlineTimer!==null){clearInterval(onlineTimer);onlineTimer=null;}
+}
+function syncOnlinePoll(){
+ if(!onlineVisible||!onlineClient.configured||onlineClient.room?.status!=='waiting'){
+  stopOnlinePoll();return;
+ }
+ if(onlineTimer!==null)return;
+ onlineTimer=setInterval(()=>{
+  if(onlineBusy||document.hidden)return;
+  void refreshOnlineRoom();
+ },4000);
+ onlineTimer?.unref?.(); // uniquement utile sous Node lors des tests.
+}
+async function onlineMutation(fn){
+ if(onlineBusy)return;
+ onlineBusy=true;onlineError='';render();
+ try{
+  await fn();
+  onlineError='';
+ }catch(err){
+  onlineError=err?.message||'Impossible de contacter le salon.';
+ }finally{
+  onlineBusy=false;render();syncOnlinePoll();
+ }
+}
+async function refreshOnlineRoom(){
+ await onlineMutation(async()=>{
+  await onlineClient.refreshRoom();
+  onlineStage='room';
+ });
+}
+async function onlineClicked(action,button){
+ if(action==='online-back'){
+  if(onlineStage==='choose'||onlineStage==='room'||onlineStage==='restore'){
+   onlineVisible=false;stopOnlinePoll();
+  }else onlineStage='choose';
+  onlineError='';render();return;
+ }
+ if(action==='online-create-screen'){onlineStage='create';onlineError='';render();return;}
+ if(action==='online-join-screen'){onlineStage='join';onlineError='';render();return;}
+ if(action==='online-cancel-forget'){onlineStage=onlineClient.room?'room':'restore';render();return;}
+ if(action==='online-forget-confirm'){onlineStage='forget-confirm';render();return;}
+ if(action==='online-forget'){
+  stopOnlinePoll();onlineClient.leaveDevice();onlineStage='choose';onlineError='';render();return;
+ }
+ if(action==='online-copy-code'){
+  const code=onlineClient.room?.code;
+  if(!code)throw Error('Aucun code de salon à copier');
+  if(!globalThis.navigator?.clipboard?.writeText)throw Error('Copie le code affiché à l’écran.');
+  await navigator.clipboard.writeText(code);
+  onlineError='Code copié dans le presse-papiers.';render();return;
+ }
+ if(action==='online-create'){
+  await onlineMutation(async()=>{
+   await onlineClient.createRoom(firstClub);onlineStage='room';
+  });return;
+ }
+ if(action==='online-join'){
+  const typed=document.getElementById('opfc-room-code')?.value??onlineJoinCode;
+  onlineJoinCode=normalizeJoinCodeInput(typed);
+  await onlineMutation(async()=>{
+   await onlineClient.joinRoom(onlineJoinCode);onlineStage='room';
+  });return;
+ }
+ if(action==='online-refresh'){await refreshOnlineRoom();return;}
+ throw Error('Commande de salon inconnue');
+}
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const card=id=>CARD_BY_ID.get(id);
 const others=id=>id==='PSG'?'OM':'PSG';
@@ -35,8 +109,8 @@ function welcome(){
  ['PSG','OM'].map(id=>'<div class="form-box"><label for="initial-'+id+'">'+id+'</label><select id="initial-'+id+'" data-action="initial-formation" data-club="'+id+'">'+options(FORMATION_NAMES,beforeForm[id])+'</select></div>').join('')+
  '</div><p class="caption">Modifiables pendant le mercato puis à la mi-temps.</p></section>'+
  '<div class="intro-actions">'+btn('start','Jouer en local · 2 joueurs','primary full')+
- btn('online','Mode en ligne · bientôt','ghost full',true)+
- '<p class="online-note">La version en ligne sera ajoutée avec Supabase avant le déploiement public.</p></div></main>';
+ btn('online','Mode en ligne · salons privés','ghost full')+
+ '<p class="online-note">Découvre les salons privés. Les parties à deux iPhone nécessiteront le serveur OPFC indépendant.</p></div></main>';
 }
 function wallets(){
  return '<div class="huds">'+game.teams.map(team=>{
@@ -170,7 +244,11 @@ function popup(){
  return '<div class="modal-backdrop"><section class="modal" role="dialog" aria-modal="true">'+body+'</section></div>';
 }
 function render(){
- app.innerHTML=(game?(game.phase==='kickoff-ready'?endMercato():['mercato','lineup'].includes(game.phase)?playing():matchPage()):welcome())+
+ app.innerHTML=(onlineVisible?shell()+renderOnlineLobby({
+  stage:onlineStage,firstClub,room:onlineClient.room,
+  configured:onlineClient.configured,joinCode:onlineJoinCode,
+  busy:onlineBusy,error:onlineError
+ }):game?(game.phase==='kickoff-ready'?endMercato():['mercato','lineup'].includes(game.phase)?playing():matchPage()):welcome())+
  (error?'<div class="alert" role="alert">'+esc(error)+'</div>':'')+popup();
 }
 function change(fn){
@@ -186,6 +264,16 @@ function start(){
 }
 function clicked(button){
  const action=button.dataset.action,club=button.dataset.club;
+ if(action==='online'){
+  onlineVisible=true;onlineStage=onlineClient.hasSession?(onlineClient.room?'room':'restore'):'choose';
+  onlineError='';render();syncOnlinePoll();return;
+ }
+ if(action.startsWith('online-')){
+  if(!onlineVisible)throw Error('Ouvre d’abord le mode en ligne');
+  void onlineClicked(action,button).catch(e=>{onlineError=e?.message||'Action de salon impossible';render();});
+  return;
+ }
+ if(onlineVisible)return; // un salon affiché ne déclenche jamais une commande locale.
  if(modal&&!['close','observation-show','reset'].includes(action))return;
  if(action==='match-uncover'){
   if(!game||!matchRequiresPrivacy(game))throw Error('Aucun choix privé à révéler');
@@ -274,4 +362,9 @@ app.addEventListener('change',event=>{
    change(s=>chooseFormation(s,target.dataset.club,target.value));
  }catch(e){error=e.message||'Formation impossible';render();}
 });
-restore();render();
+restore();
+if(onlineClient.loadSession()){
+ onlineVisible=true;onlineStage='restore';
+}
+render();
+if(onlineVisible&&onlineClient.configured)void refreshOnlineRoom();

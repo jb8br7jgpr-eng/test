@@ -32,11 +32,19 @@ test('L’interface démarre sans erreur, gère le choix du club et lance un mer
  globalThis.localStorage={getItem:key=>cache.get(key)??null,setItem:(key,value)=>cache.set(key,value),removeItem:key=>cache.delete(key)};
  await import('../ui.mjs');
  assert.match(root.innerHTML,/La Grandline Cup/);
- assert.match(root.innerHTML,/Mode en ligne · bientôt/);
+ assert.match(root.innerHTML,/Mode en ligne · salons privés/);
  const press=(action,extra={})=>{
   const btn={dataset:{action,...extra},disabled:false};
   callbacks.click({target:{closest:()=>btn}});
  };
+ press('online');
+ assert.match(root.innerHTML,/Créer une partie/);
+ press('online-join-screen');
+ assert.match(root.innerHTML,/Code à 6 caractères/);
+ assert.match(root.innerHTML,/n’est pas encore déployé/);
+ press('online-back');
+ press('online-back');
+ assert.match(root.innerHTML,/La Grandline Cup/);
  press('club',{club:'OM'});
  assert.match(root.innerHTML,/club-option om active/);
  press('start');
