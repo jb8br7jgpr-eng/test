@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a1c29" />
+  <meta name="application-name" content="OPMercato" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="OPMercato" />
+  <meta name="description" content="OPMercato, le jeu d'enchères One Piece, seul ou en multijoueur en temps réel sur deux téléphones." />
+  <link rel="manifest" href="./manifest.webmanifest?v=pwa-20261013-1" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=pwa-20261013-1" />
+  <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png?v=pwa-20261013-1" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png?v=pwa-20261013-1" />
+  <title>OPMercato — Mercato des Pirates</title>
+  <style>
+    :root { --bg: #081823; --panel: #112a38; --panel2: #173342; --outline: rgba(191,219,227,.13); --text: #f5f7f3; --muted: #a6bcc6; --gold: #f7ca72; --goldDark: #dfaa4d; --aqua: #7de3d3; --red: #fc938e; --shadow: 0 14px 38px rgba(0,0,0,.19); font-family: ui-rounded, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--text); min-height: 100vh; min-height: 100dvh; background: radial-gradient(ellipse 90% 400px at 50% -90px, rgba(39,105,118,.42), transparent), radial-gradient(ellipse 45% 400px at 99% 50%, rgba(14,74,96,.24), transparent), var(--bg); }
+    button,input { font: inherit; } button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    button:disabled { cursor: not-allowed; opacity: .33; transform:none !important; }
+    button:focus-visible,input:focus-visible { outline: 3px solid var(--aqua); outline-offset: 3px; }
+    .shell { max-width: 760px; margin: 0 auto; padding: calc(env(safe-area-inset-top) + 20px) 18px calc(env(safe-area-inset-bottom) + 36px); }
+    .topbar { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:23px; }
+    .brand { display:flex; align-items:center; gap:11px; min-width:0; }
+    .brand-symbol { height:47px; width:47px; flex-shrink:0; display:grid; place-items:center; border:1px solid rgba(247,202,114,.48); background:linear-gradient(140deg,#354c4c,#142b37); border-radius:15px; font-size:25px; box-shadow:0 4px 18px #051018; }
+    .brand b { font-size:18px; letter-spacing:.035em; display:block; line-height:1.1; }
+    .brand small { font-size:10px; letter-spacing:.19em; color:var(--gold); font-weight:800; }
+
+    /* OPMercato : logo marin validé, recadré par CSS sans modifier l'image source */
+    .op-logo-frame {
+      display:block; overflow:hidden; flex-shrink:0;
+      background:#fffefa; border:1px solid rgba(247,202,114,.65);
+      border-radius:13px; box-shadow:0 7px 24px rgba(0,0,0,.26);
+    }
+    .op-logo-frame img {display:block; width:100%; height:100%; object-fit:cover; object-position:center center;}
+    .op-logo-header {width:clamp(170px,51vw,250px); aspect-ratio:2.5/1;}
+    .op-logo-home {width:100%; max-width:660px; aspect-ratio:2.5/1; border-radius:18px; border-color:rgba(247,202,114,.75); box-shadow:0 15px 38px rgba(0,0,0,.27);}
+    .op-logo-home-wrap {display:flex; justify-content:center; margin:0 auto 24px;}
+    .topbar.home-header {justify-content:flex-end; margin-bottom:5px;}
+    .topbar.home-header .brand {display:none;}
+    .home-nav {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:100%;min-width:0;}
+    .home-nav .btn-ghost {width:100%;min-height:46px;font-size:13px;font-weight:850;border-color:rgba(247,202,114,.4);color:#ffe2a5;background:#183748;white-space:normal;}
+    .home-online-button {display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;width:100%;min-height:64px;margin-top:11px;padding:12px 16px;border:1px solid rgba(125,227,211,.65);border-radius:14px;background:linear-gradient(120deg,#1f5868,#113647);color:#f7faf3;font-size:16px;font-weight:950;box-shadow:0 8px 22px #08121a80;}
+    .home-online-button small {font-size:11px;color:#bce8e6;font-weight:700;}
+    .home-online-button:hover {filter:brightness(1.08);}
+    .home-online-button:focus-visible {outline:3px solid var(--gold);outline-offset:3px;}
+    @media (max-width:420px) {
+      .op-logo-header {width:clamp(168px,49vw,212px);}
+      .op-logo-home {border-radius:12px;}
+    }
+
+    .opfc-return-home{margin:8px 0 4px;display:flex;justify-content:flex-start}
+    .opfc-return-home a{color:var(--gold);font-size:12px;font-weight:800;text-decoration:none;border:1px solid rgba(247,202,114,.35);background:#163241;border-radius:12px;padding:10px 14px}
+    .opfc-return-home a:focus-visible{outline:3px solid var(--aqua);outline-offset:3px}
+    .btn-ghost { border:1px solid var(--outline); background:rgba(255,255,255,.05); color:var(--text); border-radius:13px; min-height:41px; padding:9px 12px; font-size:12px; font-weight:750; }
+    .btn-ghost:hover { background:rgba(255,255,255,.12); }
+    .eyebrow { color:var(--gold); font-size:11px; font-weight:900; letter-spacing:.19em; text-transform:uppercase; }
+    h1,h2,h3,p { margin-top:0; } h1 { font-size:clamp(29px,7vw,43px); line-height:1.08; letter-spacing:-.045em; margin:10px 0 12px; } h2 {font-size:18px;letter-spacing:-.025em;} p {color:var(--muted); line-height:1.55;}
+    .intro { padding:26px 2px 8px; }
+    .intro p { max-width:580px; font-size:14px; }
+    .card { background: linear-gradient(160deg,rgba(26,58,72,.98),rgba(16,40,53,.97)); border: 1px solid var(--outline); border-radius:22px; box-shadow: var(--shadow); }
+    .settings { margin:18px 0; padding:20px; }
+    .section-label { font-size:12px; font-weight:900; color:#d7e5e7; letter-spacing:.07em; text-transform:uppercase; margin:0 0 10px; display:block; }
+    .settings-row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin: 8px 0 20px; }
+    .counter { display:flex; align-items:center; gap:16px; }
+    .round-button {border:1px solid var(--outline); border-radius:13px;background:#224151;color:#fff;width:42px;height:42px;font-size:22px;font-weight:800;}
+    .count {font-size:21px;font-weight:900; min-width:18px;text-align:center;}
+    .players-inputs {display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:7px 0 18px;}
+    .field {display:flex;flex-direction:column;gap:7px;}
+    .field label { color:var(--muted);font-size:12px;font-weight:700; }
+    input {width:100%;background:rgba(5,21,30,.54);border:1px solid rgba(198,220,228,.17);color:var(--text);border-radius:12px;padding:12px 11px;min-height:46px; font-size:15px; }
+    input:focus { border-color:var(--gold); outline:none; }
+    .field-budget {max-width:235px;margin-bottom:19px;}
+    .primary { background:linear-gradient(135deg,#ffdc94,#eeb958); color:#18212b; border:0; border-radius:14px; padding:15px 20px; font-size:15px; font-weight:950; width:100%; min-height:51px; box-shadow:0 8px 22px #080f1370; }
+    .primary:hover:not(:disabled) {filter:brightness(1.05);}
+    .hint {font-size:12px;color:var(--muted);line-height:1.5;margin:12px 0 0;}
+    .pill {border:1px solid rgba(125,227,211,.35); color:var(--aqua); background:rgba(125,227,211,.08);padding:8px 11px;border-radius:100px;font-size:12px;font-weight:800;display:inline-flex;align-items:center;gap:7px;}
+    .pill-dot {width:7px;height:7px;background:var(--aqua);border-radius:99px;}
+    .game-meta {display:flex;align-items:center;justify-content:space-between;gap:10px;margin:5px 0 15px;}
+    .game-meta small {color:var(--muted);font-size:12px;}
+    .character-card { overflow:hidden;position:relative;margin-bottom:14px;min-height:240px;padding:22px 21px 18px;background:radial-gradient(circle at 80% 30%,var(--tier-glow,rgba(247,202,114,.16)),transparent 53%),linear-gradient(120deg,#203d4c 0%,#0d2636 100%); }
+    .character-card::after {content:"☠";font-size:180px;font-weight:900;position:absolute;color:rgba(235,245,234,.055);right:-20px;top:40px;transform:rotate(-17deg);pointer-events:none;}
+    .card-top { display:flex;justify-content:space-between;align-items:center;gap:15px;position:relative;z-index:1; }
+    .wanted { letter-spacing:.23em;font-size:10px;color:#aec9cc;font-weight:900; }
+    .tier {display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--tier-border,#f7ca72);background:var(--tier-bg,rgba(247,202,114,.14));color:var(--tier-color,#f7ca72);border-radius:12px;padding:8px 12px;font-size:13px;font-weight:950;white-space:nowrap;}
+    .tier span {font-size:17px;}
+    .character-name {font-size:clamp(31px,7vw,44px);line-height:1.04;letter-spacing:-.047em;margin:42px 0 13px;max-width:550px;position:relative;z-index:1;text-wrap:balance;}
+    .char-footer {position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:9px;}
+    .char-footer .desc {font-size:12px;color:#abc8ce;font-weight:700;}
+    .power {display:flex;align-items:baseline;gap:5px;color:var(--gold);white-space:nowrap;}
+    .power strong {font-size:32px;letter-spacing:-.06em;}
+    .power small {font-size:11px;color:#d5ddd7;font-weight:700;}
+    .auction {padding:18px;margin-bottom:14px;}
+    .bid-title {display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:1px solid var(--outline);padding-bottom:14px;}
+    .bid-title .kicker {color:var(--muted);font-size:11px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;}
+    .bid-amount {display:block;font-size:31px;color:var(--gold);font-weight:950;letter-spacing:-.055em;margin-top:2px;}
+    .bid-leader {text-align:right;max-width:48%;font-size:13px;color:var(--muted);}
+    .bid-leader strong {display:block;color:var(--text);font-size:15px;white-space:normal;overflow-wrap:anywhere;}
+    .turn-banner {display:flex;gap:11px;align-items:center;justify-content:space-between;margin:16px 0 13px;padding:13px;background:#0b2230;border:1px solid rgba(125,227,211,.24);border-radius:14px;}
+    .turn-banner span {font-size:11px;color:var(--muted);display:block;margin-bottom:3px;}
+    .turn-banner strong {font-size:19px;letter-spacing:-.02em;overflow-wrap:anywhere;}
+    .turn-budget {text-align:right;white-space:nowrap;font-size:13px;color:var(--gold);font-weight:900;}
+    .offers {display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+    .offer-btn {text-align:left;border:1px solid rgba(247,202,114,.32);background:rgba(247,202,114,.12);color:var(--text);border-radius:13px;padding:12px;min-height:69px;}
+    .offer-btn b {display:block;font-size:20px;color:var(--gold);}
+    .offer-btn small {display:block;color:#ccdae0;font-size:10px;margin-top:4px;font-weight:700;}
+    .offer-btn:active {background:rgba(247,202,114,.27);}
+    .pass-btn {background:rgba(255,255,255,.055);color:#f1f7f2;border:1px solid rgba(255,255,255,.17);border-radius:13px;min-height:47px;width:100%;font-weight:800;margin-top:10px;}
+    .notice {text-align:center;color:var(--muted);font-size:12px;line-height:1.4;margin:12px 0 0;}
+    .resolved {padding:15px 4px 2px;text-align:center;}
+    .resolved .icon {font-size:37px;margin-bottom:8px;}
+    .resolved h2 {font-size:24px;margin-bottom:9px;}
+    .resolved p {font-size:14px;margin:0 0 18px;}
+    .resolved strong {color:var(--gold);}
+    .section-heading {display:flex;justify-content:space-between;gap:8px;align-items:center;margin:22px 0 13px;}
+    .section-heading h2 {margin:0;}
+    .section-heading small {font-size:12px;color:var(--muted);}
+    .score-list {display:flex;flex-direction:column;gap:10px;}
+    .player-card {background:rgba(21,50,64,.66);border:1px solid var(--outline);border-radius:17px;padding:13px 14px;}
+    .player-header {display:flex;justify-content:space-between;align-items:center;gap:12px;}
+    .identity {display:flex;align-items:center;gap:10px;min-width:0;}
+    .avatar {height:40px;width:40px;display:grid;place-items:center;flex-shrink:0;border-radius:13px;background:var(--avatar-bg,#314e5b);color:#fff;font-weight:950;font-size:17px;}
+    .identity strong {display:block;font-size:14px;overflow-wrap:anywhere;}
+    .identity small {display:block;font-size:12px;color:var(--muted);margin-top:3px;}
+    .player-score {text-align:right;white-space:nowrap;}
+    .player-score b {display:block;font-size:20px;color:var(--gold);}
+    .player-score small {font-size:10px;color:var(--muted);font-weight:750;}
+    .roster {display:flex;flex-wrap:wrap;gap:5px;margin-top:11px;}
+    .chip {background:rgba(5,19,27,.55);border:1px solid rgba(186,206,217,.16);border-radius:100px;padding:6px 8px;font-size:10px;font-weight:740;color:#dce8e9;}
+    .chip em {font-style:normal;font-weight:950;color:var(--gold);margin-left:3px;}
+    .chip.empty {color:#788e9b;border-style:dashed;}
+    .footer-actions {display:flex;align-items:center;justify-content:center;gap:15px;margin-top:26px;flex-wrap:wrap;}
+
+    /* UI du jeu : logo centré et actions identiques sur mobile et ordinateur. */
+    .topbar.in-game-header {justify-content:center; margin-bottom:18px;}
+    .topbar.in-game-header .brand {width:100%; justify-content:center;}
+    .op-game-footer {display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; align-items:stretch; margin:23px 0 15px;}
+    .op-footer-btn {display:flex; align-items:center; justify-content:center; min-width:0; min-height:47px; padding:10px 5px; border:1px solid; border-radius:13px; font-size:clamp(10px,2.7vw,12px); line-height:1.25; font-weight:850; text-align:center; white-space:normal; overflow-wrap:anywhere; text-decoration:none; box-shadow:0 5px 15px #0003; }
+    .op-footer-rules {color:#e1f3ff; border-color:#5b8cac; background:#1d4a66;}
+    .op-footer-restart {color:#ffedc7; border-color:#bc9854; background:#664b2d;}
+    .op-footer-finish {color:#ffe1e3; border-color:#bd737b; background:#6c3540;}
+    .op-footer-btn:active:not(:disabled) {filter:brightness(1.14);}
+    .op-footer-note {margin:0 0 8px; font-size:11px; text-align:center; color:#afc8d2;}
+    .op-trade-effects {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:15px 0 17px;text-align:center;}
+    .op-trade-title {grid-column:1/-1;font-size:14px;font-weight:900;color:#ffdf9d;margin:0 0 2px;}
+    .op-trade-player {min-width:0;padding:13px 7px;background:#102f41;border:1px solid #648094;border-radius:14px;display:flex;align-items:center;flex-direction:column;gap:10px;}
+    .op-trade-player-name {color:#f6fbff;font-size:13px;line-height:1.3;overflow-wrap:anywhere;}
+    .op-trade-scores {display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:5px;color:#bbd0da;font-size:12px;font-weight:750;}
+    .op-trade-scores b {color:#fff1bb;font-size:clamp(13px,3.5vw,18px);white-space:nowrap;}
+    .op-trade-arrow {color:#ffdb94;font-weight:900;}
+    .op-trade-delta {display:inline-block;margin-top:auto;max-width:100%;padding:7px 9px;border-radius:10px;font-size:clamp(11px,3vw,15px);font-weight:950;line-height:1.2;}
+    .op-trade-player.is-positive {border-color:#68bba0;}
+    .op-trade-player.is-positive .op-trade-delta {color:#c5f8dc;background:#18513c;}
+    .op-trade-player.is-negative {border-color:#cf8888;}
+    .op-trade-player.is-negative .op-trade-delta {color:#ffe1db;background:#71333d;}
+    .op-trade-player.is-neutral .op-trade-delta {color:#e0eaf0;background:#304a5c;}
+    .op-trade-preview .op-trade-effects {margin-top:14px;}
+    @media(max-width:345px) {.op-game-footer {gap:5px;}.op-footer-btn {padding:9px 3px;font-size:10px;}.op-trade-effects {grid-template-columns:1fr;}}
+
+    .text-btn {background:none;border:0;color:#a8bdc7;font-size:12px;text-decoration:underline;text-underline-offset:3px;padding:6px;}
+    .text-btn.danger {color:#ffb6af;}
+    .end-screen {padding:20px 0 0;}
+    .win-card {text-align:center;padding:26px 17px;background:radial-gradient(ellipse at top,rgba(242,188,80,.23),transparent 65%),linear-gradient(160deg,#233b44,#132936);}
+    .trophy {font-size:51px;margin:2px 0 7px;}
+    .win-card h1 {font-size:32px;margin:13px 0 6px;overflow-wrap:anywhere;}
+    .win-card p {font-size:13px;margin-bottom:15px;}
+    .win-score {font-size:34px;font-weight:950;color:var(--gold);}
+    .ranking {counter-reset:rank;display:flex;flex-direction:column;gap:9px;margin-top:18px;}
+    .rank-row {display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px;border-radius:14px;background:#15303e;border:1px solid var(--outline);}
+    .rank-row .rank-name {font-weight:850;font-size:14px;overflow-wrap:anywhere;}
+    .rank-row .rank-no {display:inline-grid;place-items:center;min-width:27px;height:27px;border-radius:9px;background:#324b54;margin-right:8px;color:var(--gold);}
+    .rank-row .rank-stat {text-align:right;white-space:nowrap;font-size:13px;color:var(--gold);font-weight:950;}
+    .rank-row .rank-stat small {color:var(--muted);font-size:10px;display:block;font-weight:600;margin-top:2px;}
+    .toast {position:fixed;bottom:max(20px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:calc(100% - 34px);max-width:530px;background:#f7cb7e;color:#101e27;padding:13px;border-radius:12px;text-align:center;font-weight:850;font-size:13px;box-shadow:0 9px 24px #0007;z-index:10;}
+    .hidden {display:none !important;}
+    .modal {position:fixed;inset:0;background:rgba(1,10,16,.8);backdrop-filter:blur(5px);z-index:50;display:grid;place-items:center;padding:18px;}
+    .modal-content {width:min(100%,450px);padding:22px;max-height:88dvh;overflow:auto;}
+    .modal-content h2 {font-size:23px;margin:7px 0 14px;}
+    .modal-content p {font-size:13px;}
+    .modal-content ul {color:var(--muted);padding-left:19px;font-size:13px;line-height:1.75;}
+    .modal-content li {margin-bottom:6px;}
+    .modal-actions {display:flex;gap:10px;margin-top:16px;}
+    .modal-actions>* {flex:1;}
+    .modal-actions .primary {font-size:13px;}
+    .sr-only {position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+    @media(max-width:370px) { .shell{padding-left:13px;padding-right:13px} .brand b{font-size:15px;} .brand-symbol {width:42px;height:42px;} .players-inputs{grid-template-columns:1fr} .character-card{padding:19px;} .character-name{margin-top:36px;} }
+    @media(min-width:600px) { .shell{padding-top:35px;} .character-card{min-height:278px;padding:25px 29px;} .character-name{margin-top:57px;} }
+    @media(prefers-reduced-motion:no-preference) { .character-card { animation: pop .3s ease both; } @keyframes pop {from{opacity:.6;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}} }
+  </style>
+</head>
+<body>
+  <main id="app" class="shell" aria-live="polite"></main>
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true"></div>
+  <div id="toast" class="toast hidden" role="status"></div>
+  <script src="./characters-data.js?v=20261017-clean251"></script>
+  <script src="./portrait-map.js?v=20261017-clean251"></script>
+  <script>
+  'use strict';
+  // Classement ludique et subjectif, entièrement modifiable ci-dessous.
+  // Format : [identifiant, nom, puissance (de 1 à 100)]. Le rang est calculé automatiquement.
+  const CHARACTERS = [
+    ['roger','Gol D. Roger',100], ['prime-wb','Barbe Blanche',100], ['luffy','Monkey D. Luffy',96],
+    ['shanks','Shanks',99], ['prime-garp','Monkey D. Garp',100], ['kaido','Kaido',95],
+    ['mihawk','Dracule Mihawk',93], ['teach','Barbe Noire',97], ['akainu','Akainu',95],
+    ['bigmom','Big Mom',95], ['sengoku','Sengoku',94], ['kuzan','Kuzan',92],
+    ['rayleigh','Silvers Rayleigh',96], ['kizaru','Kizaru',91], ['oden','Kozuki Oden',93],
+    ['fujitora','Fujitora',91], ['ryokugyu','Ryokugyu',90], ['beckman','Benn Beckman',89],
+    ['sabo','Sabo',92], ['zoro','Roronoa Zoro',95], ['yamato','Yamato',89],
+    ['law','Trafalgar Law',91], ['kid','Eustass Kid',91], ['marco','Marco',86],
+    ['sanji','Sanji',90], ['king','King',89], ['shiryu','Shiryu',82],
+    ['katakuri','Charlotte Katakuri',88], ['lucci','Rob Lucci',85], ['queen','Queen',85],
+    ['jinbe','Jinbe',84], ['hancock','Boa Hancock',82], ['doflamingo','Donquixote Doflamingo',88],
+    ['crocodile','Crocodile',88], ['kuma','Bartholomew Kuma',82], ['killer','Killer',75],
+    ['magellan','Magellan',70], ['smoothie','Charlotte Smoothie',73], ['jack','Jack',72],
+    ['inu','Inuarashi',75], ['neko','Nekomamushi',75], ['ace','Portgas D. Ace',85],
+    ['perospero','Charlotte Perospero',70], ['ivankov','Emporio Ivankov',69], ['enel','Ener',68],
+    ['kaku','Kaku',73], ['drake','X Drake',66], ['franky','Franky',70],
+    ['brook','Brook',72], ['robin','Nico Robin',76], ['hawkins','Basil Hawkins',63],
+    ['apoo','Scratchmen Apoo',62], ['chopper','Tony Tony Chopper',70], ['nami','Nami',63],
+    ['bege','Capone Bege',61], ['bonclay','Bon Clay',60], ['cavendish','Cavendish',64],
+    ['bartolomeo','Bartolomeo',64], ['caesar','Caesar Clown',64], ['pica','Pica',69],
+    ['diamante','Diamante',70], ['trebol','Trébol',68], ['bellamy','Bellamy',52],
+    ['hody','Hody Jones',63], ['mr1','Mr. 1',62], ['hina','Hina',47],
+    ['kuro','Kuro',45], ['tashigi','Tashigi',41], ['arlong','Arlong',40],
+    ['usopp','Usopp',70], ['donkrieg','Don Krieg',38], ['rebecca','Rebecca',60],
+    ['foxy','Foxy',36], ['wapol','Wapol',35], ['buggy','Baggy',32],
+    ['mr3','Mr. 3',30], ['alvida','Alvida',28], ['helmeppo','Hermep',27],
+    ['spandam','Spandam',17], ['charlos','Saint Charlos',6]
+  ].map(([id,name,power])=>({id,name,power})).concat(window.MERCATO_EXPANSION?.characters || []);
+  const CARDS = Object.fromEntries(CHARACTERS.map(c=>[c.id,c]));
+  const MAX_PLAYERS=5, MIN_PLAYERS=2, OPEN_BID=20, BID_STEP=10, STORE_KEY='mercato-pirates-v1';
+  let TEAM_SIZE=10;
+  const TIERS = [
+    {min:95,tier:'S',label:'Légendaire',color:'#ffd171',background:'rgba(255,209,113,.16)',glow:'rgba(255,181,63,.24)'},
+    {min:80,tier:'A',label:'Élite',color:'#e99dfa',background:'rgba(233,157,250,.13)',glow:'rgba(216,102,248,.18)'},
+    {min:65,tier:'B',label:'Redoutable',color:'#8bc4ff',background:'rgba(139,196,255,.13)',glow:'rgba(103,153,241,.18)'},
+    {min:50,tier:'C',label:'Solide',color:'#7de3d3',background:'rgba(125,227,211,.13)',glow:'rgba(82,211,178,.15)'},
+    {min:35,tier:'D',label:'Prometteur',color:'#badd8e',background:'rgba(186,221,142,.12)',glow:'rgba(186,221,142,.14)'},
+    {min:20,tier:'E',label:'Modeste',color:'#e7b991',background:'rgba(231,185,145,.12)',glow:'rgba(230,167,111,.13)'},
+    {min:0,tier:'F',label:'Faible',color:'#abb7bd',background:'rgba(171,183,189,.12)',glow:'rgba(171,183,189,.12)'}
+  ];
+  const AVATARS=['#357b7a','#6f659d','#ae7855','#47759f','#925d79','#65804d'];
+  const app=document.querySelector('#app');
+  const modal=document.querySelector('#modal');
+  let playerCount=2, names=['Pirate 1','Pirate 2','Pirate 3','Pirate 4','Pirate 5','Pirate 6'], startingBudget=250000000;
+  let state=restore();
+  let toastTimeout=0;
+  function esc(value) {return String(value).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function currency(n) {return Number(n).toLocaleString('fr-FR')+' ฿';}
+  function tierOf(n) {return TIERS.find(t=>n>=t.min);}
+  function shuffle(items) {let a=[...items];for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+  function save() {try {if(state)localStorage.setItem(STORE_KEY,JSON.stringify(state));else localStorage.removeItem(STORE_KEY);}catch(e){}}
+  function restore(){try{let v=JSON.parse(localStorage.getItem(STORE_KEY));if(v?.version===1 && Array.isArray(v.players) && Array.isArray(v.drawPile) && ['auction','finished'].includes(v.phase))return v;}catch(e){}return null;}
+  function player(id) {return state.players.find(p=>p.id===id);}
+  function canParticipate(p,amount) {return p && p.roster.length<TEAM_SIZE && p.budget>=amount;}
+  function getScore(p) {return [...p.roster].sort((a,b)=>CARDS[b].power-CARDS[a].power).slice(0,TEAM_SIZE).reduce((s,id)=>s+CARDS[id].power,0);}
+  function ranking() {return [...state.players].sort((a,b)=>getScore(b)-getScore(a)||b.budget-a.budget||a.id-b.id);}
+  function isComplete(){return state.players.every(p=>p.roster.length===TEAM_SIZE) || !state.players.some(p=>canParticipate(p,OPEN_BID));}
+  function header(){return `<div class="topbar${!state?' home-header':' in-game-header'}"><div class="brand"><div class="op-logo-frame op-logo-header"><img src="./opmercato-logo.jpg?v=1" alt="OPMercato, la boussole des pirates" /></div></div>${!state?'<nav class="home-nav" aria-label="Navigation"><button class="btn-ghost" data-action="catalog" type="button">📚 Catalogue</button><button class="btn-ghost" data-action="rules" type="button">📖 Règles</button></nav>':''}</div>`;}
+  function gameFooter(){return '<div class="footer-actions op-game-footer">'+
+    '<button type="button" class="op-footer-btn op-footer-rules" data-action="rules">📖 Règles</button>'+
+    '<button type="button" class="op-footer-btn op-footer-restart" data-action="reset-request">↻ Recommencer</button>'+
+    '<button type="button" class="op-footer-btn op-footer-finish" data-action="finish-request">Terminer</button></div>';}
+  function setupScreen(){
+    return `${header()}<nav class="opfc-return-home"><a href="./" aria-label="Revenir au choix des jeux">← Choix des jeux</a></nav><section class="intro"><div class="op-logo-home-wrap"><div class="op-logo-frame op-logo-home"><img src="./opmercato-logo.jpg?v=1" alt="Logo OPMercato" /></div></div><span class="eyebrow">Le jeu d'enchères des mers</span><h1>Forme l'équipage<br/>le plus puissant.</h1><p>Recrute des personnages One Piece aux enchères, gère ton budget et affronte tes amis. Celui qui a le plus de points avec ses <strong>${TEAM_SIZE} personnages</strong> remporte la partie.</p></section>
+      <section class="card settings"><span class="section-label">Combien de pirates ?</span><div class="settings-row"><span class="hint" style="margin:0">De 2 à 5 joueurs</span><div class="counter"><button class="round-button" data-action="less" aria-label="Moins de joueurs">−</button><span id="numPlayers" class="count">${playerCount}</span><button class="round-button" data-action="more" aria-label="Plus de joueurs">+</button></div></div>
+      <span class="section-label">Noms des joueurs</span><div id="names" class="players-inputs">${names.slice(0,playerCount).map((n,i)=>`<div class="field"><label for="name-${i}">Joueur ${i+1}</label><input id="name-${i}" type="text" data-player-input="${i}" maxlength="25" value="${esc(n)}" autocomplete="off" /></div>`).join('')}</div>
+      <div class="field field-budget"><label for="budget">Budget de départ (฿)</label><input id="budget" type="number" min="100" max="100000" step="100" value="${startingBudget}" inputmode="numeric" /></div>
+      <button class="primary" data-action="start">⚓ Lancer le mercato</button><button class="home-online-button" data-online="open" type="button">🌐 Mode en ligne <small>Jouer chacun sur son téléphone</small></button><p class="hint">Un seul téléphone suffit : à chaque tour, l'écran indique qui doit enchérir. Le classement et la progression sont sauvegardés sur cet appareil.</p></section><footer class="footer-actions"><button class="text-btn" data-action="rules">Lire toutes les règles</button></footer>`;
+  }
+  function charCard(character) {
+    const t=tierOf(character.power);
+    return `<article class="card character-card" style="--tier-color:${t.color};--tier-border:${t.color}88;--tier-bg:${t.background};--tier-glow:${t.glow}" aria-label="Personnage ${esc(character.name)}, classe ${t.tier}, puissance ${character.power}">
+      <div class="card-top"><span class="wanted">AVIS DE RECRUTEMENT</span><span class="tier"><span>${t.tier}</span> ${t.label}</span></div>
+      <h1 class="character-name">${esc(character.name)}</h1><div class="char-footer"><span class="desc">Puissance estimée</span><span class="power"><strong>${character.power}</strong><small>/ 100</small></span></div></article>`;
+  }
+  function auctionScreen(){
+    const a=state.auction, c=CARDS[a.charId], bidder=player(a.turnId), leader=player(a.leader), min=a.highBid? a.highBid+BID_STEP : OPEN_BID;
+    const finished=a.outcome!==null;
+    return `${header()}<div class="game-meta"><span class="pill"><span class="pill-dot"></span>ENCHÈRE N° ${state.round}</span><small>${state.drawPile.length-state.drawIndex} cartes en réserve</small></div>${charCard(c)}
+    <section class="card auction">${finished ? resolvedScreen(a,c) : `<div class="bid-title"><div><span class="kicker">Meilleure offre</span><strong class="bid-amount">${a.highBid ? currency(a.highBid) : 'Aucune'}</strong></div><div class="bid-leader">${leader ? `En tête : <strong>${esc(leader.name)}</strong>` : `Mise de départ :<strong>${currency(OPEN_BID)}</strong>`}</div></div>
+      <div class="turn-banner"><div><span>AU TOUR DE</span><strong>${esc(bidder?.name || '')}</strong></div><div class="turn-budget">${currency(bidder?.budget ?? 0)}<br/><span style="color:var(--muted);font-size:10px">disponibles</span></div></div>
+      <div class="offers">${[0,20,50,100].map(add=>{let amount=min+add;return `<button data-action="bid" data-amount="${amount}" class="offer-btn" ${!canParticipate(bidder,amount)?'disabled':''}><b>${currency(amount)}</b><small>${add===0?'Offre minimale':`Offre +${add} ฿`}</small></button>`;}).join('')}</div>
+      <button class="pass-btn" data-action="pass">Passer mon tour</button><p class="notice">Passer t'exclut uniquement des enchères pour ce personnage.</p>`}</section>
+    ${scoreBoard()}${gameFooter()}`;
+  }
+  function resolvedScreen(a,c){
+    const won=a.outcome==='sold', p=won?player(a.leader):null;
+    return `<div class="resolved"><div class="icon">${won?'🏆':'🌊'}</div><h2>${won?'Personnage recruté !':'Personnage invendu'}</h2><p>${won?`<b>${esc(p.name)}</b> recrute <b>${esc(c.name)}</b> pour <strong>${currency(a.highBid)}</strong>.`:`Personne n'a enchéri sur <b>${esc(c.name)}</b>.`}</p><button class="primary" data-action="next">${isComplete()||state.drawIndex>=state.drawPile.length?'Voir le classement final':'Personnage suivant →'}</button></div>`;
+  }
+  function scoreBoard(){
+    return `<div class="section-heading"><h2>Les équipages</h2><small>${TEAM_SIZE} places par joueur</small></div><section class="score-list">${state.players.map((p,i)=>{
+      let roster=p.roster.map(id=>{const c=CARDS[id];return `<span class="chip">${esc(c.name)} <em>${tierOf(c.power).tier}</em></span>`;}).join('');
+      let empty=Array.from({length:TEAM_SIZE-p.roster.length},()=>'<span class="chip empty">+ à recruter</span>').join('');
+      return `<article class="player-card"><div class="player-header"><div class="identity"><div class="avatar" style="--avatar-bg:${AVATARS[i]}">${esc(p.name.trim().slice(0,1).toUpperCase()||'P')}</div><div><strong>${esc(p.name)}</strong><small>${currency(p.budget)} restants · ${p.roster.length}/${TEAM_SIZE} recrutés</small></div></div><div class="player-score"><b>${getScore(p)}</b><small>POINTS</small></div></div><div class="roster">${roster}${empty}</div></article>`;
+    }).join('')}</section>`;
+  }
+  function endScreen(){let ranked=ranking(), winner=ranked[0], tied=ranked.filter(p=>getScore(p)===getScore(winner)&&p.budget===winner.budget);
+    return `${header()}<section class="end-screen"><div class="card win-card"><div class="trophy">🏆</div><span class="eyebrow">LE MERCATO EST TERMINÉ</span><h1>${tied.length>1?'Égalité !':esc(winner.name)}</h1><p>${tied.length>1?`Les vainqueurs ex æquo : ${tied.map(p=>esc(p.name)).join(', ')}`:'a constitué le meilleur équipage des mers !'}</p><div class="win-score">${getScore(winner)} points</div></div>
+      <div class="section-heading"><h2>Classement final</h2><small>${state.round} enchères</small></div><div class="ranking">${ranked.map((p,i)=>`<div class="rank-row"><div class="rank-name"><span class="rank-no">${i+1}</span>${esc(p.name)}</div><div class="rank-stat">${getScore(p)} pts<small>${p.roster.length}/${TEAM_SIZE} pers. · ${currency(p.budget)} restants</small></div></div>`).join('')}</div>
+      ${scoreBoard()}<div class="footer-actions"><button class="primary" data-action="reset-request">Nouvelle partie ↻</button></div></section>`;
+  }
+  function render(){app.innerHTML=!state?setupScreen():state.phase==='finished'?endScreen():auctionScreen();}
+  function showToast(message){clearTimeout(toastTimeout);const el=document.querySelector('#toast');el.textContent=message;el.classList.remove('hidden');toastTimeout=setTimeout(()=>el.classList.add('hidden'),2600);}
+  function start(){
+    for(let i=0;i<playerCount;i++){let input=document.querySelector(`#name-${i}`);if(input)names[i]=input.value.trim().slice(0,25)||`Pirate ${i+1}`;}
+    startingBudget=Number(document.querySelector('#budget')?.value);
+    if(!Number.isInteger(startingBudget)||startingBudget<100||startingBudget>100000){showToast('Choisis un budget entre 100 et 100 000.');return;}
+    state={version:1,phase:'auction',players:names.slice(0,playerCount).map((name,id)=>({id,name,budget:startingBudget,roster:[]})),drawPile:shuffle(CHARACTERS.map(c=>c.id)),drawIndex:0,round:0,auction:null};
+    drawNext();
+  }
+  function findNextBidder(afterIndex,a){
+    const min=a.highBid?a.highBid+BID_STEP:OPEN_BID;
+    for(let offset=1;offset<=state.players.length;offset++){
+      const p=state.players[(afterIndex+offset)%state.players.length];
+      if(p.id!==a.leader && !a.passed.includes(p.id) && canParticipate(p,min))return p.id;
+    }
+    return null;
+  }
+  function drawNext(){
+    if(isComplete() || state.drawIndex>=state.drawPile.length){state.phase='finished';state.auction=null;save();render();return;}
+    state.round++;
+    const charId=state.drawPile[state.drawIndex++];
+    const a={charId,highBid:0,leader:null,passed:[],turnId:null,outcome:null};
+    // Alterner le premier joueur d'une enchère à l'autre.
+    a.turnId=findNextBidder((state.round-2+state.players.length)%state.players.length,a);
+    state.auction=a;
+    if(a.turnId===null){state.phase='finished';state.auction=null;}
+    save();render();window.scrollTo?.({top:0,behavior:'instant'});
+  }
+  function settle(){
+    const a=state.auction;
+    if(a.outcome!==null)return;
+    if(a.leader!==null){const p=player(a.leader);p.budget-=a.highBid;p.roster.push(a.charId);a.outcome='sold';}
+    else a.outcome='unsold';
+    a.turnId=null;
+    save();render();
+  }
+  function bid(amount){
+    const a=state?.auction;if(!a||a.outcome!==null)return;
+    const bidder=player(a.turnId), min=a.highBid?a.highBid+BID_STEP:OPEN_BID;
+    if(!bidder || !Number.isFinite(amount) || amount<min || !canParticipate(bidder,amount))return showToast('Offre impossible : budget insuffisant.');
+    a.highBid=amount;a.leader=bidder.id;
+    a.turnId=findNextBidder(bidder.id,a);
+    if(a.turnId===null)settle();else{save();render();}
+  }
+  function pass(){const a=state?.auction;if(!a||a.outcome!==null)return;a.passed.push(a.turnId);a.turnId=findNextBidder(a.passed[a.passed.length-1],a);if(a.turnId===null)settle();else{save();render();}}
+  function openModal(kind){
+    const rules=kind==='rules';
+    modal.innerHTML=rules?`<section class="card modal-content"><span class="eyebrow">Mode d'emploi</span><h2>Règles du mercato</h2><ul>
+      <li>Chaque joueur dispose du même budget de départ.</li><li>Un personnage One Piece est tiré au sort à chaque enchère.</li><li>Chaque personnage possède un <b>rang de S à F</b> et une puissance comprise entre 1 et 100.</li><li>La mise de départ est de <b>${currency(OPEN_BID)}</b>, puis une nouvelle offre doit augmenter d'au moins <b>${currency(BID_STEP)}</b>.</li><li>Chaque joueur peut acheter au maximum <b>${TEAM_SIZE} personnages</b>.</li><li>Un joueur qui passe ne peut plus enchérir sur le personnage en cours.</li><li>Si personne ne surenchérit, la meilleure offre remporte le personnage. Sans enchère, il est invendu.</li><li>La partie s'arrête quand tous les équipages sont complets, quand plus personne ne peut acheter ou quand tu la termines.</li><li>Le score est la somme des puissances des personnages recrutés. En cas d'égalité, le budget restant départage les joueurs.</li></ul><p>Classement de puissance imaginé pour le jeu, non officiel. Aucun personnage ne peut être vendu deux fois.</p><button class="primary" data-action="close-modal">Compris !</button></section>`:
+    `<section class="card modal-content"><span class="eyebrow">Confirmation</span><h2>${kind==='finish'?'Terminer maintenant ?':'Recommencer la partie ?'}</h2><p>${kind==='finish'?'Tu verras le classement avec les équipages tels qu’ils sont.':'La progression sauvegardée sur ce téléphone sera effacée.'}</p><div class="modal-actions"><button class="btn-ghost" data-action="close-modal">Annuler</button><button class="primary" data-action="${kind==='finish'?'confirm-finish':'confirm-reset'}">Confirmer</button></div></section>`;
+    modal.classList.remove('hidden');
+  }
+  function closeModal(){modal.classList.add('hidden');modal.innerHTML='';}
+  document.addEventListener('click',event=>{
+    const button=event.target.closest('button[data-action]');if(!button||button.disabled)return;
+    const action=button.dataset.action;
+    if(action==='less'||action==='more'){
+      document.querySelectorAll('[data-player-input]').forEach(input=>{names[Number(input.dataset.playerInput)]=input.value;});
+      startingBudget=Number(document.querySelector('#budget')?.value)||1000;
+      playerCount=Math.max(MIN_PLAYERS,Math.min(MAX_PLAYERS,playerCount+(action==='more'?1:-1)));
+      render();return;
+    }
+    if(action==='start')start();
+    else if(action==='bid')bid(Number(button.dataset.amount));
+    else if(action==='pass')pass();
+    else if(action==='next')drawNext();
+    else if(action==='rules')openModal('rules');
+    else if(action==='reset-request')openModal('reset');
+    else if(action==='finish-request')openModal('finish');
+    else if(action==='close-modal')closeModal();
+    else if(action==='confirm-finish'){closeModal();state.phase='finished';state.auction=null;save();render();}
+    else if(action==='confirm-reset'){closeModal();state=null;save();render();}
+  });
+  modal.addEventListener('click',event=>{if(event.target===modal)closeModal();});
+  document.addEventListener('keydown',event=>{if(event.key==='Escape')closeModal();});
+  if('serviceWorker' in navigator && window.location.protocol==='https:'){
+    window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=pwa-20261018-portraits31-1').catch(()=>{}));
+  }
+  render();
+  </script>
+  <script src="./opmercato-custom-portraits.js?v=20261013-portraits-2"></script>
+  <script src="./mercato-upgrade.js?v=20261018-portraits31-1"></script>
+  <script src="./mercato-rules.js?v=20261016-v3-1"></script>
+  <script src="./mercato-art.js?v=20261017-no-emoji-flash"></script>
+  <script src="./mercato-features.js?v=20261017-art1"></script>
+  <script src="./mercato-card-premium.js?v=20261013-premium-2"></script>
+  <script src="./mercato-hud-21.js?v=20261016-v3-1"></script>
+  <script src="./mercato-v3-dice.js?v=20261016-v3-hd"></script>
+  <script src="./mercato-v3-local.js?v=20261017-morgans-reveal1"></script>
+  <script src="./mercato-smile-summary.js?v=20261016-smile2"></script>
+  <script src="./mercato-roster-summary.js?v=20261016-roster2"></script>
+  <script src="./mercato-history-21.js?v=20261013-op21-1"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script defer src="./mercato-online.js?v=20261017-morgans-reveal1"></script>
+</body>
+</html>

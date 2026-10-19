@@ -1,9 +1,9 @@
 // OPMercato: network-first app shell, offline fallback for classic local play.
 // Do not intercept Supabase's API, authentication or real-time WebSocket traffic.
-const CACHE = 'opmercato-shell-pwa-v51-20261018-portraits31-1';
+const CACHE = 'opmercato-shell-pwa-v52-20261019-two-games-1';
 const ROOT=new URL("./",self.location.href);
 const ASSETS=[
-  "./","./index.html","./manifest.webmanifest",
+  "./","./index.html","./classique.html","./opfc.html","./opfc-logo.webp","./manifest.webmanifest",
   "./opmercato-logo.jpg","./apple-touch-icon.png","./icon-192.png",
   "./icon-512.png","./icon-512-maskable.png","./favicon-32.png",
   "./characters-data.js","./portrait-map.js","./opmercato-custom-portraits.js",
@@ -27,7 +27,7 @@ self.addEventListener("fetch",event=>{
   if(req.method!=="GET")return;
   const url=new URL(req.url);
   if(url.origin!==self.location.origin||!url.pathname.startsWith(ROOT.pathname))return;
-  const cacheKey=req.mode==="navigate"?ROOT.href:req;
+  const cacheKey=req.mode==="navigate"?new URL(url.pathname,ROOT.origin).href:req;
   event.respondWith(
     fetch(req).then(response=>{
       if(response.ok){
