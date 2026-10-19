@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {createGame} from '../engine.mjs';
 import {matchPublicView} from '../match.mjs';
 import {CARD_BY_ID} from '../catalog.mjs';
+import {lineupDetails} from '../rules.mjs';
 import {renderMatchScreen,matchTurnOwner,matchRequiresPrivacy,dispatchOpenMatch} from '../ui-match.mjs';
 import {isSetPieceKind,setPieceTurnOwner} from '../ui-set-piece.mjs';
 
@@ -97,6 +98,22 @@ test('Le tireur réel est annoncé avant les tactiques (gardien également dispo
   assert.equal((view.match(/class="match-duelist /g)||[]).length,2);
   assert.match(view,/match-duelist-position/);
   assert.match(view,/match-duelist-rating/);
+  if(kind==='penalty')assert.doesNotMatch(view,/class="receiver-card /);
+  else{
+   assert.match(view,/class="receiver-card /);
+   assert.match(view,/receiver-card-name/);
+   assert.match(view,/receiver-card-position/);
+   assert.match(view,/receiver-card-rating/);
+   assert.match(view,/receiver-portrait/);
+   const receiverId=s.match.action.actors.receiver.cardId;
+   const current=lineupDetails(s.teams.find(t=>t.club===s.match.action.attacker)).find(p=>p.cardId===receiverId);
+   assert.ok(view.includes('receiver-card-position">'+current.position+'</span>'));
+   assert.ok(view.includes('receiver-card-rating">NOTE '+current.rating+'</span>'));
+   assert.ok(view.indexOf('class="receiver-card ')<view.indexOf('class="match-choice-grid match-tactical-choices"'),
+    'La carte réception doit précéder les choix tactiques');
+   assert.match(view,new RegExp(CARD_BY_ID.get(receiverId).name));
+   if(kind==='free-kick')assert.match(view,/PARTENAIRE POTENTIEL À LA RÉCEPTION/);
+  }
   assert.equal(matchPublicView(s).match.action.choices,undefined);
  }
 });
@@ -120,6 +137,11 @@ test('Premier choix verrouillé : l’adversaire ne voit pas la décision préc�
   assert.match(unwrapped,/data-choice=/);
   assert.match(unwrapped,/match-tactical-choices/);
   assert.equal((unwrapped.match(/class="match-duelist /g)||[]).length,2);
+  if(kind==='penalty')assert.doesNotMatch(unwrapped,/class="receiver-card /);
+  else{
+   assert.match(unwrapped,/class="receiver-card /);
+   assert.ok(unwrapped.indexOf('class="receiver-card ')<unwrapped.indexOf('class="match-choice-grid match-tactical-choices"'));
+  }
   assertNoSecrets(s,covered);
   s=dispatchOpenMatch(s,'choose',{choice:defenseChoice[kind]});
   assert.equal(matchTurnOwner(s),null);
@@ -141,6 +163,10 @@ test('Corner : duel réussi, choix de tête puis vrai but du réceptionneur',()=
  assert.equal(s.match.action.stage,'corner-gesture-choice');
  assert.equal(matchTurnOwner(s),attacker);
  assert.match(renderMatchScreen(s),/Passe le téléphone/);
+ const aiming=renderMatchScreen(s,{uncovered:true});
+ assert.match(aiming,/JOUEUR À LA RÉCEPTION/);
+ assert.match(aiming,/receiver-portrait/);
+ assert.ok(aiming.indexOf('class="receiver-card ')<aiming.indexOf('class="match-choice-grid match-tactical-choices"'));
  s=dispatchOpenMatch(s,'choose',{choice:'TETE'});
  assert.equal(s.match.action.stage,'corner-finish-ready');
  assert.match(renderMatchScreen(s),/Résoudre la finition/);
