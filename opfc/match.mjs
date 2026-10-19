@@ -59,6 +59,7 @@ export function currentMatchMoment(state){
  */
 export function resolveMatchMoment(state,{outcome,scorerId=null}={}){
  if(state?.phase!=='match'||!state.match)fail('Aucune action à résoudre');
+ if(state.match.action)fail('Action tactique active : résolution directe interdite');
  if(!['stopped','miss','save','goal'].includes(outcome))fail('Résultat de séquence invalide');
  const event=current(state);if(!event)fail('Calendrier terminé');
  const s=clone(state),m=s.match,attack=event.attacker,defense=other(attack);
@@ -154,6 +155,26 @@ export function matchPublicView(state){
  if(view.match){
   delete view.match.schedule;
   view.match.currentMoment=currentMatchMoment(state);
+  // Liste blanche : ne jamais renvoyer au client les décisions secrètes,
+  // les tirages internes ni les probabilités avant confirmation des deux.
+  const privateAction=state.match.action;
+  if(privateAction){
+   const revealed=['duel-revealed','shot-attack-choice','shot-defense-choice',
+     'shot-ready','set-piece-pending'].includes(privateAction.stage);
+   view.match.action={
+    kind:privateAction.kind,index:privateAction.index,minute:privateAction.minute,
+    attacker:privateAction.attacker,defender:privateAction.defender,
+    context:privateAction.context,stage:privateAction.stage,
+    roles:privateAction.roles,
+    confirmed:{
+     attacker:privateAction.choices.attack!==null,
+     defender:privateAction.choices.defense!==null,
+     shooter:privateAction.choices.shot!==null,
+     keeper:privateAction.choices.keeper!==null
+    },
+    ...(revealed?{duel:privateAction.duel,shooterId:privateAction.shooterId}:{})
+   };
+  }
  }
  return view;
 }
