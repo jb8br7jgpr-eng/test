@@ -90,16 +90,54 @@ function history(s){
 }
 const introPanel=(title,desc,action,label)=>'<section class="panel match-stage"><span class="eyebrow">Tirs au but</span>'+
  '<h2>'+title+'</h2><p>'+desc+'</p>'+btn(action,label)+'</section>';
+/**
+ * Tableau visuel alimenté exclusivement par les tentatives officielles déjà
+ * enregistrées. Affiche toujours les cinq cases réglementaires, puis étend
+ * les deux lignes à chaque nouvelle série de mort subite. Les deux équipes
+ * conservent le même nombre de cases, même si une seule vient de tirer.
+ */
+export function renderShootoutTracker(s){
+ if(!s?.attempts||!s?.score)return '';
+ const countP=s.attempts.PSG.length,countO=s.attempts.OM.length;
+ const maxCount=Math.max(5,countP,countO);
+ const sudden=s.stage==='sudden-death'||maxCount>5;
+ const totalRounds=Math.max(countP,countO);
+ const round=s.phase==='finished'?Math.max(1,totalRounds):
+  Math.max(1,totalRounds+(countP===countO?1:0));
+ const stageLabel=sudden?'MORT SUBITE':round===1?'1re série de tirs':round+'e série de tirs';
+ const active=s.phase==='active';
+ const rows=['PSG','OM'].map(club=>{
+  const shots=s.attempts[club],score=s.score[club];
+  const boxes=Array.from({length:maxCount},(_,i)=>{
+   const attempt=shots[i];
+   const outcome=!attempt?'pending':attempt.scored?'goal':'fail';
+   const mark=!attempt?'·':attempt.scored?'✓':'✕';
+   const title=attempt?(attempt.scored?'But':attempt.result==='save'?'Arrêt':'Tir manqué'):
+    (active?'À venir':'Non tiré');
+   return (i===5?'<span class="shootout-marks-divider" aria-hidden="true"></span>':'')+
+    '<span class="shootout-mark shootout-mark--'+outcome+'" title="'+escape(title)+
+    '" aria-label="'+escape(club+', tir '+(i+1)+' : '+title)+'">'+mark+'</span>';
+  }).join('');
+  return '<div class="shootout-tracker-team '+club.toLowerCase()+'">'+
+   '<div class="shootout-tracker-identity"><strong>'+club+'</strong>'+
+   '<span class="shootout-tracker-goals">'+score+'</span></div>'+
+   '<div class="shootout-marks" role="group" aria-label="Tentatives de '+club+'">'+boxes+'</div>'+
+   '</div>';
+ }).join('');
+ return '<section class="panel shootout-tracker" aria-label="Suivi des tirs au but">'+
+  '<span class="eyebrow">⚽ Séance de tirs au but</span>'+
+  '<h3 class="'+(sudden?'shootout-stage-sudden':'shootout-stage-normal')+'">'+stageLabel+'</h3>'+
+  '<div class="shootout-tracker-teams">'+rows+'</div>'+
+  '<p class="shootout-tracker-legend">✓ But · ✕ Arrêt ou tir manqué · · '+
+  (active?'À venir':'Non tiré')+'</p></section>';
+}
 export function renderShootoutScreen(state,{uncovered=false}={}){
  if(state?.phase==='shootout-ready')return introPanel('Égalité après 90 minutes',
   'Lancer de pièce pour déterminer qui tire en premier. Les deux équipes conservent leur composition de la 90e minute.',
   'match-begin-shootout','Lancer la pièce et commencer la séance');
  const s=state?.match?.shootout;
  if(!s)return '';
- let out='<section class="panel shootout-board"><span class="eyebrow">Grandline Cup · Tirs au but</span>'+
-  '<div class="shootout-score"><span>PSG</span><strong>'+s.score.PSG+' – '+s.score.OM+'</strong><span>OM</span></div>'+
-  '<p class="caption">'+(s.stage==='sudden-death'?'Mort subite':'Cinq tirs initiaux')+
-  ' · '+s.attempts.PSG.length+' tir(s) PSG / '+s.attempts.OM.length+' tir(s) OM</p></section>';
+ let out=renderShootoutTracker(s);
  const last=state.match.shootoutLastResult;
  if(last){
   out+=renderShotResult(state,{
