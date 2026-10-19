@@ -143,13 +143,13 @@ test('La fonction Edge exige session, rôle, version CAS et renvoie uniquement u
  for(const phrase of [
   'authenticateRoom(row,token)',
   'applyOnlineMarketCommand(row.private_state,club,body.command)',
-  '.eq(\\'version\\',row.version)',
-  '.eq(\\'status\\',\\'ready\\')',
+  ".eq('version',row.version)",
+  ".eq('status','ready')",
   'expectedVersion',
   'onlineMarketPublicView(row.private_state,club)',
   "if(body.action==='market')return await mutate(body)",
   'game:transition.publicForActor'
  ])assert.ok(edge.includes(phrase),phrase);
- assert.doesNotMatch(edge,/response\\(\\{[^}]*private_state|response\\(row\\)/);
- assert.doesNotMatch(edge,/Math\\.random/);
+ assert.doesNotMatch(edge,/response\(\{[^}]*private_state|response\(row\)/);
+ assert.doesNotMatch(edge,/Math\.random/);
 });
