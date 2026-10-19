@@ -1,23 +1,33 @@
 # OPMercato FC — Le Classique de Grand Line
 
-## Statut sur `opfc-development`
-Jeu local : mercato, placements, match, mi-temps, coups de pied arrêtés, penalties, tirs au but, statistiques et victoire.
-50 personnages avec portraits WebP ; deux clubs et 7 joueurs par équipe.
-Jeu en ligne : protocole privé, autorité serveur pour toutes les phases, interface mobile raccordée aux commandes et synchronisation par salon à deux joueurs.
+## État sur `opfc-development`
 
-**Aucun déploiement public d'OPFC ni de backend OPFC.**
-La branche `main`, OPMercato classique, ARCHIPEL et leurs backends doivent rester inchangés sans accord explicite.
+Le **mode local** comprend : 50 personnages et portraits, mercato, enchères, terrains, compositions, actions, mi-temps, corners, coups francs, penalties, tirs au but et résultat final.
 
-## Tests
-- `node --test opfc/tests/*.test.mjs` : moteur, affichage public, confidentialité, concurrence, marché, compositions, match et fin.
-- `opfc/browser/mobile-preview.mjs` : parcours local sur Chrome aux largeurs iPhone.
-- `opfc/browser/online-dual-preview.mjs` : deux navigateurs mobiles et serveur simulé exécutant les transitions officielles, **sans backend réel**.
-- GitHub Actions : `opfc-regression.yml`, `opfc-engine-tests.yml`, `opfc-mobile-preview.yml`.
+Le **mode en ligne** comprend : salons privés à deux joueurs, enchères et compositions synchronisées, choix tactiques confidentiels, actions du match, mi-temps, tirs au but et écran final. L'interface iPhone est raccordée aux commandes serveur.
 
-## Étapes restantes
-1. Autorisation explicite et vérification du coût d'un projet Supabase **OPFC dédié**.
-2. Schéma SQL, limites de débit, déploiement Edge et configuration de l'URL dans `opfc/online-config.mjs`, uniquement dans le nouveau projet.
-3. Recette réelle à deux iPhone : reconnexion, réseau instable, interruptions, parties complètes et confidentialité.
-4. Accord explicite séparé avant déploiement du site / fusion sur `main`.
+### Backend dédié — opérationnel
 
-Voir `ONLINE_SETUP.md` pour le plan de mise en service.
+- Projet Supabase indépendant : `OPMercato FC`, `cihzwaxernachchpjktj` (Paris, `eu-west-3`).
+- Base `public.opfc_rooms`, RLS activé, aucun accès direct aux joueurs.
+- Fonction Edge `opfc-online` installée ; seuls les jetons individuels authentifient les salons et les commandes.
+- `opfc/online-config.mjs` pointe vers la véritable fonction de ce projet sur la branche de développement.
+- Un test **réel** via GitHub Actions a validé la création d'un salon, deux participants, une enchère, la lecture synchronisée, le rejet d'une version obsolète et d'un jeton invalide.
+
+**IMPORTANT : le site OPFC n'est toujours pas déployé publiquement.** La branche `main` et OPMercato classique restent inchangés. ARCHIPEL est en pause, pas supprimé. Ne pas modifier les backends de ces jeux.
+
+## Vérification
+
+- `node --test opfc/tests/*.test.mjs` : moteur, vues publiques et choix privés, interactions locales/réseau.
+- `opfc/browser/mobile-preview.mjs` : parcours complet du mode local sur iPhone simulé.
+- `opfc/browser/online-dual-preview.mjs` : deux navigateurs iPhone connectés à un serveur simulé reproduisant les transitions officielles.
+- `opfc/browser/real-edge-smoke.mjs` : test HTTP d'intégration contre le **vrai** backend OPFC, exécuté par `.github/workflows/opfc-real-edge-smoke.yml`.
+
+## Restant avant publication
+
+1. Ajouter des limites de débit / protections anti-abus aux points d'entrée anonymes `create` et `join`.
+2. Tester un match complet sur le **vrai** serveur avec deux téléphones physiques, y compris perte de réseau, reconnexion et confidentialité.
+3. Valider visuellement les deux modes dans leur version publique.
+4. Obtenir le feu vert **séparé** de l'utilisateur avant fusion ou déploiement du site.
+
+Voir `ONLINE_SETUP.md` pour la configuration du service.
