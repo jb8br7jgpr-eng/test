@@ -1,0 +1,70 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync,existsSync} from 'node:fs';
+import {fileURLToPath} from 'node:url';
+import {execFileSync} from 'node:child_process';
+
+test('La page OPFC charge son propre CSS et son propre module, sans modifier la page classique',()=>{
+ const root=new URL('../../opfc.html',import.meta.url);
+ const html=readFileSync(root,'utf8');
+ assert.match(html,/opfc\/ui\.css/);
+ assert.match(html,/opfc\/ui\.mjs/);
+ assert.match(html,/viewport-fit=cover/);
+ assert.match(html,/id="opfc-app"/);
+ assert.doesNotMatch(html,/classique\.html.*<script/);
+});
+test('Module interface et modèle valides pour Node et navigateur (syntaxe)',()=>{
+ for(const p of ['../ui.mjs','../ui-model.mjs']){
+  const full=fileURLToPath(new URL(p,import.meta.url));
+  assert.ok(existsSync(full));
+  execFileSync(process.execPath,['--check',full]);
+ }
+ const css=readFileSync(new URL('../ui.css',import.meta.url),'utf8');
+ assert.match(css,/safe-area-inset-top/);
+ assert.match(css,/\.slot-field/);
+ assert.match(css,/\.player-card/);
+ assert.match(css,/\.modal-backdrop/);
+ assert.match(css,/@media/);
+});
+test('L’interface démarre sans erreur, gère le choix du club et lance un mercato réel',async()=>{
+ const callbacks={},cache=new Map(),root={innerHTML:'',addEventListener:(type,fn)=>{callbacks[type]=fn;}};
+ globalThis.document={getElementById:id=>id==='opfc-app'?root:null};
+ globalThis.localStorage={getItem:key=>cache.get(key)??null,setItem:(key,value)=>cache.set(key,value),removeItem:key=>cache.delete(key)};
+ await import('../ui.mjs');
+ assert.match(root.innerHTML,/La Grandline Cup/);
+ assert.match(root.innerHTML,/Mode en ligne · en préparation/);
+ const press=(action,extra={})=>{
+  const btn={dataset:{action,...extra},disabled:false};
+  callbacks.click({target:{closest:()=>btn}});
+ };
+ press('club',{club:'OM'});
+ assert.match(root.innerHTML,/club-option om active/);
+ press('start');
+ assert.match(root.innerHTML,/Place au mercato/);
+ const stored=JSON.parse(cache.get('opfc-v08-dev-local'));
+ assert.equal(stored.state.phase,'mercato');
+ assert.equal(stored.firstClub,'OM');
+ assert.equal(stored.state.teams[0].club,'OM');
+ assert.equal(stored.state.teams.length,2);
+ press('dismiss');
+ assert.match(root.innerHTML,/Mercato des légendes/);
+ assert.match(root.innerHTML,/slot-field/);
+ assert.match(root.innerHTML,/Haki Observation/);
+ assert.match(root.innerHTML,/Haki des Rois/);
+ const first=stored.state.auction.turn;
+ press('observation');
+ assert.match(root.innerHTML,/Secret de l’Observation/);
+ assert.equal(JSON.parse(cache.get('opfc-v08-dev-local')).state.teams.find(t=>t.club===first).hakis.observation,true);
+ press('observation-view');
+ assert.match(root.innerHTML,/Les cinq prochaines cartes/);
+ press('dismiss');
+ assert.match(root.innerHTML,/Mercato des légendes/);
+ press('new-confirm');
+ assert.match(root.innerHTML,/Nouvelle partie/);
+ press('dismiss');
+ press('new-confirm');
+ press('reset');
+ assert.match(root.innerHTML,/La Grandline Cup/);
+ assert.equal(cache.has('opfc-v08-dev-local'),false);
+ delete globalThis.document;delete globalThis.localStorage;
+});
