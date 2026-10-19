@@ -474,6 +474,115 @@ try{
  await page.locator('.match-stage').first().screenshot({path:shots+'/06b-duel-joueurs.png',animations:'disabled'});
  console.log('PASS duel iPhone : action orange, attaque visible, deux postes/notes et 14 joueurs sous le terrain');
 
+ // Duels -> tir : simulation réelle, sans raccourci sur la mécanique.
+ const savedDuel=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),key);
+ const shotStage=await page.evaluate(async({key,savedDuel})=>{
+  const {dispatchOpenMatch}=await import('/opfc/ui-match.mjs');
+  const {calculateOpenPlay}=await import('/opfc/open-play.mjs');
+  let s=structuredClone(savedDuel.game);
+  const a=s.match.action;
+  const calculation=calculateOpenPlay({...a.roles,attack:'COMBINER',defense:'PRESSER',
+   chemistryBonus:a.chemistryBonus});
+  const chance=(calculation.foulProbability+calculation.successProbability/2)/100;
+  s=dispatchOpenMatch(s,'reveal-duel',{rng:()=>chance});
+  if(s.match.action.duel.outcome.outcome!=='chance')throw Error('Occasion de tir non obtenue');
+  s=dispatchOpenMatch(s,'continue-duel');
+  const holder=structuredClone(savedDuel);holder.game=s;
+  localStorage.setItem(key,JSON.stringify(holder));
+  return s.match.action.stage;
+ },{key,savedDuel});
+ assert.equal(shotStage,'shot-attack-choice');
+ await page.reload({waitUntil:'domcontentloaded'});
+ assert.equal(await page.locator('.match-handover').count(),1,
+  'Le téléphone doit être transmis sans exposer les choix secrets');
+ await press('match-uncover');
+ assert.equal(await page.locator('.match-shot-faceoff .match-duelist').count(),2,
+  'Tireur et gardien visibles dès le choix du tir');
+ assert.equal(await page.locator('.match-shot-faceoff .match-duelist-rating').count(),2);
+ assert.equal(await page.locator('.match-tactical-choices .match-choice').count(),3);
+ assert.equal(await page.locator('.match-tactical-choices [data-choice="PLACEE"]').count(),1);
+ // Comparaison CSS objective aux cases des enchères originelles du jeu.
+ const choiceStyles=await page.evaluate(()=>{
+  const wrapper=document.createElement('div');wrapper.style.cssText='position:absolute;left:-9999px';
+  wrapper.innerHTML='<section class="opfc-auction"><div class="offers"><button class="offer-btn">'+
+   '<b>5 000 000 ฿</b><small>Offre minimale</small></button></div></section>';
+  document.body.append(wrapper);
+  const a=getComputedStyle(wrapper.querySelector('.offer-btn'));
+  const b=getComputedStyle(document.querySelector('.match-tactical-choices .match-choice'));
+  const css=['backgroundColor','borderTopColor','borderTopLeftRadius','paddingTop',
+   'minHeight','fontFamily'].map(prop=>({prop,original:a[prop],tactique:b[prop]}));
+  wrapper.remove();
+  const rect=[...document.querySelectorAll('.match-tactical-choices .match-choice')].map(el=>{
+   const r=el.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top};
+  });
+  return {css,rect};
+ });
+ assert.deepEqual(choiceStyles.css.filter(x=>x.original!==x.tactique),[],
+  'Les cases tactiques ne reprennent pas le style des enchères originales');
+ assert.equal(choiceStyles.rect.length,3);
+ assert.ok(Math.abs(choiceStyles.rect[0].top-choiceStyles.rect[1].top)<2);
+ assert.ok(choiceStyles.rect[0].right<=choiceStyles.rect[1].left+2);
+ assert.ok(choiceStyles.rect[2].top>choiceStyles.rect[0].top);
+ await checkMobileLayout('choix tactique tireur');
+ await page.locator('.match-stage').first().screenshot({
+  path:shots+'/08a-tir-choix-offensif.png',animations:'disabled'});
+ await press('match-choose','[data-choice="PLACEE"]');
+ assert.equal(await page.locator('.match-handover').count(),1);
+ await press('match-uncover');
+ assert.equal(await page.locator('.match-shot-faceoff .match-duelist').count(),2);
+ assert.equal(await page.locator('.match-tactical-choices [data-choice="LIGNE"]').count(),1);
+ assert.doesNotMatch(await page.locator('.match-stage').first().textContent(),/Frappe placée/,
+  'Le choix du tireur doit rester secret pour le gardien');
+ await checkMobileLayout('choix tactique gardien');
+ await page.locator('.match-stage').first().screenshot({
+  path:shots+'/08b-tir-choix-gardien.png',animations:'disabled'});
+ await press('match-choose','[data-choice="LIGNE"]');
+ assert.equal(await page.locator('.match-shot-faceoff').count(),1);
+ assert.equal(await page.locator('.match-tactical-choices').count(),0);
+ assert.equal(await page.locator('[data-action="match-reveal-shot"]').count(),1);
+ await page.locator('.match-stage').first().screenshot({
+  path:shots+'/08c-tir-choix-confirmes.png',animations:'disabled'});
+ const shotReady=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),key);
+ const shotOutcomes=await page.evaluate(async({shotReady})=>{
+  const {dispatchOpenMatch}=await import('/opfc/ui-match.mjs');
+  const results={};
+  for(let n=0;n<100;n++){
+   const s=dispatchOpenMatch(shotReady.game,'reveal-shot',{rng:()=>n/100});
+   const outcome=s.match.lastResult?.outcome;
+   if(outcome&&!(outcome in results))results[outcome]=n/100;
+   if(['goal','save','miss'].every(x=>x in results))break;
+  }
+  return results;
+ },{shotReady});
+ assert.deepEqual(Object.keys(shotOutcomes).sort(),['goal','miss','save'],
+  'Les trois issues de frappe doivent être accessibles avec le moteur officiel');
+ const colorValues={};
+ for(const [outcome,title] of [
+  ['goal','BUUUUT !'],['save','ARRÊT DU GARDIEN !'],['miss','TIR MANQUÉ !']
+ ]){
+  await page.evaluate(async({key,shotReady,draw})=>{
+   const {dispatchOpenMatch}=await import('/opfc/ui-match.mjs');
+   const saved=structuredClone(shotReady);
+   saved.game=dispatchOpenMatch(saved.game,'reveal-shot',{rng:()=>draw});
+   localStorage.setItem(key,JSON.stringify(saved));
+  },{key,shotReady,draw:shotOutcomes[outcome]});
+  await page.reload({waitUntil:'domcontentloaded'});
+  const resultPanel=page.locator('.shot-result-'+outcome);
+  await resultPanel.waitFor();
+  assert.equal((await page.locator('.shot-result-headline').textContent()).trim(),title);
+  assert.equal(await resultPanel.locator('.shot-result-portrait img').count(),1);
+  assert.equal(await resultPanel.locator('.shot-result-score').count(),1);
+  assert.equal(await page.locator('.match-team-overview .team-chip').count(),14);
+  assert.equal(await page.locator('[data-action="match-continue-result"]').count(),1);
+  colorValues[outcome]=await resultPanel.evaluate(el=>getComputedStyle(el).borderTopColor);
+  await checkMobileLayout('résultat frappe '+outcome);
+  await resultPanel.screenshot({
+   path:shots+'/09-resultat-'+outcome+'.png',animations:'disabled'});
+ }
+ assert.equal(new Set(Object.values(colorValues)).size,3,
+  'Les trois annonces de tir doivent avoir des couleurs clairement distinctes');
+ console.log('PASS tirs iPhone : cases identiques aux enchères, deux portraits, confidentialité et 3 résultats officiels');
+
  // Parcourt la simulation moteur en conditions identiques aux tests unitaires.
  const result=await page.evaluate(async({key,prepared})=>{
   const {kickoffMatch,resolveMatchMoment,continueMatch,resumeMatch}=await import('/opfc/match.mjs');
