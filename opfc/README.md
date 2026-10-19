@@ -1,54 +1,23 @@
-# OPMercato FC — état de développement
+# OPMercato FC — Le Classique de Grand Line
 
-Branche exclusive : `opfc-development`. **Ne jamais fusionner dans `main`,
-déployer GitHub Pages ni modifier le serveur d’OPMercato classique sans accord
-explicite.**
+## Statut sur `opfc-development`
+Jeu local : mercato, placements, match, mi-temps, coups de pied arrêtés, penalties, tirs au but, statistiques et victoire.
+50 personnages avec portraits WebP ; deux clubs et 7 joueurs par équipe.
+Jeu en ligne : protocole privé, autorité serveur pour toutes les phases, interface mobile raccordée aux commandes et synchronisation par salon à deux joueurs.
 
-## Jeu local
+**Aucun déploiement public d'OPFC ni de backend OPFC.**
+La branche `main`, OPMercato classique, ARCHIPEL et leurs backends doivent rester inchangés sans accord explicite.
 
-Le mercato des 50 personnages, les formations 7 contre 7, les enchères,
-les Hakis du marché, le terrain iPhone, les actions de jeu ouvert, les duels,
-les coups de pied arrêtés, les tirs, la mi-temps, les tirs au but, la mort
-subite et la feuille de match sont développés.
+## Tests
+- `node --test opfc/tests/*.test.mjs` : moteur, affichage public, confidentialité, concurrence, marché, compositions, match et fin.
+- `opfc/browser/mobile-preview.mjs` : parcours local sur Chrome aux largeurs iPhone.
+- `opfc/browser/online-dual-preview.mjs` : deux navigateurs mobiles et serveur simulé exécutant les transitions officielles, **sans backend réel**.
+- GitHub Actions : `opfc-regression.yml`, `opfc-engine-tests.yml`, `opfc-mobile-preview.yml`.
 
-Les écrans validés incluent les portraits officiels WebP, les boutons tactiques
-centrés avec emojis, les deux portraits de frappe, la carte de réception
-compacte, le bilan à 45', les indicateurs de tirs au but et la page de victoire.
+## Étapes restantes
+1. Autorisation explicite et vérification du coût d'un projet Supabase **OPFC dédié**.
+2. Schéma SQL, limites de débit, déploiement Edge et configuration de l'URL dans `opfc/online-config.mjs`, uniquement dans le nouveau projet.
+3. Recette réelle à deux iPhone : reconnexion, réseau instable, interruptions, parties complètes et confidentialité.
+4. Accord explicite séparé avant déploiement du site / fusion sur `main`.
 
-## Mode en ligne — code prêt pour recette, PAS déployé
-
-- Salon privé à six caractères, session séparée par iPhone, reconnexion.
-- Serveur prévu : `supabase/functions/opfc-online/index.ts`.
-- Base dédiée à préparer : `supabase/opfc-schema.sql`.
-- Autorités serveurs : `online-market.mjs`, `online-lineup.mjs`,
-  `online-match.mjs`, `online-set-piece.mjs`, `online-endgame.mjs`.
-- Vues client publiques : `ui-online.mjs`, `ui-online-game.mjs`,
-  `online-client.mjs`. Boutons reliés aux commandes serveur, sans accès
-  client aux tirages futurs ni aux choix secrets adverses.
-- `online-config.mjs` reste intentionnellement vide tant que le projet
-  Supabase **OPFC distinct** n'est pas créé et approuvé.
-- Aucun test réseau sur deux vrais téléphones n'a encore été effectué.
-
-## Recette automatisée
-
-- Tests Node : `node --test opfc/tests/*.test.mjs`.
-- Chrome mobile : `node opfc/browser/mobile-preview.mjs` — vues locales.
-- Double iPhone simulé : `node opfc/browser/online-dual-preview.mjs` —
-  parcours authentiques dans deux navigateurs séparés, serveur simulé
-  intercepté par Playwright ; **aucun appel à Supabase réel**.
-- Les trois workflows GitHub contrôlent moteur, régressions et vues iPhone.
-
-## Avant toute publication
-
-1. Faire passer tous les workflows sur le dernier commit.
-2. Autorisation expresse pour créer/configurer un projet Supabase OPFC
-   indépendant, en indiquant d'abord les frais éventuels.
-3. Appliquer le schéma et déployer uniquement `opfc-online` dans ce projet,
-   avec ses protections anti-abus / CORS / secrets.
-4. Renseigner l'URL publique du projet OPFC, publier la page OPFC seulement
-   après accord explicite, et tester deux vrais iPhone de bout en bout.
-5. Conserver `main` et le jeu OPMercato classique inchangés tant que
-   l'utilisateur n'approuve pas une procédure de publication sécurisée.
-
-Le trophée HD illustré de la Grandline Cup sera créé ultérieurement,
-après les premiers essais publics du jeu.
+Voir `ONLINE_SETUP.md` pour le plan de mise en service.
