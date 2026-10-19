@@ -167,7 +167,7 @@ test('Suivi visuel TAB : cinq cases par équipe, progression réelle et confiden
  assert.doesNotMatch(empty,/shotDirection|keeperDirection|probabilities|sudden-death/);
  const before=structuredClone(s.match.shootout);
  const covered=renderMatchScreen(s);
- assert.match(covered,/class="shootout-tracker"/);
+ assert.match(covered,/class="panel shootout-tracker"/);
  assert.doesNotMatch(covered,/data-choice="GAUCHE"/);
  assert.deepEqual(s.match.shootout,before,'Le rendu doit rester purement cosmétique');
  s=kick(s,.999999);
