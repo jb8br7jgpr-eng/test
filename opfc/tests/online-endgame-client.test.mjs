@@ -122,7 +122,9 @@ test('Deux téléphones réalisent 12 tirs, directions cachées, mort subite et 
   await defend.refreshRoom();
   assert.equal(defend.game.match.shootout.confirmed.shooter,true);
   assert.equal(defend.game.match.shootout.confirmed.keeper,false);
-  assert.equal(JSON.stringify(defend.game.match.shootout).includes('"shotDirection":"GAUCHE"'),false);
+  assert.equal(Object.hasOwn(defend.game.match.shootout,'shotDirection'),false);
+  assert.equal(defend.game.match.shootout.timeline.length,n);
+  assert.equal(defend.game.match.shootout.lastResult,null);
   await defend.matchAction({type:'shootout-choose',choice:'DROITE'});
   await attack.refreshRoom();
   assert.equal(attack.game.match.shootout.confirmed.keeper,true);
