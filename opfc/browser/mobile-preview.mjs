@@ -179,6 +179,19 @@ try{
  await page.locator('.placement-intro').waitFor();
  assert.equal(await page.locator('.slot-field').getAttribute('data-top-club'),recruiter);
  assert.ok(await placeCurrent(),'Le placement doit reprendre après rechargement');
+ // Tester explicitement l'autre club : PSG et OM doivent chacun voir uniquement LEUR moitié.
+ const otherRecruiter=recruiter==='PSG'?'OM':'PSG';
+ const secondStarter=(await game()).auction.turn;
+ await press('bid-quick');
+ if(secondStarter!==otherRecruiter)await press('bid-quick');
+ await press('pass');
+ assert.equal((await game()).lastResult.winner,otherRecruiter,'Le second recrutement doit être gagné par l’autre club');
+ await press('close');
+ assert.equal(await page.locator('.slot-field').getAttribute('data-top-club'),otherRecruiter);
+ assert.equal(await page.locator('.slot-field-single .field-half').count(),1);
+ await checkMobileLayout('placement de '+otherRecruiter);
+ await take('03b-placement-autre-club');
+ assert.ok(await placeCurrent(),'Le second club doit aussi pouvoir placer sa recrue');
  for(let iteration=0;await phase()==='mercato';iteration++){
   assert.ok(iteration<130,'Le mercato reste bloqué');
   const s=await game();
