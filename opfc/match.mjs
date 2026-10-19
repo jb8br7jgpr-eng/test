@@ -159,21 +159,41 @@ export function matchPublicView(state){
   // les tirages internes ni les probabilités avant confirmation des deux.
   const privateAction=state.match.action;
   if(privateAction){
-   const revealed=['duel-revealed','shot-attack-choice','shot-defense-choice',
-     'shot-ready','set-piece-pending'].includes(privateAction.stage);
-   view.match.action={
-    kind:privateAction.kind,index:privateAction.index,minute:privateAction.minute,
-    attacker:privateAction.attacker,defender:privateAction.defender,
-    context:privateAction.context,stage:privateAction.stage,
-    roles:privateAction.roles,
-    confirmed:{
-     attacker:privateAction.choices.attack!==null,
-     defender:privateAction.choices.defense!==null,
-     shooter:privateAction.choices.shot!==null,
-     keeper:privateAction.choices.keeper!==null
-    },
-    ...(revealed?{duel:privateAction.duel,shooterId:privateAction.shooterId}:{})
-   };
+   if(privateAction.kind==='open'){
+    const revealed=['duel-revealed','shot-attack-choice','shot-defense-choice',
+      'shot-ready','set-piece-pending'].includes(privateAction.stage);
+    view.match.action={
+     kind:'open',index:privateAction.index,minute:privateAction.minute,
+     attacker:privateAction.attacker,defender:privateAction.defender,
+     context:privateAction.context,stage:privateAction.stage,
+     roles:privateAction.roles,
+     confirmed:{
+      attacker:privateAction.choices.attack!==null,
+      defender:privateAction.choices.defense!==null,
+      shooter:privateAction.choices.shot!==null,
+      keeper:privateAction.choices.keeper!==null
+     },
+     ...(revealed?{duel:privateAction.duel,shooterId:privateAction.shooterId}:{})
+    };
+   }else{
+    // Phases arrêtées : transmettre uniquement les acteurs annoncés, jamais
+    // les directions/zones/stratégies secrètes avant révélation des deux.
+    const revealed=['duel-revealed','corner-gesture-choice',
+      'corner-finish-ready'].includes(privateAction.stage);
+    view.match.action={
+     kind:privateAction.kind,source:privateAction.source,
+     index:privateAction.index,minute:privateAction.minute,
+     attacker:privateAction.attacker,defender:privateAction.defender,
+     originContext:privateAction.originContext,stage:privateAction.stage,
+     actors:privateAction.actors,keeper:privateAction.keeper,
+     confirmed:{
+      attacker:privateAction.choices.attack!==null,
+      defender:privateAction.choices.defense!==null,
+      gesture:privateAction.choices.gesture!==null
+     },
+     ...(revealed?{duel:privateAction.duel}:{})
+    };
+   }
   }
  }
  return view;
