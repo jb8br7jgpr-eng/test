@@ -1,0 +1,50 @@
+name: Mettre a jour les icones OPMercato
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "opmercato-app-icon-source.webp"
+      - ".github/workflows/opmercato-icon-build.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  build-icons:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Pillow
+        run: python -m pip install --quiet Pillow
+      - name: Generate iPhone and web application icons
+        run: |
+          python - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          im=Image.open('opmercato-app-icon-source.webp').convert('RGB')
+          icons=[
+              ('apple-touch-icon.png',180),
+              ('icon-192.png',192),
+              ('icon-512.png',512),
+              ('icon-512-maskable.png',512),
+              ('favicon-32.png',32)
+          ]
+          for filename,size in icons:
+              dst=im.resize((size,size),Image.Resampling.LANCZOS)
+              dst.save(filename,format='PNG',optimize=True)
+              assert Image.open(filename).size==(size,size)
+              print(f'{filename}: {size}x{size}')
+          PY
+      - name: Commit generated icons
+        run: |
+          git add apple-touch-icon.png icon-192.png icon-512.png icon-512-maskable.png favicon-32.png
+          if git diff --cached --quiet; then
+            echo "Icons already up to date."
+            exit 0
+          fi
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "Actualiser les icones iPhone et PWA OPMercato"
+          git push origin HEAD:main

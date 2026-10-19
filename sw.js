@@ -1,6 +1,6 @@
 // OPMercato: network-first app shell, offline fallback for classic local play.
 // Do not intercept Supabase's API, authentication or real-time WebSocket traffic.
-const CACHE = 'opmercato-shell-pwa-v52-20261019-two-games-1';
+const CACHE = 'opmercato-shell-pwa-v53-20261019-iphone-icon';
 const ROOT=new URL("./",self.location.href);
 const ASSETS=[
   "./","./index.html","./classique.html","./opfc.html","./opfc-logo.webp","./manifest.webmanifest",
