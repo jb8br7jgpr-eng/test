@@ -1,37 +1,42 @@
-# OPFC — Préparation du mode en ligne (10A4)
+# OPFC — Serveur privé indépendant (Supabase)
 
-**Statut :** interface et moteur réseau développés sur `opfc-development` et contrôlés avec deux navigateurs mobiles et un serveur simulé. **Aucun backend OPFC réel n'a encore été créé, configuré ou déployé. Aucun déploiement du site.**
+## Installation effective
+
+- Organisation existante, projet **OPMercato FC** : `cihzwaxernachchpjktj`
+- Région : Paris (`eu-west-3`)
+- État Supabase : actif
+- Schéma appliqué : `opfc_initial_private_rooms` depuis `supabase/opfc-schema.sql`
+- Table : `public.opfc_rooms` — état maître privé, jetons hachés, version atomique, date d'expiration
+- Sécurité : RLS active, droits publics / anon / authenticated révoqués, accès `service_role` exclusivement côté fonction Edge
+- Fonction Edge déployée : `opfc-online`, avec `verify_jwt=false` pour autoriser création et jonction anonymes, puis contrôle strict des jetons pour les actions privées.
+- Origine navigateur acceptée : `https://jb8br7jgpr-eng.github.io`
+- URL utilisée par le client de développement : `https://cihzwaxernachchpjktj.supabase.co/functions/v1/opfc-online`
+- Aucune clé `service_role` n'est présente sur GitHub ni dans le JavaScript du navigateur.
+
+La fonction embarque les vingt modules `opfc/*.mjs` nécessaires au moteur. Lors d'une mise à jour du serveur, reprendre les sources du commit approuvé, actualiser si nécessaire `supabase/functions/opfc-online/edge-deploy-pack.json` (qui conserve deux modules en copie) et redéployer seulement dans ce projet.
+
+### Test de connexion réel
+
+La CI `OPFC - smoke test Supabase réel` a réussi :
+1. Création d'un salon, génération du code et du jeton privé.
+2. Connexion d'un deuxième joueur et relecture des deux vues filtrées.
+3. Première enchère officielle, application de `expectedVersion` et synchronisation entre les joueurs.
+4. Rejet d'une commande sur une ancienne version (409) et d'un jeton non autorisé (403).
+5. Aucun paquet secret de personnages ni jeton adverse exposé dans les réponses publiques.
+
+Ce test HTTP prouve que le backend répond, mais **pas encore** qu'un match complet a été joué sur deux vrais iPhone.
 
 ## Isolation impérative
 
-OPFC doit avoir son propre projet Supabase. Ne pas modifier les deux projets existants :
-- OPMercato classique : `nezqupnhcqwuewfilioa`
-- ARCHIPEL : `lrmgtnbxujdvswaykyxi`
+- **OPMercato classique** : projet `nezqupnhcqwuewfilioa`, reste actif et inchangé.
+- **ARCHIPEL** : projet `lrmgtnbxujdvswaykyxi`, mis en pause, non supprimé.
+- **OPFC** : seul projet sur lequel les migrations et fonctions OPFC peuvent s'exécuter.
 
-Les modifications de `main`, de `classique.html` ou des fonctions/SQL de ces deux projets restent interdites sans accord explicite.
+## À faire avant le lancement public
 
-## Code déjà prêt dans le dépôt
+1. Mettre en place une limitation de fréquence anti-abus pour les créations et entrées anonymes. Le contrôle CORS ne suffit pas contre les scripts non navigateurs.
+2. Recette en réseau réel à deux iPhone, du premier mercato jusqu'au résultat final, avec rechargement, pauses et déconnexions.
+3. Évaluer les performances et les éventuels quotas de l'offre gratuite Supabase.
+4. Publication sur GitHub Pages et éventuelle fusion avec `main` **uniquement après autorisation explicite**.
 
-- `opfc/online-protocol.mjs` : salons à code privé, jetons aléatoires de 256 bits, association jeton → club, rôle et vues filtrées.
-- `opfc/online-market.mjs`, `online-lineup.mjs`, `online-match.mjs`, `online-set-piece.mjs`, `online-endgame.mjs` : transitions serveur officielles pour mercato, formations, matchs, phases arrêtées, mi-temps, TAB, finale.
-- `opfc/online-client.mjs` : appels HTTP avec version, conservation locale du jeton personnel et actualisation.
-- `opfc/ui.mjs`, `ui-online.mjs`, `ui-online-game.mjs` : interface de salon et jeu connecté sur iPhone, boutons réservés à chaque club.
-- `supabase/opfc-schema.sql` : table `opfc_rooms`, état privé, hash des jetons, verrou de version, RLS et expiration.
-- `supabase/functions/opfc-online/index.ts` : fonction Edge `opfc-online` avec POST `create`, `join`, `get`, `market`, `lineup`, `match` ; CORS pour l'origine du site et les en-têtes `Content-Type` / `Cache-Control`.
-
-### Garanties
-Les requêtes de jeu identifient le club via **son jeton personnel**, jamais un club fourni par le client. Le serveur conserve le paquet, les choix privés et le programme des séquences. La vue envoyée aux iPhone exclut les données secrètes. Les écritures concurrentes utilisent `expectedVersion` et répondent 409 si l'état a changé.
-
-Les tests unitaires et tests iPhone sur serveur simulé ne remplacent PAS un test réseau réel : aucune assertion de disponibilité réelle du backend n'est faite.
-
-## Conditions avant mise en service
-
-1. Demander l'accord de l'utilisateur sur **l'organisation Supabase**, le coût présenté par Supabase et la création d'un **troisième projet indépendant**.
-2. Créer uniquement le projet approuvé, de préférence dans la région française `eu-west-3`, puis appliquer `supabase/opfc-schema.sql` uniquement dans ce projet.
-3. Prévoir des limites de débit et une protection anti-abus sur les actions anonymes `create` et `join`. Le contrôle d'origine CORS n'est pas une protection suffisante contre les scripts hors navigateur.
-4. Déployer exclusivement la fonction `opfc-online` du projet approuvé avec configuration adaptée aux actions anonymes. Conserver les clés `service_role` exclusivement côté serveur et définir `OPFC_ALLOWED_ORIGIN=https://jb8br7jgpr-eng.github.io`.
-5. Renseigner dans `opfc/online-config.mjs` **uniquement** l'URL Edge OPFC et, si nécessaire, la clé **publique**, jamais une clé de service.
-6. Vérifier le fonctionnement sur **deux vrais iPhone**, avec un réseau réel : entrée de salon, mercato complet, compositions, choix secrets, résultat final, reconnexion, sécurité, erreurs et conflits.
-7. Obtenir une **autorisation distincte** avant fusion sur `main` et déploiement du site accessible au public.
-
-La création d'un projet ou l'application de SQL et de fonctions sont des actions distantes, interdites sans autorisation expresse.
+**Le backend a été installé avec accord. Le site local/en ligne n'a pas encore été rendu public.**
