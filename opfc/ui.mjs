@@ -283,12 +283,16 @@ function teamPanel(team){
  '</h2><small>'+u.rosterCount+'/7</small></div><div class="team-tools"><span class="caption">Entente '+u.entente+'/10</span>'+
  '<select data-action="formation" data-club="'+team.club+'" aria-label="Formation '+team.club+'" '+(editable?'':'disabled')+'>'+
  options(FORMATION_NAMES,u.formation)+'</select></div><div class="chip-row">'+
- (team.roster.length?team.roster.map(id=>{
+ (team.roster.length?[...team.roster].sort((a,b)=>{
+  const rank={GAR:0,DEF:1,MIL:2,ATT:3};
+  return (rank[card(a)?.position]??4)-(rank[card(b)?.position]??4);
+ }).map(id=>{
   const info=card(id),chosen=selection?.club===team.club&&selection?.id===id;
   const selectable=editable ||(placement&&placement.club===team.club&&placement.cardId===id);
+  const listAction=selectable?'pick':'inspect-player';
   const ranks={DIA:'Diamant',OR:'Or',ARG:'Argent',BRZ:'Bronze'};
-  return '<button class="team-chip '+(chosen?'selected':'')+'" data-action="pick" data-club="'+team.club+
-  '" data-card="'+esc(id)+'" aria-pressed="'+!!chosen+'" '+(selectable?'':'disabled')+'>'+
+  return '<button class="team-chip '+(chosen?'selected':'')+'" data-action="'+listAction+'" data-club="'+team.club+
+  '" data-card="'+esc(id)+'" aria-pressed="'+!!chosen+'" aria-label="'+esc(info.name)+' · '+info.position+' · note '+info.rating+' · '+ranks[info.rarity]+'">'+
   renderCharacterPortrait(id,'chip-portrait')+
   '<span class="team-chip-content"><span class="team-chip-name">'+esc(info.name)+'</span>'+
   '<span class="team-chip-details"><span class="roster-position">'+info.position+'</span>'+
@@ -521,6 +525,11 @@ function clicked(button){
   modal={type:'observation-pass',club:current,ids:r.peek};save();render();return;
  }
  if(action==='inspect'){modal={type:'card',id:game.auction.cardId};render();return;}
+ if(action==='inspect-player'){
+  const id=button.dataset.card;
+  if(!game?.teams.some(t=>t.roster.includes(id)))throw Error('Joueur absent des effectifs');
+  modal={type:'card',id};render();return;
+ }
  if(action==='pick'){
   const id=button.dataset.card;
   if(placement&&(club!==placement.club||id!==placement.cardId))
