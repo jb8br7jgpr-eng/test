@@ -56,7 +56,11 @@ test('L’interface démarre sans erreur, gère le choix du club et lance un mer
  assert.equal(stored.game.teams.length,2);
  press('close');
  assert.match(root.innerHTML,/Mercato des légendes/);
+ assert.doesNotMatch(root.innerHTML,/slot-field/);
+ assert.match(root.innerHTML,/Voir les équipes/);
+ press('toggle-teams');
  assert.match(root.innerHTML,/slot-field/);
+ press('toggle-teams');
  assert.match(root.innerHTML,/Observation/);
  assert.match(root.innerHTML,/Haki des Rois/);
  const first=stored.game.auction.turn;
@@ -80,12 +84,15 @@ test('L’interface démarre sans erreur, gère le choix du club et lance un mer
  assert.equal(now.teams.find(t=>t.club===first).roster.length,1);
  assert.match(root.innerHTML,/Recrue remportée/);
  press('close');
- press('pick',{club:first,card:purchased});
+ assert.match(root.innerHTML,/placement-intro/);
+ assert.match(root.innerHTML,new RegExp('data-top-club="'+first+'"'));
  assert.match(root.innerHTML,/Sélection/);
  press('slot',{club:first,slot:'1'});
  now=JSON.parse(cache.get('opfc-v08-local-dev')).game;
  assert.equal(now.teams.find(t=>t.club===first).slots[1],purchased);
  assert.match(root.innerHTML,/slot-field/);
+ press('continue-placement');
+ assert.doesNotMatch(root.innerHTML,/placement-intro/);
  press('confirm-reset');
  assert.match(root.innerHTML,/Nouvelle partie/);
  press('close');
