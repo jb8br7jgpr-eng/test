@@ -234,7 +234,7 @@ try{
  assert.equal(await c.locator('[data-type="choose"]').count(),3);
  assert.equal(await c.locator('.receiver-card .receiver-portrait img').count(),1);
  await fit(c,'corner réseau');
- await c.locator('.online-match-stage').screenshot({
+ await c.locator('.match-stage').first().screenshot({
   path:dest+'/16d-en-ligne-corner.png',animations:'disabled'});
  console.log('PASS OPFC online 2 iPhone : réceptionneur compact et choix d’un corner');
 
