@@ -128,7 +128,13 @@ try{
  assert.match(await page.locator('.opfc-auction .extra-power').innerText(),/👁 Observation/);
  assert.equal(await page.locator('.opfc-auction .custom-bid').count(),1);
  await take('01-mercato');
+ // Pour cette capture seulement, retirer temporairement le positionnement sticky du HUD
+ // qui recouvrirait le titre lorsqu'on capture un élément plus bas dans la page.
+ await page.locator('.huds').evaluate(el=>{el.style.position='static';});
  await page.locator('.opfc-auction').screenshot({path:shots+'/01b-encheres-classiques.png',animations:'disabled'});
+ await page.locator('.huds').evaluate(el=>{el.style.position='';});
+ assert.equal(await page.locator('.opfc-auction .notice').evaluate(el=>getComputedStyle(el).borderTopStyle),'none',
+  'La notice doit être sans encadré, comme dans OPMercato classique');
  // Comparaison CSS avec les éléments d'origine du véritable OPMercato classique.
  // Le HTML original est chargé sur une page séparée, sans modifier ses sources.
  const classicPage=await context.newPage();
