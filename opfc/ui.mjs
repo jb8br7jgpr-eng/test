@@ -181,7 +181,7 @@ function sale(){
  '<strong class="bid-amount">'+(a.highestBid?fullBerrys(a.highestBid):'Aucune')+'</strong></div>'+
  '<div class="bid-leader">'+(a.highestClub?'En tête : <strong>'+esc(clubName(a.highestClub))+'</strong>':
  'Mise de départ : <strong>'+fullBerrys(min)+'</strong>')+'</div></div>'+
- '<div class="turn-banner"><div><span>AU TOUR DE</span><strong>'+esc(clubName(a.turn))+'</strong></div>'+
+ '<div class="turn-banner"><div><span>AU TOUR DE</span><strong>'+esc(a.turn)+'</strong></div>'+
  '<div class="turn-budget">'+fullBerrys(t.budget)+'<br><span>disponibles</span></div></div>'+
  (a.king?'<p class="warning-copy">👑 Haki des Rois activé par '+a.king.holder+'.</p>':'')+
  (a.solo?'<div class="solo-auction"><p>Une seule équipe recrute encore : prix fixe '+fullBerrys(5)+'.</p>'+
