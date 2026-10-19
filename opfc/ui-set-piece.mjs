@@ -5,6 +5,7 @@
  */
 import {CARD_BY_ID} from './catalog.mjs';
 import {renderCharacterPortrait} from './ui-portraits.mjs';
+import {matchTacticalChoices,renderShotFaceOff} from './ui-match-widgets.mjs';
 import {beginSetPieceAction,selectSetPieceTaker,lockSetPieceChoice,
  revealSetPieceDuel,continueSetPieceDuel,finishSetPieceCorner,revealSetPiecePenalty} from './set-piece-actions.mjs';
 const escape=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -25,9 +26,13 @@ const options={
   defense:[['GAUCHE','Plonger à gauche'],['CENTRE','Rester au centre'],['DROITE','Plonger à droite']]
  }
 };
-const choices=arr=>'<div class="match-choice-grid">'+arr.map(([id,label])=>
- '<button class="btn match-choice" data-action="match-choose" data-choice="'+id+'">'+escape(label)+'</button>').join('')+'</div>';
+const choices=arr=>matchTacticalChoices(arr);
 const section=(heading,content,tag='Phase arrêtée')=>'<section class="panel match-stage"><span class="eyebrow">'+escape(tag)+'</span><h2>'+heading+'</h2>'+content+'</section>';
+const actorsFaceOff=(state,a,{receiver=false}={})=>renderShotFaceOff(state,{
+ shooterId:receiver?a.actors?.receiver?.cardId:a.actors?.taker?.cardId,
+ keeperId:a.keeper?.cardId,attacker:a.attacker,defender:a.defender,
+ shooterLabel:receiver?'Finisseur':'Tireur',keeperLabel:'Gardien'
+});
 const handover=club=>'<section class="match-handover" aria-label="Transmission confidentielle"><div class="match-handover-icon">🔒</div>'+
  '<h2>À toi de jouer, '+club+'</h2><p>Passe le téléphone au joueur '+club+'. La décision adverse reste secrète.</p>'+
  button('match-uncover','Je suis '+club+' · afficher mon choix')+'</section>';
@@ -66,8 +71,9 @@ export function renderSetPieceAction(state,viewAction,{uncovered=false}={}){
   const ids=team?.slots??[];
   return section('Choisis le tireur · '+a.attacker,
    '<p class="muted">Un des sept titulaires, gardien compris. Son choix sera annoncé avant les tactiques.</p>'+
-   '<div class="match-choice-grid">'+ids.map(id=>
-    '<button class="btn match-choice setpiece-taker" data-action="match-taker" data-card="'+escape(id)+'">'+renderCharacterPortrait(id,'setpiece-taker-portrait')+escape(name(id))+'</button>').join('')+'</div>',type);
+   '<div class="match-choice-grid match-tactical-choices">'+ids.map(id=>
+    '<button type="button" class="btn match-choice setpiece-taker" data-action="match-taker" data-card="'+escape(id)+'">'+
+    renderCharacterPortrait(id,'setpiece-taker-portrait')+'<strong>'+escape(name(id))+'</strong></button>').join('')+'</div>',type);
  }
  if(a.stage==='attack-choice'||a.stage==='defense-choice'){
   const attacking=a.stage==='attack-choice',role=attacking?'attack':'defense';
@@ -75,14 +81,13 @@ export function renderSetPieceAction(state,viewAction,{uncovered=false}={}){
   const actor=attacking?a.attacker:a.defender;
   return section(desc+' · '+actor,
    '<p class="muted">La tactique choisie est verrouillée. Elle reste invisible pour l’adversaire.</p>'+
-   '<div class="setpiece-feature">'+renderCharacterPortrait(a.actors?.taker?.cardId,'setpiece-player-feature')+
-   '<p class="caption">Tireur : '+escape(name(a.actors?.taker?.cardId))+
-   (a.actors?.receiver?' · Réceptionneur : '+escape(name(a.actors.receiver.cardId)):'')+'</p></div>'+
+   actorsFaceOff(state,a)+
+   (a.actors?.receiver?'<p class="caption setpiece-receiver">Réceptionneur : '+escape(name(a.actors.receiver.cardId))+'</p>':'')+
    choices(options[a.kind][role]),type);
  }
  if(a.stage==='duel-ready')
   return section('Les deux tactiques sont verrouillées',
-   '<p>Les choix de zones et de défense seront dévoilés ensemble.</p>'+
+   actorsFaceOff(state,a)+'<p>Les choix de zones et de défense seront dévoilés ensemble.</p>'+
    button('match-reveal-setpiece-duel','Révéler et résoudre le duel'),type);
  if(a.stage==='duel-revealed'){
   const r=a.duel,success=r?.outcome?.outcome==='chance';
@@ -96,15 +101,16 @@ export function renderSetPieceAction(state,viewAction,{uncovered=false}={}){
  }
  if(a.stage==='corner-gesture-choice')
   return section('Choisis la finition du corner · '+a.attacker,
+   actorsFaceOff(state,a,{receiver:true})+
    '<p>Le réceptionneur '+escape(name(a.actors?.receiver?.cardId))+' frappe. Aucun second choix du gardien.</p>'+
    choices([['TETE','Tête'],['VOLEE','Reprise de volée'],['RETOURNE','Retourné acrobatique']]),type);
  if(a.stage==='corner-finish-ready')
   return section('Le geste est choisi',
-   '<p>Le gardien tente maintenant d’arrêter la frappe.</p>'+
+   actorsFaceOff(state,a,{receiver:true})+'<p>Le gardien tente maintenant d’arrêter la frappe.</p>'+
    button('match-finish-corner','Résoudre la finition'),type);
  if(a.stage==='penalty-ready')
   return section('Les deux directions sont verrouillées',
-   '<p>Le penalty sera résolu en une seule fois, sans rebond.</p>'+
+   actorsFaceOff(state,a)+'<p>Le penalty sera résolu en une seule fois, sans rebond.</p>'+
    button('match-reveal-penalty','Révéler les directions et tirer'),type);
  return section('Action en attente', '<p>La phase arrêtée va continuer.</p>',type);
 }
