@@ -100,8 +100,11 @@ function restore(){try{
    pitchClub=['PSG','OM'].includes(data.pitchClub)?data.pitchClub:null;
    const p=data.placement;
    if(p&&['mercato','lineup'].includes(game.phase)&&
-     game.teams.some(t=>t.club===p.club&&t.roster.includes(p.cardId)))
+     game.teams.some(t=>t.club===p.club&&t.roster.includes(p.cardId))){
      placement={club:p.club,cardId:p.cardId};
+     selection={club:p.club,id:p.cardId};
+     pitchClub=p.club;
+   }
   }
 }catch{}}
 const shell=()=>'<header class="topbar"><a class="brand-mini" href="./"><img src="./opfc-logo-hd.PNG" alt="" width="35" height="35"> OPMERCATO FC</a><a class="small-link" href="./">← Accueil</a></header>';
@@ -319,6 +322,9 @@ function render(){
 function change(fn){
  const before=game,next=fn(before),end=before.phase==='mercato'?currentAuctionEnding(before,next):null;
  game=next;error='';selection=null;
+ if(teamsVisible&&!placement&&before.phase==='mercato'&&next.phase==='mercato'&&
+   before.auction?.turn!==next.auction?.turn)
+   pitchClub=next.auction.turn;
  if(end){
   modal={type:'sale',result:end};
   if(end.winner){placement={club:end.winner,cardId:end.cardId};pitchClub=end.winner;}
@@ -441,6 +447,7 @@ function clicked(button){
  if(action==='slot'){
   if(placement&&club!==placement.club)throw Error('La recrue doit rejoindre le terrain de son propre club.');
   const slot=Number(button.dataset.slot),team=game.teams.find(t=>t.club===club);
+  pitchClub=club;
   if(selection){
    if(selection.club!==club)throw Error('Tu ne peux déplacer que tes propres joueurs.');
    const id=selection.id;change(s=>place(s,club,id,slot));
