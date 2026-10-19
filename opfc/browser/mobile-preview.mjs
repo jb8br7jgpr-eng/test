@@ -49,6 +49,44 @@ async function checkMobileLayout(label){
  await page.setViewportSize({width:390,height:844});
 }
 const press=async (action,extra='')=>page.locator('[data-action="'+action+'"]'+extra).first().click();
+/** Vérification géométrique sur les trois largeurs iPhone : un petit emoji,
+ * un libellé centré et aucune collision, même pour les choix longs. */
+async function checkCenteredTacticalChoices(label,expected=3){
+ for(const width of [375,390,430]){
+  await page.setViewportSize({width,height:844});
+  const buttons=await page.locator('.match-tactical-choices>.match-choice').evaluateAll(elements=>elements.map(button=>{
+   const ico=button.querySelector('.match-choice-emoji'),title=button.querySelector('strong');
+   const a=button.getBoundingClientRect(),i=ico?.getBoundingClientRect(),t=title?.getBoundingClientRect();
+   const css=getComputedStyle(button);
+   return {
+    choice:button.dataset.choice??button.dataset.card,
+    title:title?.textContent,
+    emoji:ico?.textContent,ariaHidden:ico?.getAttribute('aria-hidden'),
+    justify:css.justifyContent,align:css.alignItems,txtAlign:css.textAlign,
+    centerX:a.left+a.width/2,iconCenterX:i?i.left+i.width/2:null,
+    textCenterX:t?t.left+t.width/2:null,
+    emojiBottom:i?.bottom,textTop:t?.top,
+    overflows:button.scrollWidth>button.clientWidth+1
+   };
+  }));
+  assert.equal(buttons.length,expected,'Nombre de choix incorrect : '+label);
+  for(const b of buttons){
+   assert.ok(b.emoji?.length>0,'Emoji manquant '+label+' · '+b.choice);
+   assert.equal(b.ariaHidden,'true','Emoji décoratif annoncé au lecteur d’écran');
+   assert.ok(b.title?.trim(),'Texte manquant '+label);
+   assert.equal(b.justify,'center','Bouton non centré verticalement '+label);
+   assert.equal(b.align,'center','Bouton non centré horizontalement '+label);
+   assert.equal(b.txtAlign,'center','Texte non centré '+label);
+   assert.ok(Math.abs(b.textCenterX-b.centerX)<=3,
+    'Texte décentré '+label+' '+width+' '+JSON.stringify(b));
+   assert.ok(Math.abs(b.iconCenterX-b.centerX)<=3,
+    'Emoji décentré '+label+' '+width+' '+JSON.stringify(b));
+   assert.ok(b.emojiBottom<=b.textTop+2,'Emoji superposé au texte '+label);
+   assert.equal(b.overflows,false,'Débordement interne '+label+' '+width);
+  }
+ }
+ await page.setViewportSize({width:390,height:844});
+}
 try{
  await page.goto(origin+'/opfc.html',{waitUntil:'domcontentloaded'});
  await page.locator('[data-action="start"]').waitFor();
