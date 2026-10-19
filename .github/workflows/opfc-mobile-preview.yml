@@ -32,6 +32,10 @@ jobs:
         env:
           CHROME_BINARY: ${{ steps.chrome.outputs.chrome-path }}
         run: node opfc/browser/mobile-preview.mjs
+      - name: Tester les deux iPhone sur le même salon (serveur simulé isolé)
+        env:
+          CHROME_BINARY: ${{ steps.chrome.outputs.chrome-path }}
+        run: node opfc/browser/online-dual-preview.mjs
       - name: Conserver les captures et les erreurs éventuelles
         if: always()
         uses: actions/upload-artifact@v4
