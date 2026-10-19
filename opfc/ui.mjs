@@ -194,8 +194,8 @@ function sale(){
  '<button type="button" class="btn-ghost" data-action="bid" '+(context.canBid?'':'disabled')+
  '>Enchérir</button></div></div>'+
  (context.canKings?'<button class="haki-btn" type="button" data-action="kings">'+
- '👑 Haki des Rois — activer le pouvoir !'+
- '<small>Une fois par partie, uniquement au premier tour de l’enchère.</small></button>':'')+
+ '👑 Haki des Rois'+
+ '<small>Activer · une fois par partie, uniquement en premier.</small></button>':'')+
  '<div class="extra-powers"><button class="extra-power" type="button" data-action="observation" '+
  (context.canObserve?'':'disabled')+'>👁 Observation<small>'+observationHint+'</small></button></div>'+
  '<button class="pass-btn" type="button" data-action="pass" '+(context.canPass?'':'disabled')+
