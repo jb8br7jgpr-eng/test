@@ -126,11 +126,20 @@ function portrait(info){
 }
 function cardPanel(info){
  const rar={DIA:'DIAMANT',OR:'OR',ARG:'ARGENT',BRZ:'BRONZE'};
- return '<div class="player-card rarity-'+info.rarity+'">'+portrait(info)+'<div>'+
- '<div class="rating-strip"><span class="rating-value">'+info.rating+'</span><span class="rarity">'+rar[info.rarity]+'</span></div>'+
- '<h2 class="player-name">'+esc(info.name)+'</h2><div class="player-meta">'+esc(info.group)+' · '+info.position+'</div>'+
- '<div class="stats-grid">'+cardStats(info).map(s=>'<div class="stat"><span>'+s.label+'</span><strong>'+s.value+'</strong></div>').join('')+
- '</div></div></div>';
+ const stats=cardStats(info).map(s=>{
+  const grade=s.value>=90?'elite':s.value>=80?'high':s.value>=70?'medium':s.value>=60?'low':'weak';
+  return '<div class="stat opfc-stat"><span>'+s.label+'</span>'+
+   '<strong class="opfc-stat-value stat-'+grade+'">'+s.value+'</strong></div>';
+ }).join('');
+ return '<div class="player-card opfc-player-card rarity-'+info.rarity+'">'+portrait(info)+
+ '<div class="player-identity-row"><div class="player-identity">'+
+ '<h2 class="player-name">'+esc(info.name)+'</h2>'+
+ '<div class="player-meta">'+esc(info.group)+'</div></div>'+
+ '<div class="player-labels"><span class="player-position position-'+info.position.toLowerCase()+'">'+info.position+'</span>'+
+ '<span class="player-tier tier-'+info.rarity.toLowerCase()+'">'+rar[info.rarity]+'</span></div></div>'+
+ '<div class="player-rating"><span>NOTE GLOBALE</span>'+
+ '<strong class="rating-value">'+info.rating+'</strong></div>'+
+ '<div class="stats-grid">'+stats+'</div></div>';
 }
 function sale(){
  const context=uiAuction(game),a=context.auction,t=context.team;
