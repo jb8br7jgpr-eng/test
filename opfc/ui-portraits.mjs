@@ -1,24 +1,65 @@
-/** Portraits OPFC : réutilisation des visuels déjà publiés pour OPMercato classique.
- * Les noms sans fichier associé conservent un monogramme propre (jamais de photo erronée).
- * Les URLs sont relatives à opfc.html, qui est situé à la racine du site.
+/** Portraits OFFICIELS OPFC : les 50 fichiers WebP originaux du dossier
+ * portraits_opfc/, copiés sans modification depuis main vers opfc-development.
+ * Mapping explicite 1:1 entre les IDs officiels et les noms de fichiers.
+ * Le monogramme n'est qu'un secours si une image ne charge pas.
  */
 import {CARD_BY_ID} from './catalog.mjs';
 
 const PORTRAIT_NAMES=Object.freeze({
- 'luffy':'luffy','zoro':'zoro','nami':'nami','usopp':'usopp',
- 'sanji':'sanji','chopper':'chopper','robin':'robin','franky':'franky',
- 'brook':'brook','jinbe':'jinbe','shanks':'shanks','kaido':'kaido',
- 'big-mom':'bigmom','barbe-noire':'teach','barbe-blanche':'whitebeard',
- 'marco':'marco','katakuri':'katakuri','crocodile':'crocodile',
- 'doflamingo':'doflamingo','bartholomew-kuma':'kuma',
- 'trafalgar-law':'law','eustass-kidd':'kid',
- 'gol-d-roger':'roger','rocks-d-xebec':'rocks','silvers-rayleigh':'rayleigh',
- 'kozuki-oden':'oden','portgas-d-ace':'ace','sabo':'sabo',
- 'monkey-d-garp':'garp','koby':'coby'
+ 'luffy':'luffy',
+ 'zoro':'zoro',
+ 'nami':'nami',
+ 'usopp':'usopp',
+ 'sanji':'sanji',
+ 'chopper':'chopper',
+ 'robin':'robin',
+ 'franky':'franky',
+ 'brook':'brook',
+ 'jinbe':'jinbe',
+ 'shanks':'shanks',
+ 'kaido':'kaido',
+ 'big-mom':'bigmom',
+ 'barbe-noire':'barbenoire',
+ 'barbe-blanche':'barbeblanche',
+ 'baggy':'baggy',
+ 'marco':'marco',
+ 'ben-beckman':'beckman',
+ 'king':'king',
+ 'katakuri':'katakuri',
+ 'crocodile':'crocodile',
+ 'hancock':'hancock',
+ 'gecko-moria':'moria',
+ 'doflamingo':'doflamingo',
+ 'bartholomew-kuma':'kuma',
+ 'mihawk':'mihawk',
+ 'trafalgar-law':'law',
+ 'eustass-kidd':'kid',
+ 'killer':'killer',
+ 'bonney':'bonney',
+ 'urouge':'urouge',
+ 'x-drake':'drake',
+ 'capone-bege':'bege',
+ 'scratchmen-apoo':'apoo',
+ 'basil-hawkins':'hawkins',
+ 'gol-d-roger':'roger',
+ 'rocks-d-xebec':'rocks',
+ 'monkey-d-dragon':'dragon',
+ 'silvers-rayleigh':'rayleigh',
+ 'kozuki-oden':'oden',
+ 'portgas-d-ace':'ace',
+ 'sabo':'sabo',
+ 'yamato':'yamato',
+ 'loki':'loki',
+ 'monkey-d-garp':'garp',
+ 'akainu':'akainu',
+ 'aokiji':'aokiji',
+ 'kizaru':'kizaru',
+ 'koby':'koby',
+ 'rob-lucci':'lucci'
 });
 const h=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export const portraitFile=id=>PORTRAIT_NAMES[id]?
- './custom-portraits/op-portrait-'+PORTRAIT_NAMES[id]+'.jpg':null;
+ './portraits_opfc/'+PORTRAIT_NAMES[id]+'.webp':null;
 export const availablePortraitIds=Object.freeze(Object.keys(PORTRAIT_NAMES));
 export function renderCharacterPortrait(id,cssClass=''){
  const card=CARD_BY_ID.get(id);
