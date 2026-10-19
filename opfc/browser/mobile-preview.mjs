@@ -539,6 +539,7 @@ try{
  assert.equal(await page.locator('.match-shot-faceoff .match-duelist-rating').count(),2);
  assert.equal(await page.locator('.match-tactical-choices .match-choice').count(),3);
  assert.equal(await page.locator('.match-tactical-choices [data-choice="PLACEE"]').count(),1);
+ await checkCenteredTacticalChoices('frappe du tireur');
  // Comparaison CSS objective aux cases des enchères originelles du jeu.
  const choiceStyles=await page.evaluate(()=>{
   const wrapper=document.createElement('div');wrapper.style.cssText='position:absolute;left:-9999px';
@@ -569,6 +570,7 @@ try{
  await press('match-uncover');
  assert.equal(await page.locator('.match-shot-faceoff .match-duelist').count(),2);
  assert.equal(await page.locator('.match-tactical-choices [data-choice="LIGNE"]').count(),1);
+ await checkCenteredTacticalChoices('réaction du gardien');
  assert.doesNotMatch(await page.locator('.match-stage').first().textContent(),/Frappe placée/,
   'Le choix du tireur doit rester secret pour le gardien');
  await checkMobileLayout('choix tactique gardien');
@@ -648,6 +650,7 @@ try{
    'Le tireur et le gardien doivent être visibles sur '+kind);
   assert.equal(await page.locator('.match-tactical-choices .match-choice').count(),3);
   assert.equal(await page.locator('.match-shot-faceoff img').count(),2);
+  await checkCenteredTacticalChoices('phase arrêtée '+kind);
   await checkMobileLayout('choix tactiques '+kind);
   await page.locator('.match-stage').first().screenshot({
    path:shots+'/10-choix-'+kind+'.png',animations:'disabled'});
@@ -671,6 +674,7 @@ try{
  await press('match-uncover');
  assert.equal(await page.locator('.match-shot-faceoff .match-duelist').count(),2);
  assert.equal(await page.locator('.match-tactical-choices .match-choice').count(),3);
+ await checkCenteredTacticalChoices('séance tirs au but · tireur');
  await checkMobileLayout('choix des tirs au but');
  await page.locator('.match-stage').first().screenshot({
   path:shots+'/11a-tab-tireur.png',animations:'disabled'});
@@ -679,6 +683,7 @@ try{
  await press('match-uncover');
  assert.equal(await page.locator('.match-shot-faceoff .match-duelist').count(),2);
  assert.equal(await page.locator('.match-tactical-choices .match-choice').count(),3);
+ await checkCenteredTacticalChoices('séance tirs au but · gardien');
  await page.locator('.match-stage').first().screenshot({
   path:shots+'/11b-tab-gardien.png',animations:'disabled'});
  await press('match-shootout-choose','[data-choice="DROITE"]');
