@@ -379,7 +379,7 @@ try{
   borderColor:getComputedStyle(el).borderTopColor
  }));
  assert.match(matchType.text,/BONNE OCCASION/);
- assert.equal(await page.locator('.match-team-overview .pitch-player:disabled').count(),14);
+ assert.equal(await page.locator('.match-team-overview .pitch-player[data-action="inspect-player"]').count(),14);
  const heading=await page.locator('.match-duel-ready-heading').evaluate(el=>({
   size:parseFloat(getComputedStyle(el).fontSize)
  }));
