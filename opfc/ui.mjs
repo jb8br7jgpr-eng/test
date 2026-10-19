@@ -7,6 +7,7 @@ import {FORMATION_NAMES,uiAuction,uiTeam,uiRoster,cardStats,currentAuctionEnding
 import {renderMatchScreen,matchRequiresPrivacy,dispatchOpenMatch} from './ui-match.mjs';
 import {createOnlineClient} from './online-client.mjs';
 import {renderOnlineLobby,normalizeJoinCodeInput} from './ui-online.mjs';
+import {renderOnlineGame} from './ui-online-game.mjs';
 
 const app=document.getElementById('opfc-app');
 const STORAGE='opfc-v08-local-dev';
@@ -17,19 +18,20 @@ let placement=null,teamsVisible=false,pitchClub=null;
 // L'état du salon et sa session sont séparés de la sauvegarde du mode local.
 const onlineClient=createOnlineClient();
 let onlineVisible=false,onlineStage='choose',onlineJoinCode='',onlineBusy=false,onlineError='';
+let onlineSelection=null,onlineOwnClubScope=null,onlinePitchClub=null;
 let onlineTimer=null;
 function stopOnlinePoll(){
  if(onlineTimer!==null){clearInterval(onlineTimer);onlineTimer=null;}
 }
 function syncOnlinePoll(){
- if(!onlineVisible||!onlineClient.configured||onlineClient.room?.status!=='waiting'){
+ if(!onlineVisible||!onlineClient.configured||!onlineClient.hasSession){
   stopOnlinePoll();return;
  }
  if(onlineTimer!==null)return;
  onlineTimer=setInterval(()=>{
   if(onlineBusy||document.hidden)return;
-  void refreshOnlineRoom();
- },4000);
+  void refreshOnlineRoom(true);
+ },3500);
  onlineTimer?.unref?.(); // uniquement utile sous Node lors des tests.
 }
 async function onlineMutation(fn){
@@ -44,10 +46,124 @@ async function onlineMutation(fn){
   onlineBusy=false;render();syncOnlinePoll();
  }
 }
-async function refreshOnlineRoom(){
+async function refreshOnlineRoom(silent=false){
+ if(silent){
+  if(onlineBusy)return;
+  try{
+   const version=onlineClient.room?.version;
+   const before=onlineClient.room?.status;
+   await onlineClient.refreshRoom();
+   if(onlineStage!=='room'||onlineClient.room?.version!==version||
+      onlineClient.room?.status!==before){
+    onlineStage='room';onlineError='';render();
+   }
+  }catch(err){
+   const message=err?.message??'Actualisation impossible';
+   if(onlineError!==message){onlineError=message;render();}
+  }
+  return;
+ }
  await onlineMutation(async()=>{
   await onlineClient.refreshRoom();
   onlineStage='room';
+ });
+}
+// Commandes envoyées uniquement au serveur authentifié : jamais d'appel
+// à bid(), place() ou dispatchOpenMatch() depuis un écran en ligne.
+async function onlineGameClicked(action,button){
+ const snapshot=onlineClient.game,room=onlineClient.room;
+ if(!snapshot||!room||room.status!=='ready')throw Error('Le deuxième téléphone doit rejoindre la partie');
+ const club=room.myClub;
+ if(action==='pitch-view'){
+  onlinePitchClub=button.dataset.club;onlineSelection=null;render();return;
+ }
+ if(action==='pick'){
+  if(!['lineup','half-time'].includes(snapshot.phase)||button.dataset.club!==club)
+   throw Error('Tu ne peux sélectionner que ton club');
+  const cardId=button.dataset.card;
+  if(!snapshot.teams.find(t=>t.club===club).roster.includes(cardId))
+   throw Error('Carte absente de ton équipe');
+  onlineSelection=onlineSelection?.id===cardId?null:{club,id:cardId};
+  render();return;
+ }
+ if(action==='inspect-player'){
+  const id=button.dataset.card;
+  if(snapshot.teams.some(t=>t.roster.includes(id))){
+   onlineError='Fiche : '+(CARD_BY_ID.get(id)?.name??id);render();
+  }
+  return;
+ }
+ if(action==='slot'){
+  if(button.dataset.club!==club||!['lineup','half-time'].includes(snapshot.phase))
+   throw Error('Tu ne peux placer que tes propres joueurs');
+  const slot=Number(button.dataset.slot);
+  if(!onlineSelection||onlineSelection.club!==club){
+   const chosen=snapshot.teams.find(t=>t.club===club).slots[slot];
+   if(chosen){onlineSelection={club,id:chosen};render();}
+   return;
+  }
+  await onlineMutation(async()=>{
+   const command={type:snapshot.phase==='half-time'?'half-place':'place',
+    cardId:onlineSelection.id,slot};
+   if(snapshot.phase==='half-time')await onlineClient.matchAction(command);
+   else await onlineClient.lineupAction(command);
+   onlineSelection=null;
+  });return;
+ }
+ if(action==='ready'){
+  if(button.dataset.club!==club)throw Error('Seul ton club peut être validé');
+  await onlineMutation(async()=>{
+   if(snapshot.phase==='half-time')await onlineClient.matchAction({type:'half-ready'});
+   else await onlineClient.lineupAction({type:'ready'});
+   onlineSelection=null;
+  });return;
+ }
+ if(action==='online-bid'||action==='online-bid-custom'){
+  if(snapshot.phase!=='mercato'||snapshot.auction?.turn!==club)
+   throw Error('Ce n’est pas ton tour d’enchérir');
+  let amount;
+  if(action==='online-bid')amount=Number(button.dataset.amount);
+  else{
+   const raw=String(document.getElementById('online-bid-value')?.value??'');
+   const digits=raw.replace(/[\s\u00a0\u202f]/g,'');
+   if(!/^\d+$/.test(digits)||Number(digits)%1000000!==0)
+    throw Error('Offre en Berrys : multiple entier de 1 000 000 ฿ requis');
+   amount=Number(digits)/1000000;
+  }
+  if(!Number.isSafeInteger(amount))throw Error('Offre invalide');
+  await onlineMutation(()=>onlineClient.marketAction({type:'bid',amount}));return;
+ }
+ if(action==='online-choice'){
+  const type=button.dataset.shootout==='true'?'shootout-choose':'choose';
+  const choice=button.dataset.choice;
+  await onlineMutation(()=>onlineClient.matchAction({type,choice}));return;
+ }
+ if(action==='online-game'){
+  const type=button.dataset.type;
+  const command={type};
+  if(type==='select-taker')command.takerId=button.dataset.card;
+  if(type==='choose'||type==='shootout-choose')command.choice=button.dataset.choice;
+  await onlineMutation(async()=>{
+   if(snapshot.phase==='mercato')
+    await onlineClient.marketAction(command);
+   else if(['lineup','kickoff-ready'].includes(snapshot.phase))
+    await onlineClient.lineupAction(command);
+   else await onlineClient.matchAction(command);
+  });return;
+ }
+ throw Error('Cette action n’est pas disponible en ligne');
+}
+async function onlineFormationChanged(target){
+ const snapshot=onlineClient.game,club=onlineClient.room?.myClub;
+ if(!snapshot||target.dataset.club!==club||
+  !['lineup','half-time'].includes(snapshot.phase))
+  throw Error('Tu ne peux modifier que ta propre formation');
+ if(!FORMATION_NAMES.includes(target.value))throw Error('Formation inconnue');
+ const phase=snapshot.phase,formation=target.value;
+ await onlineMutation(async()=>{
+  if(phase==='half-time')await onlineClient.matchAction({type:'half-formation',formation});
+  else await onlineClient.lineupAction({type:'formation',formation});
+  onlineSelection=null;
  });
 }
 async function onlineClicked(action,button){
@@ -84,7 +200,7 @@ async function onlineClicked(action,button){
   });return;
  }
  if(action==='online-refresh'){await refreshOnlineRoom();return;}
- throw Error('Commande de salon inconnue');
+ await onlineGameClicked(action,button);
 }
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const card=id=>CARD_BY_ID.get(id);
@@ -227,7 +343,9 @@ function pitchMarkings(){
 }
 function fieldHalf(team,top){
  const u=uiTeam(team),positions=top?['GAR','DEF','MIL','ATT']:['ATT','MIL','DEF','GAR'];
- const spectator=!['mercato','lineup','half-time'].includes(game.phase);
+ const spectator=onlineOwnClubScope!==null?
+  (team.club!==onlineOwnClubScope||!['lineup','half-time'].includes(game.phase)):
+  !['mercato','lineup','half-time'].includes(game.phase);
  const label='<div class="field-label '+team.club.toLowerCase()+'"><span>'+team.club+' · '+u.formation+
  '</span><span>'+u.entente+'/10 entente</span></div>';
  const lines=positions.map(pos=>'<div class="pitch-row pitch-row-'+pos.toLowerCase()+'">'+
@@ -278,7 +396,8 @@ function pitch(){
 }
 function teamPanel(team){
  const u=uiTeam(team),roster=uiRoster(team);
- const editable=['mercato','lineup','half-time'].includes(game.phase)&&!team.ready&&
+ const editable=(onlineOwnClubScope===null?['mercato','lineup','half-time'].includes(game.phase):
+  ['lineup','half-time'].includes(game.phase)&&team.club===onlineOwnClubScope)&&!team.ready&&
  (!placement||placement.club===team.club)&&!placement;
  const ranks={DIA:'Diamant',OR:'Or',ARG:'Argent',BRZ:'Bronze'};
  return '<section class="panel team-panel"><div class="team-heading"><h2>'+
@@ -396,12 +515,40 @@ function popup(){
  btn('reset','Effacer la partie','negative full')+btn('close','Annuler','ghost full');
  return '<div class="modal-backdrop"><section class="modal" role="dialog" aria-modal="true">'+body+'</section></div>';
 }
+function onlineTeams(){
+ const snapshot=onlineClient.game;
+ if(!snapshot)return '';
+ const prior={game,selection,pitchClub,placement,own:onlineOwnClubScope};
+ try{
+  game=snapshot;
+  selection=onlineSelection;
+  pitchClub=onlinePitchClub??onlineClient.room?.myClub??'PSG';
+  placement=null;
+  onlineOwnClubScope=onlineClient.room?.myClub??null;
+  return '<section class="match-team-overview online-team-overview" aria-label="Terrain et effectifs du match">'+
+   '<div class="match-team-overview-heading"><span>⚽ TERRAIN ET COMPOSITIONS</span>'+
+   '<small>'+(['lineup','half-time'].includes(snapshot.phase)?
+    'Déplace uniquement les joueurs de ton équipe':'Effectifs des deux équipes')+'</small></div>'+
+   teams()+'</section>';
+ }finally{
+  game=prior.game;selection=prior.selection;pitchClub=prior.pitchClub;
+  placement=prior.placement;onlineOwnClubScope=prior.own;
+ }
+}
 function render(){
- app.innerHTML=(onlineVisible?shell()+renderOnlineLobby({
+ const showingGame=onlineVisible&&onlineStage==='room'&&
+  onlineClient.room?.status==='ready'&&!!onlineClient.game;
+ const snapshot=showingGame?onlineClient.game:null;
+ const onlineDisplay=shell()+renderOnlineLobby({
   stage:onlineStage,firstClub,room:onlineClient.room,
   configured:onlineClient.configured,joinCode:onlineJoinCode,
-  busy:onlineBusy,error:onlineError
- }):game?(game.phase==='kickoff-ready'?endMercato():['mercato','lineup'].includes(game.phase)?playing():matchPage()):welcome())+
+  busy:onlineBusy,error:onlineError,gameActive:showingGame
+ })+(showingGame?'<main class="online-game-content">'+
+  renderOnlineGame(snapshot,{myClub:onlineClient.room.myClub,hostClub:onlineClient.room.hostClub})+
+  (['lineup','match','moment-result','half-time','resume-ready','shootout-ready',
+    'shootout','finished'].includes(snapshot.phase)?onlineTeams():'')+'</main>':'');
+ app.innerHTML=(onlineVisible?onlineDisplay:game?
+  (game.phase==='kickoff-ready'?endMercato():['mercato','lineup'].includes(game.phase)?playing():matchPage()):welcome())+
  (error?'<div class="alert" role="alert">'+esc(error)+'</div>':'')+popup();
 }
 function change(fn){
@@ -427,12 +574,10 @@ function clicked(button){
   onlineVisible=true;onlineStage=onlineClient.hasSession?(onlineClient.room?'room':'restore'):'choose';
   onlineError='';render();syncOnlinePoll();return;
  }
- if(action.startsWith('online-')){
-  if(!onlineVisible)throw Error('Ouvre d’abord le mode en ligne');
-  void onlineClicked(action,button).catch(e=>{onlineError=e?.message||'Action de salon impossible';render();});
+ if(onlineVisible){
+  void onlineClicked(action,button).catch(e=>{onlineError=e?.message||'Action réseau impossible';render();});
   return;
  }
- if(onlineVisible)return; // un salon affiché ne déclenche jamais une commande locale.
  if(modal&&!['close','observation-show','reset'].includes(action))return;
  if(action==='match-uncover'){
   if(!game||!matchRequiresPrivacy(game))throw Error('Aucun choix privé à révéler');
@@ -562,6 +707,11 @@ app.addEventListener('click',event=>{
 app.addEventListener('change',event=>{
  const target=event.target;
  try{
+  if(onlineVisible){
+   if(target.dataset.action==='formation')
+    void onlineFormationChanged(target).catch(e=>{onlineError=e?.message||'Formation réseau impossible';render();});
+   return;
+  }
   if(target.dataset.action==='initial-formation'&&FORMATION_NAMES.includes(target.value)){
    beforeForm[target.dataset.club]=target.value;render();
   }
