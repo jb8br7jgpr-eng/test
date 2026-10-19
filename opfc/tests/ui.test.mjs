@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {CARD_BY_ID} from '../catalog.mjs';
 
 const storage=new Map(),listeners=new Map();
 let manualBidText=null;
@@ -113,7 +114,7 @@ test('Mercato réel et placement immédiat de chaque recrue : atteint kickoff-re
   assert.match(app.innerHTML,/placement-intro/);
   assert.match(app.innerHTML,new RegExp('data-top-club="'+club+'"'));
   assert.match(app.innerHTML,/slot-field-single/);
-  assert.equal((app.innerHTML.match(/class="field-half"/g)||[]).length,1);
+  assert.equal((app.innerHTML.match(/class="field-half /g)||[]).length,1);
   assert.match(app.innerHTML,/placement-metadata/);
   assert.match(app.innerHTML,/Note /);
   assert.match(app.innerHTML,/roster-tier/);
@@ -172,14 +173,35 @@ test('Depuis l’interface réelle, le coup d’envoi affiche le score et conser
  assert.match(app.innerHTML,/match-attack-banner/);
  assert.match(app.innerHTML,/À L’ATTAQUE/);
  assert.match(app.innerHTML,/EN DÉFENSE/);
- assert.equal((app.innerHTML.match(/class="field-half"/g)||[]).length,2);
+ assert.equal((app.innerHTML.match(/class="field-half /g)||[]).length,2);
  assert.equal((app.innerHTML.match(/class="panel team-panel"/g)||[]).length,2);
  assert.equal((app.innerHTML.match(/class="team-chip /g)||[]).length,14);
  assert.equal((app.innerHTML.match(/class="pitch-player /g)||[]).length,14);
- assert.match(app.innerHTML,/data-action="slot"[^>]*disabled/);
+ assert.doesNotMatch(app.innerHTML,/data-action="slot"[^>]*disabled/);
+ assert.equal((app.innerHTML.match(/data-action="inspect-player" data-club=/g)||[]).length,28);
  assert.match(app.innerHTML,/roster-position/);
  assert.match(app.innerHTML,/roster-rating/);
  assert.match(app.innerHTML,/roster-tier/);
+ assert.match(app.innerHTML,/pitch-markings/);
+ for(const x of ['pitch-outline','pitch-center-line','pitch-center-circle','pitch-goal-area-top','pitch-goal-area-bottom','pitch-goal-top','pitch-goal-bottom'])
+  assert.match(app.innerHTML,new RegExp(x));
+ // L'ordre de l'effectif est stable et suit GAR, DEF, MIL, ATT, pas la chronologie d'achat.
+ for(const team of next.teams){
+  const roster=[...app.innerHTML.matchAll(new RegExp('data-action="inspect-player" data-club="'+team.club+'" data-card="([^"]+)"','g'))]
+   .map(m=>m[1]);
+  // La liste et les pions sont tous cliquables, donc extraire seulement les 7 éléments de liste.
+  assert.equal(roster.length,7);
+  const ranks={GAR:0,DEF:1,MIL:2,ATT:3};
+  const positions=roster.map(id=>CARD_BY_ID.get(id).position);
+  assert.deepEqual(positions,[...positions].sort((a,b)=>ranks[a]-ranks[b]));
+ }
+ const firstId=next.teams[0].roster[0],playerName=CARD_BY_ID.get(firstId).name;
+ click('inspect-player',{card:firstId});
+ assert.match(app.innerHTML,/class="modal-backdrop"/);
+ assert.ok(app.innerHTML.includes(playerName));
+ assert.match(app.innerHTML,/detail-grid/);
+ click('close');
+ assert.equal(stateOf().phase,'match');
  assert.doesNotMatch(app.innerHTML,/schedule/);
 });
 test('La réinitialisation est confirmée et revient à l’accueil',()=>{
