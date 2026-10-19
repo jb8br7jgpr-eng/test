@@ -63,6 +63,9 @@ test('L’interface démarre sans erreur, gère le choix du club et lance un mer
  press('toggle-teams');
  assert.match(root.innerHTML,/Observation/);
  assert.match(root.innerHTML,/Haki des Rois/);
+ assert.match(root.innerHTML,/Refus utilisés :/);
+ assert.match(root.innerHTML,/Refus restants :/);
+ assert.match(root.innerHTML,/data-amount="25"/);
  const first=stored.game.auction.turn;
  press('observation');
  assert.match(root.innerHTML,/Choix secret/);
@@ -86,6 +89,10 @@ test('L’interface démarre sans erreur, gère le choix du club et lance un mer
  press('close');
  assert.match(root.innerHTML,/placement-intro/);
  assert.match(root.innerHTML,new RegExp('data-top-club="'+first+'"'));
+ assert.match(root.innerHTML,/slot-field-single/);
+ assert.equal((root.innerHTML.match(/class="field-half"/g)||[]).length,1);
+ assert.match(root.innerHTML,/placement-metadata/);
+ assert.match(root.innerHTML,/team-chip-details/);
  assert.match(root.innerHTML,/Sélection/);
  press('slot',{club:first,slot:'1'});
  now=JSON.parse(cache.get('opfc-v08-local-dev')).game;
