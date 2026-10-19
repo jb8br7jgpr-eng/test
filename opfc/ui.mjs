@@ -3,7 +3,7 @@ import {createGame,bid,pass,useKings,useObservation,acceptSolo,chooseFormation,p
 import {CARD_BY_ID} from './catalog.mjs';
 import {renderCharacterPortrait,renderClubCrest} from './ui-portraits.mjs';
 import {effectiveRating,lineupDetails} from './rules.mjs';
-import {FORMATION_NAMES,uiAuction,uiTeam,cardStats,currentAuctionEnding,clubName} from './ui-model.mjs';
+import {FORMATION_NAMES,uiAuction,uiTeam,uiRoster,cardStats,currentAuctionEnding,clubName} from './ui-model.mjs';
 import {renderMatchScreen,matchRequiresPrivacy,dispatchOpenMatch} from './ui-match.mjs';
 import {createOnlineClient} from './online-client.mjs';
 import {renderOnlineLobby,normalizeJoinCodeInput} from './ui-online.mjs';
@@ -277,28 +277,32 @@ function pitch(){
  '</div></section>';
 }
 function teamPanel(team){
- const u=uiTeam(team),editable=['mercato','lineup','half-time'].includes(game.phase)&&!team.ready&&
+ const u=uiTeam(team),roster=uiRoster(team);
+ const editable=['mercato','lineup','half-time'].includes(game.phase)&&!team.ready&&
  (!placement||placement.club===team.club)&&!placement;
- return '<section class="panel team-panel"><div class="team-heading"><h2>'+renderClubCrest(team.club,'team-crest')+esc(clubName(team.club))+
+ const ranks={DIA:'Diamant',OR:'Or',ARG:'Argent',BRZ:'Bronze'};
+ return '<section class="panel team-panel"><div class="team-heading"><h2>'+
+ renderClubCrest(team.club,'team-crest')+esc(clubName(team.club))+
  '</h2><small>'+u.rosterCount+'/7</small></div><div class="team-tools"><span class="caption">Entente '+u.entente+'/10</span>'+
  '<select data-action="formation" data-club="'+team.club+'" aria-label="Formation '+team.club+'" '+(editable?'':'disabled')+'>'+
  options(FORMATION_NAMES,u.formation)+'</select></div><div class="chip-row">'+
- (team.roster.length?[...team.roster].sort((a,b)=>{
-  const rank={GAR:0,DEF:1,MIL:2,ATT:3};
-  return (rank[card(a)?.position]??4)-(rank[card(b)?.position]??4);
- }).map(id=>{
-  const info=card(id),chosen=selection?.club===team.club&&selection?.id===id;
+ (roster.length?roster.map(player=>{
+  const {cardId:id,card:info,position,rating,outOfPosition,placed}=player;
+  const displayPosition=position??'À placer',displayRating=rating??'—';
+  const chosen=selection?.club===team.club&&selection?.id===id;
   const selectable=editable ||(placement&&placement.club===team.club&&placement.cardId===id);
   const listAction=selectable?'pick':'inspect-player';
-  const ranks={DIA:'Diamant',OR:'Or',ARG:'Argent',BRZ:'Bronze'};
+  const label=info.name+' · '+displayPosition+(placed?' · note effective '+displayRating:' · note à définir')+
+   (outOfPosition?' · hors poste':'')+' · '+ranks[info.rarity];
   return '<button class="team-chip '+(chosen?'selected':'')+'" data-action="'+listAction+'" data-club="'+team.club+
-  '" data-card="'+esc(id)+'" aria-pressed="'+!!chosen+'" aria-label="'+esc(info.name)+' · '+info.position+' · note '+info.rating+' · '+ranks[info.rarity]+'">'+
-  renderCharacterPortrait(id,'chip-portrait')+
-  '<span class="team-chip-content"><span class="team-chip-name">'+esc(info.name)+'</span>'+
-  '<span class="team-chip-details"><span class="roster-position">'+info.position+'</span>'+
-  '<span class="roster-rating">'+info.rating+'</span>'+
-  '<span class="roster-tier tier-'+info.rarity.toLowerCase()+'">'+ranks[info.rarity]+'</span></span></span>'+
-  '<small class="chip-placed">'+(team.slots.includes(id)?'✓':'+')+'</small></button>';
+   '" data-card="'+esc(id)+'" aria-pressed="'+!!chosen+'" aria-label="'+esc(label)+'">'+
+   renderCharacterPortrait(id,'chip-portrait')+
+   '<span class="team-chip-content"><span class="team-chip-name">'+esc(info.name)+'</span>'+
+   '<span class="team-chip-details"><span class="roster-position">'+displayPosition+'</span>'+
+   '<span class="roster-rating" title="'+(placed?'Note effective':'Note après placement')+'">'+displayRating+'</span>'+
+   (outOfPosition?'<span class="roster-warning" title="Hors poste" aria-label="Hors poste">! Hors poste</span>':'')+
+   '<span class="roster-tier tier-'+info.rarity.toLowerCase()+'">'+ranks[info.rarity]+'</span></span></span>'+
+   '<small class="chip-placed">'+(placed?'✓':'+')+'</small></button>';
  }).join(''):'<span class="caption">Aucune recrue.</span>')+'</div>'+
  (['lineup','half-time'].includes(game.phase)?btn('ready',u.ready?'✓ Équipe prête':u.canReady?'Valider cette composition':'Place les 7 joueurs',
  'small full '+(u.canReady?'primary':'ghost'),!u.canReady,'data-club="'+team.club+'"'):'')+'</section>';
