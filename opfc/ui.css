@@ -837,3 +837,226 @@ a{color:inherit}p{line-height:1.45}.app{width:min(100%,760px);margin:0 auto;padd
  .receiver-card-details{gap:4px}
  .receiver-card-details>span{font-size:8px;padding:3px 5px}
 }
+
+
+/* OPFC — tableau de progression officiel des tirs au but.
+ * Les cases reflètent seulement les tentatives terminées du moteur. */
+.shootout-tracker{
+ text-align:center;
+ border-color:#e8c48e74;
+ background:radial-gradient(ellipse at 50% -15%,#4b536d70,#142f41 57%,#0b2435 100%);
+ padding:16px 13px 13px;
+ margin:12px 0;
+}
+.shootout-tracker>.eyebrow{
+ color:#ffe2a9;
+ display:block;
+ letter-spacing:.12em;
+ font-size:10px;
+ margin:0 0 7px;
+}
+.shootout-tracker h3{
+ margin:3px 0 5px;
+ font-weight:950;
+ font-size:clamp(16px,4.7vw,22px);
+ letter-spacing:.01em;
+ color:#fce5b6;
+ line-height:1.2;
+}
+.shootout-tracker .shootout-stage-sudden{
+ font-size:clamp(21px,6vw,27px);
+ letter-spacing:.1em;
+ color:#ffd4a2;
+ text-shadow:0 2px 16px #e89e603b;
+}
+.shootout-tracker-progress{
+ margin:0 0 14px;
+ font-size:10px;
+ color:#b8d2dc;
+}
+.shootout-tracker-teams{
+ display:grid;
+ grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+ gap:11px;
+}
+.shootout-tracker-team{
+ min-width:0;
+ padding:11px 8px;
+ background:#092435bf;
+ border:1px solid #ffffff2c;
+ border-radius:12px;
+}
+.shootout-tracker-team.psg{border-top:3px solid #db5a74}
+.shootout-tracker-team.om{border-top:3px solid #88d7ec}
+.shootout-tracker-identity{
+ display:flex;flex-direction:column;align-items:center;gap:3px;
+}
+.shootout-tracker-identity>strong{
+ font-size:13px;
+ font-weight:950;
+ color:#e4eff2;
+}
+.shootout-tracker-goals{
+ font-size:clamp(27px,8vw,36px);
+ font-variant-numeric:tabular-nums;
+ font-weight:1000;
+ line-height:1.05;
+ color:#ffe0ac;
+}
+.shootout-marks{
+ margin:10px 0 2px;
+ display:flex;
+ flex-wrap:wrap;
+ justify-content:center;
+ align-items:center;
+ gap:4px;
+ min-width:0;
+}
+.shootout-mark{
+ box-sizing:border-box;
+ width:clamp(21px,6.7vw,27px);
+ height:29px;
+ flex:0 0 auto;
+ border-radius:7px;
+ display:inline-flex;
+ align-items:center;
+ justify-content:center;
+ font-size:17px;
+ font-weight:950;
+ border:1px solid #ffffff46;
+ background:#ffffff12;
+ color:#8fa9b7;
+}
+.shootout-mark--goal{
+ border-color:#6fc695a1;
+ background:#2878495b;
+ color:#b6f5ce;
+}
+.shootout-mark--fail{
+ border-color:#e58d8da1;
+ background:#83394b80;
+ color:#ffb8b5;
+}
+.shootout-mark--pending{font-weight:750;color:#b4c3cb}
+.shootout-marks-divider{
+ width:1px;
+ height:24px;
+ flex:0 0 1px;
+ background:#e6c17c85;
+ margin:0 2px;
+}
+.shootout-tracker-legend{
+ font-size:10px!important;
+ color:#b6d1db!important;
+ margin:10px 0 0;
+ line-height:1.45!important;
+}
+@media(max-width:390px){
+ .shootout-tracker{padding:12px 8px}
+ .shootout-tracker-teams{gap:7px}
+ .shootout-tracker-team{padding:9px 4px}
+ .shootout-marks{gap:3px}
+ .shootout-mark{height:26px;width:clamp(20px,6vw,24px);font-size:15px}
+}
+
+/* OPFC — coup de sifflet final : trophée, vainqueur et scores hiérarchisés.
+ * Les statistiques et les portraits de buteurs restent inchangés. */
+.final-screen .final-score{
+ text-align:center;
+ padding:18px 13px 17px;
+ border:2px solid #e6c27a8c;
+ background:radial-gradient(ellipse at center top,#70532d67,#18364bc7 55%,#081d2f 100%);
+ box-shadow:0 13px 40px #0006,inset 0 0 30px #ecc17a12;
+}
+.final-score .final-celebration{
+ font-size:clamp(36px,11vw,49px);
+ line-height:1.1;
+ margin:9px auto 4px;
+ filter:drop-shadow(0 5px 14px #0007);
+}
+.final-score h2.final-victory-title{
+ margin:4px auto 7px;
+ font-family:ui-rounded,-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+ font-size:clamp(31px,9.5vw,43px);
+ line-height:1.08;
+ letter-spacing:-.045em;
+ color:#ffe4a6;
+ font-weight:1000;
+ text-shadow:0 4px 16px #0008;
+}
+.final-score .final-winner-name{
+ color:#fff4d9!important;
+ margin:0 0 17px;
+ font-size:clamp(13px,4vw,17px)!important;
+ font-weight:950;
+ line-height:1.3;
+ text-align:center;
+}
+.final-score .final-scoreline{
+ border-radius:13px;
+ padding:12px 4px;
+ margin:8px 0;
+ background:#0b243aad;
+ border:1px solid #e9cf9255;
+}
+.final-score .final-score-numbers>strong{
+ color:#ffedbd;
+ font-size:clamp(30px,9vw,44px);
+}
+.final-score .final-score-numbers>span{
+ color:#c5d9e0;
+ font-size:10px;
+}
+.final-score .final-winner-club .club-crest{
+ filter:drop-shadow(0 0 10px #ecca7d5a);
+}
+.final-score .final-winner-club>strong{color:#ffe3ad}
+.final-score .final-penalty-score{
+ display:flex;
+ flex-direction:column;
+ align-items:center;
+ gap:5px;
+ padding:12px 9px;
+ margin:12px 0 5px;
+ border:1px solid #e7bc78a6;
+ border-radius:13px;
+ background:linear-gradient(145deg,#66502c64,#183d487d);
+}
+.final-penalty-score>span{
+ color:#fbe0aa;
+ font-size:11px;
+ font-weight:950;
+ letter-spacing:.09em;
+}
+.final-penalty-score>strong{
+ display:flex;
+ align-items:center;
+ gap:12px;
+ font-variant-numeric:tabular-nums;
+ font-size:clamp(28px,8vw,37px);
+ line-height:1.12;
+ color:#fff2cb;
+ font-weight:1000;
+ white-space:nowrap;
+}
+.final-penalty-score>strong>small{
+ font-size:13px;
+ color:#d8e6e9;
+}
+.final-penalty-score>p{
+ margin:2px 0 0;
+ font-size:10px!important;
+ color:#c5d8df!important;
+}
+.final-screen .final-score .final-qualification{
+ margin:12px 0 0;
+ font-size:12px!important;
+ font-weight:900;
+}
+@media(max-width:390px){
+ .final-screen .final-score{padding:14px 8px}
+ .final-score .final-celebration{margin-top:7px}
+ .final-score .final-winner-name{margin-bottom:12px}
+ .final-score .final-scoreline{padding:10px 2px}
+ .final-penalty-score>strong{gap:8px}
+}
