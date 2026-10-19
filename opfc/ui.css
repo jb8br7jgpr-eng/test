@@ -75,3 +75,27 @@ a{color:inherit}p{line-height:1.45}.app{width:min(100%,760px);margin:0 auto;padd
 .club-crest.final-club-emblem strong{font-size:20px}
 @media(max-width:390px){.character-portrait.pitch-avatar{width:30px;height:30px;flex-basis:30px}.match-actors .match-actor-portrait{width:39px;height:39px}.character-portrait.faceoff-portrait{width:66px;height:66px}.player-card .portrait-shell-photo{width:min(100%,205px)}}
 @media(min-width:520px){.player-card .portrait-shell-photo{width:245px}}
+
+
+/* Finitions visuelles OPFC — les vrais portraits dans toute la gestion d'équipe */
+.team-heading h2{display:flex;align-items:center;gap:9px;min-width:0;line-height:1.22}
+.club-crest.team-crest{width:35px;height:43px;min-width:35px}
+.club-crest.team-crest strong{font-size:12px}
+.club-crest.team-crest .club-crest-top,.club-crest.team-crest .club-crest-bottom{font-size:4px}
+.team-chip{min-height:48px;padding:6px 8px;gap:7px;justify-content:flex-start;max-width:100%;text-align:left}
+.character-portrait.chip-portrait{width:32px;height:32px;flex-basis:32px;border-width:1px}
+.team-chip-name{min-width:0;overflow-wrap:anywhere;line-height:1.2}
+.team-chip small{margin-left:auto;font-weight:1000;flex-shrink:0}
+.sale-reveal{display:flex;flex-direction:column;align-items:center;gap:10px;padding:5px 8px 13px;text-align:center}
+.sale-reveal p{margin:0!important}
+.character-portrait.sale-result-portrait{width:124px;height:124px;border-width:3px;box-shadow:0 8px 24px #0008}
+.preview-item{gap:8px;padding:7px 9px}
+.preview-main{display:flex;align-items:center;gap:8px;min-width:0;font-size:12px;font-weight:800;overflow-wrap:anywhere}
+.preview-main small{color:#d1b47e;font-weight:950;min-width:13px}
+.character-portrait.preview-portrait{width:37px;height:37px;flex-basis:37px;border-width:1px}
+.preview-item>strong{flex-shrink:0;color:#f7d8a5;font-size:17px}
+@media(max-width:390px){
+ .team-chip{padding:5px 6px;gap:5px}
+ .character-portrait.chip-portrait{width:29px;height:29px;flex-basis:29px}
+ .character-portrait.sale-result-portrait{width:105px;height:105px}
+}
