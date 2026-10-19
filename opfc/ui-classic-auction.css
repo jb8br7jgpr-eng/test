@@ -3,7 +3,7 @@
  *
  * Sources exactes dans ce dépôt, branche opfc-development :
  * - classique.html (CSS .card/.auction/.bid-title/.turn-banner/.offers/.pass-btn/.primary/.btn-ghost)
- * - mercato-upgrade.js (.custom-bid et typo responsive des montants)
+ * - mercato-upgrade.js (.custom-bid ET surcharge responsive .bid-amount/.offer-btn b)
  * - mercato-rules.js (.haki-btn doré 👑 et compteur refus)
  * - mercato-features.js (.extra-powers/.extra-power 👁)
  *
@@ -44,7 +44,7 @@
 /* Copiés de classique.html : même espacement, couleurs, bordures, poids */
 .opfc-auction .bid-title{display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:1px solid var(--outline);padding:0 0 14px;margin:0}
 .opfc-auction .bid-title .kicker{color:var(--muted);font-size:11px;font-weight:900;letter-spacing:.07em;text-transform:uppercase}
-.opfc-auction .bid-amount{display:block;font-size:31px;color:var(--gold);font-weight:950;letter-spacing:-.055em;margin-top:2px;line-height:normal}
+.opfc-auction .bid-amount{display:block;font-size:clamp(18px,6vw,30px);color:var(--gold);font-weight:950;letter-spacing:-.055em;margin-top:2px;line-height:normal}
 .opfc-auction .bid-leader{text-align:right;max-width:48%;font-size:13px;color:var(--muted)}
 .opfc-auction .bid-leader strong{display:block;color:var(--text);font-size:15px;white-space:normal;overflow-wrap:anywhere}
 .opfc-auction .turn-banner{display:flex;gap:11px;align-items:center;justify-content:space-between;margin:16px 0 13px;padding:13px;background:#0b2230;border:1px solid rgba(125,227,211,.24);border-radius:14px}
@@ -56,7 +56,7 @@
 /* Même cases de mise qu'OPMercato, y compris la police de mercato-upgrade.js */
 .opfc-auction .offers{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:0}
 .opfc-auction .offer-btn{display:block;text-align:left;border:1px solid rgba(247,202,114,.32);background:rgba(247,202,114,.12);color:var(--text);border-radius:13px;padding:12px;min-height:69px;line-height:normal}
-.opfc-auction .offer-btn b{display:block;font-size:clamp(13px,3.9vw,20px);overflow-wrap:anywhere;color:var(--gold);font-weight:950;line-height:normal}
+.opfc-auction .offer-btn b{display:block;font-size:clamp(13px,3.9vw,20px);overflow-wrap:anywhere;color:var(--gold);font-weight:700;line-height:normal}
 .opfc-auction .offer-btn small{display:block;color:#ccdae0;font-size:10px;margin-top:4px;font-weight:700;line-height:normal}
 .opfc-auction .offer-btn:active:not(:disabled){background:rgba(247,202,114,.27);transform:none}
 
@@ -87,7 +87,7 @@
 .opfc-auction .extra-power:disabled{filter:grayscale(1);opacity:.38}
 
 /* Refus : copie du bouton original ; compteur OPFC non intrusif */
-.opfc-auction .pass-btn{background:rgba(255,255,255,.055);color:#f1f7f2;border:1px solid rgba(255,255,255,.17);border-radius:13px;min-height:47px;width:100%;font-weight:800;margin-top:10px;padding:10px;font-size:14px}
+.opfc-auction .pass-btn{background:rgba(255,255,255,.055);color:#f1f7f2;border:1px solid rgba(255,255,255,.17);border-radius:13px;min-height:47px;width:100%;font-weight:800;margin-top:10px;padding:10px;font-size:16px}
 .opfc-auction .pass-btn:disabled{opacity:.5}
 .opfc-auction .notice{text-align:center;color:var(--muted);font-size:12px;line-height:1.4;margin:12px 0 0}
 .opfc-auction .refusal-counter{font-size:11px;color:var(--muted);text-align:center;margin:7px 0 0}
