@@ -214,12 +214,13 @@ function sale(){
 }
 function fieldHalf(team,top){
  const u=uiTeam(team),positions=top?['GAR','DEF','MIL','ATT']:['ATT','MIL','DEF','GAR'];
+ const spectator=!['mercato','lineup','half-time'].includes(game.phase);
  return '<div class="field-half"><div class="field-label '+team.club.toLowerCase()+'"><span>'+team.club+' · '+u.formation+
  '</span><span>'+u.entente+'/10 entente</span></div>'+
  positions.map(pos=>'<div class="pitch-row">'+u.lineup.filter(p=>p.position===pos).map(p=>{
   const active=selection?.club===team.club&&selection?.id===p.cardId;
   return '<button class="pitch-player '+(p.cardId?'':'empty')+' '+(active?'selected':'')+
-   '" data-action="slot" data-club="'+team.club+'" data-slot="'+p.slot+'" aria-label="'+esc(pos)+' '+esc(p.card?.name??'vide')+'">'+
+   '" data-action="slot" data-club="'+team.club+'" data-slot="'+p.slot+'" aria-label="'+esc(pos)+' '+esc(p.card?.name??'vide')+'" '+(spectator?'disabled':'')+'>'+
    '<span class="position">'+pos+(p.outOfPosition?'<span class="out" title="Hors poste"> !</span>':'')+'</span>'+
    (p.card?renderCharacterPortrait(p.card.id,'pitch-avatar'):'<span class="pitch-avatar pitch-avatar-empty" aria-hidden="true">+</span>')+
    '<span class="player-mininame">'+esc(p.card?.name??'+')+'</span>'+
@@ -233,6 +234,7 @@ function currentPitchClub(){
  return pitchClub|| (game?.phase==='mercato'?game.auction?.turn:null) || firstClub;
 }
 function pitch(){
+ const spectator=!['mercato','lineup','half-time'].includes(game.phase);
  const upper=currentPitchClub();
  const first=game.teams.find(t=>t.club===upper),other=game.teams.find(t=>t.club!==upper);
  return '<section class="panel pitch-panel"><div class="auction-top"><span class="eyebrow">Le stade · les compositions</span>'+
@@ -242,7 +244,9 @@ function pitch(){
  '<div class="pitch-orientation"><span>Équipe en haut :</span>'+
  game.teams.map(t=>btn('pitch-view',t.club,(upper===t.club?'primary':'ghost')+' small',false,
  'data-club="'+t.club+'" aria-pressed="'+(upper===t.club)+'"')).join('')+'</div>')+
- '<p class="lineup-help">'+(selection?'Sélection : '+esc(card(selection.id)?.name)+' · touche une case '+selection.club+' pour placer ou échanger.':
+ '<p class="lineup-help">'+(spectator?
+ 'Compositions sur le terrain · les changements sont possibles uniquement à la mi-temps.':
+ selection?'Sélection : '+esc(card(selection.id)?.name)+' · touche une case '+selection.club+' pour placer ou échanger.':
  'Sélectionne une recrue puis touche une case de son club. Les cases occupées peuvent être échangées.')+'</p>'+
  '<div class="slot-field '+(placement?'slot-field-single':'')+'" data-top-club="'+upper+'">'+
  fieldHalf(first,true)+(placement?'':'<div class="field-divider"></div>'+fieldHalf(other,false))+
@@ -319,8 +323,13 @@ function endMercato(){
 }
 function matchPage(){
  const middle=renderMatchScreen(game,{uncovered:matchUncovered});
- return shell()+'<main class="ready-layout">'+middle+
- (game.phase==='half-time'?teams():'')+
+ // Terrain et listes de recrues présents sous TOUTES les étapes du match.
+ // Les commandes de composition restent actives uniquement à la mi-temps.
+ const overview='<section class="match-team-overview" aria-label="Terrain et effectifs du match">'+
+ '<div class="match-team-overview-heading"><span>⚽ TERRAIN ET COMPOSITIONS</span>'+
+ '<small>'+ (game.phase==='half-time'?'Modifications autorisées à la mi-temps':'Effectifs des deux équipes')+'</small></div>'+
+ teams()+'</section>';
+ return shell()+'<main class="ready-layout">'+middle+overview+
  '<div class="gameplay-nav"><span class="caption">Grandline Cup · Mode local</span>'+btn('confirm-reset','Nouvelle partie','ghost small')+'</div></main>';
 }
 function popup(){
