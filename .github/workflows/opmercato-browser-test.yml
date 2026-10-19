@@ -38,7 +38,7 @@ jobs:
           const ctx2=await browser.newContext({viewport:{width:440,height:956},isMobile:true,hasTouch:true,deviceScaleFactor:3});
           const host=await ctx1.newPage(),guest=await ctx2.newPage();
           listen(host,"host");listen(guest,"guest");
-          const home="http://127.0.0.1:8765/?v=online-browser";
+          const home="http://127.0.0.1:8765/classique.html?v=online-browser";
           try {
             await host.goto(home,{waitUntil:"domcontentloaded",timeout:60000});
             // Catalogue et jeu local doivent partager TOUTES les puissances et le nombre de personnages.

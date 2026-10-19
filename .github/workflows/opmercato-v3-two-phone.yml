@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main, opmercato-v3-work-20261016, opmercato-v3-polish-20261016, opmercato-v3-visual-fixes-20261016]
-    paths: ['.github/workflows/opmercato-v3-two-phone.yml', 'mercato-online.js', 'index.html']
+    paths: ['.github/workflows/opmercato-v3-two-phone.yml', 'mercato-online.js', 'index.html', 'classique.html']
 jobs:
   two-phones:
     runs-on: ubuntu-latest
@@ -47,7 +47,7 @@ jobs:
             const page=await context.newPage();
             page.on("pageerror",e=>errors.push(e.stack||e.message));
             await page.route(live,r=>r.continue({url:staging}));
-            await page.goto("http://127.0.0.1:8765/",{waitUntil:"domcontentloaded"});
+            await page.goto("http://127.0.0.1:8765/classique.html",{waitUntil:"domcontentloaded"});
             pages.push(page);return page;
           }
           try {
