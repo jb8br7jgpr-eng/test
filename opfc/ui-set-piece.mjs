@@ -73,7 +73,9 @@ export function renderSetPieceAction(state,viewAction,{uncovered=false}={}){
    '<p class="muted">Un des sept titulaires, gardien compris. Son choix sera annoncé avant les tactiques.</p>'+
    '<div class="match-choice-grid match-tactical-choices">'+ids.map(id=>
     '<button type="button" class="btn match-choice setpiece-taker" data-action="match-taker" data-card="'+escape(id)+'">'+
-    renderCharacterPortrait(id,'setpiece-taker-portrait')+'<strong>'+escape(name(id))+'</strong></button>').join('')+'</div>',type);
+    renderCharacterPortrait(id,'setpiece-taker-portrait')+
+    '<span class="setpiece-taker-label"><span class="match-choice-emoji" aria-hidden="true">⚽</span>'+
+    '<strong>'+escape(name(id))+'</strong></span></button>').join('')+'</div>',type);
  }
  if(a.stage==='attack-choice'||a.stage==='defense-choice'){
   const attacking=a.stage==='attack-choice',role=attacking?'attack':'defense';
