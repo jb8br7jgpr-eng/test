@@ -65,23 +65,40 @@ export function createOnlineClient({
  const validSnapshot=(payload)=>{
   if(payload===null||payload===undefined)return null;
   if(!payload||typeof payload!=='object'||Array.isArray(payload)||
-   !['mercato','lineup','kickoff-ready','match'].includes(payload.phase)||
+   !['mercato','lineup','kickoff-ready','match','moment-result','half-time',
+     'resume-ready','shootout-ready','shootout','finished'].includes(payload.phase)||
    !Array.isArray(payload.teams)||payload.teams.length!==2||
    !Number.isInteger(payload.version)||payload.version!==1)
    fail('Vue de mercato reçue invalide');
-  const allowed=payload.phase==='match'?['version','phase','teams','dice','match']:
+  const withMatch=['match','moment-result','half-time','resume-ready',
+   'shootout-ready','shootout','finished'].includes(payload.phase);
+  const allowed=withMatch?['version','phase','teams','dice','match']:
    ['version','phase','teams','dice','auction','lastResult','myObservation'];
   if(Object.keys(payload).some(k=>!allowed.includes(k)))fail('Vue de mercato contenant des secrets');
   if(!Array.isArray(payload.dice)||payload.dice.length!==2||
    payload.teams.some(t=>!t||!['PSG','OM'].includes(t.club)))
    fail('Vue de partie incohérente');
-  if(payload.phase==='match'){
+  if(withMatch){
    const m=payload.match;
+   const matchFields=['index','minute','score','statistics','goals',
+    'history','lastResult','winner','victory','currentMoment','action'];
    if(!m||typeof m!=='object'||Array.isArray(m)||
-    Object.keys(m).some(k=>!['index','minute','score','statistics','goals','currentMoment'].includes(k))||
-    m.index!==0||!Array.isArray(m.goals)||m.goals.length!==0||
-    !m.score||!m.statistics||!m.currentMoment)
-    fail('Vue du coup d’envoi invalide');
+    Object.keys(m).some(k=>!matchFields.includes(k))||
+    !Number.isInteger(m.index)||m.index<0||
+    !Number.isInteger(m.minute)||m.minute<0||m.minute>90||
+    !Array.isArray(m.goals)||!m.score||!m.statistics||
+    !['PSG','OM'].every(c=>Number.isInteger(m.score[c])&&m.score[c]>=0))
+    fail('Vue de match invalide');
+   if(m.history!==undefined&&!Array.isArray(m.history))
+    fail('Historique de match invalide');
+   if(m.action){
+    if(typeof m.action!=='object'||Array.isArray(m.action)||
+     !['open','corner','free-kick','penalty'].includes(m.action.kind)||
+     m.action.index!==m.index||
+     ['choices','chemistryBonus','shotResult','originalDuel','schedule',
+      'shotDirection','keeperDirection'].some(k=>Object.hasOwn(m.action,k)))
+     fail('Action de match contenant des secrets');
+   }
   }
   return structuredClone(payload);
  };
@@ -174,6 +191,11 @@ export function createOnlineClient({
    if(!marketGame||!['lineup','kickoff-ready'].includes(marketGame.phase))
     fail('Actualise la partie avant de modifier les compositions');
    return sendCommand('lineup',command);
+  },
+  async matchAction(command){
+   if(!marketGame||!['match','moment-result'].includes(marketGame.phase))
+    fail('Actualise le match avant de jouer une action');
+   return sendCommand('match',command);
   },
   leaveDevice(){
    session=null;room=null;marketGame=null;persist(); // Ne ferme pas le salon distant.

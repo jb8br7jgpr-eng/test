@@ -7,6 +7,7 @@ import {chooseFormation,place,ready} from './engine.mjs';
 import {kickoffMatch,currentMatchMoment} from './match.mjs';
 import {onlineMarketPublicView} from './online-market.mjs';
 import {secureRandomBytes} from './online-protocol.mjs';
+import {onlineMatchView} from './online-match.mjs';
 
 const fail=m=>{throw new Error(m);};
 const clubs=['PSG','OM'];
@@ -44,9 +45,11 @@ export function onlinePreMatchView(state,club){
  checkClub(club);
  if(['mercato','lineup','kickoff-ready'].includes(state?.phase))
   return onlineMarketPublicView(state,club);
- if(state?.phase==='match'&&state.match?.index===0&&state.match?.history?.length===0)
+ if(state?.phase==='match'&&state.match?.index===0&&state.match?.history?.length===0&&!state.match.action)
   return onlineKickoffView(state);
- return null; // Prochains sous-blocs du match.
+ if(['match','moment-result','half-time','resume-ready','shootout-ready','shootout','finished'].includes(state?.phase))
+  return onlineMatchView(state,club);
+ return null;
 }
 export function applyOnlineLineupCommand(state,actorClub,command,{hostClub,rng=secureRng}={}){
  checkClub(actorClub);checkClub(hostClub);

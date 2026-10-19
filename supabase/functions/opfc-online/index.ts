@@ -15,6 +15,7 @@ import {
 } from '../../../opfc/online-protocol.mjs';
 import {applyOnlineMarketCommand} from '../../../opfc/online-market.mjs';
 import {applyOnlineLineupCommand,onlinePreMatchView} from '../../../opfc/online-lineup.mjs';
+import {applyOnlineOpenPlayCommand} from '../../../opfc/online-match.mjs';
 
 const origin=Deno.env.get('OPFC_ALLOWED_ORIGIN')??'https://jb8br7jgpr-eng.github.io';
 const supabaseUrl=Deno.env.get('SUPABASE_URL');
@@ -105,7 +106,7 @@ async function authenticatedRoom(body){
  return {row,role,club:role==='host'?row.host_club:row.host_club==='PSG'?'OM':'PSG'};
 }
 function playerGameView(row,club){
- // Les vues de match propres à chaque joueur seront ajoutées en 10A3B.
+ // Vues de match filtrées : calendrier et choix tactiques jamais exposés.
  if(row.status!=='ready')return null;
  return onlinePreMatchView(row.private_state,club);
 }
@@ -128,11 +129,15 @@ async function mutate(body,kind){
   return error('Le mercato n’est plus actif',409);
  if(kind==='lineup'&&!['lineup','kickoff-ready'].includes(row.private_state?.phase))
   return error('La composition n’est pas disponible',409);
+ if(kind==='match'&&!['match','moment-result'].includes(row.private_state?.phase))
+  return error('L’action de match n’est pas disponible',409);
  let transition;
  try{
   transition=kind==='market'?
    applyOnlineMarketCommand(row.private_state,club,body.command):
-   applyOnlineLineupCommand(row.private_state,club,body.command,{hostClub:row.host_club});
+   kind==='lineup'?
+    applyOnlineLineupCommand(row.private_state,club,body.command,{hostClub:row.host_club}):
+    applyOnlineOpenPlayCommand(row.private_state,club,body.command);
  }catch(e){
   return error(e instanceof Error?e.message:'Action illégale',400);
  }
@@ -170,6 +175,7 @@ Deno.serve(async req=>{
   if(body.action==='get')return await get(body);
   if(body.action==='market')return await mutate(body,'market');
   if(body.action==='lineup')return await mutate(body,'lineup');
+  if(body.action==='match')return await mutate(body,'match');
   return error('Action inconnue');
  }catch(e){
   console.error('opfc-online:',e instanceof Error?e.message:'server error');
