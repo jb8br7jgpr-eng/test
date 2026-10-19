@@ -89,7 +89,7 @@
 /* Refus : copie du bouton original ; compteur OPFC non intrusif */
 .opfc-auction .pass-btn{background:rgba(255,255,255,.055);color:#f1f7f2;border:1px solid rgba(255,255,255,.17);border-radius:13px;min-height:47px;width:100%;font-weight:800;margin-top:10px;padding:10px;font-size:16px}
 .opfc-auction .pass-btn:disabled{opacity:.5}
-.opfc-auction .notice{text-align:center;color:var(--muted);font-size:12px;line-height:1.4;margin:12px 0 0}
+.opfc-auction .notice{text-align:center;color:var(--muted);font-size:12px;line-height:1.4;margin:12px 0 0;background:transparent;border:none;border-radius:0;padding:0;box-shadow:none}
 .opfc-auction .refusal-counter{font-size:11px;color:var(--muted);text-align:center;margin:7px 0 0}
 .opfc-auction .refusal-counter strong{color:var(--gold)}
 .opfc-auction .opfc-auction-limit{font-size:10px;text-align:center;color:var(--muted);margin:8px 0 0;line-height:1.4}
