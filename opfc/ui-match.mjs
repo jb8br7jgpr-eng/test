@@ -4,6 +4,7 @@
  * Les actions appellent les fonctions officielles de match-actions.mjs.
  */
 import {CARD_BY_ID} from './catalog.mjs';
+import {renderCharacterPortrait,renderClubCrest} from './ui-portraits.mjs';
 import {matchPublicView,kickoffMatch,continueMatch,resumeMatch} from './match.mjs';
 import {beginOpenPlayAction,lockOpenPlayChoice,revealOpenPlayDuel,continueOpenPlayDuel,revealOpenPlayShot} from './match-actions.mjs';
 import {isSetPieceKind,setPieceTurnOwner,dispatchSetPieceMatch,renderSetPieceAction} from './ui-set-piece.mjs';
@@ -73,9 +74,9 @@ export function dispatchOpenMatch(state,command,{choice,takerId,rng=Math.random}
  throw Error('Commande de match inconnue');
 }
 function scoreBoard(m){
- return '<div class="match-scoreboard"><div><span class="score-club psg">PSG</span><small>Pirates Saint-Grandline</small></div>'+
+ return '<div class="match-scoreboard"><div>'+renderClubCrest('PSG','score-crest')+'<small>Pirates Saint-Grandline</small></div>'+
  '<div class="match-score"><strong>'+m.score.PSG+' – '+m.score.OM+'</strong><span>'+m.minute+'e minute</span></div>'+
- '<div><span class="score-club om">OM</span><small>Olympique de MaryGeoise</small></div></div>';
+ '<div>'+renderClubCrest('OM','score-crest')+'<small>Olympique de MaryGeoise</small></div></div>';
 }
 function scoreStats(m){
  return '<div class="match-mini-stats">'+['PSG','OM'].map(id=>'<div><strong>'+id+'</strong><span>'+
@@ -87,10 +88,25 @@ function choiceGrid(options){
 }
 function fieldNames(a){
  if(!a?.roles)return '';
- return '<div class="match-actors"><div><span>Porteur</span><strong>'+html(name(a.roles.carrier.cardId))+'</strong></div>'+
- '<div><span>Partenaire</span><strong>'+html(name(a.roles.partner.cardId))+'</strong></div>'+
- '<div><span>Défenseur</span><strong>'+html(name(a.roles.defender.cardId))+'</strong></div></div>';
+ const players=[
+  ['Porteur',a.roles.carrier?.cardId],
+  ['Partenaire',a.roles.partner?.cardId],
+  ['Défenseur',a.roles.defender?.cardId]
+ ];
+ return '<div class="match-actors">'+players.map(([label,id])=>
+  '<div>'+renderCharacterPortrait(id,'match-actor-portrait')+
+  '<span>'+label+'</span><strong>'+html(name(id))+'</strong></div>').join('')+'</div>';
 }
+function faceOff(left,right,leftLabel,rightLabel){
+ if(!left||!right)return '';
+ return '<div class="match-faceoff" aria-label="'+html(name(left))+' face à '+html(name(right))+'">'+
+  '<div>'+renderCharacterPortrait(left,'faceoff-portrait')+'<strong>'+html(name(left))+'</strong><small>'+html(leftLabel)+'</small></div>'+
+  '<span class="faceoff-vs" aria-hidden="true">VS</span>'+
+  '<div>'+renderCharacterPortrait(right,'faceoff-portrait')+'<strong>'+html(name(right))+'</strong><small>'+html(rightLabel)+'</small></div></div>';
+}
+const duelFaceOff=a=>faceOff(a?.roles?.carrier?.cardId,a?.roles?.defender?.cardId,'Attaque','Défense');
+const shotFaceOff=state=>faceOff(state?.match?.action?.shooterId,state?.match?.action?.keeper?.cardId,'Tireur','Gardien');
+
 function handover(owner){
  return '<section class="match-handover" aria-label="Transmission confidentielle">'+
  '<div class="match-handover-icon" aria-hidden="true">🔒</div><h2>À toi de jouer, '+owner+'</h2>'+
@@ -107,20 +123,20 @@ function renderAction(state,view,uncovered){
   return '<section class="panel match-stage"><span class="eyebrow">'+html(stageLabels[a.stage])+'</span>'+
    '<h2>'+a[role]+' · '+(role==='attacker'?'Attaque':'Défense')+'</h2>'+
    '<p class="muted">Ta décision est secrète jusqu’à la confirmation de ton adversaire.</p>'+
-   fieldNames(a)+choiceGrid(BUTTONS[a.stage])+'</section>';
+   (isShot?shotFaceOff(state):fieldNames(a))+choiceGrid(BUTTONS[a.stage])+'</section>';
  }
  if(a.stage==='duel-ready')return '<section class="panel match-stage"><h2>Les deux tactiques sont validées</h2>'+
-  '<p class="muted">Elles vont être révélées simultanément.</p>'+button('match-reveal-duel','Révéler et résoudre le duel')+'</section>';
+  duelFaceOff(a)+'<p class="muted">Elles vont être révélées simultanément.</p>'+button('match-reveal-duel','Révéler et résoudre le duel')+'</section>';
  if(a.stage==='duel-revealed'){
   const duel=a.duel;
   return '<section class="panel match-stage"><span class="eyebrow">Résultat du duel</span><h2>'+
    html(OUTCOME[duel?.outcome?.outcome]??'Duel résolu')+'</h2>'+
-   '<p>'+html(duel?.calculation?.attack)+' face à '+html(duel?.calculation?.defense)+'</p>'+
+   duelFaceOff(a)+'<p>'+html(duel?.calculation?.attack)+' face à '+html(duel?.calculation?.defense)+'</p>'+
    '<p class="caption">Probabilité calculée : '+Number(duel?.calculation?.successConditional??duel?.calculation?.successProbability??0).toFixed(1)+' % (hors faute le cas échéant).</p>'+
    button('match-continue-duel','Continuer')+'</section>';
  }
  if(a.stage==='shot-ready')return '<section class="panel match-stage"><h2>Le tireur et le gardien ont choisi</h2>'+
-  '<p>Les deux choix vont être révélés simultanément.</p>'+
+  shotFaceOff(state)+'<p>Les deux choix vont être révélés simultanément.</p>'+
   button('match-reveal-shot','Résoudre la frappe')+'</section>';
  if(a.stage==='set-piece-pending')return '<section class="panel match-stage"><h2>Faute sifflée !</h2>'+
   '<p>Cette action continue par un '+html(a.duel?.outcome?.setPiece==='penalty'?'penalty':'coup franc')+' à la même minute.</p>'+
