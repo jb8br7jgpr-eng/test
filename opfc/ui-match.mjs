@@ -4,6 +4,7 @@
  * Les actions appellent les fonctions officielles de match-actions.mjs.
  */
 import {CARD_BY_ID} from './catalog.mjs';
+import {lineupDetails} from './rules.mjs';
 import {renderCharacterPortrait,renderClubCrest} from './ui-portraits.mjs';
 import {matchPublicView,kickoffMatch,continueMatch,resumeMatch} from './match.mjs';
 import {beginOpenPlayAction,lockOpenPlayChoice,revealOpenPlayDuel,continueOpenPlayDuel,revealOpenPlayShot} from './match-actions.mjs';
@@ -28,6 +29,11 @@ const ACTION_LABEL={
 };
 const OUTCOME={stopped:'Attaque stoppée',chance:'Occasion créée',foul:'Faute sifflée',
  miss:'Tir manqué',save:'Arrêt du gardien',goal:'BUUUUT !'};
+const QUALITY={
+ FRANCHE:{label:'OCCASION FRANCHE',detail:'Meilleure situation',tone:'franche',icon:'🟢'},
+ BONNE:{label:'BONNE OCCASION',detail:'Bonne situation',tone:'bonne',icon:'🟠'},
+ DIFFICILE:{label:'ACTION DIFFICILE',detail:'Situation compliquée',tone:'difficile',icon:'🔴'}
+};
 const stageLabels={
  'attack-choice':'Choix de construction', 'defense-choice':'Réponse défensive',
  'shot-attack-choice':'Choix du tir','shot-defense-choice':'Réaction du gardien'
@@ -82,6 +88,20 @@ function scoreStats(m){
  return '<div class="match-mini-stats">'+['PSG','OM'].map(id=>'<div><strong>'+id+'</strong><span>'+
  m.statistics[id].shots+' tirs · '+m.statistics[id].onTarget+' cadrés</span></div>').join('')+'</div>';
 }
+/** Le contexte de l'occasion provient du moteur existant, jamais d'une estimation UI. */
+function attackBanner(attacker,context,kind,minute){
+ if(!['PSG','OM'].includes(attacker))return '';
+ const defense=attacker==='PSG'?'OM':'PSG';
+ const quality=QUALITY[context];
+ return '<section class="match-attack-banner '+attacker.toLowerCase()+'" aria-label="Équipe attaquante : '+attacker+'">'+
+ '<div class="match-attack-teams"><div class="match-attacking-team"><span>⚽ À L’ATTAQUE</span><strong>'+attacker+'</strong></div>'+
+ '<div class="match-attack-arrow" aria-hidden="true">→</div>'+
+ '<div class="match-defending-team"><span>EN DÉFENSE</span><strong>'+defense+'</strong></div></div>'+
+ '<div class="match-action-type '+(quality?'type-'+quality.tone:'type-neutral')+'">'+
+ (quality?'<strong>'+quality.icon+' '+quality.label+'</strong><small>'+quality.detail+'</small>':
+ '<strong>'+html(ACTION_LABEL[kind]??'Action en cours')+'</strong><small>'+html(minute)+'e minute</small>')+
+ '</div></section>';
+}
 function choiceGrid(options){
  return '<div class="match-choice-grid">'+options.map(([id,title])=>
  '<button class="btn match-choice" data-action="match-choose" data-choice="'+id+'">'+html(title)+'</button>').join('')+'</div>';
@@ -97,15 +117,38 @@ function fieldNames(a){
   '<div>'+renderCharacterPortrait(id,'match-actor-portrait')+
   '<span>'+label+'</span><strong>'+html(name(id))+'</strong></div>').join('')+'</div>';
 }
-function faceOff(left,right,leftLabel,rightLabel){
- if(!left||!right)return '';
- return '<div class="match-faceoff" aria-label="'+html(name(left))+' face à '+html(name(right))+'">'+
-  '<div>'+renderCharacterPortrait(left,'faceoff-portrait')+'<strong>'+html(name(left))+'</strong><small>'+html(leftLabel)+'</small></div>'+
-  '<span class="faceoff-vs" aria-hidden="true">VS</span>'+
-  '<div>'+renderCharacterPortrait(right,'faceoff-portrait')+'<strong>'+html(name(right))+'</strong><small>'+html(rightLabel)+'</small></div></div>';
+function actualPlayer(state,club,id){
+ if(!id||!['PSG','OM'].includes(club))return null;
+ const team=state.teams?.find(t=>t.club===club);
+ return team?lineupDetails(team).find(player=>player?.cardId===id)??null:null;
 }
-const duelFaceOff=a=>faceOff(a?.roles?.carrier?.cardId,a?.roles?.defender?.cardId,'Attaque','Défense');
-const shotFaceOff=state=>faceOff(state?.match?.action?.shooterId,state?.match?.action?.keeper?.cardId,'Tireur','Gardien');
+function faceOff(state,left,right,leftLabel,rightLabel,attacker,defender){
+ if(!left||!right)return '';
+ const playerCard=(id,role,club)=>{
+  const player=actualPlayer(state,club,id);
+  const original=CARD_BY_ID.get(id);
+  const slot=player?.position??original?.position??'?';
+  const rating=player?.rating??original?.rating??'—';
+  return '<div class="match-duelist '+(club==='PSG'?'psg':'om')+'">'+
+   '<span class="match-duelist-team">'+club+' · '+html(role)+'</span>'+
+   renderCharacterPortrait(id,'faceoff-portrait')+
+   '<strong class="match-duelist-name">'+html(name(id))+'</strong>'+
+   '<div class="match-duelist-badges"><span class="match-duelist-position">'+html(slot)+'</span>'+
+   '<span class="match-duelist-rating">NOTE '+rating+'</span></div>'+
+   (player?.outOfPosition?'<small class="match-duelist-out">Hors poste</small>':'')+
+   '</div>';
+ };
+ return '<div class="match-faceoff" aria-label="'+html(name(left))+' face à '+html(name(right))+'">'+
+ playerCard(left,leftLabel,attacker)+
+ '<span class="faceoff-vs" aria-hidden="true">VS</span>'+
+ playerCard(right,rightLabel,defender)+'</div>';
+}
+const duelFaceOff=(state,a)=>faceOff(state,a?.roles?.carrier?.cardId,a?.roles?.defender?.cardId,
+ 'Attaque','Défense',a?.attacker,a?.defender);
+const shotFaceOff=state=>{
+ const a=state?.match?.action;
+ return faceOff(state,a?.shooterId,a?.keeper?.cardId,'Tireur','Gardien',a?.attacker,a?.defender);
+};
 
 function handover(owner){
  return '<section class="match-handover" aria-label="Transmission confidentielle">'+
@@ -125,13 +168,13 @@ function renderAction(state,view,uncovered){
    '<p class="muted">Ta décision est secrète jusqu’à la confirmation de ton adversaire.</p>'+
    (isShot?shotFaceOff(state):fieldNames(a))+choiceGrid(BUTTONS[a.stage])+'</section>';
  }
- if(a.stage==='duel-ready')return '<section class="panel match-stage"><h2>Les deux tactiques sont validées</h2>'+
-  duelFaceOff(a)+'<p class="muted">Elles vont être révélées simultanément.</p>'+button('match-reveal-duel','Révéler et résoudre le duel')+'</section>';
+ if(a.stage==='duel-ready')return '<section class="panel match-stage"><h2 class="match-duel-ready-heading">Les deux tactiques sont validées</h2>'+
+  duelFaceOff(state,a)+'<p class="muted">Elles vont être révélées simultanément.</p>'+button('match-reveal-duel','Révéler et résoudre le duel')+'</section>';
  if(a.stage==='duel-revealed'){
   const duel=a.duel;
   return '<section class="panel match-stage"><span class="eyebrow">Résultat du duel</span><h2>'+
    html(OUTCOME[duel?.outcome?.outcome]??'Duel résolu')+'</h2>'+
-   duelFaceOff(a)+'<p>'+html(duel?.calculation?.attack)+' face à '+html(duel?.calculation?.defense)+'</p>'+
+   duelFaceOff(state,a)+'<p>'+html(duel?.calculation?.attack)+' face à '+html(duel?.calculation?.defense)+'</p>'+
    '<p class="caption">Probabilité calculée : '+Number(duel?.calculation?.successConditional??duel?.calculation?.successProbability??0).toFixed(1)+' % (hors faute le cas échéant).</p>'+
    button('match-continue-duel','Continuer')+'</section>';
  }
@@ -168,12 +211,16 @@ export function renderMatchScreen(state,{uncovered=false}={}){
   if(state.match.shootoutLastResult)return out+renderShootoutScreen(state,{uncovered});
   return renderFinalResult(state);
  }
- if(state.phase==='moment-result')return out+scoreStats(m)+resultView(m);
+ if(state.phase==='moment-result'){
+  const last=m.lastResult;
+  return out+attackBanner(last?.attacker,last?.details?.context,last?.type,last?.minute)+scoreStats(m)+resultView(m);
+ }
  const moment=m.currentMoment;
  if(!m.action){
   const supported=moment?.type==='open';
   const setPiece=isSetPieceKind(moment?.type);
-  out+='<section class="panel match-stage"><span class="eyebrow">'+html(moment?.minute)+'e · '+html(ACTION_LABEL[moment?.type]??'Action')+'</span>'+
+  out+=attackBanner(moment?.attacker,null,moment?.type,moment?.minute)+
+  '<section class="panel match-stage"><span class="eyebrow">'+html(moment?.minute)+'e · '+html(ACTION_LABEL[moment?.type]??'Action')+'</span>'+
    '<h2>'+html(moment?.attacker)+' passe à l’attaque</h2>'+
    (supported?'<p>Annonce des personnages et choix tactiques confidentiels.</p>'+
     button('match-begin-open','Commencer cette action'):
@@ -182,7 +229,6 @@ export function renderMatchScreen(state,{uncovered=false}={}){
    '</section>';
   return out+scoreStats(m);
  }
- out+='<div class="match-context">'+html(ACTION_LABEL[m.action.kind])+' · '+html(m.action.context??'')+
-  ' · '+html(m.action.attacker)+' attaque</div>';
+ out+=attackBanner(m.action.attacker,m.action.context??m.action.originContext,m.action.kind,m.action.minute);
  return out+scoreStats(m)+renderAction(state,view,uncovered);
 }
