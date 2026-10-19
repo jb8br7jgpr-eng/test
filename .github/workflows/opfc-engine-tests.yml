@@ -1,0 +1,20 @@
+name: OPFC - tests du moteur v0.8
+on:
+  push:
+    branches: [opfc-development]
+    paths:
+      - 'opfc/**'
+      - '.github/workflows/opfc-engine-tests.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  engine-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Tests OPMercato FC
+        run: node --test opfc/tests/engine.test.mjs
