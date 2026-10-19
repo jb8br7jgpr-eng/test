@@ -155,12 +155,16 @@ function cardPanel(info){
  '</div><div class="stats-grid">'+stats+'</div></div>';
 }
 function sale(){
+ // Même ossature que l'écran d'enchères du OPMercato classique (classique.html) :
+ // meilleure offre, joueur actif, 4 offres rapides, refus, et pouvoirs disponibles.
+ // Les montants et contraintes restent contrôlés par le moteur OPFC indépendant.
  const context=uiAuction(game),a=context.auction,t=context.team;
- const min=context.minimum,max=context.maximum;
- const quickest=[{label:'Offre minimale',amount:min},{label:'Offre +5 M',amount:min+5},
-  {label:'Offre +20 M',amount:min+20},{label:'Offre +50 M',amount:min+50}];
- return '<section class="panel opfc-auction"><div class="auction-top"><span class="eyebrow">Mercato · '+game.teams.reduce((n,t)=>n+t.roster.length,0)+
- '/14</span><span class="turn-pill">Enchère en cours</span></div>'+
+ const min=context.minimum,max=context.maximum,remaining=Math.max(0,5-t.refusals);
+ const quick=[0,20,50,100];
+ const passLabel=context.everOffered?'Se retirer sans refus':'Refuser · '+remaining+' restant'+(remaining>1?'s':'');
+ const observeUsed=t.hakis.observation,kingsUsed=t.hakis.kings;
+ return '<section class="panel opfc-auction"><div class="auction-top"><span class="eyebrow">Mercato · '+
+ game.teams.reduce((n,t)=>n+t.roster.length,0)+'/14</span><span class="turn-pill">Enchère en cours</span></div>'+
  cardPanel(context.card)+
  '<div class="bid-title"><div><span class="bid-kicker">Meilleure offre</span>'+
  '<strong class="bid-amount">'+(a.highestBid?a.highestBid+' M':'Aucune')+'</strong></div>'+
@@ -171,16 +175,28 @@ function sale(){
  (a.king?'<p class="warning-copy">Haki des Rois activé par '+a.king.holder+'.</p>':'')+
  (a.solo?'<p class="warning-copy">Une seule équipe recrute encore : prix fixe 5 M.</p>'+
  btn('solo','Recruter · 5 M','primary full'):
- '<div class="offers">'+quickest.map(o=>'<button class="offer-btn" type="button" data-action="bid-quick" data-amount="'+o.amount+
- '" '+(context.canBid&&o.amount<=max?'':'disabled')+'><strong>'+o.amount+' M</strong><small>'+o.label+'</small></button>').join('')+'</div>'+
- '<div class="bid-row"><div class="form-box"><label for="bid-value">Autre montant (M Berrys)</label>'+
- '<input class="bid-input" id="bid-value" type="number" inputmode="numeric" min="'+min+'" max="'+max+'" step="1" value="'+min+'" '+
- (context.canBid?'':'disabled')+'></div>'+btn('bid','Enchérir','primary',!context.canBid)+'</div>'+
- '<div class="auction-buttons">'+btn('pass',context.everOffered?'Se retirer':'Passer mon tour','negative full',!context.canPass)+
- btn('inspect','Fiche complète','ghost',false,'data-card="'+esc(a.cardId)+'"')+'</div>'+
- '<div class="haki-row">'+btn('observation','Observation','ghost',!context.canObserve)+
- btn('kings','Haki des Rois','ghost',!context.canKings)+'</div>')+
- '<p class="warning-copy">Priorité : '+a.priority+' · Mise légale : '+min+' à '+max+' M. Réserve de 5 M par recrue restante.</p></section>';
+ '<div class="offers">'+quick.map(add=>{
+  const amount=min+add;
+  return '<button class="offer-btn" type="button" data-action="bid-quick" data-amount="'+amount+
+  '" '+(context.canBid&&amount<=max?'':'disabled')+'><b>'+amount+' M</b><small>'+
+  (add===0?'Offre minimale':'Offre +'+add+' M')+'</small></button>';
+ }).join('')+'</div>'+
+ '<details class="bid-custom"><summary>Enchérir un autre montant</summary>'+
+ '<div class="bid-row"><div class="form-box"><label for="bid-value">Offre en M Berrys</label>'+
+ '<input class="bid-input" id="bid-value" type="number" inputmode="numeric" min="'+min+'" max="'+max+
+ '" step="1" value="'+min+'" '+(context.canBid?'':'disabled')+'></div>'+
+ btn('bid','Enchérir','primary',!context.canBid)+'</div></details>'+
+ '<div class="auction-refusal"><button class="pass-btn" data-action="pass" type="button" '+
+ (context.canPass?'':'disabled')+'>'+passLabel+'</button>'+
+ '<p class="refusal-counter">Refus utilisés : <strong>'+t.refusals+'/5</strong> · Refus restants : <strong>'+remaining+
+ '</strong></p></div>'+
+ '<div class="haki-row haki-auction">'+
+ btn('observation','Observation · '+(observeUsed?'Utilisé':'Disponible'),'ghost',!context.canObserve)+
+ btn('kings','Haki des Rois · '+(kingsUsed?'Utilisé':context.canKings?'Disponible':'Indisponible'),
+ 'ghost',!context.canKings)+'</div>'+
+ '<p class="notice">Passer sans avoir enchéri consomme un refus. Après une offre, se retirer ne consomme pas de refus.</p>')+
+ '<p class="warning-copy">Priorité : '+a.priority+' · Mise légale : '+min+' à '+max+
+ ' M. Réserve de 5 M par recrue restante.</p></section>';
 }
 function fieldHalf(team,top){
  const u=uiTeam(team),positions=top?['GAR','DEF','MIL','ATT']:['ATT','MIL','DEF','GAR'];
@@ -214,20 +230,29 @@ function pitch(){
  'data-club="'+t.club+'" aria-pressed="'+(upper===t.club)+'"')).join('')+'</div>')+
  '<p class="lineup-help">'+(selection?'Sélection : '+esc(card(selection.id)?.name)+' · touche une case '+selection.club+' pour placer ou échanger.':
  'Sélectionne une recrue puis touche une case de son club. Les cases occupées peuvent être échangées.')+'</p>'+
- '<div class="slot-field" data-top-club="'+upper+'">'+fieldHalf(first,true)+
- '<div class="field-divider"></div>'+fieldHalf(other,false)+'</div></section>';
+ '<div class="slot-field '+(placement?'slot-field-single':'')+'" data-top-club="'+upper+'">'+
+ fieldHalf(first,true)+(placement?'':'<div class="field-divider"></div>'+fieldHalf(other,false))+
+ '</div></section>';
 }
 function teamPanel(team){
- const u=uiTeam(team),editable=['mercato','lineup','half-time'].includes(game.phase)&&!team.ready;
+ const u=uiTeam(team),editable=['mercato','lineup','half-time'].includes(game.phase)&&!team.ready&&
+ (!placement||placement.club===team.club)&&!placement;
  return '<section class="panel team-panel"><div class="team-heading"><h2>'+renderClubCrest(team.club,'team-crest')+esc(clubName(team.club))+
  '</h2><small>'+u.rosterCount+'/7</small></div><div class="team-tools"><span class="caption">Entente '+u.entente+'/10</span>'+
  '<select data-action="formation" data-club="'+team.club+'" aria-label="Formation '+team.club+'" '+(editable?'':'disabled')+'>'+
  options(FORMATION_NAMES,u.formation)+'</select></div><div class="chip-row">'+
  (team.roster.length?team.roster.map(id=>{
-  const chosen=selection?.club===team.club&&selection?.id===id;
+  const info=card(id),chosen=selection?.club===team.club&&selection?.id===id;
+  const selectable=editable ||(placement&&placement.club===team.club&&placement.cardId===id);
+  const ranks={DIA:'Diamant',OR:'Or',ARG:'Argent',BRZ:'Bronze'};
   return '<button class="team-chip '+(chosen?'selected':'')+'" data-action="pick" data-club="'+team.club+
-  '" data-card="'+esc(id)+'" aria-pressed="'+!!chosen+'" '+(editable?'':'disabled')+'>'+renderCharacterPortrait(id,'chip-portrait')+
-  '<span class="team-chip-name">'+esc(card(id).name)+'</span><small>'+(team.slots.includes(id)?'✓':'+')+'</small></button>';
+  '" data-card="'+esc(id)+'" aria-pressed="'+!!chosen+'" '+(selectable?'':'disabled')+'>'+
+  renderCharacterPortrait(id,'chip-portrait')+
+  '<span class="team-chip-content"><span class="team-chip-name">'+esc(info.name)+'</span>'+
+  '<span class="team-chip-details"><span class="roster-position">'+info.position+'</span>'+
+  '<span class="roster-rating">'+info.rating+'</span>'+
+  '<span class="roster-tier tier-'+info.rarity.toLowerCase()+'">'+ranks[info.rarity]+'</span></span></span>'+
+  '<small class="chip-placed">'+(team.slots.includes(id)?'✓':'+')+'</small></button>';
  }).join(''):'<span class="caption">Aucune recrue.</span>')+'</div>'+
  (['lineup','half-time'].includes(game.phase)?btn('ready',u.ready?'✓ Équipe prête':u.canReady?'Valider cette composition':'Place les 7 joueurs',
  'small full '+(u.canReady?'primary':'ghost'),!u.canReady,'data-club="'+team.club+'"'):'')+'</section>';
@@ -240,10 +265,15 @@ function teams(){
 function placementPage(){
  const team=game.teams.find(t=>t.club===placement.club);
  const placed=team?.slots.includes(placement.cardId);
+ const recruit=card(placement.cardId),ranks={DIA:'Diamant',OR:'Or',ARG:'Argent',BRZ:'Bronze'};
  return '<section class="panel placement-intro"><span class="eyebrow">Recrutement confirmé</span>'+
- renderCharacterPortrait(placement.cardId,'placement-portrait')+
- '<h2>'+esc(card(placement.cardId)?.name)+' rejoint '+placement.club+'</h2>'+
- '<p>Place ta nouvelle recrue sur le terrain avant de reprendre les enchères.</p></section>'+
+ '<div class="placement-summary">'+renderCharacterPortrait(placement.cardId,'placement-portrait')+
+ '<div class="placement-summary-body"><h2>'+esc(recruit.name)+' rejoint '+placement.club+'</h2>'+
+ '<div class="placement-metadata"><span class="roster-position">'+recruit.position+'</span>'+
+ '<span class="roster-rating">Note '+recruit.rating+'</span>'+
+ '<span class="roster-tier tier-'+recruit.rarity.toLowerCase()+'">'+ranks[recruit.rarity]+'</span>'+
+ '</div></div></div>'+
+ '<p>Place ta nouvelle recrue sur ton demi-terrain avant de reprendre les enchères.</p></section>'+
  teams()+
  '<div class="placement-actions">'+
  btn('continue-placement',game.phase==='lineup'?'Continuer vers les compositions':'Reprendre les enchères',
@@ -440,8 +470,10 @@ function clicked(button){
  if(action==='inspect'){modal={type:'card',id:game.auction.cardId};render();return;}
  if(action==='pick'){
   const id=button.dataset.card;
-  if(placement&&club!==placement.club)throw Error('Place d’abord la nouvelle recrue de ton club.');
-  selection=selection?.club===club&&selection.id===id?null:{club,id};
+  if(placement&&(club!==placement.club||id!==placement.cardId))
+   throw Error('Place d’abord la nouvelle recrue avant de modifier un autre joueur.');
+  selection=placement?{club:placement.club,id:placement.cardId}:
+   (selection?.club===club&&selection.id===id?null:{club,id});
   pitchClub=club;render();return;
  }
  if(action==='slot'){
