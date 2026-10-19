@@ -292,8 +292,14 @@ try{
  await fit(winner,'finale réseau');
  await winner.locator('.final-score').screenshot({
   path:dest+'/16f-en-ligne-victoire.png',animations:'disabled'});
+ // Fermer/recharger un téléphone : seul son jeton local persiste et le GET
+ // authentifié reconstruit la vue finale sans aucune donnée privée.
+ await winner.reload({waitUntil:'domcontentloaded'});
+ await winner.locator('.final-screen').waitFor({timeout:12000});
+ assert.match(await winner.locator('.final-penalty-score').textContent(),/5 – 6/);
+ assert.equal(await winner.locator('.final-kick').count(),12);
  assert.deepEqual(errors,[],'Erreurs JavaScript sur les deux iPhone');
- console.log('PASS OPFC online 2 iPhone : tirs secrets, mort subite, finale, reconnection et secret');
+ console.log('PASS OPFC online 2 iPhone : tirs secrets, mort subite, finale, reconnexion et secret');
 }finally{
  for(const ctx of contexts)await ctx.close();
  await browser.close();
