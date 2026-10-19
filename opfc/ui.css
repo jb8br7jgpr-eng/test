@@ -634,3 +634,69 @@ a{color:inherit}p{line-height:1.45}.app{width:min(100%,760px);margin:0 auto;padd
 @media(prefers-reduced-motion:reduce){
  .match-tactical-choices>.match-choice{transition:none}
 }
+
+
+/* Uniformisation finale des choix en match : libellés et emojis centrés.
+ * Conserver les 6 propriétés CSS d'origine des cases d'enchères. */
+.match-tactical-choices>.match-choice{
+ flex-direction:column;
+ align-items:center;
+ justify-content:center;
+ text-align:center;
+ gap:5px;
+}
+.match-tactical-choices>.match-choice strong{
+ display:block;
+ width:100%;
+ text-align:center;
+ text-wrap:balance;
+}
+.match-tactical-choices .match-choice-emoji{
+ display:inline-block;
+ flex:0 0 auto;
+ font-size:20px;
+ line-height:1.15;
+ text-align:center;
+ font-weight:400;
+}
+.match-tactical-choices>.match-choice.setpiece-taker{
+ flex-direction:column;
+ align-items:center;
+ justify-content:center;
+ text-align:center;
+ gap:5px;
+ min-height:96px;
+}
+.match-tactical-choices>.match-choice.setpiece-taker .setpiece-taker-portrait{
+ width:38px;
+ height:38px;
+ flex:0 0 38px;
+}
+.match-tactical-choices .setpiece-taker-label{
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ flex-wrap:wrap;
+ gap:5px;
+ max-width:100%;
+ text-align:center;
+}
+.match-tactical-choices .setpiece-taker-label .match-choice-emoji{
+ font-size:14px;
+ line-height:1;
+}
+.match-tactical-choices .setpiece-taker-label strong{
+ width:auto;
+ max-width:100%;
+ overflow-wrap:anywhere;
+ text-align:center;
+}
+@media(max-width:370px){
+ .match-tactical-choices>.match-choice{gap:4px}
+ .match-tactical-choices .match-choice-emoji{font-size:18px}
+ .match-tactical-choices>.match-choice.setpiece-taker{min-height:92px}
+ .match-tactical-choices>.match-choice.setpiece-taker .setpiece-taker-portrait{
+  width:34px;height:34px;flex-basis:34px;
+ }
+ .match-tactical-choices .setpiece-taker-label .match-choice-emoji{font-size:13px}
+}
