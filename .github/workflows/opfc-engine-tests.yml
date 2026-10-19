@@ -1,4 +1,4 @@
-name: OPFC - tests du moteur v0.8
+name: OPFC - catalogue et moteur
 on:
   push:
     branches: [opfc-development]
@@ -9,12 +9,12 @@ on:
 permissions:
   contents: read
 jobs:
-  engine-tests:
+  tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Tests OPMercato FC
-        run: node --test opfc/tests/engine.test.mjs
+      - name: Vérifier les règles OPFC
+        run: node --test opfc/tests/*.test.mjs
