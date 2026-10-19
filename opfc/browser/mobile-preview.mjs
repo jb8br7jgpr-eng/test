@@ -271,6 +271,10 @@ try{
   assert.equal(await page.locator('.slot-field').getAttribute('data-top-club'),club);
   assert.equal(await page.locator('.slot-field-single .field-half').count(),1,'Une seule moitié doit apparaître');
   assert.equal(await page.locator('.slot-field-single .field-label').count(),1);
+   assert.equal(await page.locator('.slot-field-single .pitch-goal-bottom').evaluate(el=>getComputedStyle(el).display),'none',
+    'Le demi-terrain ne doit pas montrer un deuxième but');
+   assert.equal(await page.locator('.slot-field-single .pitch-penalty-bottom').evaluate(el=>getComputedStyle(el).display),'none',
+    'Le demi-terrain ne doit pas montrer une surface adverse');
   assert.equal(await page.locator('.team-panel').count(),2,'Les deux listes restent visibles');
   assert.ok(await page.locator('.placement-metadata .roster-position').count()===1);
   assert.ok(await page.locator('.placement-metadata .roster-rating').count()===1);
