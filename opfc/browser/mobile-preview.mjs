@@ -363,8 +363,35 @@ try{
  await page.reload({waitUntil:'domcontentloaded'});
  await page.locator('.match-faceoff').waitFor();
  assert.equal(await page.locator('.match-faceoff img').count(),2);
- await checkMobileLayout('duel');
+ assert.equal(await page.locator('.match-team-overview .slot-field').count(),1);
+ assert.equal(await page.locator('.match-team-overview .field-half').count(),2);
+ assert.equal(await page.locator('.match-team-overview .team-panel').count(),2);
+ assert.equal(await page.locator('.match-team-overview .team-chip').count(),14);
+ assert.equal(await page.locator('.match-team-overview .pitch-player img').count(),14);
+ assert.equal(await page.locator('.match-faceoff .match-duelist-rating').count(),2);
+ assert.equal(await page.locator('.match-faceoff .match-duelist-position').count(),2);
+ assert.equal(await page.locator('.match-attack-banner').count(),1);
+ assert.equal(await page.locator('.match-action-type.type-bonne').count(),1);
+ const displayClub=await page.locator('.match-attack-banner').getAttribute('aria-label');
+ assert.equal(displayClub,'Équipe attaquante : '+(await game()).match.action.attacker);
+ const matchType=await page.locator('.match-action-type').evaluate(el=>({
+  text:el.textContent,
+  borderColor:getComputedStyle(el).borderTopColor
+ }));
+ assert.match(matchType.text,/BONNE OCCASION/);
+ assert.equal(await page.locator('.match-team-overview .pitch-player:disabled').count(),14);
+ const heading=await page.locator('.match-duel-ready-heading').evaluate(el=>({
+  size:parseFloat(getComputedStyle(el).fontSize)
+ }));
+ assert.ok(heading.size<=18,'Le titre des tactiques ne doit plus être surdimensionné');
+ await checkMobileLayout('duel avec situation colorée et compositions permanentes');
  await take('06-duel');
+ // Une capture courte et lisible des commandes de duel, sans les longues listes du bas.
+ await page.locator('.huds').evaluate(el=>{el.style.position='static';});
+ await page.locator('.match-attack-banner').screenshot({path:shots+'/06a-type-action.png',animations:'disabled'});
+ await page.locator('.match-stage').first().screenshot({path:shots+'/06b-duel-joueurs.png',animations:'disabled'});
+ await page.locator('.huds').evaluate(el=>{el.style.position='';});
+ console.log('PASS duel iPhone : action orange, attaque visible, deux postes/notes et 14 joueurs sous le terrain');
 
  // Parcourt la simulation moteur en conditions identiques aux tests unitaires.
  const result=await page.evaluate(async({key,prepared})=>{
@@ -388,6 +415,8 @@ try{
  await page.reload({waitUntil:'domcontentloaded'});
  await page.locator('.final-screen').waitFor();
  assert.ok(await page.locator('.final-goal .character-portrait img').count()>=1);
+ assert.equal(await page.locator('.match-team-overview .team-chip').count(),14,
+  'Les listes doivent rester visibles même après le coup de sifflet final');
  await checkMobileLayout('résultat final');
  await take('07-resultat-final');
 
