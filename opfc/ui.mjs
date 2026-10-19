@@ -212,20 +212,44 @@ function sale(){
  ' · Restants : <strong>'+remaining+'/5</strong></span></p>')+
  '</section></div>';
 }
+// Dessin partagé par tous les écrans (placement, compositions et match).
+function pitchMarkings(){
+ return '<div class="pitch-markings" aria-hidden="true">'+
+ '<span class="pitch-outline"></span>'+
+ '<span class="pitch-center-line"></span><span class="pitch-center-circle"></span><span class="pitch-center-spot"></span>'+
+ '<span class="pitch-penalty-area pitch-penalty-top"></span><span class="pitch-penalty-area pitch-penalty-bottom"></span>'+
+ '<span class="pitch-goal-area pitch-goal-area-top"></span><span class="pitch-goal-area pitch-goal-area-bottom"></span>'+
+ '<span class="pitch-penalty-spot pitch-penalty-spot-top"></span><span class="pitch-penalty-spot pitch-penalty-spot-bottom"></span>'+
+ '<span class="pitch-goal pitch-goal-top"></span><span class="pitch-goal pitch-goal-bottom"></span>'+
+ '<span class="pitch-corner pitch-corner-tl"></span><span class="pitch-corner pitch-corner-tr"></span>'+
+ '<span class="pitch-corner pitch-corner-bl"></span><span class="pitch-corner pitch-corner-br"></span>'+
+ '</div>';
+}
 function fieldHalf(team,top){
  const u=uiTeam(team),positions=top?['GAR','DEF','MIL','ATT']:['ATT','MIL','DEF','GAR'];
  const spectator=!['mercato','lineup','half-time'].includes(game.phase);
- return '<div class="field-half"><div class="field-label '+team.club.toLowerCase()+'"><span>'+team.club+' · '+u.formation+
- '</span><span>'+u.entente+'/10 entente</span></div>'+
- positions.map(pos=>'<div class="pitch-row">'+u.lineup.filter(p=>p.position===pos).map(p=>{
-  const active=selection?.club===team.club&&selection?.id===p.cardId;
-  return '<button class="pitch-player '+(p.cardId?'':'empty')+' '+(active?'selected':'')+
-   '" data-action="slot" data-club="'+team.club+'" data-slot="'+p.slot+'" aria-label="'+esc(pos)+' '+esc(p.card?.name??'vide')+'" '+(spectator?'disabled':'')+'>'+
-   '<span class="position">'+pos+(p.outOfPosition?'<span class="out" title="Hors poste"> !</span>':'')+'</span>'+
-   (p.card?renderCharacterPortrait(p.card.id,'pitch-avatar'):'<span class="pitch-avatar pitch-avatar-empty" aria-hidden="true">+</span>')+
-   '<span class="player-mininame">'+esc(p.card?.name??'+')+'</span>'+
-   (p.rating===null?'':'<span class="rating">'+p.rating+'</span>')+'</button>';
- }).join('')+'</div>').join('')+'</div>';
+ const label='<div class="field-label '+team.club.toLowerCase()+'"><span>'+team.club+' · '+u.formation+
+ '</span><span>'+u.entente+'/10 entente</span></div>';
+ const lines=positions.map(pos=>'<div class="pitch-row pitch-row-'+pos.toLowerCase()+'">'+
+  u.lineup.filter(p=>p.position===pos).map(p=>{
+   const active=selection?.club===team.club&&selection?.id===p.cardId;
+   const viewOnly=spectator&&!!p.cardId;
+   const action=viewOnly?'inspect-player':'slot';
+   const aria=p.card?.name?pos+' · '+p.card.name+' · note effective '+p.rating+
+     (p.outOfPosition?' · hors poste':'')+', ouvrir sa fiche':pos+' · emplacement libre';
+   return '<button type="button" class="pitch-player '+(p.cardId?'':'empty')+' '+(active?'selected':'')+
+    '" data-action="'+action+'" data-club="'+team.club+'" data-slot="'+p.slot+'"'+
+    (viewOnly?' data-card="'+esc(p.cardId)+'"':'')+' aria-label="'+esc(aria)+'"'+
+    (spectator&&!p.cardId?' disabled':'')+'>'+
+    (p.card?renderCharacterPortrait(p.card.id,'pitch-avatar'):
+    '<span class="pitch-avatar pitch-avatar-empty" aria-hidden="true">+</span>')+
+    '<span class="pitch-player-badges"><span class="position">'+pos+'</span>'+
+    (p.rating===null?'':'<span class="rating">'+p.rating+'</span>')+
+    (p.outOfPosition?'<span class="out" title="Hors poste" aria-label="Hors poste">!</span>':'')+
+    '</span></button>';
+  }).join('')+'</div>').join('');
+ return '<div class="field-half '+(top?'field-half-top':'field-half-bottom')+'">'+
+ (top?label:'')+lines+(top?'':label)+'</div>';
 }
 function currentPitchClub(){
  // En phase de placement, l'équipe qui vient de recruter reste toujours en haut.
@@ -248,8 +272,8 @@ function pitch(){
  'Compositions sur le terrain · les changements sont possibles uniquement à la mi-temps.':
  selection?'Sélection : '+esc(card(selection.id)?.name)+' · touche une case '+selection.club+' pour placer ou échanger.':
  'Sélectionne une recrue puis touche une case de son club. Les cases occupées peuvent être échangées.')+'</p>'+
- '<div class="slot-field '+(placement?'slot-field-single':'')+'" data-top-club="'+upper+'">'+
- fieldHalf(first,true)+(placement?'':'<div class="field-divider"></div>'+fieldHalf(other,false))+
+ '<div class="slot-field '+(placement?'slot-field-single':'slot-field-full')+'" data-top-club="'+upper+'">'+
+ pitchMarkings()+fieldHalf(first,true)+(placement?'':'<div class="field-divider"></div>'+fieldHalf(other,false))+
  '</div></section>';
 }
 function teamPanel(team){
