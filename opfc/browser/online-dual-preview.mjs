@@ -260,6 +260,7 @@ try{
  await first.locator('.shootout-mark--goal').first().waitFor({state:'visible'});
  assert.equal(await first.locator('.shootout-mark--goal').count(),1);
  await first.locator('[data-type="shootout-continue"]').click();
+ await first.locator('[data-type="shootout-continue"]').waitFor({state:'detached'});
  await fit(first,'TAB réseau');
  await first.locator('.shootout-tracker').screenshot({
   path:dest+'/16e-en-ligne-tab.png',animations:'disabled'});
