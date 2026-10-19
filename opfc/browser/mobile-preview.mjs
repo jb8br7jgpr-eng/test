@@ -128,6 +128,77 @@ try{
  assert.match(await page.locator('.opfc-auction .extra-power').innerText(),/👁 Observation/);
  assert.equal(await page.locator('.opfc-auction .custom-bid').count(),1);
  await take('01-mercato');
+ await page.locator('.opfc-auction').screenshot({path:shots+'/01b-encheres-classiques.png',animations:'disabled'});
+ // Comparaison CSS avec les éléments d'origine du véritable OPMercato classique.
+ // Le HTML original est chargé sur une page séparée, sans modifier ses sources.
+ const classicPage=await context.newPage();
+ try{
+  await classicPage.goto(origin+'/classique.html',{waitUntil:'domcontentloaded'});
+  await classicPage.evaluate(()=>{
+   const probe=document.createElement('section');
+   probe.id='opfc-compare-classic';
+   probe.className='card auction';
+   probe.innerHTML='<div class="bid-title"><div><span class="kicker">Meilleure offre</span>'+
+    '<strong class="bid-amount">5 M</strong></div><div class="bid-leader">En tête : <strong>PSG</strong></div></div>'+
+    '<div class="turn-banner"><div><span>AU TOUR DE</span><strong>PSG</strong></div>'+
+    '<div class="turn-budget">250 M<span>disponibles</span></div></div>'+
+    '<div class="offers"><button class="offer-btn"><b>5 M</b><small>Offre minimale</small></button></div>'+
+    '<div class="custom-bid"><label>Autre montant</label><div><input placeholder="5">'+
+    '<button class="btn-ghost">Enchérir</button></div></div>'+
+    '<button class="haki-btn">👑 Haki des Rois<small>Une seule fois</small></button>'+
+    '<div class="extra-powers"><button class="extra-power">👁 Observation</button></div>'+
+    '<button class="pass-btn">Refuser ce personnage</button>';
+   document.body.append(probe);
+  });
+  const selectors={
+   title:'.bid-title',kicker:'.bid-title .kicker',amount:'.bid-amount',
+   leader:'.bid-leader',turn:'.turn-banner',bidder:'.turn-banner strong',
+   offers:'.offers',offer:'.offer-btn',offerAmount:'.offer-btn b',
+   offerHint:'.offer-btn small',custom:'.custom-bid',customLabel:'.custom-bid label',
+   customButton:'.custom-bid button',king:'.haki-btn',observation:'.extra-power',
+   refusal:'.pass-btn'
+  };
+  const props=['display','color','backgroundColor','backgroundImage','borderRadius',
+   'borderTopColor','paddingTop','paddingLeft','paddingBottom','fontFamily',
+   'fontSize','fontWeight','letterSpacing','minHeight','marginTop','gap'];
+  const read=async(tab,root)=>tab.evaluate(({root,selectors,props})=>{
+   const scope=document.querySelector(root);if(!scope)throw Error('Enchère de comparaison absente : '+root);
+   const out={};
+   for(const [name,selector] of Object.entries(selectors)){
+    const element=scope.querySelector(selector);
+    if(!element)throw Error('Élément de comparaison absent '+selector);
+    const style=getComputedStyle(element);
+    out[name]=Object.fromEntries(props.map(prop=>[prop,style[prop]]));
+   }
+   return out;
+  },{root,selectors,props});
+  const reference=await read(classicPage,'#opfc-compare-classic');
+  const current=await read(page,'.opfc-auction');
+  const keys={
+   title:['display','paddingBottom','fontFamily'],
+   kicker:['fontSize','fontWeight','color','letterSpacing'],
+   amount:['fontSize','fontWeight','color','letterSpacing'],
+   turn:['backgroundColor','borderRadius','paddingTop','marginTop'],
+   offer:['backgroundColor','borderRadius','paddingTop','minHeight'],
+   offerAmount:['fontSize','fontWeight','color'],
+   offerHint:['fontSize','fontWeight','color'],
+   customLabel:['fontSize','fontWeight','color'],
+   king:['fontSize','fontWeight','backgroundImage','borderRadius'],
+   observation:['fontSize','fontWeight','backgroundImage','borderRadius'],
+   refusal:['fontSize','fontWeight','backgroundColor','borderRadius','minHeight']
+  };
+  const differences=[];
+  for(const [name,fields] of Object.entries(keys)){
+   for(const field of fields){
+    if(reference[name][field]!==current[name][field]){
+     differences.push({name,field,classic:reference[name][field],opfc:current[name][field]});
+    }
+   }
+  }
+  assert.deepEqual(differences,[], 'OPFC ne respecte pas les styles exacts d’OPMercato classique');
+  console.log('PASS enchères : '+Object.values(keys).reduce((n,fields)=>n+fields.length,0)+
+    ' propriétés CSS identiques à OPMercato classique');
+ }finally{await classicPage.close();}
 
  // Ouverture facultative des équipes : le club concerné est orienté vers le haut.
  await press('toggle-teams');
