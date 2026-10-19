@@ -145,18 +145,20 @@ test('Réseau : mi-temps, reprise, mort subite et score final sans fuite de cale
  assert.match(ui(onlinePreMatchView(s,'PSG'),'PSG'),/data-type="begin-shootout"/);
  assert.doesNotMatch(ui(onlinePreMatchView(s,'OM'),'OM'),/data-type="begin-shootout"/);
  s=command(s,'PSG','begin-shootout');
- let publicShot=onlinePreMatchView(s,'PSG');
- assert.match(ui(publicShot,'PSG'),/shootout-tracker/);
- assert.match(ui(publicShot,'PSG'),/data-shootout="true"/);
- assert.doesNotMatch(ui(publicShot,'OM'),/data-shootout="true"/);
- s=command(s,'PSG','shootout-choose',{choice:'GAUCHE'});
- publicShot=onlinePreMatchView(s,'OM');
- assert.match(ui(publicShot,'OM'),/data-shootout="true"/);
- assert.doesNotMatch(ui(onlinePreMatchView(s,'PSG'),'PSG'),/data-shootout="true"/);
+ const shooter=s.match.shootout.nextClub;
+ const goalie=shooter==='PSG'?'OM':'PSG';
+ let publicShot=onlinePreMatchView(s,shooter);
+ assert.match(ui(publicShot,shooter),/shootout-tracker/);
+ assert.match(ui(publicShot,shooter),/data-shootout="true"/);
+ assert.doesNotMatch(ui(onlinePreMatchView(s,goalie),goalie),/data-shootout="true"/);
+ s=command(s,shooter,'shootout-choose',{choice:'GAUCHE'});
+ publicShot=onlinePreMatchView(s,goalie);
+ assert.match(ui(publicShot,goalie),/data-shootout="true"/);
+ assert.doesNotMatch(ui(onlinePreMatchView(s,shooter),shooter),/data-shootout="true"/);
  assert.equal(publicShot.match.shootout.orders,undefined);
  assert.equal(publicShot.match.shootout.keepers,undefined);
- s=command(s,'OM','shootout-choose',{choice:'DROITE'});
- assert.match(ui(onlinePreMatchView(s,'PSG'),'PSG'),/data-type="shootout-reveal"/);
+ s=command(s,goalie,'shootout-choose',{choice:'DROITE'});
+ assert.match(ui(onlinePreMatchView(s,shooter),shooter),/data-type="shootout-reveal"/);
 });
 test('Salon : la partie n’est plus annoncée comme une maquette quand les deux sont présents',()=>{
  const room={role:'host',myClub:'PSG',status:'ready',code:'ABCD23',
