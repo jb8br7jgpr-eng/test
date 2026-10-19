@@ -13,6 +13,7 @@ import {
  generateServerGame,sha256Token,authenticateRoom,lobbyPublicView,
  normalizeRoomCode,validateRoomId,validateClub,validateSessionToken
 } from '../../../opfc/online-protocol.mjs';
+import {applyOnlineMarketCommand,onlineMarketPublicView} from '../../../opfc/online-market.mjs';
 
 const origin=Deno.env.get('OPFC_ALLOWED_ORIGIN')??'https://jb8br7jgpr-eng.github.io';
 const supabaseUrl=Deno.env.get('SUPABASE_URL');
@@ -89,17 +90,65 @@ async function join(body){
  if(!joined)return error('Salon déjà rejoint par un autre joueur',409);
  return response(publicSession(joined,'guest',token));
 }
-async function get(body){
+// Ne JAMAIS renvoyer private_state, hashs de jetons ou paquet au client.
+async function authenticatedRoom(body){
  const roomId=isUuid(body.roomId),token=safeToken(body.token);
- if(!roomId||!token)return error('Session invalide',401);
+ if(!roomId||!token)return {error:error('Session invalide',401)};
  const {data:row,error:dbErr}=await db.from('opfc_rooms')
-  .select('id,code,host_club,host_token_hash,guest_token_hash,status,version,expires_at')
+  .select('id,code,host_club,host_token_hash,guest_token_hash,status,version,expires_at,private_state')
   .eq('id',roomId).gt('expires_at',new Date().toISOString()).maybeSingle();
  if(dbErr)throw new Error('Lecture du salon indisponible');
- if(!row)return error('Salon introuvable ou expiré',404);
+ if(!row)return {error:error('Salon introuvable ou expiré',404)};
  const role=await authenticateRoom(row,token);
- if(!role)return error('Accès au salon refusé',403);
- return response({room:roomView(row,role)});
+ if(!role)return {error:error('Accès au salon refusé',403)};
+ return {row,role,club:role==='host'?row.host_club:row.host_club==='PSG'?'OM':'PSG'};
+}
+function playerGameView(row,club){
+ // Les vues de match propres à chaque joueur seront ajoutées en 10A3B.
+ if(row.status!=='ready'||!['mercato','lineup','kickoff-ready'].includes(row.private_state?.phase))
+  return null;
+ return onlineMarketPublicView(row.private_state,club);
+}
+async function get(body){
+ const auth=await authenticatedRoom(body);
+ if(auth.error)return auth.error;
+ return response({room:roomView(auth.row,auth.role),
+  game:playerGameView(auth.row,auth.club)});
+}
+async function mutate(body){
+ const auth=await authenticatedRoom(body);
+ if(auth.error)return auth.error;
+ const {row,role,club}=auth;
+ if(row.status!=='ready')return error('En attente du deuxième joueur',409);
+ if(!Number.isSafeInteger(body.expectedVersion)||body.expectedVersion<1)
+  return error('Version attendue invalide');
+ if(row.version!==body.expectedVersion)
+  return error('Salon modifié : actualise la partie',409);
+ if(row.private_state?.phase!=='mercato')
+  return error('Le mercato n’est plus actif',409);
+ let transition;
+ try{
+  transition=applyOnlineMarketCommand(row.private_state,club,body.command);
+ }catch(e){
+  return error(e instanceof Error?e.message:'Action illégale',400);
+ }
+ // UPDATE conditionnel : un seul des deux appels concurrents peut gagner.
+ // On renvoie un conflit plutôt que d'écraser le coup d'un autre joueur.
+ const {data:updated,error:writeErr}=await db.from('opfc_rooms')
+  .update({
+   private_state:transition.state,
+   version:row.version+1,
+   updated_at:new Date().toISOString()
+  })
+  .eq('id',row.id).eq('version',row.version).eq('status','ready')
+  .select('id,code,host_club,guest_token_hash,status,version,expires_at')
+  .maybeSingle();
+ if(writeErr)throw new Error('Sauvegarde du mercato indisponible');
+ if(!updated)return error('Salon modifié : actualise la partie',409);
+ return response({
+  room:roomView(updated,role),
+  game:transition.publicForActor
+ });
 }
 Deno.serve(async req=>{
  // Un origin absent est admis pour clients non navigateurs, mais AUCUN droit
@@ -119,6 +168,7 @@ Deno.serve(async req=>{
   if(body.action==='create')return await create(body);
   if(body.action==='join')return await join(body);
   if(body.action==='get')return await get(body);
+  if(body.action==='market')return await mutate(body);
   return error('Action inconnue');
  }catch(e){
   console.error('opfc-online:',e instanceof Error?e.message:'server error');

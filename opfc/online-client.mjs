@@ -61,7 +61,21 @@ export function createOnlineClient({
  if(!Number.isInteger(timeoutMs)||timeoutMs<100||timeoutMs>120000)fail('Délai réseau invalide');
  if(publishableKey && (typeof publishableKey!=='string'||publishableKey.length>2048))
   fail('Clé publique du salon invalide');
- let session=null,room=null;
+ let session=null,room=null,marketGame=null;
+ const validSnapshot=(payload)=>{
+  if(payload===null||payload===undefined)return null;
+  if(!payload||typeof payload!=='object'||Array.isArray(payload)||
+   !['mercato','lineup','kickoff-ready'].includes(payload.phase)||
+   !Array.isArray(payload.teams)||payload.teams.length!==2||
+   !Number.isInteger(payload.version)||payload.version!==1)
+   fail('Vue de mercato reçue invalide');
+  const allowed=['version','phase','teams','dice','auction','lastResult','myObservation'];
+  if(Object.keys(payload).some(k=>!allowed.includes(k)))fail('Vue de mercato contenant des secrets');
+  if(!Array.isArray(payload.dice)||payload.dice.length!==2||
+   payload.teams.some(t=>!t||!['PSG','OM'].includes(t.club)))
+   fail('Vue de mercato incohérente');
+  return structuredClone(payload);
+ };
  const persist=()=>{try{if(session)storage?.setItem(ONLINE_SESSION_KEY,JSON.stringify(session));else storage?.removeItem(ONLINE_SESSION_KEY);}catch{/* Stockage indisponible : session en mémoire uniquement. */}};
  const ensureOnline=()=>{
   if(!url)fail('Le serveur OPFC n’est pas encore configuré. Aucun salon ne peut être créé ou rejoint.');
@@ -88,20 +102,21 @@ export function createOnlineClient({
  const accept=(payload,persistSession)=>{
   const incoming=validSession(payload?.session);
   const incomingRoom=validRoom(payload?.room,incoming);
-  session=incoming;room=incomingRoom;
+  session=incoming;room=incomingRoom;marketGame=validSnapshot(payload?.game);
   if(persistSession)persist();
   return room;
  };
  return Object.freeze({
   get configured(){return !!url;},
   get room(){return room;},
+  get marketGame(){return marketGame;},
   get hasSession(){return session!==null;},
   get sessionRole(){return session?.role??null;},
   loadSession(){
    let raw;try{raw=storage?.getItem(ONLINE_SESSION_KEY);}catch{return false;}
    if(!raw)return false;
-   try{session=validSession(JSON.parse(raw));room=null;return true;}
-   catch{session=null;room=null;persist();return false;}
+   try{session=validSession(JSON.parse(raw));room=null;marketGame=null;return true;}
+   catch{session=null;room=null;marketGame=null;persist();return false;}
   },
   async createRoom(firstClub='PSG'){
    ensureOnline();if(session)fail('Quitte d’abord le salon en cours');
@@ -117,13 +132,27 @@ export function createOnlineClient({
    ensureOnline();if(!session)fail('Aucune session de salon à actualiser');
    const data=await request({action:'get',roomId:session.roomId,token:session.token});
    const next=validRoom(data.room,session);
+   const snapshot=validSnapshot(data.game);
    // Réponses réseau en retard : une ancienne version ne remplace jamais
    // une version plus récente déjà connue de ce client.
-   if(!room||next.version>=room.version)room=next;
+   if(!room||next.version>=room.version){room=next;marketGame=snapshot;}
    return room;
   },
+  async marketAction(command){
+   ensureOnline();
+   if(!session||!room||room.status!=='ready')fail('Actualise d’abord un salon avec deux joueurs');
+   if(!command||typeof command!=='object'||Array.isArray(command))fail('Commande de mercato invalide');
+   const data=await request({action:'market',roomId:session.roomId,token:session.token,
+    expectedVersion:room.version,command});
+   const nextRoom=validRoom(data.room,session);
+   if(nextRoom.version!==room.version+1)fail('Version de confirmation du mercato invalide');
+   const nextGame=validSnapshot(data.game);
+   if(!nextGame)fail('Réponse de mercato incomplète');
+   room=nextRoom;marketGame=nextGame;
+   return marketGame;
+  },
   leaveDevice(){
-   session=null;room=null;persist(); // Ne ferme pas le salon distant.
+   session=null;room=null;marketGame=null;persist(); // Ne ferme pas le salon distant.
   }
  });
 }
