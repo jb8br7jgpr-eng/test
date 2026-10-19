@@ -90,12 +90,19 @@ try{
    const color=getComputedStyle(element).backgroundColor;
    element.remove();return color;
   });
-  return {photo:rect('.portrait-shell-photo'),identity:rect('.player-identity-row'),
-   rating:rect('.player-rating'),grid:rect('.stats-grid'),stats,colors,
+  return {photo:rect('.portrait-shell-photo'),identity:rect('.player-identity'),
+   rating:rect('.player-rating-row'),badge:rect('.player-position'),tierBadge:rect('.player-tier'),
+   grid:rect('.stats-grid'),stats,colors,
    position:card.querySelector('.player-position')?.textContent,
    tier:card.querySelector('.player-tier')?.textContent};
  });
  assert.ok(playerCardLayout.photo&&playerCardLayout.identity&&playerCardLayout.rating&&playerCardLayout.grid);
+ assert.ok(playerCardLayout.badge&&playerCardLayout.tierBadge);
+ assert.ok(Math.abs(playerCardLayout.badge.top-playerCardLayout.rating.top)<35 &&
+  Math.abs(playerCardLayout.tierBadge.top-playerCardLayout.rating.top)<35,
+  'Poste et rang doivent encadrer la note globale');
+ assert.ok(playerCardLayout.badge.left<playerCardLayout.rating.left &&
+  playerCardLayout.tierBadge.left>playerCardLayout.rating.left);
  assert.ok(playerCardLayout.photo.top<playerCardLayout.identity.top&&
   playerCardLayout.identity.top<playerCardLayout.rating.top&&
   playerCardLayout.rating.top<playerCardLayout.grid.top,
@@ -107,7 +114,16 @@ try{
  assert.ok(['GAR','DEF','MIL','ATT'].includes(playerCardLayout.position));
  assert.ok(['DIAMANT','OR','ARGENT','BRONZE'].includes(playerCardLayout.tier));
  await checkMobileLayout('mercato');
+ assert.equal(await page.locator('.slot-field').count(),0,'Terrain masqué initialement');
  await take('01-mercato');
+
+ // Ouverture facultative des équipes : le club concerné est orienté vers le haut.
+ await press('toggle-teams');
+ const initialClub=(await game()).auction.turn;
+ assert.equal(await page.locator('.slot-field').getAttribute('data-top-club'),initialClub);
+ await checkMobileLayout('équipes ouvertes');
+ await press('toggle-teams');
+ assert.equal(await page.locator('.slot-field').count(),0);
 
  // Véritable enchère jusqu'à l'écran de vente avec portrait.
  await press('bid');
@@ -120,6 +136,26 @@ try{
 
  // Continue la vraie partie locale avec les commandes de l'interface.
  await press('close');
+ const placeCurrent=async()=>{
+  if(await page.locator('.placement-intro').count()===0)return false;
+  const s=await game(),club=s.lastResult?.winner;
+  assert.ok(club,'Une fenêtre de placement nécessite une recrue gagnée');
+  assert.equal(await page.locator('.slot-field').getAttribute('data-top-club'),club);
+  const t=s.teams.find(t=>t.club===club);
+  const free=t.slots.indexOf(null);
+  assert.ok(free>=0,'Une case doit être disponible pour la recrue');
+  assert.ok(await page.locator('[data-action="continue-placement"]').isDisabled(),
+   'La reprise doit être bloquée tant que la recrue n’est pas placée');
+  await press('slot','[data-club="'+club+'"][data-slot="'+free+'"]');
+  const updated=await game();
+  assert.equal(updated.teams.find(team=>team.club===club).slots[free],s.lastResult.cardId);
+  assert.ok(await page.locator('[data-action="continue-placement"]').isEnabled());
+  await press('continue-placement');
+  return true;
+ };
+ await checkMobileLayout('placement');
+ await take('03-placement');
+ assert.ok(await placeCurrent());
  for(let iteration=0;await phase()==='mercato';iteration++){
   assert.ok(iteration<130,'Le mercato reste bloqué');
   const s=await game();
@@ -127,6 +163,7 @@ try{
   else if(s.auction.highestBid<6)await press('bid');
   else await press('pass');
   if(await page.locator('.modal [data-action="close"]').count())await press('close');
+  await placeCurrent();
  }
  assert.equal(await phase(),'lineup');
  let s=await game();
@@ -139,12 +176,12 @@ try{
  }
  assert.equal(await page.locator('.pitch-player .character-portrait img').count(),14);
  await checkMobileLayout('terrain');
- await take('03-terrain');
+ await take('04-terrain');
  await press('ready','[data-club="PSG"]');
  await press('ready','[data-club="OM"]');
  assert.equal(await phase(),'kickoff-ready');
  const prepared=await page.evaluate(k=>localStorage.getItem(k),key);
- await take('04-avant-match');
+ await take('05-avant-match');
 
  // Construit un duel réel avec les mêmes fonctions que le jeu,
  // sauvegarde cet état puis teste son affichage après rechargement.
@@ -170,7 +207,7 @@ try{
  await page.locator('.match-faceoff').waitFor();
  assert.equal(await page.locator('.match-faceoff img').count(),2);
  await checkMobileLayout('duel');
- await take('05-duel');
+ await take('06-duel');
 
  // Parcourt la simulation moteur en conditions identiques aux tests unitaires.
  const result=await page.evaluate(async({key,prepared})=>{
@@ -195,7 +232,7 @@ try{
  await page.locator('.final-screen').waitFor();
  assert.ok(await page.locator('.final-goal .character-portrait img').count()>=1);
  await checkMobileLayout('résultat final');
- await take('06-resultat-final');
+ await take('07-resultat-final');
 
  assert.deepEqual(errors,[],'Erreur JavaScript du navigateur');
  assert.deepEqual(badImages,[],'Images WebP introuvables');
