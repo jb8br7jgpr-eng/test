@@ -7,6 +7,7 @@
 import {beginShootout,advanceShootout} from './match.mjs';
 import {nextShootoutShooter} from './shootout.mjs';
 import {CARD_BY_ID} from './catalog.mjs';
+import {renderCharacterPortrait} from './ui-portraits.mjs';
 
 const fail=m=>{throw Error(m);};
 const escape=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -79,7 +80,7 @@ function history(s){
  if(!timeline.length)return '<p class="caption">Aucune tentative pour le moment.</p>';
  return '<div class="shootout-history">'+timeline.map((t,index)=>
   '<div class="shootout-attempt"><span class="shootout-attempt-club">'+escape(t.club)+'</span>'+
-  '<span>'+escape(name(t.shooterId))+'</span><strong class="'+(t.scored?'kick-goal':'kick-fail')+'">'+
+  '<span class="shootout-kick-player">'+renderCharacterPortrait(t.shooterId,'kick-portrait')+escape(name(t.shooterId))+'</span><strong class="'+(t.scored?'kick-goal':'kick-fail')+'">'+
   (t.scored?'✓ But':t.result==='save'?'✕ Arrêt':'✕ Raté')+
   '</strong><small>n° '+t.shotNumber+'</small></div>').join('')+'</div>';
 }
@@ -111,7 +112,7 @@ export function renderShootoutScreen(state,{uncovered=false}={}){
   else if(owner){
    const shooterTurn=owner===p.club;
    out+='<section class="panel match-stage"><span class="eyebrow">'+(shooterTurn?'Tireur':'Gardien')+
-    ' · '+escape(owner)+'</span><h2>'+escape(name(shooterTurn?p.cardId:s.keepers[owner].cardId))+'</h2>'+
+    ' · '+escape(owner)+'</span><h2>'+escape(name(shooterTurn?p.cardId:s.keepers[owner].cardId))+'</h2>'+renderCharacterPortrait(shooterTurn?p.cardId:s.keepers[owner].cardId,'shootout-player-feature')+
     '<p>'+(shooterTurn?'Choisis secrètement où tirer.':'Choisis secrètement où plonger.')+
     '</p>'+buttonChoices()+'</section>';
   }else if(pending?.shotDirection&&pending?.keeperDirection){
