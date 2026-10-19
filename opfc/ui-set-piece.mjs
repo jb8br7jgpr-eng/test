@@ -5,7 +5,7 @@
  */
 import {CARD_BY_ID} from './catalog.mjs';
 import {renderCharacterPortrait} from './ui-portraits.mjs';
-import {matchTacticalChoices,renderShotFaceOff} from './ui-match-widgets.mjs';
+import {matchTacticalChoices,renderShotFaceOff,renderReceiverCard} from './ui-match-widgets.mjs';
 import {beginSetPieceAction,selectSetPieceTaker,lockSetPieceChoice,
  revealSetPieceDuel,continueSetPieceDuel,finishSetPieceCorner,revealSetPiecePenalty} from './set-piece-actions.mjs';
 const escape=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -32,6 +32,10 @@ const actorsFaceOff=(state,a,{receiver=false}={})=>renderShotFaceOff(state,{
  shooterId:receiver?a.actors?.receiver?.cardId:a.actors?.taker?.cardId,
  keeperId:a.keeper?.cardId,attacker:a.attacker,defender:a.defender,
  shooterLabel:receiver?'Finisseur':'Tireur',keeperLabel:'Gardien'
+});
+const receiverCard=(state,a)=>a.kind==='penalty'?'':renderReceiverCard(state,{
+ receiverId:a.actors?.receiver?.cardId,club:a.attacker,
+ possible:a.kind==='free-kick'
 });
 const handover=club=>'<section class="match-handover" aria-label="Transmission confidentielle"><div class="match-handover-icon">🔒</div>'+
  '<h2>À toi de jouer, '+club+'</h2><p>Passe le téléphone au joueur '+club+'. La décision adverse reste secrète.</p>'+
@@ -83,8 +87,7 @@ export function renderSetPieceAction(state,viewAction,{uncovered=false}={}){
   const actor=attacking?a.attacker:a.defender;
   return section(desc+' · '+actor,
    '<p class="muted">La tactique choisie est verrouillée. Elle reste invisible pour l’adversaire.</p>'+
-   actorsFaceOff(state,a)+
-   (a.actors?.receiver?'<p class="caption setpiece-receiver">Réceptionneur : '+escape(name(a.actors.receiver.cardId))+'</p>':'')+
+   actorsFaceOff(state,a)+receiverCard(state,a)+
    choices(options[a.kind][role]),type);
  }
  if(a.stage==='duel-ready')
@@ -104,7 +107,8 @@ export function renderSetPieceAction(state,viewAction,{uncovered=false}={}){
  if(a.stage==='corner-gesture-choice')
   return section('Choisis la finition du corner · '+a.attacker,
    actorsFaceOff(state,a,{receiver:true})+
-   '<p>Le réceptionneur '+escape(name(a.actors?.receiver?.cardId))+' frappe. Aucun second choix du gardien.</p>'+
+   '<p>Le réceptionneur choisit son geste. Aucun second choix du gardien.</p>'+
+   receiverCard(state,a)+
    choices([['TETE','Tête'],['VOLEE','Reprise de volée'],['RETOURNE','Retourné acrobatique']]),type);
  if(a.stage==='corner-finish-ready')
   return section('Le geste est choisi',
