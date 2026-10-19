@@ -126,7 +126,10 @@ export function renderShootoutTracker(s){
  }).join('');
  return '<section class="panel shootout-tracker" aria-label="Suivi des tirs au but">'+
   '<span class="eyebrow">⚽ Séance de tirs au but</span>'+
-  '<h3 class="'+(sudden?'shootout-stage-sudden':'shootout-stage-normal')+'">'+stageLabel+'</h3>'+
+  '<h3 class="'+(sudden?'shootout-stage-sudden':'shootout-stage-normal')+
+   '"'+(sudden?' aria-label="Mort subite"':'')+'>'+stageLabel+'</h3>'+
+  '<p class="shootout-tracker-progress">'+(sudden?'Mort subite':'Cinq tirs initiaux')+
+   ' · '+countP+' tir(s) PSG / '+countO+' tir(s) OM</p>'+
   '<div class="shootout-tracker-teams">'+rows+'</div>'+
   '<p class="shootout-tracker-legend">✓ But · ✕ Arrêt ou tir manqué · · '+
   (active?'À venir':'Non tiré')+'</p></section>';
