@@ -3,10 +3,12 @@ import {createGame,bid,pass,useKings,useObservation,acceptSolo,chooseFormation,p
 import {CARD_BY_ID} from './catalog.mjs';
 import {effectiveRating,lineupDetails} from './rules.mjs';
 import {FORMATION_NAMES,uiAuction,uiTeam,cardStats,currentAuctionEnding,clubName} from './ui-model.mjs';
+import {renderMatchScreen,matchRequiresPrivacy,dispatchOpenMatch} from './ui-match.mjs';
 
 const app=document.getElementById('opfc-app');
 const STORAGE='opfc-v08-local-dev';
 let game=null,firstClub='PSG',selection=null,modal=null,error='',beforeForm={PSG:'2-2-2',OM:'2-2-2'};
+let matchUncovered=false;
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const card=id=>CARD_BY_ID.get(id);
 const others=id=>id==='PSG'?'OM':'PSG';
@@ -14,7 +16,7 @@ const short=id=>esc(id);
 function save(){try{if(game)localStorage.setItem(STORAGE,JSON.stringify({game,firstClub,beforeForm}));}catch{}}
 function restore(){try{
  const data=JSON.parse(localStorage.getItem(STORAGE)||'null');
- if(data?.game?.version===1&&['mercato','lineup','kickoff-ready'].includes(data.game.phase)&&
+ if(data?.game?.version===1&&['mercato','lineup','kickoff-ready','match','moment-result','half-time','resume-ready','shootout-ready','shootout','finished'].includes(data.game.phase)&&
  data.game.teams?.length===2){game=data.game;firstClub=data.firstClub==='OM'?'OM':'PSG';beforeForm=data.beforeForm||beforeForm;}
 }catch{}}
 const shell=()=>'<header class="topbar"><a class="brand-mini" href="./"><img src="./opfc-logo-hd.PNG" alt="" width="35" height="35"> OPMERCATO FC</a><a class="small-link" href="./">← Accueil</a></header>';
@@ -99,7 +101,7 @@ function pitch(){
  '<div class="slot-field">'+fieldHalf(first,true)+'<div class="field-divider"></div>'+fieldHalf(other,false)+'</div></section>';
 }
 function teamPanel(team){
- const u=uiTeam(team),editable=['mercato','lineup'].includes(game.phase);
+ const u=uiTeam(team),editable=['mercato','lineup','half-time'].includes(game.phase);
  return '<section class="panel team-panel"><div class="team-heading"><h2><span class="club-bullet">'+team.club+'</span>'+esc(clubName(team.club))+
  '</h2><small>'+u.rosterCount+'/7</small></div><div class="team-tools"><span class="caption">Entente '+u.entente+'/10</span>'+
  '<select data-action="formation" data-club="'+team.club+'" aria-label="Formation '+team.club+'" '+(editable?'':'disabled')+'>'+
@@ -110,7 +112,7 @@ function teamPanel(team){
   '" data-card="'+esc(id)+'" aria-pressed="'+!!chosen+'" '+(editable?'':'disabled')+'>'+esc(card(id).name)+
   ' <small>'+(team.slots.includes(id)?'✓':'+')+'</small></button>';
  }).join(''):'<span class="caption">Aucune recrue.</span>')+'</div>'+
- (game.phase==='lineup'?btn('ready',u.ready?'✓ Équipe prête':u.canReady?'Valider cette composition':'Place les 7 joueurs',
+ (['lineup','half-time'].includes(game.phase)?btn('ready',u.ready?'✓ Équipe prête':u.canReady?'Valider cette composition':'Place les 7 joueurs',
  'small full '+(u.canReady?'primary':'ghost'),!u.canReady,'data-club="'+team.club+'"'):'')+'</section>';
 }
 function teams(){
@@ -128,8 +130,14 @@ function playing(){
 function endMercato(){
  return shell()+'<main class="ready-layout">'+sep()+
  '<h1 class="page-title">Les équipes sont prêtes !</h1><p>Les sept recrues de chaque club sont alignées.</p>'+
- wallets()+teams()+'<div class="notice">Les écrans du match et les choix tactiques seront connectés dans le prochain bloc. Le match ne démarre pas encore depuis cette interface.</div>'+
+ wallets()+teams()+renderMatchScreen(game)+
  btn('confirm-reset','Nouvelle partie locale','ghost full')+'</main>';
+}
+function matchPage(){
+ const middle=renderMatchScreen(game,{uncovered:matchUncovered});
+ return shell()+'<main class="ready-layout">'+middle+
+ (game.phase==='half-time'?teams():'')+
+ '<p class="footer-note">Prototype local du match · Les phases arrêtées seront reliées au bloc 9B2.</p></main>';
 }
 function popup(){
  if(!modal)return '';
@@ -162,7 +170,7 @@ function popup(){
  return '<div class="modal-backdrop"><section class="modal" role="dialog" aria-modal="true">'+body+'</section></div>';
 }
 function render(){
- app.innerHTML=(game?(game.phase==='kickoff-ready'?endMercato():playing()):welcome())+
+ app.innerHTML=(game?(game.phase==='kickoff-ready'?endMercato():['mercato','lineup'].includes(game.phase)?playing():matchPage()):welcome())+
  (error?'<div class="alert" role="alert">'+esc(error)+'</div>':'')+popup();
 }
 function change(fn){
@@ -179,11 +187,30 @@ function start(){
 function clicked(button){
  const action=button.dataset.action,club=button.dataset.club;
  if(modal&&!['close','observation-show','reset'].includes(action))return;
+ if(action==='match-uncover'){
+  if(!game||!matchRequiresPrivacy(game))throw Error('Aucun choix privé à révéler');
+  matchUncovered=true;render();return;
+ }
+ if(action.startsWith('match-')){
+  if(!game)throw Error('Aucune partie en cours');
+  const commands={
+   'match-kickoff':'kickoff','match-begin-open':'begin-open',
+   'match-choose':'choose','match-reveal-duel':'reveal-duel',
+   'match-continue-duel':'continue-duel','match-reveal-shot':'reveal-shot',
+   'match-continue-result':'continue-result','match-resume':'resume'
+  };
+  const command=commands[action];
+  if(!command)throw Error('Action de match non disponible');
+  if(command==='choose'&&!matchUncovered)throw Error('Le joueur doit d’abord confirmer la transmission du téléphone.');
+  const choice=button.dataset.choice;
+  matchUncovered=false; // masque immédiatement toute décision précédente
+  change(s=>dispatchOpenMatch(s,command,{choice}));return;
+ }
  if(action==='club'){firstClub=club;render();return;}
  if(action==='start'){start();return;}
  if(action==='close'){modal=null;render();return;}
  if(action==='confirm-reset'){modal={type:'reset'};render();return;}
- if(action==='reset'){game=null;selection=null;modal=null;error='';try{localStorage.removeItem(STORAGE);}catch{}render();return;}
+ if(action==='reset'){game=null;selection=null;modal=null;error='';matchUncovered=false;try{localStorage.removeItem(STORAGE);}catch{}render();return;}
  if(action==='observation-show'){if(modal?.type==='observation-pass'){modal.type='observation-show';render();}return;}
  if(!game)return;
  if(action.startsWith('amount-')){

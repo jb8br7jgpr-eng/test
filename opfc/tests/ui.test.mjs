@@ -92,7 +92,17 @@ test('Mercato local réel puis 14 placements manuels : atteint kickoff-ready',()
  }
  assert.equal(stateOf().phase,'kickoff-ready');
  assert.match(app.innerHTML,/Les équipes sont prêtes/);
- assert.match(app.innerHTML,/match ne démarre pas encore/);
+ assert.match(app.innerHTML,/Donner le coup d’envoi/);
+});
+test('Depuis l’interface réelle, le coup d’envoi affiche le score et conserve le calendrier privé',()=>{
+ click('match-kickoff');
+ const next=stateOf();
+ assert.equal(next.phase,'match');
+ assert.equal(next.match.score.PSG,0);
+ assert.equal(next.match.score.OM,0);
+ assert.match(app.innerHTML,/match-scoreboard/);
+ assert.match(app.innerHTML,/0 – 0/);
+ assert.doesNotMatch(app.innerHTML,/schedule/);
 });
 test('La réinitialisation est confirmée et revient à l’accueil',()=>{
  click('confirm-reset');
