@@ -709,6 +709,102 @@ try{
  await press('match-shootout-choose','[data-choice="DROITE"]');
  assert.equal(await page.locator('[data-action="match-shootout-reveal"]').count(),1);
  assert.equal(await page.locator('.match-shot-faceoff .match-duelist').count(),2);
+ // Tableau de la séance : 5 cases de chaque côté, avant la première frappe.
+ assert.equal(await page.locator('.shootout-tracker').count(),1);
+ assert.equal(await page.locator('.shootout-mark--pending').count(),10);
+ assert.equal(await page.locator('.shootout-mark--goal').count(),0);
+ await checkMobileLayout('tableau des tirs au but initial');
+ await page.locator('.shootout-tracker').screenshot({
+  path:shots+'/14a-tab-cases-initiales.png',animations:'disabled'});
+ // Faire résoudre la frappe par le vrai moteur, avec un tirage déterministe
+ // pour rendre les captures vérifiables à chaque lancement CI.
+ await page.evaluate(async key=>{
+  const {dispatchOpenMatch}=await import('/opfc/ui-match.mjs');
+  const saved=JSON.parse(localStorage.getItem(key));
+  saved.game=dispatchOpenMatch(saved.game,'shootout-reveal',{rng:()=>.999999});
+  localStorage.setItem(key,JSON.stringify(saved));
+ },key);
+ await page.reload({waitUntil:'domcontentloaded'});
+ assert.equal(await page.locator('.shootout-mark--goal').count(),1);
+ assert.equal(await page.locator('.shootout-mark--pending').count(),9);
+ assert.equal(await page.locator('.shot-result-goal').count(),1);
+ assert.equal((await game()).match.shootout.score.PSG,1);
+ await checkMobileLayout('tableau des tirs au but après but');
+ await page.locator('.shootout-tracker').screenshot({
+  path:shots+'/14b-tab-cases-apres-but.png',animations:'disabled'});
+ await press('match-shootout-continue');
+ assert.equal(await page.locator('.match-handover').count(),1);
+ // Compléter les tirs 2 à 10 avec le moteur officiel : 5 – 5.
+ // On ne fabrique ni résultat ni état de tableau artificiel.
+ const sudden=await page.evaluate(async key=>{
+  const {dispatchOpenMatch}=await import('/opfc/ui-match.mjs');
+  const stored=JSON.parse(localStorage.getItem(key));let s=stored.game;
+  for(let attempt=1;attempt<10;attempt++){
+   s=dispatchOpenMatch(s,'shootout-choose',{choice:'GAUCHE'});
+   s=dispatchOpenMatch(s,'shootout-choose',{choice:'GAUCHE'});
+   s=dispatchOpenMatch(s,'shootout-reveal',{rng:()=>.999999});
+   s=dispatchOpenMatch(s,'shootout-continue');
+  }
+  stored.game=s;localStorage.setItem(key,JSON.stringify(stored));
+  return {stage:s.match.shootout.stage,score:s.match.shootout.score,
+   attempts:s.match.shootout.timeline.length,phase:s.phase};
+ },key);
+ assert.equal(sudden.stage,'sudden-death');
+ assert.equal(sudden.phase,'shootout');
+ assert.deepEqual(sudden.score,{PSG:5,OM:5});
+ assert.equal(sudden.attempts,10);
+ await page.reload({waitUntil:'domcontentloaded'});
+ assert.equal(await page.locator('.shootout-stage-sudden').count(),1);
+ assert.equal(await page.locator('.shootout-mark--goal').count(),10);
+ await checkMobileLayout('mort subite après 5 tirs chacun');
+ await page.locator('.shootout-tracker').screenshot({
+  path:shots+'/14c-tab-mort-subite.png',animations:'disabled'});
+ // 11e frappe ratée : les deux lignes doivent désormais compter 6 cases.
+ await page.evaluate(async key=>{
+  const {dispatchOpenMatch}=await import('/opfc/ui-match.mjs');
+  const stored=JSON.parse(localStorage.getItem(key));let s=stored.game;
+  s=dispatchOpenMatch(s,'shootout-choose',{choice:'GAUCHE'});
+  s=dispatchOpenMatch(s,'shootout-choose',{choice:'GAUCHE'});
+  s=dispatchOpenMatch(s,'shootout-reveal',{rng:()=>0});
+  s=dispatchOpenMatch(s,'shootout-continue');
+  stored.game=s;localStorage.setItem(key,JSON.stringify(stored));
+ },key);
+ await page.reload({waitUntil:'domcontentloaded'});
+ assert.equal(await page.locator('.shootout-mark').count(),12);
+ assert.equal(await page.locator('.shootout-mark--fail').count(),1);
+ assert.equal(await page.locator('.shootout-mark--pending').count(),1);
+ await checkMobileLayout('mort subite après 11e tir');
+ await page.locator('.shootout-tracker').screenshot({
+  path:shots+'/14d-tab-mort-subite-6e-tir.png',animations:'disabled'});
+ // L'OM transforme le 12e tir, gagne 6 – 5, score 90 min toujours 0 – 0.
+ await page.evaluate(async key=>{
+  const {dispatchOpenMatch}=await import('/opfc/ui-match.mjs');
+  const stored=JSON.parse(localStorage.getItem(key));let s=stored.game;
+  s=dispatchOpenMatch(s,'shootout-choose',{choice:'GAUCHE'});
+  s=dispatchOpenMatch(s,'shootout-choose',{choice:'GAUCHE'});
+  s=dispatchOpenMatch(s,'shootout-reveal',{rng:()=>.999999});
+  stored.game=s;localStorage.setItem(key,JSON.stringify(stored));
+ },key);
+ await page.reload({waitUntil:'domcontentloaded'});
+ assert.equal(await phase(),'finished');
+ assert.equal(await page.locator('[data-action="match-shootout-continue"]').count(),1);
+ assert.equal(await page.locator('.shot-result-goal').count(),1);
+ await press('match-shootout-continue');
+ assert.equal(await page.locator('.final-screen').count(),1);
+ const finalData=await game();
+ assert.deepEqual(finalData.match.score,{PSG:0,OM:0});
+ assert.deepEqual(finalData.match.shootout.score,{PSG:5,OM:6});
+ assert.equal(finalData.match.winner,'OM');
+ assert.equal(await page.locator('.final-victory-title').count(),1);
+ assert.equal(await page.locator('.final-penalty-score').count(),1);
+ assert.equal(await page.locator('.final-kick').count(),12);
+ assert.match(await page.locator('.final-penalty-score').textContent(),/5 – 6/);
+ await checkMobileLayout('résultat final après tirs au but');
+ await page.locator('.final-score').screenshot({
+  path:shots+'/15-finale-avec-tab.png',animations:'disabled'});
+ await page.locator('.final-shootout').screenshot({
+  path:shots+'/15b-finale-historique-tab.png',animations:'disabled'});
+ console.log('PASS TAB iPhone : série initiale, suivi visuel, mort subite, résultat final 90 min/TAB séparés');
  console.log('PASS coups de pied arrêtés et TAB iPhone : mêmes boutons et portraits en choix secret');
 
  // Mi-temps complète avec statistiques du VRAI moteur et deux confirmations.
