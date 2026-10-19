@@ -56,7 +56,7 @@ export function renderShotResult(state,{outcome,attacker,minute,shooterId,keeper
  const club=outcome==='save'?defender:attacker;
  const actual=actorId?playerOf(state,club,actorId):null;
  const natural=actorId?CARD_BY_ID.get(actorId):null;
- const role=outcome==='save'?'Gardien':'Tireur';
+ const role=outcome==='goal'?'Buteur':outcome==='save'?'Gardien':'Tireur';
  const portrait=actorId?'<div class="shot-result-player">'+
   renderCharacterPortrait(actorId,'shot-result-portrait')+
   '<strong>'+h(natural?.name??actorId)+'</strong>'+
