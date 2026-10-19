@@ -123,7 +123,9 @@ test('Une séance garde le résultat jusqu’à Continuer et reprend sur le bon 
  assert.equal(s.match.shootout.score.PSG,1);
  assert.equal(s.match.score.PSG,0);
  assert.equal(s.match.shootout.timeline.length,1);
- assert.match(renderMatchScreen(s),/BUT/);
+ assert.match(renderMatchScreen(s),/BUUUUT !/);
+ assert.match(renderMatchScreen(s),/shot-result-goal/);
+ assert.match(renderMatchScreen(s),/shot-result-portrait/);
  assert.match(renderMatchScreen(s),/Continuer/);
  assert.equal(matchTurnOwner(s),null);
  assert.throws(()=>choose(s,'CENTRE'),/Valide le résultat/);
