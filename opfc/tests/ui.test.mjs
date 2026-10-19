@@ -62,6 +62,12 @@ test('Accueil : club au choix, deux formations, mode en ligne annoncé non prêt
  click('toggle-teams');
  assert.doesNotMatch(app.innerHTML,/slot-field/);
  assert.match(app.innerHTML,/Berrys/);
+ assert.match(app.innerHTML,/Refus utilisés :/);
+ assert.match(app.innerHTML,/Refus restants :/);
+ assert.match(app.innerHTML,/Observation · Disponible/);
+ assert.match(app.innerHTML,/Haki des Rois/);
+ assert.match(app.innerHTML,/data-amount="25"/);
+ assert.match(app.innerHTML,/Enchérir un autre montant/);
 });
 test('Un Haki Observation est privé avant la transmission puis masqué',()=>{
  let s=stateOf();
@@ -85,6 +91,12 @@ test('Mercato réel et placement immédiat de chaque recrue : atteint kickoff-re
   assert.ok(slot>=0);
   assert.match(app.innerHTML,/placement-intro/);
   assert.match(app.innerHTML,new RegExp('data-top-club="'+club+'"'));
+  assert.match(app.innerHTML,/slot-field-single/);
+  assert.equal((app.innerHTML.match(/class="field-half"/g)||[]).length,1);
+  assert.match(app.innerHTML,/placement-metadata/);
+  assert.match(app.innerHTML,/Note /);
+  assert.match(app.innerHTML,/roster-tier/);
+  assert.match(app.innerHTML,/team-chip-details/);
   assert.match(app.innerHTML,/continue-placement/);
   click('slot',{club,slot:String(slot)});
   assert.equal(stateOf().teams.find(t=>t.club===club).slots[slot],result.cardId);
