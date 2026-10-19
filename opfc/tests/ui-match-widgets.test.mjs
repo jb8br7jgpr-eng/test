@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createGame} from '../engine.mjs';
 import {lineupDetails} from '../rules.mjs';
-import {renderShotResult,renderShotFaceOff,matchTacticalChoices} from '../ui-match-widgets.mjs';
+import {renderShotResult,renderShotFaceOff,renderReceiverCard,matchTacticalChoices} from '../ui-match-widgets.mjs';
 
 const fixture=()=>{
  const s=createGame({dice:[5,2],rng:()=>.3});
@@ -55,6 +55,30 @@ test('Tous les choix en match possèdent un emoji décoratif, un nom exact et le
  const future=matchTacticalChoices([['TEST','Action future']]);
  assert.match(future,/⚽/);
  assert.match(future,/data-choice="TEST"/);
+});
+test('Réceptionneur : portrait, poste réellement joué, note effective et alerte hors poste',()=>{
+ const s=fixture(),team=s.teams.find(t=>t.club==='PSG');
+ const before=structuredClone(team);
+ // Chopper est naturellement gardien mais doit être affiché comme attaquant.
+ team.slots[0]='luffy';team.slots[5]='chopper';
+ const effective=lineupDetails(team).find(p=>p.cardId==='chopper');
+ assert.equal(effective.position,'ATT');
+ assert.equal(effective.outOfPosition,true);
+ const html=renderReceiverCard(s,{receiverId:'chopper',club:'PSG'});
+ assert.match(html,/receiver-card psg/);
+ assert.match(html,/JOUEUR À LA RÉCEPTION/);
+ assert.match(html,/portraits_opfc\/chopper.webp/);
+ assert.match(html,/Chopper/);
+ assert.match(html,/receiver-card-club">PSG/);
+ assert.match(html,/receiver-card-position">ATT/);
+ assert.match(html,new RegExp('receiver-card-rating">NOTE '+effective.rating));
+ assert.match(html,/! Hors poste/);
+ assert.doesNotMatch(html,/data-action=|data-choice=/);
+ const potential=renderReceiverCard(s,{receiverId:'chopper',club:'PSG',possible:true});
+ assert.match(potential,/PARTENAIRE POTENTIEL À LA RÉCEPTION/);
+ assert.equal(renderReceiverCard(s,{receiverId:'introuvable',club:'PSG'}),'');
+ assert.equal(renderReceiverCard(s,{receiverId:'chopper',club:'CLUB_INCONNU'}),'');
+ assert.notDeepEqual(team,before,'La composition modifiée doit être prise en compte');
 });
 test('Le tireur et le gardien sont visibles ensemble avant la résolution avec leurs notes effectives',()=>{
  const s=fixture(),t=s.teams.find(t=>t.club==='PSG'),
