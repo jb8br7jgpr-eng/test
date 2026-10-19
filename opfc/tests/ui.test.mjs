@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 const storage=new Map(),listeners=new Map();
+let manualBidText=null;
 const app={innerHTML:'',addEventListener(type,handler){listeners.set(type,handler);}};
 globalThis.localStorage={
  getItem(key){return storage.has(key)?storage.get(key):null;},
@@ -13,7 +14,7 @@ globalThis.document={
   if(id==='opfc-app')return app;
   if(id==='bid-value'){
    const state=stateOf();
-   return {value:String(state?.auction?.highestBid===5?6:5)};
+   return {value:manualBidText??String((state?.auction?.highestBid===5?6:5)*1000000)};
   }
   return null;
  }
@@ -63,12 +64,31 @@ test('Accueil : club au choix, deux formations, mode en ligne annoncé non prêt
  assert.doesNotMatch(app.innerHTML,/slot-field/);
  assert.match(app.innerHTML,/Berrys/);
  assert.match(app.innerHTML,/Refus utilisés :/);
- assert.match(app.innerHTML,/Refus restants :/);
+ assert.match(app.innerHTML,/Restants :/);
  assert.match(app.innerHTML,/Refuser ce personnage · 5\/5 restants/);
  assert.match(app.innerHTML,/👁 Observation/);
  assert.match(app.innerHTML,/👑 Haki des Rois/);
- assert.match(app.innerHTML,/data-amount="25"/);
- assert.match(app.innerHTML,/Autre montant \(M Berrys\)/);
+ assert.match(app.innerHTML,/data-amount="6"/);
+ assert.match(app.innerHTML,/data-amount="10"/);
+ assert.match(app.innerHTML,/data-amount="15"/);
+ assert.match(app.innerHTML,/Autre montant \\(฿\\)/);
+ assert.match(app.innerHTML,/250 000 000 ฿/);
+ assert.match(app.innerHTML,/5 000 000 ฿/);
+ assert.match(app.innerHTML,/6 000 000 ฿/);
+ assert.match(app.innerHTML,/\\+1 palier\\(s\\)/);
+ assert.match(app.innerHTML,/value="5000000"/);
+ // Ordre précis du modèle : saisie, refus pleine largeur, deux pouvoirs.
+ const html=app.innerHTML,custom=html.indexOf('class="custom-bid"'),
+  refusal=html.indexOf('class="pass-btn"'),
+  hakis=html.indexOf('class="auction-hakis"');
+ assert.ok(custom>0&&custom<refusal&&refusal<hakis);
+ assert.equal((html.match(/class="haki-btn"/g)||[]).length,1);
+ assert.equal((html.match(/class="extra-power"/g)||[]).length,1);
+ manualBidText='5500000';
+ click('bid');
+ assert.equal(stateOf().auction.highestBid,0);
+ assert.match(app.innerHTML,/multiple de 1 000 000/);
+ manualBidText=null;
 });
 test('Un Haki Observation est privé avant la transmission puis masqué',()=>{
  let s=stateOf();
