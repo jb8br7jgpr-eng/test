@@ -150,6 +150,20 @@ try{
  assert.ok(display.kings.right<=display.observation.left+2,'Rois à gauche, Observation à droite');
  assert.ok(Math.abs(display.kings.width-display.observation.width)<2,'Les deux Hakis doivent faire 50 %');
  assert.ok(Math.abs(display.kings.top-display.observation.top)<2);
+ for(const width of [375,390,430]){
+  await page.setViewportSize({width,height:844});
+  const refusal=await page.locator('.opfc-auction .pass-btn').evaluate(el=>{
+   const r=el.getBoundingClientRect();
+   return {scrollWidth:el.scrollWidth,clientWidth:el.clientWidth,
+    scrollHeight:el.scrollHeight,clientHeight:el.clientHeight,
+    buttonHeight:r.height,lineHeight:getComputedStyle(el).lineHeight,
+    name:getComputedStyle(el).whiteSpace};
+  });
+  assert.ok(refusal.scrollWidth<=refusal.clientWidth+1,'Le libellé de refus déborde : '+JSON.stringify({width,...refusal}));
+  assert.equal(refusal.name,'nowrap','Le bouton refus doit rester sur une seule ligne');
+ }
+ await page.setViewportSize({width:390,height:844});
+ assert.equal((await page.locator('.turn-banner strong').first().textContent()).trim().length<=3,true);
  console.log('PASS modèle utilisateur : montants complets, refus pleine largeur et Hakis 50/50');
  await take('01-mercato');
  // Pour cette capture seulement, retirer temporairement le positionnement sticky du HUD
@@ -215,7 +229,8 @@ try{
    customLabel:['fontSize','fontWeight','color'],
    king:['fontSize','fontWeight','backgroundImage','borderRadius'],
    observation:['fontSize','fontWeight','backgroundImage','borderRadius'],
-   refusal:['fontSize','fontWeight','backgroundColor','borderRadius','minHeight']
+   // Taille du refus adaptée volontairement pour tenir sur UNE ligne sur iPhone.
+   refusal:['fontWeight','backgroundColor','borderRadius','minHeight']
   };
   const differences=[];
   for(const [name,fields] of Object.entries(keys)){
