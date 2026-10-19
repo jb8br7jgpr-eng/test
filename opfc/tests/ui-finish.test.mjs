@@ -57,19 +57,47 @@ test('Mi-temps : affichage à 45 minutes et état prêt des deux équipes',()=>{
  let html=renderMatchScreen(s);
  assert.match(html,/Mi-temps · 45e minute/);
  assert.match(html,/composition à valider/g);
+ assert.match(html,/⏸️ MI-TEMPS/);
+ assert.match(html,/halftime-screen/);
+ assert.match(html,/Bilan de la première période/);
+ for(const stat of ['Tirs','Tirs cadrés','Arrêts'])assert.match(html,new RegExp(stat));
+ assert.match(html,/Ajustements tactiques/);
+ assert.equal((html.match(/class="halftime-stat-row"/g)||[]).length,3);
+ assert.doesNotMatch(html,/data-action="match-resume"/);
  s=chooseFormation(s,'PSG','3-1-2');
  const roster=[...s.teams.find(t=>t.club==='PSG').roster];
  for(let i=0;i<7;i++)s=place(s,'PSG',roster[i],i);
  s=ready(s,'PSG');html=renderMatchScreen(s);
- assert.match(html,/PSG : ✓ composition validée/);
- assert.match(html,/OM : composition à valider/);
+ assert.match(html,/<strong>PSG<\/strong> : ✓ composition validée/);
+ assert.match(html,/<strong>OM<\/strong> : composition à valider/);
  assert.deepEqual(s.match.schedule,calendar);
  s=ready(s,'OM');
  assert.equal(s.phase,'resume-ready');
- assert.match(renderMatchScreen(s),/Reprendre la deuxième mi-temps/);
+ const viewReady=renderMatchScreen(s);
+ assert.match(viewReady,/Reprendre la deuxième mi-temps/);
+ assert.match(viewReady,/halftime-stats/);
+ assert.equal((viewReady.match(/is-ready/g)||[]).length,2);
+ assert.equal((viewReady.match(/data-action="match-resume"/g)||[]).length,1);
  s=dispatchOpenMatch(s,'resume');
  assert.equal(s.phase,'match');
  assert.deepEqual(s.match.schedule,calendar);
+});
+test('Le bilan de la mi-temps affiche le score et les statistiques réels, sans inventer de tirs',()=>{
+ let s=start(2);
+ const first=s.match.schedule[0],attacker=first.attacker;
+ const scorer=s.teams.find(t=>t.club===attacker).slots[5];
+ s=resolveMatchMoment(s,{outcome:'goal',scorerId:scorer});
+ s=continueMatch(s);
+ s=halfTime(s);
+ const html=renderMatchScreen(s);
+ assert.equal(s.match.score[attacker],1);
+ assert.ok(html.includes(s.match.score.PSG+' – '+s.match.score.OM));
+ const stats=s.match.statistics;
+ for(const [label,key] of [['Tirs','shots'],['Tirs cadrés','onTarget'],['Arrêts','saves']]){
+  assert.ok(html.includes('<strong>'+stats.PSG[key]+'</strong><span>'+label+'</span><strong>'+
+   stats.OM[key]+'</strong>'),'Bilan incorrect : '+label);
+ }
+ assert.doesNotMatch(html,/schedule|duel\.choice|shooutPending/);
 });
 test('Une victoire dans les 90 minutes affiche un résultat complet sans séance',()=>{
  const s=completeRegulation({goal:true});
