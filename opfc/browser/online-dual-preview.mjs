@@ -272,7 +272,13 @@ try{
  state.version++;
  await updateBoth(host,guest);
  assert.equal(state.game.phase,'finished');
- assert.deepEqual(state.game.match.shootout.score,{PSG:5,OM:6});
+ assert.deepEqual(
+  Object.values(state.game.match.shootout.score).sort((a,b)=>a-b),
+  [5,6],
+  'La séance doit finir avec un score 6–5, quel que soit le premier tireur'
+ );
+ assert.equal(state.game.match.winner,
+  state.game.match.shootout.score.PSG>state.game.match.shootout.score.OM?'PSG':'OM');
  const winner=state.game.match.winner==='PSG'?host:guest;
  assert.equal(await winner.locator('[data-type="shootout-continue"]').count(),1);
  await winner.locator('[data-type="shootout-continue"]').click();
