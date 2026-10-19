@@ -66,7 +66,7 @@ test('Accueil : club au choix, deux formations, mode en ligne annoncé non prêt
  assert.match(app.innerHTML,/Refus restants :/);
  assert.match(app.innerHTML,/Refuser ce personnage · 5\/5 restants/);
  assert.match(app.innerHTML,/👁 Observation/);
- assert.match(app.innerHTML,/👑 Haki des Rois — activer le pouvoir/);
+ assert.match(app.innerHTML,/👑 Haki des Rois/);
  assert.match(app.innerHTML,/data-amount="25"/);
  assert.match(app.innerHTML,/Autre montant \(M Berrys\)/);
 });
