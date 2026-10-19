@@ -49,7 +49,7 @@ const RESULTS=Object.freeze({
 });
 /** Rend UNIQUEMENT un résultat de frappe, jamais une action stoppée avant tir. */
 export function renderShotResult(state,{outcome,attacker,minute,shooterId,keeperId,
- score,action='match-continue-result',continueLabel='Continuer',context='Résultat du tir'}={}){
+ score,action='match-continue-result',continueLabel='Continuer',context='Résultat du tir',detailExtra=''}={}){
  const cfg=RESULTS[outcome];if(!cfg)return '';
  const defender=opposite(attacker);
  const actorId=outcome==='save'?(keeperId??keeperOf(state,defender)):shooterId;
@@ -66,10 +66,12 @@ export function renderShotResult(state,{outcome,attacker,minute,shooterId,keeper
  const scoreboard=score?'<div class="shot-result-score" aria-label="Score après la frappe">'+
   '<span>PSG</span><strong>'+h(score.PSG)+' – '+h(score.OM)+'</strong><span>OM</span></div>':'';
  return '<section class="panel match-stage shot-result-panel shot-result-'+cfg.tone+'" aria-label="'+cfg.title+'">'+
-  '<span class="eyebrow">'+h(context)+' · '+h(minute)+'e</span>'+
+  '<span class="eyebrow">'+h(context)+(Number.isInteger(minute)?' · '+minute+'e':'')+'</span>'+
   '<span class="shot-result-icon" aria-hidden="true">'+cfg.tag+'</span>'+
   '<h2 class="shot-result-headline">'+cfg.title+'</h2>'+
-  '<p class="shot-result-description">'+cfg.detail+'</p>'+portrait+scoreboard+
+  '<p class="shot-result-description">'+cfg.detail+'</p>'+
+  (detailExtra?'<p class="shot-result-directions">'+h(detailExtra)+'</p>':'')+
+  portrait+scoreboard+
   '<p class="shot-result-wait">Le résultat reste affiché jusqu’à validation.</p>'+
   '<button class="btn primary full" data-action="'+h(action)+'">'+h(continueLabel)+'</button></section>';
 }
