@@ -11,6 +11,7 @@ import {beginOpenPlayAction,lockOpenPlayChoice,revealOpenPlayDuel,continueOpenPl
 import {isSetPieceKind,setPieceTurnOwner,dispatchSetPieceMatch,renderSetPieceAction} from './ui-set-piece.mjs';
 import {shootoutTurnOwner,dispatchShootout,renderShootoutScreen} from './ui-shootout.mjs';
 import {renderFinalResult} from './ui-final.mjs';
+import {matchTacticalChoices,renderShotFaceOff,renderShotResult,matchKeeperId} from './ui-match-widgets.mjs';
 
 const html=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const name=id=>CARD_BY_ID.get(id)?.name??id??'—';
@@ -102,10 +103,7 @@ function attackBanner(attacker,context,kind,minute){
  '<strong>'+html(ACTION_LABEL[kind]??'Action en cours')+'</strong><small>'+html(minute)+'e minute</small>')+
  '</div></section>';
 }
-function choiceGrid(options){
- return '<div class="match-choice-grid">'+options.map(([id,title])=>
- '<button class="btn match-choice" data-action="match-choose" data-choice="'+id+'">'+html(title)+'</button>').join('')+'</div>';
-}
+const choiceGrid=options=>matchTacticalChoices(options);
 function fieldNames(a){
  if(!a?.roles)return '';
  const players=[
@@ -147,7 +145,8 @@ const duelFaceOff=(state,a)=>faceOff(state,a?.roles?.carrier?.cardId,a?.roles?.d
  'Attaque','Défense',a?.attacker,a?.defender);
 const shotFaceOff=state=>{
  const a=state?.match?.action;
- return faceOff(state,a?.shooterId,a?.keeper?.cardId,'Tireur','Gardien',a?.attacker,a?.defender);
+ return renderShotFaceOff(state,{shooterId:a?.shooterId,keeperId:a?.keeper?.cardId,
+  attacker:a?.attacker,defender:a?.defender});
 };
 
 function handover(owner){
@@ -178,7 +177,7 @@ function renderAction(state,view,uncovered){
    '<p class="caption">Probabilité calculée : '+Number(duel?.calculation?.successConditional??duel?.calculation?.successProbability??0).toFixed(1)+' % (hors faute le cas échéant).</p>'+
    button('match-continue-duel','Continuer')+'</section>';
  }
- if(a.stage==='shot-ready')return '<section class="panel match-stage"><h2>Le tireur et le gardien ont choisi</h2>'+
+ if(a.stage==='shot-ready')return '<section class="panel match-stage"><h2 class="match-shot-ready-heading">Le tireur et le gardien ont choisi</h2>'+
   shotFaceOff(state)+'<p>Les deux choix vont être révélés simultanément.</p>'+
   button('match-reveal-shot','Résoudre la frappe')+'</section>';
  if(a.stage==='set-piece-pending')return '<section class="panel match-stage"><h2>Faute sifflée !</h2>'+
@@ -186,10 +185,23 @@ function renderAction(state,view,uncovered){
   button('match-begin-setpiece','Continuer avec la phase arrêtée')+'</section>';
  return '<section class="panel match-stage"><h2>Action en préparation</h2></section>';
 }
-function resultView(m){
- const r=m.lastResult,goal=r?.scorerId?'<p><strong>Buteur : '+html(name(r.scorerId))+'</strong></p>':'';
+function resultView(m,state){
+ const r=m.lastResult;
+ // Au sein d'une action officielle, les IDs des finisseurs sont fournis par
+ // le moteur (jeu ouvert, corner, coup franc, penalty). Pour un ancien
+ // résultat sans détails, ne jamais inventer l'identité d'un tireur.
+ if(['goal','save','miss'].includes(r?.outcome)){
+  const detail=r.details??{};
+  return renderShotResult(state,{
+   outcome:r.outcome,attacker:r.attacker,minute:r.minute,score:m.score,
+   shooterId:r.scorerId??detail.finisherId??detail.takerId??null,
+   keeperId:matchKeeperId(state,r.attacker==='PSG'?'OM':'PSG'),
+   context:r.type==='open'?'Tir en jeu ouvert':
+    r.type==='corner'?'Corner':r.type==='free-kick'?'Coup franc':'Penalty'
+  });
+ }
  return '<section class="panel match-stage"><span class="eyebrow">Résultat · '+r.minute+'e</span><h2>'+
-  html(OUTCOME[r.outcome]??r.outcome)+'</h2>'+goal+
+  html(OUTCOME[r.outcome]??r.outcome)+'</h2>'+
   '<p class="muted">Le résultat reste affiché jusqu’à validation.</p>'+
   button('match-continue-result','Continuer')+'</section>';
 }
@@ -213,7 +225,7 @@ export function renderMatchScreen(state,{uncovered=false}={}){
  }
  if(state.phase==='moment-result'){
   const last=m.lastResult;
-  return out+attackBanner(last?.attacker,last?.details?.context,last?.type,last?.minute)+scoreStats(m)+resultView(m);
+  return out+attackBanner(last?.attacker,last?.details?.context,last?.type,last?.minute)+scoreStats(m)+resultView(m,state);
  }
  const moment=m.currentMoment;
  if(!m.action){
