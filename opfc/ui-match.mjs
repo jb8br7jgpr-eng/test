@@ -208,6 +208,46 @@ function resultView(m,state){
   '<p class="muted">Le résultat reste affiché jusqu’à validation.</p>'+
   button('match-continue-result','Continuer')+'</section>';
 }
+/**
+ * Bilan officiel de la pause. Toutes les données viennent des 45 minutes
+ * réellement jouées. Les listes et le terrain commun restent sous ce bloc,
+ * où les modifications de postes/formations sont déjà gérées par le moteur.
+ */
+function halftimeView(state,m){
+ const resume=state.phase==='resume-ready';
+ const stats=m.statistics;
+ const compare=[
+  ['Tirs', 'shots'],['Tirs cadrés','onTarget'],['Arrêts','saves']
+ ];
+ const rows=compare.map(([label,key])=>'<div class="halftime-stat-row">'+
+  '<strong>'+Number(stats.PSG[key])+'</strong>'+
+  '<span>'+label+'</span>'+
+  '<strong>'+Number(stats.OM[key])+'</strong></div>').join('');
+ const statuses=state.teams.map(t=>
+  '<div class="halftime-team-status '+(t.ready?'is-ready':'is-pending')+'">'+
+  '<span class="halftime-status-symbol" aria-hidden="true">'+(t.ready?'✓':'◷')+'</span>'+
+  '<span><strong>'+html(t.club)+'</strong> : '+
+   (t.ready?'✓ composition validée':'composition à valider')+'</span></div>'
+ ).join('');
+ return '<div class="halftime-screen">'+
+  '<header class="halftime-header">'+
+   '<span class="eyebrow">Grandline Cup · Pause tactique</span>'+
+   '<h2>⏸️ MI-TEMPS</h2><p>Mi-temps · 45e minute</p>'+
+  '</header>'+scoreBoard(m)+
+  '<section class="panel halftime-stats" aria-label="Bilan de la première période">'+
+   '<h3>📊 Bilan de la première période</h3>'+
+   '<div class="halftime-stats-heading"><strong>PSG</strong><span>Statistiques officielles</span><strong>OM</strong></div>'+
+   '<div class="halftime-stat-rows">'+rows+'</div>'+
+  '</section>'+
+  '<section class="panel halftime-tactics" aria-label="Ajustements tactiques à la mi-temps">'+
+   '<h3>🔄 Ajustements tactiques</h3>'+
+   '<p>Change la formation ou repositionne les joueurs sur le terrain ci-dessous, puis valide chaque équipe.</p>'+
+   '<div class="halftime-statuses">'+statuses+'</div>'+
+   (resume?'<p class="halftime-ready-note">Les deux équipes sont prêtes pour la deuxième période.</p>'+
+    button('match-resume','▶️ Reprendre la deuxième mi-temps'):
+    '<p class="halftime-ready-note">La reprise sera disponible après validation des deux équipes.</p>')+
+  '</section></div>';
+}
 export function renderMatchScreen(state,{uncovered=false}={}){
  if(state?.phase==='kickoff-ready')return '<section class="panel match-stage">'+
   '<span class="eyebrow">Grandline Cup · Avant-match</span><h2>Les équipes sont prêtes !</h2>'+
@@ -216,11 +256,7 @@ export function renderMatchScreen(state,{uncovered=false}={}){
  const view=matchPublicView(state),m=view.match;
  if(!m)return '<section class="panel match-stage"><h2>Aucun match en cours</h2></section>';
  let out=scoreBoard(m);
- if(state.phase==='half-time')return out+'<div class="ready-banner"><h2>Mi-temps · 45e minute</h2>'+
-  '<p>Les deux clubs peuvent modifier leur formation et échanger des joueurs. Le programme des actions à venir ne change pas.</p>'+
-  '<p class="caption">'+state.teams.map(t=>t.club+' : '+(t.ready?'✓ composition validée':'composition à valider')).join(' · ')+'</p></div>';
- if(state.phase==='resume-ready')return out+'<section class="panel match-stage">'+
-  '<h2>Les deux compositions sont validées</h2>'+button('match-resume','Reprendre la deuxième mi-temps')+'</section>';
+ if(state.phase==='half-time'||state.phase==='resume-ready')return halftimeView(state,m);
  if(state.phase==='shootout-ready'||state.phase==='shootout')return out+renderShootoutScreen(state,{uncovered});
  if(state.phase==='finished'){
   if(state.match.shootoutLastResult)return out+renderShootoutScreen(state,{uncovered});
