@@ -91,7 +91,8 @@ try{
    element.remove();return color;
   });
   return {photo:rect('.portrait-shell-photo'),identity:rect('.player-identity'),
-   rating:rect('.player-rating-row'),badge:rect('.player-position'),tierBadge:rect('.player-tier'),
+   rating:rect('.player-rating-row'),centerRating:rect('.player-rating'),
+   badge:rect('.player-position'),tierBadge:rect('.player-tier'),
    grid:rect('.stats-grid'),stats,colors,
    position:card.querySelector('.player-position')?.textContent,
    tier:card.querySelector('.player-tier')?.textContent};
@@ -101,8 +102,9 @@ try{
  assert.ok(Math.abs(playerCardLayout.badge.top-playerCardLayout.rating.top)<35 &&
   Math.abs(playerCardLayout.tierBadge.top-playerCardLayout.rating.top)<35,
   'Poste et rang doivent encadrer la note globale');
- assert.ok(playerCardLayout.badge.left<playerCardLayout.rating.left &&
-  playerCardLayout.tierBadge.left>playerCardLayout.rating.left);
+ assert.ok(playerCardLayout.badge.left<playerCardLayout.centerRating.left &&
+  playerCardLayout.tierBadge.left>playerCardLayout.centerRating.left,
+  'Le poste doit être à gauche de la note et le rang à droite');
  assert.ok(playerCardLayout.photo.top<playerCardLayout.identity.top&&
   playerCardLayout.identity.top<playerCardLayout.rating.top&&
   playerCardLayout.rating.top<playerCardLayout.grid.top,
