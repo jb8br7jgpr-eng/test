@@ -93,7 +93,7 @@ test('L’interface démarre sans erreur, gère le choix du club et lance un mer
  assert.match(root.innerHTML,/placement-intro/);
  assert.match(root.innerHTML,new RegExp('data-top-club="'+first+'"'));
  assert.match(root.innerHTML,/slot-field-single/);
- assert.equal((root.innerHTML.match(/class="field-half"/g)||[]).length,1);
+ assert.equal((root.innerHTML.match(/class="field-half /g)||[]).length,1);
  assert.match(root.innerHTML,/placement-metadata/);
  assert.match(root.innerHTML,/team-chip-details/);
  assert.match(root.innerHTML,/Sélection/);
