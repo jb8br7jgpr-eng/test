@@ -42,6 +42,27 @@ export function uiTeam(team){
   ready:team.ready,
  };
 }
+/**
+ * Liste d'effectif par POSTE EFFECTIVEMENT OCCUPÉ sur cette partie.
+ * La fiche du catalogue ne sert ni au tri ni à déterminer le poste joué.
+ * Les recrues encore sans case figurent après les joueurs placés et sont
+ * clairement marquées "À placer" (pas de fausse note effective).
+ */
+export function uiRoster(team){
+ const playing=new Map(lineupDetails(team).filter(Boolean).map(player=>[player.cardId,player]));
+ const order={GAR:0,DEF:1,MIL:2,ATT:3};
+ return team.roster.map(id=>{
+  const player=playing.get(id)??null;
+  return {
+   cardId:id,card:CARD_BY_ID.get(id),
+   position:player?.position??null,
+   rating:player?.rating??null,
+   outOfPosition:player?.outOfPosition??false,
+   placed:!!player
+  };
+ }).sort((a,b)=>(order[a.position]??4)-(order[b.position]??4));
+}
+
 export function cardStats(card){
  if(!card)throw Error('Carte introuvable');
  return ['PUI','TEC','PAS','VIT','DEF','GAR'].map(key=>({label:key,value:card.stats[key]}));
