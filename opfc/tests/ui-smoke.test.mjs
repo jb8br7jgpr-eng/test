@@ -28,7 +28,7 @@ test('Module interface et modèle valides pour Node et navigateur (syntaxe)',()=
 });
 test('L’interface démarre sans erreur, gère le choix du club et lance un mercato réel',async()=>{
  const callbacks={},cache=new Map(),root={innerHTML:'',addEventListener:(type,fn)=>{callbacks[type]=fn;}};
- globalThis.document={getElementById:id=>id==='opfc-app'?root:id==='bid-value'?{value:'5'}:null};
+ globalThis.document={getElementById:id=>id==='opfc-app'?root:id==='bid-value'?{value:'5000000'}:null};
  globalThis.localStorage={getItem:key=>cache.get(key)??null,setItem:(key,value)=>cache.set(key,value),removeItem:key=>cache.delete(key)};
  await import('../ui.mjs');
  assert.match(root.innerHTML,/La Grandline Cup/);
@@ -64,8 +64,11 @@ test('L’interface démarre sans erreur, gère le choix du club et lance un mer
  assert.match(root.innerHTML,/👁 Observation/);
  assert.match(root.innerHTML,/👑 Haki des Rois/);
  assert.match(root.innerHTML,/Refus utilisés :/);
- assert.match(root.innerHTML,/Refus restants :/);
- assert.match(root.innerHTML,/data-amount="25"/);
+ assert.match(root.innerHTML,/Restants :/);
+ assert.match(root.innerHTML,/data-amount="6"/);
+ assert.match(root.innerHTML,/5 000 000 ฿/);
+ assert.match(root.innerHTML,/250 000 000 ฿/);
+ assert.match(root.innerHTML,/class="auction-hakis"/);
  const first=stored.game.auction.turn;
  press('observation');
  assert.match(root.innerHTML,/Choix secret/);
