@@ -397,6 +397,20 @@ try{
  }));
  assert.match(matchType.text,/BONNE OCCASION/);
  assert.equal(await page.locator('.match-team-overview .pitch-player[data-action="inspect-player"]').count(),14);
+ const savedTeams=(await game()).teams;
+ await press('inspect-player','.pitch-player');
+ assert.equal(await page.locator('.modal .detail-grid').count(),1,'Toucher un pion doit ouvrir la fiche');
+ assert.deepEqual((await game()).teams,savedTeams,'Ouvrir la fiche ne doit pas modifier les joueurs');
+ await press('close','.modal');
+ for(const panel of await page.locator('.match-team-overview .team-panel').all()){
+  const posts=await panel.locator('.roster-position').allTextContents();
+  const rank={GAR:0,DEF:1,MIL:2,ATT:3};
+  assert.deepEqual(posts,[...posts].sort((a,b)=>rank[a]-rank[b]),
+   'La liste doit être triée GAR, DEF, MIL, ATT');
+ }
+ await press('inspect-player','.team-chip');
+ assert.equal(await page.locator('.modal .detail-grid').count(),1,'Toucher un joueur de la liste doit ouvrir sa fiche');
+ await press('close','.modal');
  const heading=await page.locator('.match-duel-ready-heading').evaluate(el=>({
   size:parseFloat(getComputedStyle(el).fontSize)
  }));
