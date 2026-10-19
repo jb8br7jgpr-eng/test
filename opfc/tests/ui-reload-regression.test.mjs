@@ -59,9 +59,11 @@ test('Rechargement pendant un choix confidentiel : écran couvert et tactique pr
 });
 test('Rechargement à la mi-temps puis reprise via le bouton réel',async()=>{
  let s=dispatchOpenMatch(prepared(),'kickoff',{rng:random(31)});
- for(let n=0;s.phase==='match';n++){
-   assert.ok(n<20);
-   s=continueMatch(resolveMatchMoment(s,{outcome:'stopped'}));
+ for(let n=0;s.phase!=='half-time';n++){
+   assert.ok(n<30,'La première période doit se terminer');
+   if(s.phase==='moment-result'){s=continueMatch(s);continue;}
+   assert.equal(s.phase,'match');
+   s=resolveMatchMoment(s,{outcome:'stopped'});
  }
  assert.equal(s.phase,'half-time');
  for(const club of ['PSG','OM'])s=ready(s,club);
