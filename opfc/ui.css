@@ -132,3 +132,60 @@ a{color:inherit}p{line-height:1.45}.app{width:min(100%,760px);margin:0 auto;padd
 .opfc-player-card .stat-low{background:#ec9645;color:#402008}
 .opfc-player-card .stat-weak{background:#c93f51;color:#fff}
 @media(max-width:360px){.opfc-player-card{padding:10px 8px}.opfc-player-card .portrait-shell-photo{width:min(100%,208px)}.opfc-player-card .player-labels{gap:5px}.opfc-player-card .player-position,.opfc-player-card .player-tier{padding:4px 6px;font-size:9px}.opfc-player-card .opfc-stat-value{min-height:33px;font-size:18px}}
+
+
+/* OPFC — carte approuvée : portrait, identité centrée, poste violet / note / classe */
+.opfc-player-card .player-identity{min-width:0;text-align:center;padding:0 7px}
+.opfc-player-card .player-name{margin:0 0 5px;font-size:clamp(20px,5.4vw,26px);line-height:1.14;text-align:center}
+.opfc-player-card .player-meta{font-size:12px;line-height:1.3;text-align:center;color:#b8d2df}
+.opfc-player-card .player-rating-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(86px,1.16fr) minmax(0,1fr);gap:6px;align-items:center;padding:9px 0 10px;border-top:1px solid #ffffff24;border-bottom:1px solid #ffffff24}
+.opfc-player-card .player-rating{padding:0;border:0;gap:3px;min-width:0}
+.opfc-player-card .player-rating>span{font-size:8px;white-space:nowrap;letter-spacing:.06em}
+.opfc-player-card .rating-value{font-size:clamp(41px,12vw,59px)}
+.opfc-player-card .player-position,.opfc-player-card .player-tier{justify-self:center;display:inline-flex;align-items:center;justify-content:center;text-align:center;padding:7px 8px;font-size:10px;letter-spacing:.04em;max-width:100%;white-space:nowrap}
+.opfc-player-card .position-purple{background:linear-gradient(135deg,#7650b3,#4d2b80);color:#fff2ff;border-color:#bd9ae6}
+@media(max-width:370px){
+ .opfc-player-card .player-rating-row{grid-template-columns:minmax(0,1fr) minmax(80px,1.08fr) minmax(0,1fr);gap:3px}
+ .opfc-player-card .player-position,.opfc-player-card .player-tier{font-size:9px;padding:6px 5px}
+ .opfc-player-card .player-rating>span{font-size:7px}
+}
+/* Enchères : reprend le langage visuel sobre et lisible d'OPMercato classique */
+.opfc-auction{padding:15px 13px 16px}
+.opfc-auction .bid-title{display:flex;justify-content:space-between;align-items:center;gap:9px;margin-top:15px;padding:0 2px 12px;border-bottom:1px solid #ffffff26}
+.opfc-auction .bid-kicker{font-size:11px;font-weight:850;color:#b5ced7;letter-spacing:.07em;text-transform:uppercase}
+.opfc-auction .bid-amount{display:block;font-size:clamp(29px,8vw,37px);font-weight:950;line-height:1.13;color:#f9d795;letter-spacing:-.05em}
+.opfc-auction .bid-leader{text-align:right;max-width:52%;font-size:12px;color:#b2cbd6;overflow-wrap:anywhere}
+.opfc-auction .bid-leader strong{display:block;font-size:13px;color:#f3faf8;overflow-wrap:anywhere}
+.opfc-auction .turn-banner{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:12px 0;padding:12px;border-radius:13px;border:1px solid #85dbcb5e;background:linear-gradient(135deg,#102e42,#092432)}
+.opfc-auction .turn-banner span{display:block;margin:0 0 3px;color:#a9c5d1;font-size:10px;letter-spacing:.08em;font-weight:800}
+.opfc-auction .turn-banner strong{font-size:clamp(14px,4vw,19px);line-height:1.2;color:#eaf7ef;overflow-wrap:anywhere}
+.opfc-auction .turn-budget{flex:0 0 auto;text-align:right;white-space:nowrap;color:#f9d795;font-size:17px;font-weight:950}
+.opfc-auction .turn-budget small{display:block;margin-top:2px;font-size:10px;font-weight:700;color:#b5ced7}
+.opfc-auction .offers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}
+.opfc-auction .offer-btn{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:4px;text-align:left;min-height:67px;padding:11px;border:1px solid #f2ce8a6c;border-radius:13px;background:#d5a85818;color:#f8faf8}
+.opfc-auction .offer-btn strong{font-size:clamp(20px,5.5vw,25px);font-weight:950;line-height:1;color:#ffe0a4}
+.opfc-auction .offer-btn small{font-size:10px;color:#b9cfd7}
+.opfc-auction .offer-btn:active:not(:disabled){background:#d6a95644;transform:scale(.99)}
+.opfc-auction .offer-btn:disabled{opacity:.3}
+.opfc-auction .bid-row{margin:10px 0 8px;grid-template-columns:minmax(0,1fr) minmax(112px,1fr)}
+.opfc-auction .bid-row .btn{align-self:end;min-height:44px}
+.opfc-auction .auction-buttons{margin-top:9px}
+.opfc-auction .auction-buttons>.btn{min-width:0}
+.view-teams-actions{margin:10px 0}
+.view-teams-actions .btn{min-height:45px;background:#122f42;border:1px solid #8eafc16b;color:#f6deb1}
+.pitch-orientation{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin:8px 0 10px}
+.pitch-orientation>span{color:#bdd2df;font-size:11px;font-weight:850}
+.pitch-orientation .btn{min-width:70px}
+.placement-intro{display:flex;align-items:center;flex-direction:column;gap:8px;text-align:center;margin:10px 0}
+.character-portrait.placement-portrait{width:95px;height:95px;border-width:3px}
+.placement-intro h2{font-size:clamp(17px,5vw,22px);color:#ffe0a6;margin:4px 0 0}
+.placement-intro p{color:#bed2de;font-size:12px;margin:0}
+.placement-guidance{font-size:12px;line-height:1.4;color:#ffe0a6;text-align:center;margin:8px 0}
+.placement-actions{margin:12px 0 20px}
+.placement-actions>.btn{font-size:15px;min-height:53px}
+.placement-actions .caption{text-align:center}
+@media(max-width:370px){
+ .opfc-auction{padding:11px 9px}
+ .opfc-auction .offer-btn{padding:9px;min-height:62px}
+ .opfc-auction .turn-banner{padding:10px 8px}
+}
