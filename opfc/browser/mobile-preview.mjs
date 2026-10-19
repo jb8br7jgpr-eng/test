@@ -583,6 +583,71 @@ try{
   'Les trois annonces de tir doivent avoir des couleurs clairement distinctes');
  console.log('PASS tirs iPhone : cases identiques aux enchères, deux portraits, confidentialité et 3 résultats officiels');
 
+ // Les MÊMES cases sont utilisées pour toutes les phases arrêtées.
+ for(const kind of ['corner','free-kick','penalty']){
+  const stage=await page.evaluate(async({kind,prepared,key})=>{
+   const {kickoffMatch}=await import('/opfc/match.mjs');
+   const {dispatchOpenMatch}=await import('/opfc/ui-match.mjs');
+   const random=seed=>()=>((seed=(Math.imul(1664525,seed)+1013904223)>>>0)/4294967296);
+   let s=null;
+   for(let seed=1;seed<=2500;seed++){
+    const trial=kickoffMatch(prepared.game,random(seed));
+    if(trial.match.schedule[0].type===kind){s=trial;break;}
+   }
+   if(!s)throw Error('Aucune action '+kind+' dans les tirages');
+   s=dispatchOpenMatch(s,'begin-setpiece');
+   const team=s.teams.find(t=>t.club===s.match.action.attacker);
+   s=dispatchOpenMatch(s,'select-taker',{takerId:team.slots[5],rng:()=>.2});
+   const holder=structuredClone(prepared);holder.game=s;
+   localStorage.setItem(key,JSON.stringify(holder));
+   return s.match.action.stage;
+  },{kind,prepared:JSON.parse(prepared),key});
+  assert.equal(stage,'attack-choice');
+  await page.reload({waitUntil:'domcontentloaded'});
+  assert.equal(await page.locator('.match-handover').count(),1);
+  await press('match-uncover');
+  assert.equal(await page.locator('.match-shot-faceoff .match-duelist').count(),2,
+   'Le tireur et le gardien doivent être visibles sur '+kind);
+  assert.equal(await page.locator('.match-tactical-choices .match-choice').count(),3);
+  assert.equal(await page.locator('.match-shot-faceoff img').count(),2);
+  await checkMobileLayout('choix tactiques '+kind);
+  await page.locator('.match-stage').first().screenshot({
+   path:shots+'/10-choix-'+kind+'.png',animations:'disabled'});
+ }
+ // Contrôler également la séance : les deux portraits persistent sur le
+ // choix du tireur, du gardien et la confirmation sans révélation prématurée.
+ const shootoutStage=await page.evaluate(async({prepared,key})=>{
+  const {kickoffMatch}=await import('/opfc/match.mjs');
+  const {dispatchOpenMatch}=await import('/opfc/ui-match.mjs');
+  const random=seed=>()=>((seed=(Math.imul(1664525,seed)+1013904223)>>>0)/4294967296);
+  let s=kickoffMatch(JSON.parse(prepared).game,random(7));
+  s.phase='shootout-ready';
+  s=dispatchOpenMatch(s,'begin-shootout',{rng:()=>.1});
+  const holder=JSON.parse(prepared);holder.game=s;
+  localStorage.setItem(key,JSON.stringify(holder));
+  return s.phase;
+ },{prepared,key});
+ assert.equal(shootoutStage,'shootout');
+ await page.reload({waitUntil:'domcontentloaded'});
+ assert.equal(await page.locator('.match-handover').count(),1);
+ await press('match-uncover');
+ assert.equal(await page.locator('.match-shot-faceoff .match-duelist').count(),2);
+ assert.equal(await page.locator('.match-tactical-choices .match-choice').count(),3);
+ await checkMobileLayout('choix des tirs au but');
+ await page.locator('.match-stage').first().screenshot({
+  path:shots+'/11a-tab-tireur.png',animations:'disabled'});
+ await press('match-shootout-choose','[data-choice="GAUCHE"]');
+ assert.equal(await page.locator('.match-handover').count(),1);
+ await press('match-uncover');
+ assert.equal(await page.locator('.match-shot-faceoff .match-duelist').count(),2);
+ assert.equal(await page.locator('.match-tactical-choices .match-choice').count(),3);
+ await page.locator('.match-stage').first().screenshot({
+  path:shots+'/11b-tab-gardien.png',animations:'disabled'});
+ await press('match-shootout-choose','[data-choice="DROITE"]');
+ assert.equal(await page.locator('[data-action="match-shootout-reveal"]').count(),1);
+ assert.equal(await page.locator('.match-shot-faceoff .match-duelist').count(),2);
+ console.log('PASS coups de pied arrêtés et TAB iPhone : mêmes boutons et portraits en choix secret');
+
  // Parcourt la simulation moteur en conditions identiques aux tests unitaires.
  const result=await page.evaluate(async({key,prepared})=>{
   const {kickoffMatch,resolveMatchMoment,continueMatch,resumeMatch}=await import('/opfc/match.mjs');
