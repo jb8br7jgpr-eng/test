@@ -8,6 +8,7 @@ import {beginShootout,advanceShootout} from './match.mjs';
 import {nextShootoutShooter} from './shootout.mjs';
 import {CARD_BY_ID} from './catalog.mjs';
 import {renderCharacterPortrait} from './ui-portraits.mjs';
+import {matchTacticalChoices,renderShotFaceOff,renderShotResult} from './ui-match-widgets.mjs';
 
 const fail=m=>{throw Error(m);};
 const escape=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -71,10 +72,13 @@ export function dispatchShootout(state,command,{choice,rng=Math.random}={}){
  fail('Commande de tirs au but inconnue');
 }
 function buttonChoices(){
- return '<div class="match-choice-grid">'+
- dirs.map(d=>'<button class="btn match-choice" data-action="match-shootout-choose" data-choice="'+d+'">'+
- ({GAUCHE:'Gauche',CENTRE:'Centre',DROITE:'Droite'}[d])+'</button>').join('')+'</div>';
+ return matchTacticalChoices(dirs.map(d=>[d,{GAUCHE:'Gauche',CENTRE:'Centre',DROITE:'Droite'}[d]]),
+  'match-shootout-choose');
 }
+const shootoutFaceOff=(state,p)=>renderShotFaceOff(state,{
+ shooterId:p.cardId,keeperId:state.match.shootout.keepers[p.club==='PSG'?'OM':'PSG']?.cardId,
+ attacker:p.club,defender:p.club==='PSG'?'OM':'PSG'
+});
 function history(s){
  const timeline=s?.timeline??[];
  if(!timeline.length)return '<p class="caption">Aucune tentative pour le moment.</p>';
@@ -98,10 +102,15 @@ export function renderShootoutScreen(state,{uncovered=false}={}){
   ' · '+s.attempts.PSG.length+' tir(s) PSG / '+s.attempts.OM.length+' tir(s) OM</p></section>';
  const last=state.match.shootoutLastResult;
  if(last){
-  out+=introPanel(last.scored?'BUT !':last.result==='save'?'Arrêt du gardien !':'Tir manqué',
-   escape(name(last.shooterId))+' ('+escape(last.club)+') · '+escape(last.shotDirection)+' / gardien : '+escape(last.keeperDirection)+
-   '. Le résultat reste visible jusqu’à « Continuer ».',
-   'match-shootout-continue',s.phase==='finished'?'Voir le résultat final':'Continuer');
+  out+=renderShotResult(state,{
+   outcome:last.scored?'goal':last.result==='save'?'save':'miss',
+   attacker:last.club,shooterId:last.shooterId,
+   keeperId:s.keepers[last.club==='PSG'?'OM':'PSG']?.cardId,
+   score:s.score,context:'Séance de tirs au but',
+   detailExtra:'Direction de la frappe : '+last.shotDirection+' · Gardien : '+last.keeperDirection,
+   action:'match-shootout-continue',
+   continueLabel:state.phase==='finished'?'Voir le résultat final':'Continuer'
+  });
  }else if(state.phase==='shootout'){
   const p=current(state),owner=shootoutTurnOwner(state),pending=state.match.shootoutPending;
   if(owner&&!uncovered)
@@ -112,13 +121,16 @@ export function renderShootoutScreen(state,{uncovered=false}={}){
   else if(owner){
    const shooterTurn=owner===p.club;
    out+='<section class="panel match-stage"><span class="eyebrow">'+(shooterTurn?'Tireur':'Gardien')+
-    ' · '+escape(owner)+'</span><h2>'+escape(name(shooterTurn?p.cardId:s.keepers[owner].cardId))+'</h2>'+renderCharacterPortrait(shooterTurn?p.cardId:s.keepers[owner].cardId,'shootout-player-feature')+
+    ' · '+escape(owner)+'</span><h2 class="match-shot-ready-heading">'+(shooterTurn?'Choisis ta frappe':'Réaction du gardien')+'</h2>'+
+    shootoutFaceOff(state,p)+
     '<p>'+(shooterTurn?'Choisis secrètement où tirer.':'Choisis secrètement où plonger.')+
     '</p>'+buttonChoices()+'</section>';
   }else if(pending?.shotDirection&&pending?.keeperDirection){
-   out+=introPanel('Les deux directions sont verrouillées',
-    'Le tir et le plongeon vont être révélés ensemble. Le résultat est calculé par le moteur officiel.',
-    'match-shootout-reveal','Révéler et tirer');
+   out+='<section class="panel match-stage"><span class="eyebrow">Tirs au but</span>'+
+    '<h2 class="match-shot-ready-heading">Les deux directions sont verrouillées</h2>'+
+    shootoutFaceOff(state,p)+
+    '<p>Le tir et le plongeon vont être révélés ensemble.</p>'+
+    btn('match-shootout-reveal','Révéler et tirer')+'</section>';
   }
  }
  return out+'<section class="panel shootout-log"><h3 class="section-title">Historique des tentatives</h3>'+history(s)+'</section>';
