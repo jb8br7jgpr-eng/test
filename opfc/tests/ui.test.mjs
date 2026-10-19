@@ -167,6 +167,19 @@ test('Depuis l’interface réelle, le coup d’envoi affiche le score et conser
  assert.equal(next.match.score.OM,0);
  assert.match(app.innerHTML,/match-scoreboard/);
  assert.match(app.innerHTML,/0 – 0/);
+ assert.match(app.innerHTML,/match-team-overview/);
+ assert.match(app.innerHTML,/TERRAIN ET COMPOSITIONS/);
+ assert.match(app.innerHTML,/match-attack-banner/);
+ assert.match(app.innerHTML,/À L’ATTAQUE/);
+ assert.match(app.innerHTML,/EN DÉFENSE/);
+ assert.equal((app.innerHTML.match(/class="field-half"/g)||[]).length,2);
+ assert.equal((app.innerHTML.match(/class="team-panel"/g)||[]).length,2);
+ assert.equal((app.innerHTML.match(/class="team-chip /g)||[]).length,14);
+ assert.equal((app.innerHTML.match(/class="pitch-player /g)||[]).length,14);
+ assert.match(app.innerHTML,/data-action="slot"[^>]*disabled/);
+ assert.match(app.innerHTML,/roster-position/);
+ assert.match(app.innerHTML,/roster-rating/);
+ assert.match(app.innerHTML,/roster-tier/);
  assert.doesNotMatch(app.innerHTML,/schedule/);
 });
 test('La réinitialisation est confirmée et revient à l’accueil',()=>{
