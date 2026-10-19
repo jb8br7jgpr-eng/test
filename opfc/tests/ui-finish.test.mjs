@@ -5,6 +5,7 @@ import {kickoffMatch,resolveMatchMoment,continueMatch,matchPublicView} from '../
 import {nextShootoutShooter} from '../shootout.mjs';
 import {dispatchOpenMatch,renderMatchScreen,matchTurnOwner,matchRequiresPrivacy} from '../ui-match.mjs';
 import {renderFinalResult} from '../ui-final.mjs';
+import {renderShootoutTracker} from '../ui-shootout.mjs';
 const PSG=['chopper','jinbe','kaido','shanks','nami','luffy','zoro'];
 const OM=['loki','mihawk','monkey-d-garp','katakuri','sabo','sanji','kizaru'];
 const rng=seed=>()=>((seed=(Math.imul(1664525,seed)+1013904223)>>>0)/4294967296);
@@ -104,6 +105,9 @@ test('Une victoire dans les 90 minutes affiche un résultat complet sans séance
  assert.equal(s.phase,'finished');assert.equal(s.match.winner,'PSG');
  const html=renderMatchScreen(s);
  assert.match(html,/Victoire de Pirates Saint-Grandline/);
+ assert.match(html,/🏆 VICTOIRE !|🏆<\/div><h2 class="final-victory-title">VICTOIRE !/);
+ assert.match(html,/Score à 90 minutes/);
+ assert.doesNotMatch(html,/class="final-penalty-score"/);
  assert.match(html,/1 – 0/);
  assert.match(html,/Luffy/);
  assert.match(html,/Buteurs du match/);
@@ -151,6 +155,81 @@ test('Confidentialité : l’attaquant confirme sa direction, elle ne fuit pas a
  assert.equal(matchPublicView(s).match.shootoutPending,undefined);
  assert.equal(s.match.shootout.timeline.length,0);
 });
+test('Suivi visuel TAB : cinq cases par équipe, progression réelle et confidentialité',()=>{
+ let s=dispatchOpenMatch(completeRegulation(),'begin-shootout',{rng:()=>.1});
+ const empty=renderShootoutTracker(s.match.shootout);
+ assert.match(empty,/1re série de tirs/);
+ assert.match(empty,/Cinq tirs initiaux/);
+ assert.equal((empty.match(/shootout-mark--pending/g)||[]).length,10);
+ assert.equal((empty.match(/shootout-mark--goal/g)||[]).length,0);
+ assert.equal((empty.match(/shootout-mark--fail/g)||[]).length,0);
+ assert.match(empty,/0<\/span><\/div>/);
+ assert.doesNotMatch(empty,/shotDirection|keeperDirection|probabilities|sudden-death/);
+ const before=structuredClone(s.match.shootout);
+ const covered=renderMatchScreen(s);
+ assert.match(covered,/class="shootout-tracker"/);
+ assert.doesNotMatch(covered,/data-choice="GAUCHE"/);
+ assert.deepEqual(s.match.shootout,before,'Le rendu doit rester purement cosmétique');
+ s=kick(s,.999999);
+ const first=renderShootoutTracker(s.match.shootout);
+ assert.equal((first.match(/shootout-mark--goal/g)||[]).length,1);
+ assert.equal((first.match(/shootout-mark--pending/g)||[]).length,9);
+ assert.match(first,/PSG, tir 1 : But/);
+ assert.match(first,/OM, tir 1 : À venir/);
+ assert.match(first,/1re série de tirs/);
+ s=kick(s,0);
+ const second=renderShootoutTracker(s.match.shootout);
+ assert.match(second,/2e série de tirs/);
+ assert.equal((second.match(/shootout-mark--goal/g)||[]).length,1);
+ assert.equal((second.match(/shootout-mark--fail/g)||[]).length,1);
+ assert.equal((second.match(/shootout-mark--pending/g)||[]).length,8);
+ assert.match(second,/OM, tir 1 : (Arrêt|Tir manqué)/);
+});
+
+test('Fin anticipée de séance : conserver les cases non tirées, sans faux échecs',()=>{
+ let s=dispatchOpenMatch(completeRegulation(),'begin-shootout',{rng:()=>.1});
+ for(const draw of [.999999,0,.999999,0,.999999,0])s=kick(s,draw);
+ assert.equal(s.phase,'finished');
+ assert.deepEqual(s.match.shootout.score,{PSG:3,OM:0});
+ const board=renderShootoutTracker(s.match.shootout);
+ assert.equal((board.match(/shootout-mark--goal/g)||[]).length,3);
+ assert.equal((board.match(/shootout-mark--fail/g)||[]).length,3);
+ assert.equal((board.match(/shootout-mark--pending/g)||[]).length,4);
+ assert.match(board,/Non tiré/);
+ assert.doesNotMatch(board,/MORT SUBITE/);
+ assert.match(renderFinalResult(s),/3 – 0/);
+});
+
+test('Mort subite : colonnes symétriques, tentatives supplémentaires et deux scores finaux distincts',()=>{
+ let s=dispatchOpenMatch(completeRegulation(),'begin-shootout',{rng:()=>.1});
+ for(let i=0;i<10;i++)s=kick(s,.999999);
+ const board=renderShootoutTracker(s.match.shootout);
+ assert.match(board,/MORT SUBITE/);
+ assert.equal((board.match(/shootout-mark--goal/g)||[]).length,10);
+ assert.equal((board.match(/shootout-mark--pending/g)||[]).length,0);
+ s=kick(s,0);
+ const newRound=renderShootoutTracker(s.match.shootout);
+ assert.equal((newRound.match(/class="shootout-mark /g)||[]).length,12);
+ assert.equal((newRound.match(/shootout-marks-divider/g)||[]).length,2);
+ assert.equal((newRound.match(/shootout-mark--pending/g)||[]).length,1);
+ s=kick(s,.999999);
+ assert.equal(s.phase,'finished');
+ const final=renderFinalResult(s);
+ assert.match(final,/🏆/);
+ assert.match(final,/VICTOIRE !/);
+ assert.match(final,/Victoire de Olympique de MaryGeoise/);
+ assert.match(final,/class="final-score-numbers"/);
+ assert.match(final,/Score à 90 minutes/);
+ assert.match(final,/0 – 0/);
+ assert.match(final,/class="final-penalty-score"/);
+ assert.match(final,/5 – 6/);
+ assert.match(final,/Vainqueur aux tirs au but/);
+ assert.match(final,/Historique des tentatives|final-kicks/);
+ assert.equal((final.match(/class="final-kick"/g)||[]).length,12);
+ const visible=renderMatchScreen(s);
+ assert.equal(visible,final);
+});
+
 test('Une séance garde le résultat jusqu’à Continuer et reprend sur le bon joueur',()=>{
  let s=dispatchOpenMatch(completeRegulation(),'begin-shootout',{rng:()=>.1});
  s=choose(s,'GAUCHE');s=choose(s,'DROITE');
