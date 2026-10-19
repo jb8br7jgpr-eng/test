@@ -163,6 +163,7 @@ function fieldHalf(team,top){
   return '<button class="pitch-player '+(p.cardId?'':'empty')+' '+(active?'selected':'')+
    '" data-action="slot" data-club="'+team.club+'" data-slot="'+p.slot+'" aria-label="'+esc(pos)+' '+esc(p.card?.name??'vide')+'">'+
    '<span class="position">'+pos+(p.outOfPosition?'<span class="out" title="Hors poste"> !</span>':'')+'</span>'+
+   (p.card?'<span class="pitch-avatar" aria-hidden="true">'+esc(p.card.name.split(/[\\s.-]+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase())+'</span>':'<span class="pitch-avatar pitch-avatar-empty" aria-hidden="true">+</span>')+
    '<span class="player-mininame">'+esc(p.card?.name??'+')+'</span>'+
    (p.rating===null?'':'<span class="rating">'+p.rating+'</span>')+'</button>';
  }).join('')+'</div>').join('')+'</div>';
