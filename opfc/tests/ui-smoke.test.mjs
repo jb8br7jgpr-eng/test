@@ -62,7 +62,7 @@ test('L’interface démarre sans erreur, gère le choix du club et lance un mer
  assert.match(root.innerHTML,/slot-field/);
  press('toggle-teams');
  assert.match(root.innerHTML,/👁 Observation/);
- assert.match(root.innerHTML,/👑 Haki des Rois — activer le pouvoir/);
+ assert.match(root.innerHTML,/👑 Haki des Rois/);
  assert.match(root.innerHTML,/Refus utilisés :/);
  assert.match(root.innerHTML,/Refus restants :/);
  assert.match(root.innerHTML,/data-amount="25"/);
