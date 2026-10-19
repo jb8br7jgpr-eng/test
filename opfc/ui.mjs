@@ -12,6 +12,8 @@ const app=document.getElementById('opfc-app');
 const STORAGE='opfc-v08-local-dev';
 let game=null,firstClub='PSG',selection=null,modal=null,error='',beforeForm={PSG:'2-2-2',OM:'2-2-2'};
 let matchUncovered=false;
+// Affichage purement local : aucun changement de règles ou de calcul moteur.
+let placement=null,teamsVisible=false,pitchClub=null;
 // L'état du salon et sa session sont séparés de la sauvegarde du mode local.
 const onlineClient=createOnlineClient();
 let onlineVisible=false,onlineStage='choose',onlineJoinCode='',onlineBusy=false,onlineError='';
@@ -88,11 +90,19 @@ const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;
 const card=id=>CARD_BY_ID.get(id);
 const others=id=>id==='PSG'?'OM':'PSG';
 const short=id=>esc(id);
-function save(){try{if(game)localStorage.setItem(STORAGE,JSON.stringify({game,firstClub,beforeForm}));}catch{}}
+function save(){try{if(game)localStorage.setItem(STORAGE,JSON.stringify({game,firstClub,beforeForm,placement,teamsVisible,pitchClub}));}catch{}}
 function restore(){try{
  const data=JSON.parse(localStorage.getItem(STORAGE)||'null');
  if(data?.game?.version===1&&['mercato','lineup','kickoff-ready','match','moment-result','half-time','resume-ready','shootout-ready','shootout','finished'].includes(data.game.phase)&&
- data.game.teams?.length===2){game=data.game;firstClub=data.firstClub==='OM'?'OM':'PSG';beforeForm=data.beforeForm||beforeForm;}
+ data.game.teams?.length===2){
+   game=data.game;firstClub=data.firstClub==='OM'?'OM':'PSG';beforeForm=data.beforeForm||beforeForm;
+   teamsVisible=data.teamsVisible===true;
+   pitchClub=['PSG','OM'].includes(data.pitchClub)?data.pitchClub:null;
+   const p=data.placement;
+   if(p&&['mercato','lineup'].includes(game.phase)&&
+     game.teams.some(t=>t.club===p.club&&t.roster.includes(p.cardId)))
+     placement={club:p.club,cardId:p.cardId};
+  }
 }catch{}}
 const shell=()=>'<header class="topbar"><a class="brand-mini" href="./"><img src="./opfc-logo-hd.PNG" alt="" width="35" height="35"> OPMERCATO FC</a><a class="small-link" href="./">← Accueil</a></header>';
 const options=(values,current)=>values.map(v=>'<option value="'+esc(v)+'" '+(v===current?'selected':'')+'>'+esc(v)+'</option>').join('');
@@ -132,35 +142,42 @@ function cardPanel(info){
    '<strong class="opfc-stat-value stat-'+grade+'">'+s.value+'</strong></div>';
  }).join('');
  return '<div class="player-card opfc-player-card rarity-'+info.rarity+'">'+portrait(info)+
- '<div class="player-identity-row"><div class="player-identity">'+
- '<h2 class="player-name">'+esc(info.name)+'</h2>'+
+ '<div class="player-identity"><h2 class="player-name">'+esc(info.name)+'</h2>'+
  '<div class="player-meta">'+esc(info.group)+'</div></div>'+
- '<div class="player-labels"><span class="player-position position-'+info.position.toLowerCase()+'">'+info.position+'</span>'+
- '<span class="player-tier tier-'+info.rarity.toLowerCase()+'">'+rar[info.rarity]+'</span></div></div>'+
+ '<div class="player-rating-row">'+
+ '<span class="player-position position-purple">'+info.position+'</span>'+
  '<div class="player-rating"><span>NOTE GLOBALE</span>'+
  '<strong class="rating-value">'+info.rating+'</strong></div>'+
- '<div class="stats-grid">'+stats+'</div></div>';
+ '<span class="player-tier tier-'+info.rarity.toLowerCase()+'">'+rar[info.rarity]+'</span>'+
+ '</div><div class="stats-grid">'+stats+'</div></div>';
 }
 function sale(){
  const context=uiAuction(game),a=context.auction,t=context.team;
  const min=context.minimum,max=context.maximum;
- return '<section class="panel"><div class="auction-top"><span class="eyebrow">Mercato · '+game.teams.reduce((n,t)=>n+t.roster.length,0)+
- '/14</span><span class="turn-pill">'+a.turn+' doit jouer</span></div>'+
+ const quickest=[{label:'Offre minimale',amount:min},{label:'Offre +5 M',amount:min+5},
+  {label:'Offre +20 M',amount:min+20},{label:'Offre +50 M',amount:min+50}];
+ return '<section class="panel opfc-auction"><div class="auction-top"><span class="eyebrow">Mercato · '+game.teams.reduce((n,t)=>n+t.roster.length,0)+
+ '/14</span><span class="turn-pill">Enchère en cours</span></div>'+
  cardPanel(context.card)+
- '<div class="auction-info"><span>Offre : <strong>'+(a.highestBid?a.highestBid+' M · '+a.highestClub:'Aucune')+
- '</strong></span><span>Priorité : <strong>'+a.priority+'</strong></span></div>'+
+ '<div class="bid-title"><div><span class="bid-kicker">Meilleure offre</span>'+
+ '<strong class="bid-amount">'+(a.highestBid?a.highestBid+' M':'Aucune')+'</strong></div>'+
+ '<div class="bid-leader">'+(a.highestClub?'En tête : <strong>'+esc(clubName(a.highestClub))+'</strong>':
+ 'Mise de départ : <strong>'+min+' M</strong>')+'</div></div>'+
+ '<div class="turn-banner"><div><span>AU TOUR DE</span><strong>'+esc(clubName(a.turn))+'</strong></div>'+
+ '<div class="turn-budget">'+t.budget+' M<small>disponibles</small></div></div>'+
  (a.king?'<p class="warning-copy">Haki des Rois activé par '+a.king.holder+'.</p>':'')+
- (a.solo?'<p class="warning-copy">Une seule équipe recrute encore : prix fixe 5 M.</p>'+btn('solo','Recruter · 5 M','primary full'):
- '<div class="bid-row"><div class="form-box"><label for="bid-value">Offre en M Berrys</label>'+
+ (a.solo?'<p class="warning-copy">Une seule équipe recrute encore : prix fixe 5 M.</p>'+
+ btn('solo','Recruter · 5 M','primary full'):
+ '<div class="offers">'+quickest.map(o=>'<button class="offer-btn" type="button" data-action="bid-quick" data-amount="'+o.amount+
+ '" '+(context.canBid&&o.amount<=max?'':'disabled')+'><strong>'+o.amount+' M</strong><small>'+o.label+'</small></button>').join('')+'</div>'+
+ '<div class="bid-row"><div class="form-box"><label for="bid-value">Autre montant (M Berrys)</label>'+
  '<input class="bid-input" id="bid-value" type="number" inputmode="numeric" min="'+min+'" max="'+max+'" step="1" value="'+min+'" '+
- (context.canBid?'':'disabled')+'></div>'+btn('bid','Enchérir · '+a.turn,'primary',!context.canBid)+'</div>'+
- '<div class="bid-presets">'+btn('amount-min','Minimum','small',!context.canBid)+
- btn('amount-five','+5 M','small',!context.canBid)+btn('amount-max','Max '+max+' M','small',!context.canBid)+'</div>'+
- '<div class="auction-buttons">'+btn('pass',context.everOffered?'Se retirer':'Passer','negative',!context.canPass)+
+ (context.canBid?'':'disabled')+'></div>'+btn('bid','Enchérir','primary',!context.canBid)+'</div>'+
+ '<div class="auction-buttons">'+btn('pass',context.everOffered?'Se retirer':'Passer mon tour','negative full',!context.canPass)+
  btn('inspect','Fiche complète','ghost',false,'data-card="'+esc(a.cardId)+'"')+'</div>'+
  '<div class="haki-row">'+btn('observation','Observation','ghost',!context.canObserve)+
  btn('kings','Haki des Rois','ghost',!context.canKings)+'</div>')+
- '<p class="warning-copy">Mise légale : '+min+' à '+max+' M. Réserve obligatoire de 5 M par recrue restante.</p></section>';
+ '<p class="warning-copy">Priorité : '+a.priority+' · Mise légale : '+min+' à '+max+' M. Réserve de 5 M par recrue restante.</p></section>';
 }
 function fieldHalf(team,top){
  const u=uiTeam(team),positions=top?['GAR','DEF','MIL','ATT']:['ATT','MIL','DEF','GAR'];
@@ -176,12 +193,26 @@ function fieldHalf(team,top){
    (p.rating===null?'':'<span class="rating">'+p.rating+'</span>')+'</button>';
  }).join('')+'</div>').join('')+'</div>';
 }
+function currentPitchClub(){
+ // En phase de placement, l'équipe qui vient de recruter reste toujours en haut.
+ if(placement)return placement.club;
+ if(selection?.club)return selection.club;
+ return pitchClub|| (game?.phase==='mercato'?game.auction?.turn:null) || firstClub;
+}
 function pitch(){
- const first=game.teams.find(t=>t.club===firstClub),other=game.teams.find(t=>t.club!==firstClub);
- return '<section class="panel"><div class="auction-top"><span class="eyebrow">Le stade · les compositions</span><span class="caption">Terrain vertical</span></div>'+
+ const upper=currentPitchClub();
+ const first=game.teams.find(t=>t.club===upper),other=game.teams.find(t=>t.club!==upper);
+ return '<section class="panel pitch-panel"><div class="auction-top"><span class="eyebrow">Le stade · les compositions</span>'+
+ '<span class="caption">Terrain vertical</span></div>'+
+ (placement?'<p class="placement-guidance">Recrue sélectionnée : <strong>'+esc(card(placement.cardId)?.name)+
+ '</strong>. Touche une case de ton équipe pour la placer.</p>':
+ '<div class="pitch-orientation"><span>Équipe en haut :</span>'+
+ game.teams.map(t=>btn('pitch-view',t.club,(upper===t.club?'primary':'ghost')+' small',false,
+ 'data-club="'+t.club+'" aria-pressed="'+(upper===t.club)+'"')).join('')+'</div>')+
  '<p class="lineup-help">'+(selection?'Sélection : '+esc(card(selection.id)?.name)+' · touche une case '+selection.club+' pour placer ou échanger.':
  'Sélectionne une recrue puis touche une case de son club. Les cases occupées peuvent être échangées.')+'</p>'+
- '<div class="slot-field">'+fieldHalf(first,true)+'<div class="field-divider"></div>'+fieldHalf(other,false)+'</div></section>';
+ '<div class="slot-field" data-top-club="'+upper+'">'+fieldHalf(first,true)+
+ '<div class="field-divider"></div>'+fieldHalf(other,false)+'</div></section>';
 }
 function teamPanel(team){
  const u=uiTeam(team),editable=['mercato','lineup','half-time'].includes(game.phase)&&!team.ready;
@@ -199,15 +230,38 @@ function teamPanel(team){
  'small full '+(u.canReady?'primary':'ghost'),!u.canReady,'data-club="'+team.club+'"'):'')+'</section>';
 }
 function teams(){
- return pitch()+'<div class="two-teams">'+game.teams.map(teamPanel).join('')+'</div>';
+ const upper=currentPitchClub();
+ return pitch()+'<div class="two-teams">'+
+ [...game.teams].sort((a,b)=>Number(b.club===upper)-Number(a.club===upper)).map(teamPanel).join('')+'</div>';
+}
+function placementPage(){
+ const team=game.teams.find(t=>t.club===placement.club);
+ const placed=team?.slots.includes(placement.cardId);
+ return '<section class="panel placement-intro"><span class="eyebrow">Recrutement confirmé</span>'+
+ renderCharacterPortrait(placement.cardId,'placement-portrait')+
+ '<h2>'+esc(card(placement.cardId)?.name)+' rejoint '+placement.club+'</h2>'+
+ '<p>Place ta nouvelle recrue sur le terrain avant de reprendre les enchères.</p></section>'+
+ teams()+
+ '<div class="placement-actions">'+
+ btn('continue-placement',game.phase==='lineup'?'Continuer vers les compositions':'Reprendre les enchères',
+ 'primary full',!placed)+
+ (!placed?'<p class="caption">Choisis une case pour activer le bouton Continuer.</p>':'')+
+ '</div>';
 }
 function playing(){
  const intro=shell()+'<div class="match-header">'+sep()+'<h1 class="page-title">'+
  (game.phase==='mercato'?'Mercato des légendes':'Prépare le Classique')+'</h1>'+
  '<div class="dice-note">Dés : '+game.dice.join(' · ')+'</div></div>'+wallets();
- const next=game.phase==='mercato'?sale()+teams():teams()+
- '<div class="ready-banner"><strong>Compositions en préparation</strong><p>Les 2 clubs doivent confirmer leurs équipes.</p></div>';
- return intro+next+'<div class="gameplay-nav"><span class="caption">Mode local · bloc 9A</span>'+
+ if(placement)return intro+placementPage()+
+ '<div class="gameplay-nav"><span class="caption">Placement de recrue</span>'+
+ '<button class="link-button" data-action="confirm-reset">Nouvelle partie</button></div>';
+ const next=game.phase==='mercato'?sale()+
+ '<div class="view-teams-actions">'+btn('toggle-teams',teamsVisible?'Masquer les équipes':'Voir les équipes',
+ 'ghost full',false,'aria-expanded="'+teamsVisible+'"')+'</div>'+
+ (teamsVisible?teams():''):teams()+
+ '<div class="ready-banner"><strong>Compositions en préparation</strong>'+
+ '<p>Les 2 clubs doivent confirmer leurs équipes.</p></div>';
+ return intro+next+'<div class="gameplay-nav"><span class="caption">Mode local</span>'+
  '<button class="link-button" data-action="confirm-reset">Nouvelle partie</button></div>';
 }
 function endMercato(){
@@ -265,13 +319,16 @@ function render(){
 function change(fn){
  const before=game,next=fn(before),end=before.phase==='mercato'?currentAuctionEnding(before,next):null;
  game=next;error='';selection=null;
- if(end)modal={type:'sale',result:end};
+ if(end){
+  modal={type:'sale',result:end};
+  if(end.winner){placement={club:end.winner,cardId:end.cardId};pitchClub=end.winner;}
+ }
  save();render();
 }
 function start(){
  const s=createGame({firstClub});
  for(const id of ['PSG','OM'])if(beforeForm[id]!=='2-2-2')Object.assign(s,chooseFormation(s,id,beforeForm[id]));
- game=s;selection=null;modal={type:'dice'};error='';save();render();
+ game=s;selection=null;placement=null;teamsVisible=false;pitchClub=null;modal={type:'dice'};error='';save();render();
 }
 function clicked(button){
  const action=button.dataset.action,club=button.dataset.club;
@@ -317,11 +374,42 @@ function clicked(button){
  }
  if(action==='club'){firstClub=club;render();return;}
  if(action==='start'){start();return;}
- if(action==='close'){modal=null;render();return;}
+ if(action==='close'){
+  if(modal?.type==='sale'&&placement){
+   selection={club:placement.club,id:placement.cardId};
+   pitchClub=placement.club;
+  }
+  modal=null;save();render();return;
+ }
  if(action==='confirm-reset'){modal={type:'reset'};render();return;}
- if(action==='reset'){game=null;selection=null;modal=null;error='';matchUncovered=false;try{localStorage.removeItem(STORAGE);}catch{}render();return;}
+ if(action==='reset'){game=null;selection=null;placement=null;teamsVisible=false;pitchClub=null;modal=null;error='';matchUncovered=false;try{localStorage.removeItem(STORAGE);}catch{}render();return;}
  if(action==='observation-show'){if(modal?.type==='observation-pass'){modal.type='observation-show';render();}return;}
  if(!game)return;
+ if(action==='toggle-teams'){
+  if(game.phase!=='mercato'||placement)throw Error('Affichage des équipes indisponible');
+  teamsVisible=!teamsVisible;
+  pitchClub=teamsVisible?game.auction.turn:null;
+  save();render();return;
+ }
+ if(action==='pitch-view'){
+  if(placement)throw Error('Le club du recruteur reste en haut pendant le placement');
+  if(!game.teams.some(t=>t.club===club))throw Error('Club introuvable');
+  pitchClub=club;selection=null;save();render();return;
+ }
+ if(action==='continue-placement'){
+  if(!placement)throw Error('Aucune recrue en attente de placement');
+  const team=game.teams.find(t=>t.club===placement.club);
+  if(!team?.slots.includes(placement.cardId))throw Error('Place la recrue sur le terrain avant de continuer');
+  placement=null;selection=null;pitchClub=null;teamsVisible=false;save();render();return;
+ }
+ if(placement&&!['pick','slot','inspect','confirm-reset','formation','close'].includes(action))
+  throw Error('Place ta nouvelle recrue avant de reprendre les enchères.');
+ if(action==='bid-quick'){
+  if(game.phase!=='mercato'||placement)throw Error('Mise rapide indisponible');
+  const amount=Number(button.dataset.amount);
+  if(!Number.isInteger(amount))throw Error('Montant incorrect');
+  change(s=>bid(s,s.auction.turn,amount));return;
+ }
  if(action.startsWith('amount-')){
   const input=document.getElementById('bid-value'),context=uiAuction(game);
   if(!input||!context)return;
@@ -346,9 +434,12 @@ function clicked(button){
  if(action==='inspect'){modal={type:'card',id:game.auction.cardId};render();return;}
  if(action==='pick'){
   const id=button.dataset.card;
-  selection=selection?.club===club&&selection.id===id?null:{club,id};render();return;
+  if(placement&&club!==placement.club)throw Error('Place d’abord la nouvelle recrue de ton club.');
+  selection=selection?.club===club&&selection.id===id?null:{club,id};
+  pitchClub=club;render();return;
  }
  if(action==='slot'){
+  if(placement&&club!==placement.club)throw Error('La recrue doit rejoindre le terrain de son propre club.');
   const slot=Number(button.dataset.slot),team=game.teams.find(t=>t.club===club);
   if(selection){
    if(selection.club!==club)throw Error('Tu ne peux déplacer que tes propres joueurs.');
@@ -369,8 +460,13 @@ app.addEventListener('change',event=>{
   if(target.dataset.action==='initial-formation'&&FORMATION_NAMES.includes(target.value)){
    beforeForm[target.dataset.club]=target.value;render();
   }
-  if(target.dataset.action==='formation'&&FORMATION_NAMES.includes(target.value))
+  if(target.dataset.action==='formation'&&FORMATION_NAMES.includes(target.value)){
+   if(placement&&target.dataset.club!==placement.club)throw Error('Termine le placement du recruteur');
+   pitchClub=target.dataset.club;
    change(s=>chooseFormation(s,target.dataset.club,target.value));
+   if(placement)selection={club:placement.club,id:placement.cardId};
+   render();
+  }
  }catch(e){error=e.message||'Formation impossible';render();}
 });
 restore();
