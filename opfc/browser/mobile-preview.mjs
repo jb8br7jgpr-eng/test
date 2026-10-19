@@ -385,6 +385,19 @@ try{
  }));
  assert.ok(heading.size<=18,'Le titre des tactiques ne doit plus être surdimensionné');
  await checkMobileLayout('duel avec situation colorée et compositions permanentes');
+ // Une capture pleine page ne fait pas défiler Safari/Chrome : demander le décodage
+ // des 28 portraits du terrain et des listes pour montrer les VRAIES photos,
+ // même lorsque les lignes sont plus bas que le premier viewport.
+ const rosterImages=await page.locator('.match-team-overview .character-portrait img').count();
+ assert.equal(rosterImages,28,'14 joueurs sur le terrain et 14 dans les listes');
+ const portraits=await page.locator('.match-team-overview .character-portrait img').evaluateAll(async images=>{
+  return Promise.all(images.map(async img=>{
+   img.loading='eager';
+   try{await img.decode();return !!img.naturalWidth&&!!img.naturalHeight;}
+   catch{return false;}
+  }));
+ });
+ assert.ok(portraits.every(Boolean),'Un portrait du terrain ou des effectifs manque');
  await take('06-duel');
  // Captures courtes des deux zones, en complément de la page complète avec terrain.
  // L'écran de match ne possède pas de HUD sticky : aucune modification temporaire.
