@@ -173,7 +173,7 @@ test('Depuis l’interface réelle, le coup d’envoi affiche le score et conser
  assert.match(app.innerHTML,/À L’ATTAQUE/);
  assert.match(app.innerHTML,/EN DÉFENSE/);
  assert.equal((app.innerHTML.match(/class="field-half"/g)||[]).length,2);
- assert.equal((app.innerHTML.match(/class="team-panel"/g)||[]).length,2);
+ assert.equal((app.innerHTML.match(/class="panel team-panel"/g)||[]).length,2);
  assert.equal((app.innerHTML.match(/class="team-chip /g)||[]).length,14);
  assert.equal((app.innerHTML.match(/class="pitch-player /g)||[]).length,14);
  assert.match(app.innerHTML,/data-action="slot"[^>]*disabled/);
