@@ -57,3 +57,34 @@ Véritables tests sur deux téléphones après autorisation de déployer
 un backend OPFC **séparé**.
 
 Ne pas présenter ce sous-bloc comme un match en ligne déjà jouable.
+
+
+## 10A3B2b — Phases arrêtées du match (développement, non déployé)
+
+Les actions \`POST action:"match"\` acceptent désormais également :
+\`begin-setpiece\`, \`select-taker\` (avec \`takerId\`),
+\`choose\` (avec \`choice\`), \`reveal-setpiece-duel\`,
+\`continue-setpiece-duel\`, \`finish-corner\` et \`reveal-penalty\`.
+Le serveur contrôle **à chaque transition** le club authentifié, l'étape
+attendue et le numéro de séquence. Aucun client ne peut envoyer le résultat
+du tir ni le générateur aléatoire : les calculs restent ceux du moteur local
+et les tirages proviennent de \`crypto.getRandomValues\`.
+
+Pour un corner : tireur → zones secrètes → duel révélé → geste de finition
+secret du tireur → résultat. Pour un coup franc : tireur → stratégies secrètes
+→ duel révélé → finition automatique. Pour un penalty : tireur → deux directions
+secrètes → résolution unique. Les fautes du jeu ouvert sont reprises comme
+coup franc ou penalty **dans la même séquence**, et une seule ligne entre
+dans les statistiques du match.
+
+Les valeurs choisies restent uniquement dans \`private_state\` ; le client
+reçoit les confirmations et les calculs révélés à l'étape autorisée. Tous les
+POST passent par le verrou de version du salon déjà présent dans Edge.
+
+Tests dédiés : \`opfc/tests/online-set-piece.test.mjs\` (moteur et sécurité)
+et \`opfc/tests/online-set-piece-client.test.mjs\` (deux iPhone simulés,
+conflits de version et résultats synchronisés).
+
+**Les fonctionnalités restantes :** synchroniser la mi-temps, les tirs au but
+et le résultat final (10A3B2c), puis connecter l'interface graphique des
+deux téléphones au véritable salon (10A4). Le backend OPFC n'est pas déployé.

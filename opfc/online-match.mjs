@@ -10,6 +10,7 @@ import {
  continueOpenPlayDuel,revealOpenPlayShot
 } from './match-actions.mjs';
 import {secureRandomBytes} from './online-protocol.mjs';
+import {SET_PIECE_TYPES,handlesOnlineSetPiece,applyOnlineSetPieceTransition} from './online-set-piece.mjs';
 
 const fail=message=>{throw Error(message);};
 const other=c=>c==='PSG'?'OM':'PSG';
@@ -66,7 +67,8 @@ const TYPES={
  'reveal-duel':['type'],
  'continue-duel':['type'],
  'reveal-shot':['type'],
- 'continue-result':['type']
+ 'continue-result':['type'],
+ ...SET_PIECE_TYPES
 };
 export function applyOnlineOpenPlayCommand(state,club,command,{rng=cryptoRng}={}){
  clubValid(club);
@@ -94,19 +96,25 @@ export function applyOnlineOpenPlayCommand(state,club,command,{rng=cryptoRng}={}
  }else{
   if(state.phase!=='match')fail('Le match attend un autre écran');
   const a=state.match.action;
-  if(a?.kind!=='open'||a.index!==state.match.index)
-   fail('Aucune action de jeu ouvert active');
-  if(actionOwner(a)!==club)fail('Ce n’est pas au tour de ce club');
-  if(type==='choose'){
-   if(typeof command.choice!=='string'||command.choice.length>32)
-    fail('Choix de match invalide');
-   next=lockOpenPlayChoice(state,club,command.choice);
-  }else if(type==='reveal-duel'){
-   next=revealOpenPlayDuel(state,rng());
-  }else if(type==='continue-duel'){
-   next=continueOpenPlayDuel(state);
-  }else if(type==='reveal-shot'){
-   next=revealOpenPlayShot(state,rng());
+  if(handlesOnlineSetPiece(state,type)){
+   // Le moteur de phase arrêtée vérifie son acteur et l'étape exacte.
+   // Une faute en jeu ouvert conserve l'index et la minute de la séquence.
+   next=applyOnlineSetPieceTransition(state,club,command,rng);
+  }else{
+   if(a?.kind!=='open'||a.index!==state.match.index)
+    fail('Aucune action de jeu ouvert active');
+   if(actionOwner(a)!==club)fail('Ce n’est pas au tour de ce club');
+   if(type==='choose'){
+    if(typeof command.choice!=='string'||command.choice.length>32)
+     fail('Choix de match invalide');
+    next=lockOpenPlayChoice(state,club,command.choice);
+   }else if(type==='reveal-duel'){
+    next=revealOpenPlayDuel(state,rng());
+   }else if(type==='continue-duel'){
+    next=continueOpenPlayDuel(state);
+   }else if(type==='reveal-shot'){
+    next=revealOpenPlayShot(state,rng());
+   }
   }
  }
  if(!next)fail('Action de match non prise en charge');
