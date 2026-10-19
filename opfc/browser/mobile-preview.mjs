@@ -26,7 +26,7 @@ const page=await context.newPage();
 const errors=[],badImages=[];
 page.on('pageerror',e=>errors.push(e.stack||e.message));
 page.on('response',r=>{
- if(r.url().includes('/portraits_opfc/')&&!r.ok())badImages.push(r.url()+' '+r.status());
+ if(r.url().includes('/portraits_opfc/')&&!r.ok()&&r.status()!==304)badImages.push(r.url()+' '+r.status());
 });
 const take=async(name)=>{
  await page.evaluate(()=>scrollTo(0,0));
