@@ -708,3 +708,132 @@ a{color:inherit}p{line-height:1.45}.app{width:min(100%,760px);margin:0 auto;padd
  gap:2px;
  width:100%;
 }
+
+
+/* OPFC — mi-temps, bilan officiel et préparation de la reprise.
+   Ces blocs utilisent le même terrain/listes communes immédiatement dessous. */
+.halftime-screen{display:grid;gap:11px}
+.halftime-header{
+ text-align:center;
+ padding:16px 12px 2px;
+ background:radial-gradient(ellipse at 50% 0%,#6b54302e,transparent 75%);
+}
+.halftime-header .eyebrow{display:block;color:#dbbb86;font-size:10px}
+.halftime-header h2{
+ margin:7px 0 2px;color:#ffe1a1;
+ font-size:clamp(24px,7.4vw,34px);font-weight:950;letter-spacing:-.025em;
+}
+.halftime-header p{margin:0;font-size:11px;color:#c6d9de}
+.halftime-screen>.match-scoreboard{margin:0}
+.halftime-screen .halftime-stats,.halftime-screen .halftime-tactics{
+ margin:0;
+ padding:15px 13px;
+}
+.halftime-screen h3{
+ margin:0 0 11px;
+ font-size:14px;
+ font-weight:950;
+ color:#f8daaa;
+}
+.halftime-stats-heading,.halftime-stat-row{
+ display:grid;
+ grid-template-columns:minmax(48px,1fr) minmax(92px,2fr) minmax(48px,1fr);
+ align-items:center;gap:8px;text-align:center;
+}
+.halftime-stats-heading{
+ margin:2px 0 3px;
+ font-size:10px;
+ font-weight:850;
+ color:#9ebcc8;
+ letter-spacing:.04em;
+}
+.halftime-stats-heading strong{color:#f3d5a0}
+.halftime-stat-rows{border:1px solid #ffffff25;border-radius:12px;overflow:hidden}
+.halftime-stat-row{min-height:37px;padding:6px 9px;background:#061e2b7d}
+.halftime-stat-row+.halftime-stat-row{border-top:1px solid #ffffff17}
+.halftime-stat-row strong{font-size:16px;color:#fff0c9;font-variant-numeric:tabular-nums}
+.halftime-stat-row>span{font-size:12px;color:#d3e3e7}
+.halftime-tactics>p{
+ font-size:12px;color:#c6dae1;
+ line-height:1.45;margin:2px 0 10px;
+}
+.halftime-statuses{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.halftime-team-status{
+ display:flex;align-items:center;justify-content:flex-start;
+ gap:7px;min-width:0;
+ border-radius:11px;border:1px solid #e0bf7960;
+ padding:9px 8px;background:#3d321f57;
+ color:#f0e3cb;font-size:11px;line-height:1.3;
+}
+.halftime-team-status.is-ready{
+ border-color:#6fd6a68c;background:#193f3480;color:#dbffe9;
+}
+.halftime-status-symbol{
+ display:grid;place-items:center;flex:0 0 23px;
+ height:23px;width:23px;border-radius:50%;
+ border:1px solid currentColor;
+ font-size:13px;font-weight:950;
+}
+.halftime-team-status span:last-child{min-width:0;overflow-wrap:anywhere}
+.halftime-tactics .halftime-ready-note{
+ margin:11px 0 2px;
+ font-size:11px;color:#bed4db;
+ text-align:center;
+}
+.halftime-tactics .btn[data-action="match-resume"]{
+ width:100%;margin-top:10px;min-height:50px;font-size:14px;
+}
+@media(max-width:390px){
+ .halftime-screen{gap:9px}
+ .halftime-header{padding-top:10px}
+ .halftime-screen .halftime-stats,.halftime-screen .halftime-tactics{padding:12px 10px}
+ .halftime-stat-row{min-height:34px}
+ .halftime-team-status{gap:5px;padding:8px 6px;font-size:10px}
+ .halftime-status-symbol{width:20px;height:20px;flex-basis:20px}
+}
+
+/* OPFC — carte de réception compacte. Sur les écrans où il existe un
+   réceptionneur, cette fiche précède immédiatement les cases tactiques. */
+.receiver-card{
+ display:flex;align-items:center;gap:10px;
+ padding:9px 11px;margin:11px 0 8px;
+ border:1px solid #e4bf7e80;border-left:4px solid #d85875;
+ border-radius:13px;
+ background:linear-gradient(110deg,#18394bd9,#10283ae8);
+ box-shadow:0 5px 16px #0003;
+ min-width:0;
+}
+.receiver-card.om{border-left-color:#80d7ef}
+.receiver-card-portrait{flex:0 0 62px;width:62px;height:62px;display:flex;align-items:center;justify-content:center}
+.character-portrait.receiver-portrait{
+ width:62px;height:62px;min-width:62px;flex-basis:62px;
+ border:2px solid #e9ce9e;border-radius:50%;
+ box-shadow:0 4px 12px #0005;
+}
+.receiver-card-content{display:flex;flex-direction:column;gap:5px;min-width:0;flex:1}
+.receiver-card-label{
+ font-size:9px;line-height:1.25;font-weight:950;letter-spacing:.065em;
+ color:#e7c887;overflow-wrap:anywhere;
+}
+.receiver-card-name{color:#fff1d1;font-size:15px;line-height:1.15;font-weight:950;overflow-wrap:anywhere}
+.receiver-card-details{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.receiver-card-details>span{
+ display:inline-flex;align-items:center;justify-content:center;
+ padding:4px 6px;border:1px solid #ffffff5d;border-radius:6px;
+ font-size:9px;font-weight:950;line-height:1.1;white-space:nowrap;
+}
+.receiver-card-club{background:#1e485a;color:#f1ecdc}
+.receiver-card-position{background:#4e377c;color:#f4e7ff}
+.receiver-card-rating{background:#4e3a20;color:#ffe7a6}
+.receiver-card-details .receiver-card-warning{
+ background:#803341;color:#ffe5dd;border-color:#f19a8d;
+}
+@media(max-width:390px){
+ .receiver-card{gap:8px;margin:9px 0 6px;padding:8px 9px}
+ .receiver-card-portrait{flex-basis:52px;width:52px;height:52px}
+ .character-portrait.receiver-portrait{width:52px;height:52px;min-width:52px;flex-basis:52px}
+ .receiver-card-name{font-size:13px}
+ .receiver-card-label{font-size:8px}
+ .receiver-card-details{gap:4px}
+ .receiver-card-details>span{font-size:8px;padding:3px 5px}
+}
