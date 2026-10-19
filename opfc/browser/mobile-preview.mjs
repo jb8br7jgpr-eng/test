@@ -404,7 +404,7 @@ try{
  await press('inspect-player','.pitch-player');
  assert.equal(await page.locator('.modal .detail-grid').count(),1,'Toucher un pion doit ouvrir la fiche');
  assert.deepEqual((await game()).teams,savedTeams,'Ouvrir la fiche ne doit pas modifier les joueurs');
- await press('close','.modal');
+ await press('close');
  for(const panel of await page.locator('.match-team-overview .team-panel').all()){
   const posts=await panel.locator('.roster-position').allTextContents();
   const rank={GAR:0,DEF:1,MIL:2,ATT:3};
@@ -413,7 +413,7 @@ try{
  }
  await press('inspect-player','.team-chip');
  assert.equal(await page.locator('.modal .detail-grid').count(),1,'Toucher un joueur de la liste doit ouvrir sa fiche');
- await press('close','.modal');
+ await press('close');
  const heading=await page.locator('.match-duel-ready-heading').evaluate(el=>({
   size:parseFloat(getComputedStyle(el).fontSize)
  }));
