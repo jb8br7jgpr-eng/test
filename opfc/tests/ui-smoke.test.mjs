@@ -41,7 +41,7 @@ test('L’interface démarre sans erreur, gère le choix du club et lance un mer
  assert.match(root.innerHTML,/Créer une partie/);
  press('online-join-screen');
  assert.match(root.innerHTML,/Code à 6 caractères/);
- assert.match(root.innerHTML,/n’est pas encore déployé/);
+ assert.match(root.innerHTML,/Rejoindre le salon/);
  press('online-back');
  press('online-back');
  assert.match(root.innerHTML,/La Grandline Cup/);
