@@ -13,7 +13,10 @@ function fullMercato() {
     assert.ok(n<100,'Le mercato doit se terminer');
     if(s.auction.solo){s=acceptSolo(s,s.auction.turn);continue;}
     const actor=s.auction.turn;
+    // Chaque enchère reçoit deux offres réelles avant le retrait.
+    // Le retrait n'utilise donc aucun des cinq refus gratuits.
     if(s.auction.highestBid===0)s=bid(s,actor,5);
+    else if(s.auction.highestBid===5)s=bid(s,actor,6);
     else s=pass(s,actor);
   }
   assert.equal(s.phase,'lineup');
