@@ -121,12 +121,36 @@ try{
  await checkMobileLayout('mercato');
  assert.equal(await page.locator('.slot-field').count(),0,'Terrain masqué initialement');
  assert.equal(await page.locator('.opfc-auction .offer-btn').count(),4);
- assert.match(await page.locator('.opfc-auction .refusal-counter').textContent(),/Refus utilisés : 0\/5.*Refus restants : 5\/5/);
- assert.equal(await page.locator('.opfc-auction .extra-powers .extra-power').count(),1);
+ assert.match(await page.locator('.opfc-auction .refusal-counter').textContent(),/Refus utilisés : 0\/5.*Restants : 5\/5/);
+ assert.equal(await page.locator('.opfc-auction .auction-hakis .extra-power').count(),1);
  assert.equal(await page.locator('.opfc-auction .haki-btn').count(),1);
  assert.match(await page.locator('.opfc-auction .haki-btn').innerText(),/👑 Haki des Rois/);
  assert.match(await page.locator('.opfc-auction .extra-power').innerText(),/👁 Observation/);
  assert.equal(await page.locator('.opfc-auction .custom-bid').count(),1);
+ assert.equal(await page.locator('.opfc-auction .auction-hakis').count(),1);
+ const display=await page.locator('.opfc-auction').evaluate(panel=>{
+  const box=selector=>{const e=panel.querySelector(selector),r=e?.getBoundingClientRect();return r?{top:r.top,bottom:r.bottom,left:r.left,right:r.right,width:r.width,height:r.height}:null;};
+  return {custom:box('.custom-bid'),refusal:box('.pass-btn'),hakiRow:box('.auction-hakis'),
+   kings:box('.haki-btn'),observation:box('.extra-power'),
+   budget:panel.querySelector('.turn-budget')?.textContent,
+   prices:[...panel.querySelectorAll('.offer-btn b')].map(el=>el.textContent),
+   starting:panel.querySelector('.bid-leader strong')?.textContent,
+   input:panel.querySelector('#bid-value')?.value,
+   label:panel.querySelector('.custom-bid label')?.textContent,
+   columns:getComputedStyle(panel.querySelector('.auction-hakis')).gridTemplateColumns};
+ });
+ assert.deepEqual(display.prices,['5 000 000 ฿','6 000 000 ฿','10 000 000 ฿','15 000 000 ฿']);
+ assert.match(display.budget,/250 000 000 ฿/);
+ assert.equal(display.starting,'5 000 000 ฿');
+ assert.equal(display.input,'5000000');
+ assert.equal(display.label,'Autre montant (฿)');
+ assert.ok(display.custom.bottom<=display.refusal.top,'Le refus doit suivre immédiatement la saisie');
+ assert.ok(display.refusal.bottom<=display.hakiRow.top,'La rangée Haki doit suivre le refus');
+ assert.ok(Math.abs(display.refusal.width-display.hakiRow.width)<2,'Le refus doit couvrir toute la largeur');
+ assert.ok(display.kings.right<=display.observation.left+2,'Rois à gauche, Observation à droite');
+ assert.ok(Math.abs(display.kings.width-display.observation.width)<2,'Les deux Hakis doivent faire 50 %');
+ assert.ok(Math.abs(display.kings.top-display.observation.top)<2);
+ console.log('PASS modèle utilisateur : montants complets, refus pleine largeur et Hakis 50/50');
  await take('01-mercato');
  // Pour cette capture seulement, retirer temporairement le positionnement sticky du HUD
  // qui recouvrirait le titre lorsqu'on capture un élément plus bas dans la page.
