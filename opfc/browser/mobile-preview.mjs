@@ -386,11 +386,10 @@ try{
  assert.ok(heading.size<=18,'Le titre des tactiques ne doit plus être surdimensionné');
  await checkMobileLayout('duel avec situation colorée et compositions permanentes');
  await take('06-duel');
- // Une capture courte et lisible des commandes de duel, sans les longues listes du bas.
- await page.locator('.huds').evaluate(el=>{el.style.position='static';});
+ // Captures courtes des deux zones, en complément de la page complète avec terrain.
+ // L'écran de match ne possède pas de HUD sticky : aucune modification temporaire.
  await page.locator('.match-attack-banner').screenshot({path:shots+'/06a-type-action.png',animations:'disabled'});
  await page.locator('.match-stage').first().screenshot({path:shots+'/06b-duel-joueurs.png',animations:'disabled'});
- await page.locator('.huds').evaluate(el=>{el.style.position='';});
  console.log('PASS duel iPhone : action orange, attaque visible, deux postes/notes et 14 joueurs sous le terrain');
 
  // Parcourt la simulation moteur en conditions identiques aux tests unitaires.
