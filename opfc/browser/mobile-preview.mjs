@@ -323,7 +323,10 @@ try{
   await placeCurrent();
  }
  assert.equal(await phase(),'lineup');
+ // Valider une formation réelle avec trois joueurs côte à côte.
+ await page.locator('.team-panel select[data-club="PSG"]').selectOption('3-2-1');
  let s=await game();
+ assert.equal(s.teams.find(t=>t.club==='PSG').formation,'3-2-1');
  for(const team of s.teams){
   for(let slot=0;slot<7;slot++){
    const id=team.roster[slot],club=team.club;
