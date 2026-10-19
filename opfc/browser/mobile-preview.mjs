@@ -751,6 +751,14 @@ try{
   path:shots+'/13-mi-temps-bilan.png',animations:'disabled'});
  await page.locator('.match-team-overview select[data-club="PSG"]').selectOption('3-1-2');
  assert.equal((await game()).teams.find(t=>t.club==='PSG').formation,'3-1-2');
+ // Modifier la formation libère volontairement les 7 cases : replacer
+ // chaque titulaire via l'interface officielle avant de pouvoir valider.
+ const halftimeRoster=(await game()).teams.find(t=>t.club==='PSG').roster;
+ for(let slot=0;slot<7;slot++){
+  await press('pick','[data-club="PSG"][data-card="'+halftimeRoster[slot]+'"]');
+  await press('slot','[data-club="PSG"][data-slot="'+slot+'"]');
+ }
+ assert.equal((await game()).teams.find(t=>t.club==='PSG').slots.filter(Boolean).length,7);
  await press('ready','[data-club="PSG"]');
  assert.equal(await page.locator('.halftime-team-status.is-ready').count(),1);
  assert.equal(await page.locator('[data-action="match-resume"]').count(),0);
