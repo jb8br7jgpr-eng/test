@@ -1,0 +1,41 @@
+name: OPFC - aperçu mobile et captures
+on:
+  push:
+    branches: [opfc-development]
+    paths:
+      - 'opfc/ui*.mjs'
+      - 'opfc/ui.css'
+      - 'opfc/browser/**'
+      - 'opfc.html'
+      - 'portraits_opfc/**'
+      - '.github/workflows/opfc-mobile-preview.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  apercu-iphone:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+      - name: Installer Playwright (moteur de contrôle navigateur)
+        run: npm install --no-save --no-package-lock playwright-core@1.57.0
+      - name: Démarrer OPFC sur un serveur local CI
+        run: python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/opfc-mobile.log 2>&1 &
+      - name: Vérifier les 50 portraits et capturer les écrans iPhone
+        env:
+          CHROME_BINARY: ${{ steps.chrome.outputs.chrome-path }}
+        run: node opfc/browser/mobile-preview.mjs
+      - name: Conserver les captures et les erreurs éventuelles
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: opfc-mobile-captures
+          path: opfc-mobile-captures/
+          if-no-files-found: warn
+          retention-days: 14
