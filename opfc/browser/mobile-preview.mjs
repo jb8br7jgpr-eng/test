@@ -77,6 +77,7 @@ try{
  await page.locator('.modal [data-action="close"]').waitFor();
  await press('close');
  await page.locator('.portrait-card img').first().evaluate(img=>img.decode());
+ assert.equal(await page.locator('link[href="./opfc/ui-classic-auction.css"]').count(),1);
  assert.ok(await page.locator('.portrait-card img').count()>0);
  const playerCardLayout=await page.locator('.opfc-player-card').first().evaluate(card=>{
   const rect=selector=>{const r=card.querySelector(selector)?.getBoundingClientRect();return r?{top:r.top,left:r.left,width:r.width,height:r.height}:null;};
@@ -120,8 +121,12 @@ try{
  await checkMobileLayout('mercato');
  assert.equal(await page.locator('.slot-field').count(),0,'Terrain masqué initialement');
  assert.equal(await page.locator('.opfc-auction .offer-btn').count(),4);
- assert.match(await page.locator('.opfc-auction .refusal-counter').textContent(),/Refus utilisés : 0\/5.*Refus restants : 5/);
- assert.equal(await page.locator('.haki-auction .btn').count(),2);
+ assert.match(await page.locator('.opfc-auction .refusal-counter').textContent(),/Refus utilisés : 0\/5.*Refus restants : 5\/5/);
+ assert.equal(await page.locator('.opfc-auction .extra-powers .extra-power').count(),1);
+ assert.equal(await page.locator('.opfc-auction .haki-btn').count(),1);
+ assert.match(await page.locator('.opfc-auction .haki-btn').innerText(),/👑 Haki des Rois/);
+ assert.match(await page.locator('.opfc-auction .extra-power').innerText(),/👁 Observation/);
+ assert.equal(await page.locator('.opfc-auction .custom-bid').count(),1);
  await take('01-mercato');
 
  // Ouverture facultative des équipes : le club concerné est orienté vers le haut.
