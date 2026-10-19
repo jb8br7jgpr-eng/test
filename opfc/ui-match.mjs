@@ -11,7 +11,7 @@ import {beginOpenPlayAction,lockOpenPlayChoice,revealOpenPlayDuel,continueOpenPl
 import {isSetPieceKind,setPieceTurnOwner,dispatchSetPieceMatch,renderSetPieceAction} from './ui-set-piece.mjs';
 import {shootoutTurnOwner,dispatchShootout,renderShootoutScreen} from './ui-shootout.mjs';
 import {renderFinalResult} from './ui-final.mjs';
-import {matchTacticalChoices,renderShotFaceOff,renderShotResult,matchKeeperId} from './ui-match-widgets.mjs';
+import {matchTacticalChoices,renderShotFaceOff,renderShotResult,renderReceiverCard,matchKeeperId} from './ui-match-widgets.mjs';
 
 const html=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const name=id=>CARD_BY_ID.get(id)?.name??id??'—';
@@ -165,7 +165,10 @@ function renderAction(state,view,uncovered){
   return '<section class="panel match-stage"><span class="eyebrow">'+html(stageLabels[a.stage])+'</span>'+
    '<h2>'+a[role]+' · '+(role==='attacker'?'Attaque':'Défense')+'</h2>'+
    '<p class="muted">Ta décision est secrète jusqu’à la confirmation de ton adversaire.</p>'+
-   (isShot?shotFaceOff(state):fieldNames(a))+choiceGrid(BUTTONS[a.stage])+'</section>';
+   (isShot?shotFaceOff(state):
+    fieldNames(a)+renderReceiverCard(state,{
+      receiverId:a.roles?.partner?.cardId,club:a.attacker,possible:true
+    }))+choiceGrid(BUTTONS[a.stage])+'</section>';
  }
  if(a.stage==='duel-ready')return '<section class="panel match-stage"><h2 class="match-duel-ready-heading">Les deux tactiques sont validées</h2>'+
   duelFaceOff(state,a)+'<p class="muted">Elles vont être révélées simultanément.</p>'+button('match-reveal-duel','Révéler et résoudre le duel')+'</section>';
