@@ -1,6 +1,7 @@
 /** OPFC — Bloc 9A : accueil, mercato et stade local iPhone. */
 import {createGame,bid,pass,useKings,useObservation,acceptSolo,chooseFormation,place,ready} from './engine.mjs';
 import {CARD_BY_ID} from './catalog.mjs';
+import {renderCharacterPortrait} from './ui-portraits.mjs';
 import {effectiveRating,lineupDetails} from './rules.mjs';
 import {FORMATION_NAMES,uiAuction,uiTeam,cardStats,currentAuctionEnding,clubName} from './ui-model.mjs';
 import {renderMatchScreen,matchRequiresPrivacy,dispatchOpenMatch} from './ui-match.mjs';
@@ -121,9 +122,7 @@ function wallets(){
  }).join('')+'</div>';
 }
 function portrait(info){
- const initials=info.name.split(/[\s.-]+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
- return '<div class="portrait-shell"><span class="portrait-symbol" aria-hidden="true">'+esc(initials)+
- '</span><span class="portrait-label">Portrait HD à venir</span></div>';
+ return '<div class="portrait-shell portrait-shell-photo">'+renderCharacterPortrait(info.id,'portrait-card')+'</div>';
 }
 function cardPanel(info){
  const rar={DIA:'DIAMANT',OR:'OR',ARG:'ARGENT',BRZ:'BRONZE'};
@@ -163,7 +162,7 @@ function fieldHalf(team,top){
   return '<button class="pitch-player '+(p.cardId?'':'empty')+' '+(active?'selected':'')+
    '" data-action="slot" data-club="'+team.club+'" data-slot="'+p.slot+'" aria-label="'+esc(pos)+' '+esc(p.card?.name??'vide')+'">'+
    '<span class="position">'+pos+(p.outOfPosition?'<span class="out" title="Hors poste"> !</span>':'')+'</span>'+
-   (p.card?'<span class="pitch-avatar" aria-hidden="true">'+esc(p.card.name.split(/[\\s.-]+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase())+'</span>':'<span class="pitch-avatar pitch-avatar-empty" aria-hidden="true">+</span>')+
+   (p.card?renderCharacterPortrait(p.card.id,'pitch-avatar'):'<span class="pitch-avatar pitch-avatar-empty" aria-hidden="true">+</span>')+
    '<span class="player-mininame">'+esc(p.card?.name??'+')+'</span>'+
    (p.rating===null?'':'<span class="rating">'+p.rating+'</span>')+'</button>';
  }).join('')+'</div>').join('')+'</div>';
