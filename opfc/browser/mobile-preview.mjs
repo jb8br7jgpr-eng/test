@@ -410,10 +410,23 @@ try{
  assert.deepEqual((await game()).teams,savedTeams,'Ouvrir la fiche ne doit pas modifier les joueurs');
  await press('close');
  for(const panel of await page.locator('.match-team-overview .team-panel').all()){
-  const posts=await panel.locator('.roster-position').allTextContents();
-  const rank={GAR:0,DEF:1,MIL:2,ATT:3};
-  assert.deepEqual(posts,[...posts].sort((a,b)=>rank[a]-rank[b]),
-   'La liste doit être triée GAR, DEF, MIL, ATT');
+  const displayed=await panel.locator('.team-chip').evaluateAll(buttons=>buttons.map(button=>({
+   cardId:button.dataset.card,
+   position:button.querySelector('.roster-position')?.textContent?.trim(),
+   rating:button.querySelector('.roster-rating')?.textContent?.trim(),
+   outOfPosition:!!button.querySelector('.roster-warning')
+  })));
+  const club=await panel.locator('.team-chip').first().getAttribute('data-club');
+  const team=(await game()).teams.find(t=>t.club===club);
+  const expected=await page.evaluate(async team=>{
+   const {uiRoster}=await import('/opfc/ui-model.mjs');
+   return uiRoster(team).map(p=>({
+    cardId:p.cardId,position:p.position??'À placer',rating:String(p.rating??'—'),
+    outOfPosition:p.outOfPosition
+   }));
+  },team);
+  assert.deepEqual(displayed,expected,
+   'Postes et notes doivent correspondre à la vraie composition, pas aux postes de base');
  }
  await press('inspect-player','.team-chip');
  assert.equal(await page.locator('.modal .detail-grid').count(),1,'Toucher un joueur de la liste doit ouvrir sa fiche');
