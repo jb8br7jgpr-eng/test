@@ -1,10 +1,10 @@
 // OPMercato: network-first app shell, offline fallback for classic local play.
 // Do not intercept Supabase's API, authentication or real-time WebSocket traffic.
-const CACHE = 'opmercato-shell-pwa-v53-20261019-iphone-icon';
+const CACHE = 'opmercato-shell-pwa-v54-20261019-icone-boussole-hd';
 const ROOT=new URL("./",self.location.href);
 const ASSETS=[
   "./","./index.html","./classique.html","./opfc.html","./opfc-logo.webp","./manifest.webmanifest",
-  "./opmercato-logo.jpg","./icone-iphone-boussole-20261019.png","./apple-touch-icon.png","./icon-192.png",
+  "./opmercato-logo.jpg","./apple-touch-icon.png","./icon-192.png",
   "./icon-512.png","./icon-512-maskable.png","./favicon-32.png",
   "./characters-data.js","./portrait-map.js","./opmercato-custom-portraits.js",
   "./mercato-upgrade.js","./mercato-rules.js","./mercato-art.js","./mercato-features.js",
