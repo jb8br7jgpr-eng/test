@@ -6,6 +6,7 @@
 import {CARD_BY_ID} from './catalog.mjs';
 import {matchPublicView,kickoffMatch,continueMatch,resumeMatch} from './match.mjs';
 import {beginOpenPlayAction,lockOpenPlayChoice,revealOpenPlayDuel,continueOpenPlayDuel,revealOpenPlayShot} from './match-actions.mjs';
+import {isSetPieceKind,setPieceTurnOwner,dispatchSetPieceMatch,renderSetPieceAction} from './ui-set-piece.mjs';
 
 const html=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const name=id=>CARD_BY_ID.get(id)?.name??id??'—';
@@ -33,7 +34,9 @@ const button=(act,text,attr='')=>'<button class="btn primary full" data-action="
 export function matchTurnOwner(state){
  if(state?.phase!=='match')return null;
  const a=state.match?.action;
- if(!a||a.kind!=='open')return null;
+ if(!a)return null;
+ if(isSetPieceKind(a.kind))return setPieceTurnOwner(state);
+ if(a.kind!=='open')return null;
  return ACTOR[a.stage]?a[ACTOR[a.stage]]:null;
 }
 export function matchRequiresPrivacy(state){
@@ -43,13 +46,15 @@ export function matchRequiresPrivacy(state){
  * Le club est déterminé depuis l'état privé (les vérifications de moteur
  * restent actives). Aucun endpoint serveur n'est exposé par ce module.
  */
-export function dispatchOpenMatch(state,command,{choice,rng=Math.random}={}){
+export function dispatchOpenMatch(state,command,{choice,takerId,rng=Math.random}={}){
  if(state?.phase==='kickoff-ready'&&command==='kickoff')
   return kickoffMatch(state,rng);
  if(command==='resume'&&state?.phase==='resume-ready')
   return resumeMatch(state);
  if(command==='continue-result')return continueMatch(state);
+ if(command==='begin-setpiece')return dispatchSetPieceMatch(state,command,{choice,takerId,rng});
  const a=state?.match?.action;
+ if(isSetPieceKind(a?.kind))return dispatchSetPieceMatch(state,command,{choice,takerId,rng});
  if(command==='begin-open')return beginOpenPlayAction(state,rng);
  if(command==='choose'){
   const owner=matchTurnOwner(state);
@@ -88,7 +93,9 @@ function handover(owner){
  button('match-uncover','Je suis '+owner+' · afficher mon choix')+'</section>';
 }
 function renderAction(state,view,uncovered){
- const a=view.match.action,owner=matchTurnOwner(state);
+ const a=view.match.action;
+ if(isSetPieceKind(a.kind))return renderSetPieceAction(state,a,{uncovered});
+ const owner=matchTurnOwner(state);
  if(owner&&!uncovered)return handover(owner);
  if(owner){
   const isShot=a.stage.startsWith('shot-'),role=ACTOR[a.stage];
@@ -110,8 +117,9 @@ function renderAction(state,view,uncovered){
  if(a.stage==='shot-ready')return '<section class="panel match-stage"><h2>Le tireur et le gardien ont choisi</h2>'+
   '<p>Les deux choix vont être révélés simultanément.</p>'+
   button('match-reveal-shot','Résoudre la frappe')+'</section>';
- if(a.stage==='set-piece-pending')return '<section class="panel match-stage"><h2>Faute · phase arrêtée</h2>'+
-  '<p class="muted">La suite de cette action sera raccordée à l’interface des penalties et coups francs au bloc 9B2, sans ajouter de séquence.</p></section>';
+ if(a.stage==='set-piece-pending')return '<section class="panel match-stage"><h2>Faute sifflée !</h2>'+
+  '<p>Cette action continue par un '+html(a.duel?.outcome?.setPiece==='penalty'?'penalty':'coup franc')+' à la même minute.</p>'+
+  button('match-begin-setpiece','Continuer avec la phase arrêtée')+'</section>';
  return '<section class="panel match-stage"><h2>Action en préparation</h2></section>';
 }
 function resultView(m){
@@ -134,18 +142,20 @@ export function renderMatchScreen(state,{uncovered=false}={}){
  if(state.phase==='resume-ready')return out+'<section class="panel match-stage">'+
   '<h2>Les deux compositions sont validées</h2>'+button('match-resume','Reprendre la deuxième mi-temps')+'</section>';
  if(state.phase==='shootout-ready')return out+'<section class="panel match-stage"><h2>Égalité à 90 minutes</h2>'+
-  '<p>Les tirs au but seront reliés aux écrans au bloc 9B2.</p></section>';
+  '<p>Le départage aux tirs au but sera relié à l’interface dans le prochain bloc.</p></section>';
  if(state.phase==='finished')return out+'<section class="panel match-stage"><h2>Fin du match</h2>'+
   '<p>Vainqueur : '+html(m.winner)+'</p></section>';
  if(state.phase==='moment-result')return out+scoreStats(m)+resultView(m);
  const moment=m.currentMoment;
  if(!m.action){
   const supported=moment?.type==='open';
+  const setPiece=isSetPieceKind(moment?.type);
   out+='<section class="panel match-stage"><span class="eyebrow">'+html(moment?.minute)+'e · '+html(ACTION_LABEL[moment?.type]??'Action')+'</span>'+
    '<h2>'+html(moment?.attacker)+' passe à l’attaque</h2>'+
    (supported?'<p>Annonce des personnages et choix tactiques confidentiels.</p>'+
     button('match-begin-open','Commencer cette action'):
-    '<p>Les écrans de cette phase arrêtée arrivent au bloc 9B2. La séquence reste intacte.</p>')+
+    setPiece?'<p>Choix du tireur et tactiques confidentielles.</p>'+button('match-begin-setpiece','Commencer cette phase arrêtée'):
+    '<p>Séquence inconnue : aucune action simulée.</p>')+
    '</section>';
   return out+scoreStats(m);
  }

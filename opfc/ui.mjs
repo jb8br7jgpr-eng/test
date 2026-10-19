@@ -197,14 +197,20 @@ function clicked(button){
    'match-kickoff':'kickoff','match-begin-open':'begin-open',
    'match-choose':'choose','match-reveal-duel':'reveal-duel',
    'match-continue-duel':'continue-duel','match-reveal-shot':'reveal-shot',
-   'match-continue-result':'continue-result','match-resume':'resume'
+   'match-continue-result':'continue-result','match-resume':'resume',
+   'match-begin-setpiece':'begin-setpiece','match-taker':'select-taker',
+   'match-reveal-setpiece-duel':'reveal-setpiece-duel',
+   'match-continue-setpiece-duel':'continue-setpiece-duel',
+   'match-finish-corner':'finish-corner',
+   'match-reveal-penalty':'reveal-penalty'
   };
   const command=commands[action];
   if(!command)throw Error('Action de match non disponible');
-  if(command==='choose'&&!matchUncovered)throw Error('Le joueur doit d’abord confirmer la transmission du téléphone.');
-  const choice=button.dataset.choice;
+  if(['choose','select-taker'].includes(command)&&!matchUncovered)
+   throw Error('Le joueur doit d’abord confirmer la transmission du téléphone.');
+  const choice=button.dataset.choice,takerId=button.dataset.card;
   matchUncovered=false; // masque immédiatement toute décision précédente
-  change(s=>dispatchOpenMatch(s,command,{choice}));return;
+  change(s=>dispatchOpenMatch(s,command,{choice,takerId}));return;
  }
  if(action==='club'){firstClub=club;render();return;}
  if(action==='start'){start();return;}
