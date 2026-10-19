@@ -335,7 +335,21 @@ try{
   }
  }
  assert.equal(await page.locator('.pitch-player .character-portrait img').count(),14);
- await checkMobileLayout('terrain');
+ const trio=page.locator('.field-half-top .pitch-row-def .pitch-player');
+ assert.equal(await trio.count(),3,'Trois défenseurs doivent se tenir sur la même ligne');
+ const rectangles=await trio.evaluateAll(elements=>elements.map(el=>{
+  const r=el.getBoundingClientRect();
+  return {left:r.left,right:r.right,top:r.top,width:r.width};
+ }));
+ assert.ok(rectangles.every(r=>r.width<=76),'Pions trop larges');
+ for(let i=1;i<rectangles.length;i++){
+  assert.ok(rectangles[i-1].right<=rectangles[i].left+1,'Pions superposés');
+  assert.ok(Math.abs(rectangles[i].top-rectangles[0].top)<2,'Pions mal alignés');
+ }
+ assert.equal(await page.locator('.slot-field-full .pitch-goal').count(),2);
+ assert.equal(await page.locator('.slot-field-full .pitch-penalty-area').count(),2);
+ assert.equal(await page.locator('.slot-field-full .pitch-center-circle').count(),1);
+ await checkMobileLayout('terrain avec trois défenseurs');
  await take('04-terrain');
  await press('ready','[data-club="PSG"]');
  await press('ready','[data-club="OM"]');
