@@ -52,7 +52,15 @@ test('Accueil : club au choix, deux formations, mode en ligne annoncé non prêt
  assert.match(app.innerHTML,/Départ du mercato/);
  click('close');
  assert.match(app.innerHTML,/Mercato des légendes/);
+ assert.doesNotMatch(app.innerHTML,/slot-field/);
+ assert.match(app.innerHTML,/Voir les équipes/);
+ click('toggle-teams');
  assert.match(app.innerHTML,/slot-field/);
+ assert.match(app.innerHTML,new RegExp('data-top-club="'+stateOf().auction.turn+'"'));
+ click('pitch-view',{club:stateOf().auction.turn==='PSG'?'OM':'PSG'});
+ assert.match(app.innerHTML,new RegExp('data-top-club="'+(stateOf().auction.turn==='PSG'?'OM':'PSG')+'"'));
+ click('toggle-teams');
+ assert.doesNotMatch(app.innerHTML,/slot-field/);
  assert.match(app.innerHTML,/Berrys/);
 });
 test('Un Haki Observation est privé avant la transmission puis masqué',()=>{
@@ -68,12 +76,26 @@ test('Un Haki Observation est privé avant la transmission puis masqué',()=>{
  click('close');
  assert.doesNotMatch(app.innerHTML,/preview-list/);
 });
-test('Mercato local réel puis 14 placements manuels : atteint kickoff-ready',()=>{
+test('Mercato réel et placement immédiat de chaque recrue : atteint kickoff-ready',()=>{
+ const finishPlacement=()=>{
+  const s=stateOf(),result=s.lastResult;
+  if(!result?.winner)return;
+  const club=result.winner,team=s.teams.find(t=>t.club===club);
+  const slot=team.slots.indexOf(null);
+  assert.ok(slot>=0);
+  assert.match(app.innerHTML,/placement-intro/);
+  assert.match(app.innerHTML,new RegExp('data-top-club="'+club+'"'));
+  assert.match(app.innerHTML,/continue-placement/);
+  click('slot',{club,slot:String(slot)});
+  assert.equal(stateOf().teams.find(t=>t.club===club).slots[slot],result.cardId);
+  click('continue-placement');
+  assert.doesNotMatch(app.innerHTML,/placement-intro/);
+ };
  let rounds=0;
  while(stateOf().phase==='mercato'){
   if(++rounds>50)throw Error('Mercato local bloqué');
   const s=stateOf();
-  if(s.auction.solo){click('solo');click('close');continue;}
+  if(s.auction.solo){click('solo');click('close');finishPlacement();continue;}
   click('bid'); // 5 M
   let after=stateOf();
   if(after.phase==='mercato'&&after.auction.highestBid===5){
@@ -82,10 +104,12 @@ test('Mercato local réel puis 14 placements manuels : atteint kickoff-ready',()
    if(after.phase==='mercato'&&after.auction.highestBid===6)click('pass');
   }
   click('close'); // résultat d'enchère
+  finishPlacement();
  }
  assert.equal(stateOf().phase,'lineup');
  assert.match(app.innerHTML,/Prépare le Classique/);
  assert.equal(stateOf().teams.reduce((n,t)=>n+t.roster.length,0),14);
+ assert.equal(stateOf().teams.reduce((n,t)=>n+t.slots.filter(Boolean).length,0),14);
  assert.equal(new Set(stateOf().teams.flatMap(t=>t.roster)).size,14);
  for(const team of stateOf().teams){
   const club=team.club;
