@@ -36,11 +36,21 @@ export function renderFinalResult(state){
  const m=state.match,st=m.statistics;
  return '<div class="final-screen">'+
  '<section class="panel final-score"><span class="eyebrow">Grandline Cup · Coup de sifflet final</span>'+
- '<h2>Victoire de '+h(clubs[m.winner])+'</h2>'+
- '<div class="final-scoreline"><div>'+renderClubCrest('PSG','final-club-emblem')+'<strong>PSG</strong></div>'+
+ '<div class="final-celebration" aria-label="Victoire">🏆</div>'+
+ '<h2 class="final-victory-title">VICTOIRE !</h2>'+
+ '<p class="final-winner-name">Victoire de '+h(clubs[m.winner])+'</p>'+
+ '<div class="final-scoreline"><div class="'+(m.winner==='PSG'?'final-winner-club':'')+'">'+
+ renderClubCrest('PSG','final-club-emblem')+'<strong>PSG</strong></div>'+
  '<div class="final-score-numbers"><strong>'+m.score.PSG+' – '+m.score.OM+'</strong>'+
- '<span>90 minutes</span></div>'+
- '<div>'+renderClubCrest('OM','final-club-emblem')+'<strong>OM</strong></div></div>'+
+ '<span>Score à 90 minutes</span></div>'+
+ '<div class="'+(m.winner==='OM'?'final-winner-club':'')+'">'+
+ renderClubCrest('OM','final-club-emblem')+'<strong>OM</strong></div></div>'+
+ (m.victory==='shootout'&&m.shootout?
+  '<div class="final-penalty-score" aria-label="Score aux tirs au but">'+
+   '<span>⚽ TIRS AU BUT</span>'+
+   '<strong><small>PSG</small>'+m.shootout.score.PSG+' – '+m.shootout.score.OM+'<small>OM</small></strong>'+
+   '<p>Score de la séance · séparé des 90 minutes</p>'+
+  '</div>':'')+
  (m.victory==='shootout'?'<p class="final-qualification">Vainqueur aux tirs au but</p>':
  '<p class="final-qualification">Vainqueur au terme du temps réglementaire</p>')+
  '</section>'+
