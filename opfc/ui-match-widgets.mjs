@@ -14,10 +14,32 @@ const playerOf=(state,club,id)=>state?.teams?.find(team=>team.club===club)
 const keeperOf=(state,club)=>state?.teams?.find(t=>t.club===club)
  ?lineupDetails(state.teams.find(t=>t.club===club)).find(p=>p?.position==='GAR')?.cardId??null:null;
 
+// Emojis purement décoratifs, liés au LIBELLÉ : par exemple « Centre » peut
+// désigner un centre offensif ou la direction centrale d'un tir au but.
+// Les identifiants de choix envoyés au moteur restent strictement inchangés.
+const TACTICAL_EMOJIS=Object.freeze({
+ 'Combiner':'🔗','Lancer':'🚀','Percer':'⚡',
+ 'Presser':'🏃','Intercepter':'🛡️','Contenir':'🧱',
+ 'Frappe placée':'🎯','Frappe puissante':'💥','Ballon piqué':'🎈',
+ 'Rester sur la ligne':'🧤','Sortir':'🚀','Anticiper le plongeon':'👀',
+ 'Premier poteau':'🥅','Point de penalty':'🎯','Second poteau':'🥅',
+ 'Couvrir le premier poteau':'🛡️','Couvrir le point de penalty':'🧱',
+ 'Couvrir le second poteau':'🛡️',
+ 'Frappe directe':'🎯','Centre':'📐','Combinaison courte':'🔗',
+ 'Renforcer le mur':'🧱','Marquage serré':'🛡️','Anticiper':'👁️',
+ 'Tirer à gauche':'⬅️','Tirer au centre':'🎯','Tirer à droite':'➡️',
+ 'Plonger à gauche':'⬅️','Rester au centre':'🧤','Plonger à droite':'➡️',
+ 'Tête':'⚽','Reprise de volée':'💥','Retourné acrobatique':'🤸',
+ 'Gauche':'⬅️','Droite':'➡️'
+});
 export function matchTacticalChoices(options,action='match-choose'){
- return '<div class="match-choice-grid match-tactical-choices">'+options.map(([id,label])=>
-  '<button type="button" class="btn match-choice" data-action="'+h(action)+'" data-choice="'+h(id)+'">'+
-  '<strong>'+h(label)+'</strong></button>').join('')+'</div>';
+ return '<div class="match-choice-grid match-tactical-choices">'+options.map(([id,label])=>{
+  const emoji=TACTICAL_EMOJIS[label]??'⚽';
+  return '<button type="button" class="btn match-choice" data-action="'+h(action)+
+   '" data-choice="'+h(id)+'">'+
+   '<span class="match-choice-emoji" aria-hidden="true">'+emoji+'</span>'+
+   '<strong>'+h(label)+'</strong></button>';
+ }).join('')+'</div>';
 }
 
 export function renderShotFaceOff(state,{shooterId,keeperId,attacker,defender,shooterLabel='Tireur',keeperLabel='Gardien'}={}){
