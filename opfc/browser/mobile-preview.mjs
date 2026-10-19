@@ -335,6 +335,9 @@ try{
   }
  }
  assert.equal(await page.locator('.pitch-player .character-portrait img').count(),14);
+ // Mettre le PSG en haut : l'équipe affichée en premier dépend de la dernière sélection.
+ await press('pitch-view','[data-club="PSG"]');
+ assert.equal(await page.locator('.slot-field').getAttribute('data-top-club'),'PSG');
  const trio=page.locator('.field-half-top .pitch-row-def .pitch-player');
  assert.equal(await trio.count(),3,'Trois défenseurs doivent se tenir sur la même ligne');
  const rectangles=await trio.evaluateAll(elements=>elements.map(el=>{
