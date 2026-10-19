@@ -42,6 +42,29 @@ export function matchTacticalChoices(options,action='match-choose'){
  }).join('')+'</div>';
 }
 
+/**
+ * Encart de réception partagé entre coups de pied arrêtés et jeu ouvert.
+ * Utilise exclusivement une sélection de rôle DÉJÀ annoncée, jamais un
+ * choix tactique secret. Le poste et la note proviennent du terrain réel.
+ */
+export function renderReceiverCard(state,{receiverId,club,possible=false}={}){
+ if(!receiverId||!['PSG','OM'].includes(club))return '';
+ const playing=playerOf(state,club,receiverId);
+ if(!playing)return '';
+ const name=CARD_BY_ID.get(receiverId)?.name??receiverId;
+ const caption=possible?'PARTENAIRE POTENTIEL À LA RÉCEPTION':'JOUEUR À LA RÉCEPTION';
+ return '<div class="receiver-card '+h(club.toLowerCase())+'" aria-label="'+
+   h((possible?'Partenaire potentiel':'Réceptionneur')+' : '+name)+'">'+
+  '<div class="receiver-card-portrait">'+renderCharacterPortrait(receiverId,'receiver-portrait')+'</div>'+
+  '<div class="receiver-card-content"><span class="receiver-card-label">⚽ '+caption+'</span>'+
+  '<strong class="receiver-card-name">'+h(name)+'</strong>'+
+  '<div class="receiver-card-details"><span class="receiver-card-club">'+h(club)+'</span>'+
+  '<span class="receiver-card-position">'+h(playing.position)+'</span>'+
+  '<span class="receiver-card-rating">NOTE '+playing.rating+'</span>'+
+  (playing.outOfPosition?'<span class="receiver-card-warning">! Hors poste</span>':'')+
+  '</div></div></div>';
+}
+
 export function renderShotFaceOff(state,{shooterId,keeperId,attacker,defender,shooterLabel='Tireur',keeperLabel='Gardien'}={}){
  if(!shooterId||!keeperId||!attacker||!defender)return '';
  const profile=(id,club,role)=>{
