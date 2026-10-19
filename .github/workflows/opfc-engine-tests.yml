@@ -4,6 +4,7 @@ on:
     branches: [opfc-development]
     paths:
       - 'opfc/**'
+      - 'opfc.html'
       - '.github/workflows/opfc-engine-tests.yml'
   workflow_dispatch:
 permissions:
@@ -16,5 +17,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Vérifier les règles OPFC
+      - name: Vérifier la syntaxe des modules et de l'interface
+        run: |
+          for file in opfc/*.mjs; do node --check "$file"; done
+      - name: Vérifier les règles OPFC et le parcours de l'interface
         run: node --test opfc/tests/*.test.mjs
