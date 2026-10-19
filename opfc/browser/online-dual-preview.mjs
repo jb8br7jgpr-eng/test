@@ -60,7 +60,9 @@ function handle(body){
   else if(body.action==='lineup')
    next=applyOnlineLineupCommand(state.game,myClub,command,{hostClub:'PSG',rng:random(17)});
   else if(body.action==='match')
-   next=applyOnlineOpenPlayCommand(state.game,myClub,command,{hostClub:'PSG',rng:()=>.999999});
+   next=applyOnlineOpenPlayCommand(state.game,myClub,command,{hostClub:'PSG',
+    // Pièce PSG premier, puis frappes déterministes pour scénario mort subite.
+    rng:()=>command.type==='begin-shootout'?.1:.999999});
   else return response({error:'Action inconnue'},400);
   state.game=next.state;state.version++;
   return response({room:room(role),game:next.publicForActor});
