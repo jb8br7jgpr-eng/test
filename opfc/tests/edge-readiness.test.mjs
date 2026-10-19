@@ -8,11 +8,11 @@ import {resolve,dirname} from 'node:path';
 // Protège les intégrations critiques sur la branche de développement.
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'../..');
 const content=p=>readFileSync(resolve(root,p),'utf8');
-test('Un projet Supabase OPFC dédié doit rester non configuré avant accord explicite',()=>{
+test('Le mode en ligne pointe uniquement sur le serveur indépendant OPFC autorisé',()=>{
  const config=content('opfc/online-config.mjs');
- assert.match(config,/OPFC_ONLINE_API_URL=''/);
+ assert.match(config,/OPFC_ONLINE_API_URL='https:\/\/cihzwaxernachchpjktj\.supabase\.co\/functions\/v1\/opfc-online'/);
  assert.match(config,/OPFC_ONLINE_PUBLISHABLE_KEY=''/);
- assert.doesNotMatch(config,/nezqupnhcqwuewfilioa|lrmgtnbxujdvswaykyxi/);
+ assert.doesNotMatch(config,/nezqupnhcqwuewfilioa|lrmgtnbxujdvswaykyxi|SERVICE_ROLE/);
 });
 test('Edge accepte les en-têtes réels des fetch de l’iPhone, avec origine limitée',()=>{
  const edge=content('supabase/functions/opfc-online/index.ts');
