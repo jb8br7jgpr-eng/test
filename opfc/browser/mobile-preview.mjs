@@ -398,6 +398,24 @@ try{
   }));
  });
  assert.ok(portraits.every(Boolean),'Un portrait du terrain ou des effectifs manque');
+ // Scroll réel sur chacune des zones pour charger les portraits comme sur iPhone
+ // et produire des aperçus séparés plutôt qu'une image immense.
+ for(const [selector,filename] of [
+  ['.match-team-overview .slot-field','06c-terrain-permanent.png'],
+  ['.match-team-overview .team-panel:nth-child(1)','06d-effectif-premier-club.png'],
+  ['.match-team-overview .team-panel:nth-child(2)','06e-effectif-second-club.png']
+ ]){
+  const item=page.locator(selector);
+  assert.equal(await item.count(),1,'Zone des effectifs introuvable : '+selector);
+  await item.scrollIntoViewIfNeeded();
+  await item.evaluate(async root=>{
+   const imgs=[...root.querySelectorAll('img')];
+   await Promise.all(imgs.map(async img=>{img.loading='eager';await img.decode();}));
+   await new Promise(requestAnimationFrame);
+   await new Promise(requestAnimationFrame);
+  });
+  await item.screenshot({path:shots+'/'+filename,animations:'disabled'});
+ }
  await take('06-duel');
  // Captures courtes des deux zones, en complément de la page complète avec terrain.
  // L'écran de match ne possède pas de HUD sticky : aucune modification temporaire.
