@@ -1,7 +1,7 @@
 /** OPFC — Bloc 9A : accueil, mercato et stade local iPhone. */
 import {createGame,bid,pass,useKings,useObservation,acceptSolo,chooseFormation,place,ready} from './engine.mjs';
 import {CARD_BY_ID} from './catalog.mjs';
-import {renderCharacterPortrait} from './ui-portraits.mjs';
+import {renderCharacterPortrait,renderClubCrest} from './ui-portraits.mjs';
 import {effectiveRating,lineupDetails} from './rules.mjs';
 import {FORMATION_NAMES,uiAuction,uiTeam,cardStats,currentAuctionEnding,clubName} from './ui-model.mjs';
 import {renderMatchScreen,matchRequiresPrivacy,dispatchOpenMatch} from './ui-match.mjs';
@@ -176,15 +176,15 @@ function pitch(){
 }
 function teamPanel(team){
  const u=uiTeam(team),editable=['mercato','lineup','half-time'].includes(game.phase)&&!team.ready;
- return '<section class="panel team-panel"><div class="team-heading"><h2><span class="club-bullet">'+team.club+'</span>'+esc(clubName(team.club))+
+ return '<section class="panel team-panel"><div class="team-heading"><h2>'+renderClubCrest(team.club,'team-crest')+esc(clubName(team.club))+
  '</h2><small>'+u.rosterCount+'/7</small></div><div class="team-tools"><span class="caption">Entente '+u.entente+'/10</span>'+
  '<select data-action="formation" data-club="'+team.club+'" aria-label="Formation '+team.club+'" '+(editable?'':'disabled')+'>'+
  options(FORMATION_NAMES,u.formation)+'</select></div><div class="chip-row">'+
  (team.roster.length?team.roster.map(id=>{
   const chosen=selection?.club===team.club&&selection?.id===id;
   return '<button class="team-chip '+(chosen?'selected':'')+'" data-action="pick" data-club="'+team.club+
-  '" data-card="'+esc(id)+'" aria-pressed="'+!!chosen+'" '+(editable?'':'disabled')+'>'+esc(card(id).name)+
-  ' <small>'+(team.slots.includes(id)?'✓':'+')+'</small></button>';
+  '" data-card="'+esc(id)+'" aria-pressed="'+!!chosen+'" '+(editable?'':'disabled')+'>'+renderCharacterPortrait(id,'chip-portrait')+
+  '<span class="team-chip-name">'+esc(card(id).name)+'</span><small>'+(team.slots.includes(id)?'✓':'+')+'</small></button>';
  }).join(''):'<span class="caption">Aucune recrue.</span>')+'</div>'+
  (['lineup','half-time'].includes(game.phase)?btn('ready',u.ready?'✓ Équipe prête':u.canReady?'Valider cette composition':'Place les 7 joueurs',
  'small full '+(u.canReady?'primary':'ghost'),!u.canReady,'data-club="'+team.club+'"'):'')+'</section>';
@@ -221,16 +221,18 @@ function popup(){
  btn('close','Commencer les enchères','primary full');
  if(modal.type==='sale'){
   const result=modal.result;
-  body='<div class="big-symbol">🏅</div><h2>'+(result.winner?'Recrue remportée !':'Carte invendue')+'</h2>'+
-  '<p><strong>'+esc(card(result.cardId)?.name)+'</strong> '+(result.winner?'rejoint '+result.winner+' pour '+result.price+' M.':'quitte ce mercato.')+'</p>'+
+  body='<h2>'+(result.winner?'Recrue remportée !':'Carte invendue')+'</h2>'+
+  '<div class="sale-reveal">'+renderCharacterPortrait(result.cardId,'sale-result-portrait')+
+  '<p><strong>'+esc(card(result.cardId)?.name)+'</strong> '+(result.winner?'rejoint '+result.winner+' pour '+result.price+' M.':'quitte ce mercato.')+'</p></div>'+
   btn('close','Continuer','primary full');
  }
  if(modal.type==='observation-pass')body='<div class="big-symbol">👁</div><h2>Choix secret</h2>'+
  '<p>Donne le téléphone au joueur <strong>'+modal.club+'</strong>, puis ouvre les cinq prochaines cartes.</p>'+
  btn('observation-show','Je suis '+modal.club+' · Voir','primary full');
  if(modal.type==='observation-show')body='<div class="big-symbol">👁</div><h2>Observation · '+modal.club+'</h2>'+
- '<div class="preview-list">'+modal.ids.map((id,index)=>'<div class="preview-item"><span>'+(index+1)+
- '. '+esc(card(id)?.name)+'</span><strong>'+card(id)?.rating+'</strong></div>').join('')+'</div>'+
+ '<div class="preview-list">'+modal.ids.map((id,index)=>'<div class="preview-item"><span class="preview-main">'+
+ '<small>'+(index+1)+'</small>'+renderCharacterPortrait(id,'preview-portrait')+
+ esc(card(id)?.name)+'</span><strong>'+card(id)?.rating+'</strong></div>').join('')+'</div>'+
  btn('close','Masquer et continuer','primary full');
  if(modal.type==='card'){
   const c=card(modal.id);
