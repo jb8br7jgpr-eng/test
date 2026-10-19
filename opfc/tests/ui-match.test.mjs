@@ -93,6 +93,14 @@ test('Transmission obligatoire en local pour une tactique secrète',()=>{
  const uncovered=renderMatchScreen(s,{uncovered:true});
  assert.match(uncovered,/data-choice="COMBINER"/);
  assert.match(uncovered,/Porteur/);
+ assert.match(uncovered,/PARTENAIRE POTENTIEL À LA RÉCEPTION/);
+ assert.match(uncovered,/receiver-portrait/);
+ const partner=s.match.action.roles.partner.cardId;
+ const actual=lineupDetails(s.teams.find(t=>t.club===s.match.action.attacker)).find(p=>p.cardId===partner);
+ assert.ok(uncovered.includes('receiver-card-position">'+actual.position+'</span>'));
+ assert.ok(uncovered.includes('receiver-card-rating">NOTE '+actual.rating+'</span>'));
+ assert.ok(uncovered.indexOf('class="receiver-card ')<uncovered.indexOf('class="match-choice-grid match-tactical-choices"'));
+ assert.doesNotMatch(covered,/receiver-card/,'La transmission confidentielle doit masquer tous les choix et acteurs');
  assert.doesNotMatch(uncovered,/schedule/);
 });
 test('Après confirmation offensive : la tactique privée ne fuite pas au défenseur',()=>{
@@ -107,6 +115,7 @@ test('Après confirmation offensive : la tactique privée ne fuite pas au défen
  assert.doesNotMatch(covered,/COMBINER/);
  const defender=renderMatchScreen(s,{uncovered:true});
  assert.match(defender,/data-choice="PRESSER"/);
+ assert.match(defender,/PARTENAIRE POTENTIEL À LA RÉCEPTION/);
  assert.doesNotMatch(defender,/COMBINER/);
  s=dispatchOpenMatch(s,'choose',{choice:'CONTENIR'});
  assert.equal(s.match.action.stage,'duel-ready');
