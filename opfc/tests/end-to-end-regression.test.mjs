@@ -36,8 +36,9 @@ function advanceToEnd(state, outcome='stopped') {
     if(s.phase==='moment-result'){s=continueMatch(s);continue;}
     if(s.phase!=='match')return s;
     const event=currentMatchMoment(s);
-    const scorer=outcome==='goal'?s.teams.find(t=>t.club===event.attacker).slots[5]:null;
-    s=resolveMatchMoment(s,{outcome,scorerId:scorer});
+    const actualOutcome=outcome==='psg-wins'?(event.attacker==='PSG'?'goal':'stopped'):outcome;
+    const scorer=actualOutcome==='goal'?s.teams.find(t=>t.club===event.attacker).slots[5]:null;
+    s=resolveMatchMoment(s,{outcome:actualOutcome,scorerId:scorer});
   }
   throw Error('Le match ne se termine pas');
 }
@@ -46,11 +47,12 @@ test('Parcours moteur complet : mercato réel, compositions, coup d’envoi, mi-
   let s=kickoffMatch(prepared,random(11));
   const schedule=structuredClone(s.match.schedule);
   assert.match(renderMatchScreen(s),/match-scoreboard/);
-  s=advanceToEnd(s,'goal');
+  s=advanceToEnd(s,'psg-wins');
   assert.equal(s.phase,'finished');
   assert.equal(s.match.history.length,schedule.length);
   assert.equal(s.match.minute,90);
-  assert.equal(s.match.goals.length,schedule.length);
+  assert.equal(s.match.goals.length,schedule.filter(event=>event.attacker==='PSG').length);
+  assert.equal(s.match.winner,'PSG');
   const screen=renderFinalResult(s);
   assert.match(screen,/Grandline Cup/);
   assert.match(screen,/Buteurs du match/);
