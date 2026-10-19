@@ -28,7 +28,7 @@ test('Module interface et modèle valides pour Node et navigateur (syntaxe)',()=
 });
 test('L’interface démarre sans erreur, gère le choix du club et lance un mercato réel',async()=>{
  const callbacks={},cache=new Map(),root={innerHTML:'',addEventListener:(type,fn)=>{callbacks[type]=fn;}};
- globalThis.document={getElementById:id=>id==='opfc-app'?root:null};
+ globalThis.document={getElementById:id=>id==='opfc-app'?root:id==='bid-amount'?{value:'5'}:null};
  globalThis.localStorage={getItem:key=>cache.get(key)??null,setItem:(key,value)=>cache.set(key,value),removeItem:key=>cache.delete(key)};
  await import('../ui.mjs');
  assert.match(root.innerHTML,/La Grandline Cup/);
@@ -59,6 +59,25 @@ test('L’interface démarre sans erreur, gère le choix du club et lance un mer
  assert.match(root.innerHTML,/Les cinq prochaines cartes/);
  press('dismiss');
  assert.match(root.innerHTML,/Mercato des légendes/);
+ // Vraie vente depuis l'écran, puis placement MANUEL de la recrue.
+ press('bid');
+ let now=JSON.parse(cache.get('opfc-v08-dev-local')).state;
+ assert.equal(now.auction.highestBid,5);
+ assert.equal(now.auction.highestClub,first);
+ assert.notEqual(now.auction.turn,first);
+ press('pass');
+ now=JSON.parse(cache.get('opfc-v08-dev-local')).state;
+ const purchased=now.lastResult.cardId;
+ assert.equal(now.lastResult.winner,first);
+ assert.equal(now.teams.find(t=>t.club===first).roster.length,1);
+ assert.match(root.innerHTML,/Recrue remportée/);
+ press('dismiss');
+ press('select-card',{club:first,card:purchased});
+ assert.match(root.innerHTML,/Sélection/);
+ press('slot',{club:first,slot:'1'});
+ now=JSON.parse(cache.get('opfc-v08-dev-local')).state;
+ assert.equal(now.teams.find(t=>t.club===first).slots[1],purchased);
+ assert.match(root.innerHTML,/slot-field/);
  press('new-confirm');
  assert.match(root.innerHTML,/Nouvelle partie/);
  press('dismiss');
