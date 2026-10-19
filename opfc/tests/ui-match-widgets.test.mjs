@@ -24,6 +24,38 @@ test('Les boutons tactiques partagent l’habillage des quatre cases d’enchèr
   assert.doesNotMatch(html,/data-choice="QUELCONQUE"/);
  }
 });
+test('Tous les choix en match possèdent un emoji décoratif, un nom exact et le même code de décision',()=>{
+ const groups=[
+  [['COMBINER','Combiner'],['LANCER','Lancer'],['PERCER','Percer']],
+  [['PRESSER','Presser'],['INTERCEPTER','Intercepter'],['CONTENIR','Contenir']],
+  [['PLACEE','Frappe placée'],['PUISSANTE','Frappe puissante'],['PIQUEE','Ballon piqué']],
+  [['LIGNE','Rester sur la ligne'],['SORTIE','Sortir'],['PLONGEON','Anticiper le plongeon']],
+  [['PREMIER','Premier poteau'],['PENALTY','Point de penalty'],['SECOND','Second poteau']],
+  [['PREMIER','Couvrir le premier poteau'],['PENALTY','Couvrir le point de penalty'],['SECOND','Couvrir le second poteau']],
+  [['DIRECT','Frappe directe'],['CENTRE','Centre'],['COMBINAISON','Combinaison courte']],
+  [['MUR','Renforcer le mur'],['MARQUAGE','Marquage serré'],['ANTICIPER','Anticiper']],
+  [['GAUCHE','Tirer à gauche'],['CENTRE','Tirer au centre'],['DROITE','Tirer à droite']],
+  [['GAUCHE','Plonger à gauche'],['CENTRE','Rester au centre'],['DROITE','Plonger à droite']],
+  [['TETE','Tête'],['VOLEE','Reprise de volée'],['RETOURNE','Retourné acrobatique']],
+  [['GAUCHE','Gauche'],['CENTRE','Centre'],['DROITE','Droite']]
+ ];
+ for(const [index,options] of groups.entries()){
+  const action=index===groups.length-1?'match-shootout-choose':'match-choose';
+  const html=matchTacticalChoices(options,action);
+  assert.equal((html.match(/class="match-choice-emoji" aria-hidden="true"/g)||[]).length,3,
+   'Un emoji doit accompagner CHAQUE option');
+  assert.equal((html.match(/class="btn match-choice"/g)||[]).length,3);
+  for(const [id,label] of options){
+   assert.ok(html.includes('data-choice="'+id+'">'),'Identifiant moteur conservé');
+   assert.ok(html.includes('<strong>'+label+'</strong>'),'Libellé officiel conservé');
+  }
+  assert.doesNotMatch(html,/undefined|null/);
+ }
+ // Cas futur : une nouvelle tactique reste habillée sans adapter l’API du moteur.
+ const future=matchTacticalChoices([['TEST','Action future']]);
+ assert.match(future,/⚽/);
+ assert.match(future,/data-choice="TEST"/);
+});
 test('Le tireur et le gardien sont visibles ensemble avant la résolution avec leurs notes effectives',()=>{
  const s=fixture(),t=s.teams.find(t=>t.club==='PSG'),
  keeper=s.teams.find(t=>t.club==='OM');
