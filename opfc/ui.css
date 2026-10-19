@@ -259,3 +259,62 @@ a{color:inherit}p{line-height:1.45}.app{width:min(100%,760px);margin:0 auto;padd
  .roster-position,.roster-rating,.roster-tier{font-size:9px;padding:3px 5px}
  .team-panel .team-chip{padding:6px;gap:6px}
 }
+
+
+/* OPFC — Vue des duels validée : qualité des occasions, attaque et cartes joueurs.
+ * Les couleurs correspondent EXACTEMENT aux contextes FRANCHE/BONNE/DIFFICILE
+ * définis par open-play.mjs ; ce CSS n'altère aucune règle du moteur. */
+.match-attack-banner{margin:11px 0 12px;padding:11px;background:linear-gradient(155deg,#173649,#0d2536);border:1px solid #bed3d84a;border-radius:16px;box-shadow:0 10px 25px #0004}
+.match-attack-teams{display:grid;grid-template-columns:minmax(0,1fr) 32px minmax(0,1fr);align-items:center;gap:6px;margin-bottom:10px}
+.match-attacking-team,.match-defending-team{display:flex;flex-direction:column;gap:3px;min-width:0;padding:10px 11px;border-radius:11px;background:#0b263a;border:1px solid #ffffff29}
+.match-attacking-team{border-width:1px 1px 1px 4px}
+.match-attack-banner.psg .match-attacking-team{border-left-color:#e15d77;background:linear-gradient(120deg,#49233a,#17283e)}
+.match-attack-banner.om .match-attacking-team{border-left-color:#74d7f6;background:linear-gradient(120deg,#17455a,#122a3a)}
+.match-attacking-team span,.match-defending-team span{font-size:9px;letter-spacing:.09em;color:#c6d6dd;font-weight:900;white-space:nowrap}
+.match-attacking-team strong,.match-defending-team strong{font-size:clamp(19px,6vw,27px);font-weight:950;line-height:1.08;color:#fff7df}
+.match-defending-team{align-items:flex-end;text-align:right}
+.match-defending-team strong{color:#b6cbd5}
+.match-attack-arrow{text-align:center;font-size:22px;font-weight:950;color:#f6d99b}
+.match-action-type{padding:12px 11px;border-radius:11px;border:1px solid #ffffff3a;display:flex;flex-direction:column;gap:3px;align-items:center;text-align:center}
+.match-action-type strong{display:block;font-size:clamp(15px,4.2vw,19px);font-weight:950;letter-spacing:.035em;color:#fff;line-height:1.27}
+.match-action-type small{font-size:11px;font-weight:750;color:#e0e9e5}
+.match-action-type.type-franche{background:linear-gradient(110deg,#154733,#1d553d);border-color:#5ed19b}
+.match-action-type.type-franche strong{color:#d5ffdf}
+.match-action-type.type-bonne{background:linear-gradient(110deg,#654021,#875528);border-color:#efad5a}
+.match-action-type.type-bonne strong{color:#fff0ce}
+.match-action-type.type-difficile{background:linear-gradient(110deg,#54232e,#793342);border-color:#f27f8c}
+.match-action-type.type-difficile strong{color:#ffe3e5}
+.match-action-type.type-neutral{background:#1b3948;border-color:#779eab}
+.match-stage h2.match-duel-ready-heading{font-size:clamp(15px,4.3vw,18px);font-weight:850;letter-spacing:0;line-height:1.35;color:#d9e7ed;margin:2px 0 7px;text-align:center}
+.match-faceoff{grid-template-columns:minmax(0,1fr) 29px minmax(0,1fr);padding:13px 8px;gap:4px}
+.match-faceoff .match-duelist{padding:8px 4px;border-radius:13px;border:1px solid #ffffff36;background:linear-gradient(160deg,#183b4c,#112839);min-height:172px;justify-content:center;gap:6px}
+.match-faceoff .match-duelist.psg{border-top:3px solid #d85b76}
+.match-faceoff .match-duelist.om{border-top:3px solid #89d8f2}
+.match-faceoff .match-duelist-team{font-size:10px;letter-spacing:.045em;color:#d4e3ed;font-weight:900}
+.match-faceoff .match-duelist-name{font-size:clamp(11px,3.5vw,14px);color:#fff1d1;line-height:1.22;min-height:27px;display:flex;align-items:center;justify-content:center}
+.match-faceoff .match-duelist-badges{display:flex;gap:5px;flex-wrap:wrap;align-items:center;justify-content:center}
+.match-faceoff .match-duelist-position,.match-faceoff .match-duelist-rating{display:inline-flex;align-items:center;justify-content:center;border:1px solid #c5b0de7a;border-radius:7px;padding:5px 6px;font-size:10px;line-height:1.15;font-weight:950;white-space:nowrap}
+.match-faceoff .match-duelist-position{background:#5c3784;color:#fff0ff;border-color:#a98ce0}
+.match-faceoff .match-duelist-rating{background:#564023;color:#ffeca5;border-color:#bb9a62}
+.match-faceoff .match-duelist-out{color:#ffb0ac;font-size:9px;font-weight:800;text-transform:none;letter-spacing:0}
+.match-faceoff .faceoff-vs{font-size:14px;color:#ffe0aa}
+.match-faceoff .character-portrait.faceoff-portrait{width:clamp(70px,19vw,92px);height:clamp(70px,19vw,92px)}
+/* Le même terrain et les 2 listes sont désormais systématiquement sous les actions.
+ * Match = consultation seulement ; mi-temps = édition comme avant. */
+.match-team-overview{margin:19px 0 16px;padding-top:13px;border-top:1px solid #ebcf8f60}
+.match-team-overview-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:7px 1px 10px}
+.match-team-overview-heading span{font-size:12px;color:#ffe1a1;font-weight:950;letter-spacing:.07em}
+.match-team-overview-heading small{font-size:10px;color:#a8c7d1}
+.match-team-overview .pitch-panel{margin-bottom:10px}
+.match-team-overview .pitch-player:disabled{opacity:1;cursor:default}
+.match-team-overview .team-panel select:disabled{opacity:1;cursor:default;color:#dbe8ef}
+.match-team-overview .team-chip:disabled{opacity:1}
+@media(max-width:370px){
+ .match-attack-banner{padding:9px}
+ .match-attack-teams{grid-template-columns:minmax(0,1fr) 22px minmax(0,1fr);gap:4px}
+ .match-attacking-team,.match-defending-team{padding:9px 7px}
+ .match-attacking-team span,.match-defending-team span{font-size:8px}
+ .match-faceoff .match-duelist{padding:7px 3px}
+ .match-faceoff .match-duelist-position,.match-faceoff .match-duelist-rating{padding:4px;font-size:9px}
+ .match-faceoff .character-portrait.faceoff-portrait{width:66px;height:66px}
+}
