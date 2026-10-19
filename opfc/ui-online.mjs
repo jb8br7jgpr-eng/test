@@ -6,11 +6,11 @@ const button=(act,label,style='ghost',disabled=false)=>'<button type="button" cl
 const note=()=>'<p class="online-status-note" role="status">Le serveur Supabase OPFC n’est pas encore déployé. Tu peux découvrir les écrans, mais pas encore créer ou rejoindre un vrai salon.</p>';
 const pretty=id=>id==='PSG'?'Pirates Saint-Grandline':'Olympique de MaryGeoise';
 export function renderOnlineLobby({stage='choose',firstClub='PSG',room=null,configured=false,
- joinCode='',busy=false,error=''}={}){
+ joinCode='',busy=false,error='',gameActive=false}={}){
  const nav='<div class="online-nav">'+button('back','← Retour','ghost small')+'</div>';
  let out='<section class="online-wrapper"><span class="eyebrow">OPMercato FC · Deux iPhone</span>'+
  '<h1 class="page-title">Mode en ligne</h1>'+
- '<p class="muted online-description">Deux clubs, un salon privé et une partie partagée. Les enchères et le match en réseau seront raccordés au prochain bloc.</p>';
+ '<p class="muted online-description">Deux clubs, un salon privé, des enchères et un match partagés. Chaque téléphone commande son équipe.</p>';
  if(error)out+='<div class="alert" role="alert">'+h(error)+'</div>';
  if(stage==='choose'){
   out+='<section class="panel online-lobby-card"><h2 class="section-title">Choisis comment jouer</h2>'+
@@ -39,7 +39,8 @@ export function renderOnlineLobby({stage='choose',firstClub='PSG',room=null,conf
    button('refresh','Actualiser','ghost small',busy||!configured)+'</div>'+
    '<div class="online-members"><div><strong>Ton club</strong><span>'+h(room.myClub)+' · '+h(pretty(room.myClub))+'</span></div>'+
    '<div><strong>Adversaire</strong><span>'+h(linked?'Connecté':'Pas encore connecté')+'</span></div></div>'+
-   '<p class="caption">'+(linked?'Les deux joueurs sont présents. La synchronisation du jeu sera ajoutée au prochain bloc.':
+   '<p class="caption">'+(linked?(gameActive?'✅ Salon synchronisé. La partie continue juste en dessous.':
+   'Les deux joueurs sont connectés. Chargement de la partie…'):
    'Partage uniquement le code à six caractères. Ne partage jamais ton jeton de session.')+'</p>'+
    button('forget-confirm','Quitter ce salon sur cet appareil','ghost full')+'</section>';
  }else if(stage==='restore'){
