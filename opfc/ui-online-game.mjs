@@ -98,7 +98,12 @@ function visualMarket(g,club){
 }
 function matchStage(g,club,hostClub){
  const m=g.match,a=m?.action;
- if(g.phase==='finished')return renderFinalResult(g);
+ if(g.phase==='finished'){
+  // Le dernier tir est révélé avant le bilan final, même si le moteur
+  // a déjà marqué la rencontre comme terminée.
+  if(g.match?.shootout?.lastResult)return board(m)+shootoutStage(g,club);
+  return renderFinalResult(g);
+ }
  if(g.phase==='half-time'||g.phase==='resume-ready'){
   const status=g.teams.map(t=>'<span class="halftime-team-status '+(t.ready?'is-ready':'is-pending')+'">'+
    (t.ready?'✓':'◷')+' '+esc(t.club)+' : '+(t.ready?'prêt':'en préparation')+'</span>').join('');
@@ -130,9 +135,13 @@ function matchStage(g,club,hostClub){
    renderShotResult(g,{outcome:result.outcome,attacker:result.attacker,
     minute:result.minute,score:m.score,
     shooterId:result.scorerId??detail.finisherId??detail.takerId??null,
-    keeperId:matchKeeperId(g,other(result.attacker))})
+    keeperId:matchKeeperId(g,other(result.attacker)),action:'online-game'})
+    .replace('data-action="online-game"',
+     'data-action="online-game" data-type="continue-result"'+
+     (allowed?'':' disabled aria-disabled="true"'))
    :stage('Séquence terminée','<p>'+esc(result.outcome)+'</p>');
-  return board(m)+content+(allowed?btn('continue-result','Continuer'):
+  return board(m)+content+(allowed?
+   (['goal','save','miss'].includes(result.outcome)?'':btn('continue-result','Continuer')):
    waiting(result.attacker,'Le club attaquant valide la séquence.'));
  }
  if(g.phase!=='match')return stage('Partie en cours','');
