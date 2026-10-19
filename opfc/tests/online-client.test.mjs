@@ -33,8 +33,8 @@ function fixture(){
  const client=createOnlineClient({apiUrl:base,storage:store,fetchImpl,timeoutMs:3000});
  return {client,store,requests,responses};
 }
-test('Le serveur en ligne n’est pas configuré et n’envoie aucun appel',async()=>{
- assert.equal(OPFC_ONLINE_API_URL,'');
+test('Un client explicitement non configuré doit refuser les connexions',async()=>{
+ assert.equal(OPFC_ONLINE_API_URL,'https://cihzwaxernachchpjktj.supabase.co/functions/v1/opfc-online');
  const f=createOnlineClient({apiUrl:'',fetchImpl:()=>{throw Error('appel interdit')}});
  assert.equal(f.configured,false);
  await assert.rejects(f.createRoom('PSG'),/pas encore configuré/);
