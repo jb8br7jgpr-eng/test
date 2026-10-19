@@ -425,3 +425,12 @@ a{color:inherit}p{line-height:1.45}.app{width:min(100%,760px);margin:0 auto;padd
  .slot-field .pitch-row{gap:2px;margin:0 2px}
  .slot-field .pitch-player-badges{gap:2px}
 }
+
+/* Les listes de chaque club suivent désormais les postes effectivement occupés.
+ * Alerte si un personnage joue à un autre poste que sa spécialité. */
+.team-panel .roster-warning{
+ display:inline-flex;align-items:center;justify-content:center;
+ padding:3px 5px;border:1px solid #ef9e85;border-radius:7px;
+ background:#6c3132;color:#ffe9df;font-size:9px;
+ font-weight:950;white-space:nowrap;
+}
