@@ -257,6 +257,7 @@ try{
  await refresh(first);
  await first.locator('[data-type="shootout-reveal"]').click();
  assert.equal(state.game.match.shootout.timeline.length,1);
+ await first.locator('.shootout-mark--goal').first().waitFor({state:'visible'});
  assert.equal(await first.locator('.shootout-mark--goal').count(),1);
  await first.locator('[data-type="shootout-continue"]').click();
  await fit(first,'TAB réseau');
