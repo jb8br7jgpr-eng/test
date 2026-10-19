@@ -155,48 +155,58 @@ function cardPanel(info){
  '</div><div class="stats-grid">'+stats+'</div></div>';
 }
 function sale(){
- // Même ossature que l'écran d'enchères du OPMercato classique (classique.html) :
- // meilleure offre, joueur actif, 4 offres rapides, refus, et pouvoirs disponibles.
- // Les montants et contraintes restent contrôlés par le moteur OPFC indépendant.
+ // Reprise COSMÉTIQUE du véritable OPMercato classique :
+ // classique.html (bid-title, turn-banner, offers, pass-btn),
+ // mercato-upgrade.js (custom-bid), mercato-rules.js (haki-btn 👑),
+ // mercato-features.js (extra-power 👁).
+ // Toutes les actions, disponibilités et règles restent celles du moteur OPFC.
  const context=uiAuction(game),a=context.auction,t=context.team;
  const min=context.minimum,max=context.maximum,remaining=Math.max(0,5-t.refusals);
- const quick=[0,20,50,100];
- const passLabel=context.everOffered?'Se retirer sans refus':'Refuser · '+remaining+' restant'+(remaining>1?'s':'');
- const observeUsed=t.hakis.observation,kingsUsed=t.hakis.kings;
- return '<section class="panel opfc-auction"><div class="auction-top"><span class="eyebrow">Mercato · '+
- game.teams.reduce((n,t)=>n+t.roster.length,0)+'/14</span><span class="turn-pill">Enchère en cours</span></div>'+
+ const increments=[0,20,50,100]; // Presets propres à OPFC ; seul leur habillage est partagé.
+ const withdrawal=context.everOffered;
+ const label=withdrawal?'Arrêter d’enchérir (gratuit)':
+  context.canPass?'Refuser ce personnage · '+remaining+'/5 restants':
+  '⛔ Plus de refus sans enchère disponibles';
+ const observationHint=t.hakis.observation?'Déjà utilisé':'Voir les 5 prochaines cartes';
+ return '<div class="opfc-auction-stage"><div class="auction-top"><span class="eyebrow">Mercato · '+
+ game.teams.reduce((n,team)=>n+team.roster.length,0)+'/14</span>'+
+ '<span class="turn-pill">Enchère en cours</span></div>'+
  cardPanel(context.card)+
- '<div class="bid-title"><div><span class="bid-kicker">Meilleure offre</span>'+
+ '<section class="opfc-auction card auction"><div class="bid-title"><div>'+
+ '<span class="kicker">Meilleure offre</span>'+
  '<strong class="bid-amount">'+(a.highestBid?a.highestBid+' M':'Aucune')+'</strong></div>'+
  '<div class="bid-leader">'+(a.highestClub?'En tête : <strong>'+esc(clubName(a.highestClub))+'</strong>':
  'Mise de départ : <strong>'+min+' M</strong>')+'</div></div>'+
  '<div class="turn-banner"><div><span>AU TOUR DE</span><strong>'+esc(clubName(a.turn))+'</strong></div>'+
- '<div class="turn-budget">'+t.budget+' M<small>disponibles</small></div></div>'+
- (a.king?'<p class="warning-copy">Haki des Rois activé par '+a.king.holder+'.</p>':'')+
- (a.solo?'<p class="warning-copy">Une seule équipe recrute encore : prix fixe 5 M.</p>'+
- btn('solo','Recruter · 5 M','primary full'):
- '<div class="offers">'+quick.map(add=>{
+ '<div class="turn-budget">'+t.budget+' M<br><span>disponibles</span></div></div>'+
+ (a.king?'<p class="warning-copy">👑 Haki des Rois activé par '+a.king.holder+'.</p>':'')+
+ (a.solo?'<div class="solo-auction"><p>Une seule équipe recrute encore : prix fixe 5 M.</p>'+
+ '<button class="primary" data-action="solo">Recruter · 5 M</button></div>':
+ '<div class="offers">'+increments.map(add=>{
   const amount=min+add;
   return '<button class="offer-btn" type="button" data-action="bid-quick" data-amount="'+amount+
   '" '+(context.canBid&&amount<=max?'':'disabled')+'><b>'+amount+' M</b><small>'+
   (add===0?'Offre minimale':'Offre +'+add+' M')+'</small></button>';
  }).join('')+'</div>'+
- '<details class="bid-custom"><summary>Enchérir un autre montant</summary>'+
- '<div class="bid-row"><div class="form-box"><label for="bid-value">Offre en M Berrys</label>'+
- '<input class="bid-input" id="bid-value" type="number" inputmode="numeric" min="'+min+'" max="'+max+
- '" step="1" value="'+min+'" '+(context.canBid?'':'disabled')+'></div>'+
- btn('bid','Enchérir','primary',!context.canBid)+'</div></details>'+
- '<div class="auction-refusal"><button class="pass-btn" data-action="pass" type="button" '+
- (context.canPass?'':'disabled')+'>'+passLabel+'</button>'+
- '<p class="refusal-counter">Refus utilisés : <strong>'+t.refusals+'/5</strong> · Refus restants : <strong>'+remaining+
- '</strong></p></div>'+
- '<div class="haki-row haki-auction">'+
- btn('observation','Observation · '+(observeUsed?'Utilisé':'Disponible'),'ghost',!context.canObserve)+
- btn('kings','Haki des Rois · '+(kingsUsed?'Utilisé':context.canKings?'Disponible':'Indisponible'),
- 'ghost',!context.canKings)+'</div>'+
- '<p class="notice">Passer sans avoir enchéri consomme un refus. Après une offre, se retirer ne consomme pas de refus.</p>')+
- '<p class="warning-copy">Priorité : '+a.priority+' · Mise légale : '+min+' à '+max+
- ' M. Réserve de 5 M par recrue restante.</p></section>';
+ '<div class="custom-bid"><label for="bid-value">Autre montant (M Berrys)</label>'+
+ '<div><input id="bid-value" type="number" inputmode="numeric" min="'+min+'" max="'+max+
+ '" step="1" placeholder="'+min+'" value="'+min+'" '+(context.canBid?'':'disabled')+'>'+
+ '<button type="button" class="btn-ghost" data-action="bid" '+(context.canBid?'':'disabled')+
+ '>Enchérir</button></div></div>'+
+ (context.canKings?'<button class="haki-btn" type="button" data-action="kings">'+
+ '👑 Haki des Rois — recruter gratuitement !'+
+ '<small>Utilisable une seule fois, seulement en jouant en premier.</small></button>':'')+
+ '<div class="extra-powers"><button class="extra-power" type="button" data-action="observation" '+
+ (context.canObserve?'':'disabled')+'>👁 Observation<small>'+observationHint+'</small></button></div>'+
+ '<button class="pass-btn" type="button" data-action="pass" '+(context.canPass?'':'disabled')+
+ '>'+label+'</button>'+
+ '<p class="refusal-counter">Refus utilisés : <strong>'+t.refusals+'/5</strong>'+
+ ' · Refus restants : <strong>'+remaining+'/5</strong></p>'+
+ '<p class="notice">'+(withdrawal?
+ 'Se retirer d’une enchère déjà commencée ne consomme aucun refus.':
+ 'Seul un refus avant ta première offre consomme un de tes 5 refus.')+'</p>')+
+ '<p class="opfc-auction-limit">Priorité : '+a.priority+' · Mise légale : '+min+' à '+max+
+ ' M. Réserve de 5 M par recrue restante.</p></section></div>';
 }
 function fieldHalf(team,top){
  const u=uiTeam(team),positions=top?['GAR','DEF','MIL','ATT']:['ATT','MIL','DEF','GAR'];
