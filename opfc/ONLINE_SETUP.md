@@ -1,61 +1,37 @@
-# OPFC — Mode en ligne, bloc 10A1 (préparation seulement)
+# OPFC — Préparation du mode en ligne (10A4)
 
-**Statut : code préparé sur la branche \`opfc-development\` ; aucun backend installé ou déployé.**
+**Statut :** interface et moteur réseau développés sur `opfc-development` et contrôlés avec deux navigateurs mobiles et un serveur simulé. **Aucun backend OPFC réel n'a encore été créé, configuré ou déployé. Aucun déploiement du site.**
 
-## Séparation obligatoire
+## Isolation impérative
 
-Le compte Supabase dispose actuellement de deux projets : OPMercato classique
-(\`nezqupnhcqwuewfilioa\`) et ARCHIPEL (\`lrmgtnbxujdvswaykyxi\`).
-**Ne pas modifier ces projets pour OPFC.** Prévoir un projet Supabase OPFC dédié,
-créé uniquement après autorisation explicite. Aucun changement de \`main\`,
-de \`classique.html\`, ni du backend de l'ancien jeu.
+OPFC doit avoir son propre projet Supabase. Ne pas modifier les deux projets existants :
+- OPMercato classique : `nezqupnhcqwuewfilioa`
+- ARCHIPEL : `lrmgtnbxujdvswaykyxi`
 
-## Ce qui est préparé dans le dépôt
+Les modifications de `main`, de `classique.html` ou des fonctions/SQL de ces deux projets restent interdites sans accord explicite.
 
-- \`opfc/online-protocol.mjs\` : codes de salon à six caractères non ambigus,
-  jetons de 256 bits, SHA-256, association jeton → rôle, création du moteur sur
-  serveur avec tirages cryptographiques et vue publique explicitement filtrée.
-- \`supabase/opfc-schema.sql\` : table \`opfc_rooms\`, RLS, accès service_role
-  seul, état privé, jetons hachés, verrouillage de version, expiration à 7 jours.
-  **Ce fichier n'est pas une migration activée et ne doit pas être exécuté
-  dans un projet non approuvé.**
-- \`supabase/functions/opfc-online/index.ts\` : trois actions POST :
-  \`create\`, \`join\`, \`get\`. La réunion des deux iPhone se fait via un code ;
-  deux \`join\` simultanés ne peuvent pas tous les deux réserver la place.
-- \`opfc/tests/online-protocol.test.mjs\` : tests exécutés sur GitHub Actions.
+## Code déjà prêt dans le dépôt
 
-## Contrat d'API du futur service
+- `opfc/online-protocol.mjs` : salons à code privé, jetons aléatoires de 256 bits, association jeton → club, rôle et vues filtrées.
+- `opfc/online-market.mjs`, `online-lineup.mjs`, `online-match.mjs`, `online-set-piece.mjs`, `online-endgame.mjs` : transitions serveur officielles pour mercato, formations, matchs, phases arrêtées, mi-temps, TAB, finale.
+- `opfc/online-client.mjs` : appels HTTP avec version, conservation locale du jeton personnel et actualisation.
+- `opfc/ui.mjs`, `ui-online.mjs`, `ui-online-game.mjs` : interface de salon et jeu connecté sur iPhone, boutons réservés à chaque club.
+- `supabase/opfc-schema.sql` : table `opfc_rooms`, état privé, hash des jetons, verrou de version, RLS et expiration.
+- `supabase/functions/opfc-online/index.ts` : fonction Edge `opfc-online` avec POST `create`, `join`, `get`, `market`, `lineup`, `match` ; CORS pour l'origine du site et les en-têtes `Content-Type` / `Cache-Control`.
 
-Créer : \`{ "action":"create", "firstClub":"PSG" }\` → jeton HÔTE +
-salon (\`status: waiting\`).
+### Garanties
+Les requêtes de jeu identifient le club via **son jeton personnel**, jamais un club fourni par le client. Le serveur conserve le paquet, les choix privés et le programme des séquences. La vue envoyée aux iPhone exclut les données secrètes. Les écritures concurrentes utilisent `expectedVersion` et répondent 409 si l'état a changé.
 
-Rejoindre : \`{ "action":"join", "code":"ABC234" }\` → jeton INVITÉ +
-salon (\`status: ready\`).
+Les tests unitaires et tests iPhone sur serveur simulé ne remplacent PAS un test réseau réel : aucune assertion de disponibilité réelle du backend n'est faite.
 
-Relire : \`{ "action":"get", "roomId":"<uuid>", "token":"<privé>" }\` →
-salon actualisé (permettra au futur client iPhone de synchroniser le lobby).
+## Conditions avant mise en service
 
-Les jetons ne doivent pas être copiés dans un lien public, un journal ou
-une capture d'écran. Seuls les jetons personnels sont conservés sur chaque iPhone ;
-le paquet, les calculs, les choix secrets et l'état maître restent côté serveur.
-L'application du jeu classique doit continuer à utiliser sa propre fonction.
+1. Demander l'accord de l'utilisateur sur **l'organisation Supabase**, le coût présenté par Supabase et la création d'un **troisième projet indépendant**.
+2. Créer uniquement le projet approuvé, de préférence dans la région française `eu-west-3`, puis appliquer `supabase/opfc-schema.sql` uniquement dans ce projet.
+3. Prévoir des limites de débit et une protection anti-abus sur les actions anonymes `create` et `join`. Le contrôle d'origine CORS n'est pas une protection suffisante contre les scripts hors navigateur.
+4. Déployer exclusivement la fonction `opfc-online` du projet approuvé avec configuration adaptée aux actions anonymes. Conserver les clés `service_role` exclusivement côté serveur et définir `OPFC_ALLOWED_ORIGIN=https://jb8br7jgpr-eng.github.io`.
+5. Renseigner dans `opfc/online-config.mjs` **uniquement** l'URL Edge OPFC et, si nécessaire, la clé **publique**, jamais une clé de service.
+6. Vérifier le fonctionnement sur **deux vrais iPhone**, avec un réseau réel : entrée de salon, mercato complet, compositions, choix secrets, résultat final, reconnexion, sécurité, erreurs et conflits.
+7. Obtenir une **autorisation distincte** avant fusion sur `main` et déploiement du site accessible au public.
 
-## Pour une future mise en service : validations encore nécessaires
-
-1. Accord du propriétaire pour choisir/créer un projet OPFC séparé.
-2. Appliquer le SQL dans **ce nouveau projet seulement**.
-3. Vérifier l'URL et les secrets Edge dans le projet dédié, définir
-   \`OPFC_ALLOWED_ORIGIN=https://jb8br7jgpr-eng.github.io\`.
-4. Déployer \`opfc-online\` uniquement dans le projet OPFC. Pour les actions
-   anonymes create/join, cette fonction doit être déployée sans vérification
-   JWT et protégée par les validations de rôle, des limites de débit et des
-   protections anti-abus au niveau Edge/proxy.
-5. Construire l'interface de salon et la synchronisation sur deux appareils.
-6. Ensuite seulement : ajouter des actions de mercato/match côté serveur, avec
-   contrôle strict du tour, versions concurrentes et **vues par joueur** pour
-   préserver les Hakis et les décisions tactiques.
-7. Tests réseau réels, déconnexions/reprises, puis décision séparée de
-   fusion/déploiement du site.
-
-**Ne pas présenter 10A1 comme un mode en ligne jouable** : il prépare les
-salons, sans encore synchroniser les enchères ou le match complet.
+La création d'un projet ou l'application de SQL et de fonctions sont des actions distantes, interdites sans autorisation expresse.
