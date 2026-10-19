@@ -1,9 +1,7 @@
 /**
- * OPFC — configuration du mode en ligne.
- * AUCUN PROJET N'EST CONFIGURÉ OU DÉPLOYÉ dans le bloc 10A2.
- *
- * Un projet Supabase OPFC distinct doit être approuvé avant de renseigner
- * sa propre URL Edge et, si nécessaire, sa clé PUBLISHABLE (jamais service_role).
+ * OPFC — URL PUBLIQUE du serveur indépendant (projet Supabase OPFC).
+ * Uniquement l'URL de la fonction anonyme ; aucune clé privée côté navigateur.
+ * Actif seulement sur la branche de développement tant que le site n'est pas publié.
  */
-export const OPFC_ONLINE_API_URL='';
+export const OPFC_ONLINE_API_URL='https://cihzwaxernachchpjktj.supabase.co/functions/v1/opfc-online';
 export const OPFC_ONLINE_PUBLISHABLE_KEY='';
