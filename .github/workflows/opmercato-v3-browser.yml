@@ -36,34 +36,54 @@ jobs:
             if(await page.locator('.choice-play').count()!==2)throw Error("Le sélecteur OPMercato/OPFC est absent");
             await page.locator('a[href="./classique-accueil.html"]').click();
             await page.waitForURL("**/classique-accueil.html");
-            const newMenu=await page.evaluate(()=>({
-              illustration:document.querySelector('img[src="./opmercato-accueil-equipage.PNG"]')?.getAttribute('src'),
-              links:[...document.querySelectorAll('.home-actions a')].map(x=>x.getAttribute('href')),
-              shortcuts:document.querySelector('.home-shortcuts')
+            const menu=await page.evaluate(()=>({
+              artwork:document.querySelector('img[src="./opmercato-accueil-equipage.PNG"]')?.getAttribute('src'),
+              actions:[...document.querySelectorAll('.home-actions a')].map(x=>x.getAttribute('href')),
+              shortcuts:document.querySelector('.home-shortcuts')&&
+                getComputedStyle(document.querySelector('.home-shortcuts')).gridTemplateColumns
             }));
-            if(!newMenu.illustration||newMenu.links.length!==4||!newMenu.shortcuts)
-              throw Error("Intermediate OPMercato welcome menu missing: "+JSON.stringify(newMenu.links));
+            if(!menu.artwork||menu.actions.length!==4||!menu.shortcuts)
+              throw Error("Menu illustré manquant: "+JSON.stringify(menu));
+
+            // Catalogue et règles s'ouvrent SANS laisser apparaître les réglages locaux.
+            await page.locator('a[href="./classique.html?launch=catalog"]').click();
+            await page.waitForURL("**/classique.html?launch=catalog");
+            await page.locator('#modal .catalog-modal').waitFor({state:"visible"});
+            if(await page.locator('#app').isVisible())throw Error("Le mode local apparaît derrière le catalogue");
+            await page.locator('#modal [data-action="close-modal"]').first().click();
+            await page.waitForURL("**/classique-accueil.html");
+            await page.locator('a[href="./classique.html?launch=rules"]').click();
+            await page.waitForURL("**/classique.html?launch=rules");
+            await page.locator('#modal h2').getByText('Règles du mercato').waitFor({state:"visible"});
+            if(await page.locator('#app').isVisible())throw Error("Le mode local apparaît derrière les règles");
+            await page.locator('#modal [data-action="close-modal"]').first().click();
+            await page.waitForURL("**/classique-accueil.html");
+
+            await page.locator('a[href="./classique.html?launch=online"]').click();
+            await page.waitForURL("**/classique.html?launch=online");
+            await page.locator('[data-online="create-form"]').waitFor({state:"visible"});
+            const onlineLogo=page.locator('#opmercato-online img.online-transparent-logo');
+            if(!await onlineLogo.isVisible()||!await onlineLogo.getAttribute('src').then(x=>x.includes('opmercato-logo-transparent.png')))
+              throw Error("Logo transparent du mode en ligne absent");
+            await page.locator('#opmercato-online .online-menu-return').click();
+            await page.waitForURL("**/classique-accueil.html");
+
             await page.locator('a[href="./classique.html?launch=local"]').click();
             await page.waitForURL("**/classique.html?launch=local");
             await page.evaluate(()=>localStorage.clear());
             await page.reload({waitUntil:"domcontentloaded"});
-            const home=await page.evaluate(()=>({team:document.querySelector("#team-size")?.value,
-              nav:[...document.querySelectorAll(".home-nav button")].map(x=>x.textContent.trim()),
-              online:document.querySelector(".home-online-button")?.getBoundingClientRect().height||0,
-              oldOnline:!!document.querySelector(".online-entry"),duplicate:!!document.querySelector(".game-nav")}));
-            if(home.team!=="10"||home.nav.length!==2||!home.nav[0].includes("Catalogue")||
-              !home.nav[1].includes("Règles")||home.online<55||home.oldOnline||home.duplicate)
-              throw Error("Homepage layout or local default invalid: "+JSON.stringify(home));
-            await page.locator('.home-nav [data-action="catalog"]').click();
-            await page.locator('#modal .catalog-modal').waitFor({state:"visible"});
-            await page.locator('#modal [data-action="close-modal"]').first().click();
-            await page.locator('.home-nav [data-action="rules"]').click();
-            await page.locator('#modal h2').getByText('Règles du mercato').waitFor({state:"visible"});
-            await page.locator('#modal [data-action="close-modal"]').first().click();
-            await page.locator('.home-online-button').click();
-            await page.locator('[data-online="create-form"]').waitFor({state:"visible"});
-            await page.locator('[data-online="back"]').click();
-            console.log("PASS homepage Catalogue / Règles, online entry, and 10 recruits by default");
+            const home=await page.evaluate(()=>({
+              team:document.querySelector("#team-size")?.value,
+              logo:document.querySelector('.opmercato-local-logo')?.getAttribute('src'),
+              back:!!document.querySelector('.opmercato-menu-return'),
+              catalog:!!document.querySelector('#app [data-action="catalog"]'),
+              rules:!!document.querySelector('#app [data-action="rules"]'),
+              online:!!document.querySelector('#app [data-online="open"]')
+            }));
+            if(home.team!=="10"||home.logo!=="./opmercato-logo-transparent.png"||
+              !home.back||home.catalog||home.rules||home.online)
+              throw Error("Local setup navigation or default changed: "+JSON.stringify(home));
+            console.log("PASS accueil illustré, Catalogue/Règles isolés, retour menu et modes local/en ligne");
             await page.locator('[data-action="start"]').click();
             if(await page.evaluate(()=>state?.v3?.phase)!=="intro")throw Error("V3 introduction missing");
             await page.locator('[data-action="v3-intro-continue"]').click();

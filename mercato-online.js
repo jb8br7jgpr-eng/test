@@ -134,11 +134,12 @@
   }
   function shell(content){
     const gameHeader=!!view&&view.status!=="lobby";
-    root.innerHTML='<div class="online-shell">'+(gameHeader?
-      '<div class="online-head online-head-game"><div class="op-logo-frame op-logo-header"><img src="./opmercato-logo.jpg?v=1" alt="Logo OPMercato"></div>'+
-      button("back","✕","online-text online-head-close")+'</div>':
-      '<div class="online-head"><div><div class="online-eyebrow">🏴‍☠️ OPMERCATO EN DIRECT</div><h1>Mercato multijoueur</h1></div>'+
-      button("back","✕ Fermer","online-text")+'</div>')+content+
+    root.innerHTML='<div class="online-shell">'+
+      '<header class="online-head online-brand-header">'+
+      '<a class="online-menu-return" href="./classique-accueil.html">← Retour au menu</a>'+
+      '<img class="online-transparent-logo" src="./opmercato-logo-transparent.png" alt="Logo officiel OPMercato" width="350" height="140">'+
+      (!gameHeader?'<div class="online-eyebrow">OPMERCATO EN DIRECT</div><h1>Mercato multijoueur</h1>':'')+
+      '</header>'+content+
       '<div class="online-notice" id="online-notice" role="status">'+escOnline(copyMessage)+'</div></div>';
     // Reutiliser exactement la meme chaine de portraits que le mode local.
     window.OPMERCATO_SHARED?.refreshImages?.();
@@ -159,7 +160,7 @@
       button("join-go","Rejoindre le salon →"):
       '<h2>Jouez de 2 à 5 sur vos téléphones !</h2><p>Un pirate crée le salon, les autres le rejoignent avec un code. Les enchères et les pouvoirs se synchronisent automatiquement.</p>'+
       button("create-form","⚓ Créer une partie")+button("join-form","🔑 Rejoindre une partie","btn-ghost")+button("archive","📜 Archives des Pirates","btn-ghost");
-    shell('<section class="online-card">'+form+'</section><div class="online-back">'+button("local","← Mode classique sur un seul téléphone","online-text")+'</div>');
+    shell('<section class="online-card">'+form+'</section>');
   }
   function waiting(){
     const players=view.players.map((p,i)=>'<div class="online-person"><span>'+ (i===0?'👑':'🏴‍☠️')+
@@ -687,7 +688,7 @@
     if(b.disabled)return;
     const a=b.dataset.online;
     if(a==="open"){mode="choose";show();if(session)refresh();return;}
-    if(a==="local"||a==="back"){hide();return;}
+    if(a==="local"||a==="back"){location.assign('./classique-accueil.html');return;}
     if(a==="leave-online"){if(confirm("Recommencer sur ce téléphone ? Tu quitteras le salon pour créer ou rejoindre une nouvelle partie. Les autres joueurs pourront continuer celle-ci.")){forget();show();}return;}
     if(a==="archive"){window.OP21_HISTORY?.open();return;}
     if(a==="create-form"){mode="create";paint();return;}
@@ -870,6 +871,16 @@
       overflow-y:auto;overscroll-behavior:contain;color:#e8f1f3}
     .online-shell{max-width:760px;margin:auto;padding:calc(env(safe-area-inset-top) + 20px) 14px calc(env(safe-area-inset-bottom) + 60px)}
     .online-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:5px 0 20px}
+    .online-head.online-brand-header{flex-direction:column;align-items:center;justify-content:center;gap:7px;margin-bottom:16px}
+    .online-menu-return{align-self:flex-start;display:inline-flex;align-items:center;justify-content:center;
+      min-height:38px;padding:8px 12px;border:1px solid #d9bd8175;border-radius:11px;
+      background:#143445;color:#ffe0a5;font-size:12px;font-weight:850;text-decoration:none}
+    .online-menu-return:focus-visible{outline:3px solid #7de3d3;outline-offset:3px}
+    .online-brand-header .online-transparent-logo{display:block;width:min(88vw,350px);
+      height:clamp(78px,14vh,132px);object-fit:contain;object-position:center;
+      filter:drop-shadow(0 9px 15px #0009)}
+    .online-brand-header .online-eyebrow{text-align:center;margin-top:4px}
+    .online-brand-header h1{text-align:center;margin:0}
     .online-head-game{position:relative;align-items:center;justify-content:center;min-height:82px}
     .online-head-game .op-logo-header{width:clamp(170px,49vw,220px)}
     .online-head-close{position:absolute;right:0;top:0;min-width:34px;min-height:34px;font-size:17px!important}

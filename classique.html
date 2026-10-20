@@ -15,6 +15,11 @@
   <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png?v=icone-boussole-20261019-final" />
   <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png?v=icone-boussole-20261019-final" />
   <title>OPMercato — Mercato des Pirates</title>
+  <script>
+    // Empêche l'affichage furtif de l'écran local derrière le catalogue/règlement.
+    if(['catalog','rules'].includes(new URLSearchParams(location.search).get('launch')))
+      document.documentElement.classList.add('opmercato-info-only');
+  </script>
   <style>
     :root { --bg: #081823; --panel: #112a38; --panel2: #173342; --outline: rgba(191,219,227,.13); --text: #f5f7f3; --muted: #a6bcc6; --gold: #f7ca72; --goldDark: #dfaa4d; --aqua: #7de3d3; --red: #fc938e; --shadow: 0 14px 38px rgba(0,0,0,.19); font-family: ui-rounded, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
     * { box-sizing: border-box; }
@@ -189,10 +194,46 @@
     @media(max-width:370px) { .shell{padding-left:13px;padding-right:13px} .brand b{font-size:15px;} .brand-symbol {width:42px;height:42px;} .players-inputs{grid-template-columns:1fr} .character-card{padding:19px;} .character-name{margin-top:36px;} }
     @media(min-width:600px) { .shell{padding-top:35px;} .character-card{min-height:278px;padding:25px 29px;} .character-name{margin-top:57px;} }
     @media(prefers-reduced-motion:no-preference) { .character-card { animation: pop .3s ease both; } @keyframes pop {from{opacity:.6;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}} }
+    /* Navigation dédiée, visuels officiels transparents, accueil + mode local. */
+    .topbar.opmercato-local-head{
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      gap:7px;margin-bottom:12px;min-width:0
+    }
+    .opmercato-local-head .opmercato-menu-return{
+      align-self:flex-start;display:inline-flex;align-items:center;justify-content:center;
+      min-height:38px;padding:8px 12px;border:1px solid rgba(247,202,114,.46);
+      border-radius:11px;background:#163745;color:#f6d59d;font-size:12px;
+      font-weight:850;text-decoration:none
+    }
+    .opmercato-local-head .opmercato-menu-return:focus-visible{
+      outline:3px solid var(--aqua);outline-offset:3px
+    }
+    .opmercato-local-head .opmercato-local-logo{
+      display:block;width:min(88vw,350px);height:clamp(78px,14vh,132px);
+      object-fit:contain;object-position:center;filter:drop-shadow(0 9px 15px #0009)
+    }
+    .op-game-footer{grid-template-columns:repeat(2,minmax(0,1fr))}
+    html.opmercato-info-only #app{display:none!important}
+    .opmercato-info-placeholder{display:none}
+    html.opmercato-info-only .opmercato-info-placeholder{
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      text-align:center;gap:15px;min-height:100dvh;padding:24px;
+    }
+    .opmercato-info-placeholder img{
+      display:block;width:min(86vw,340px);max-height:150px;object-fit:contain
+    }
+    .opmercato-info-placeholder a{
+      color:#ffe2ac;font-weight:850;text-decoration:none;border:1px solid #d3b37877;
+      padding:12px 16px;border-radius:12px;background:#143445
+    }
   </style>
 </head>
 <body>
   <main id="app" class="shell" aria-live="polite"></main>
+  <section class="opmercato-info-placeholder" aria-label="Catalogue ou règles OPMercato">
+    <img src="./opmercato-logo-transparent.png" alt="OPMercato" width="340" height="140">
+    <a href="./classique-accueil.html">← Retour au menu</a>
+  </section>
   <div id="modal" class="modal hidden" role="dialog" aria-modal="true"></div>
   <div id="toast" class="toast hidden" role="status"></div>
   <script src="./characters-data.js?v=20261017-clean251"></script>
@@ -259,17 +300,17 @@
   function getScore(p) {return [...p.roster].sort((a,b)=>CARDS[b].power-CARDS[a].power).slice(0,TEAM_SIZE).reduce((s,id)=>s+CARDS[id].power,0);}
   function ranking() {return [...state.players].sort((a,b)=>getScore(b)-getScore(a)||b.budget-a.budget||a.id-b.id);}
   function isComplete(){return state.players.every(p=>p.roster.length===TEAM_SIZE) || !state.players.some(p=>canParticipate(p,OPEN_BID));}
-  function header(){return `<div class="topbar${!state?' home-header':' in-game-header'}"><div class="brand"><div class="op-logo-frame op-logo-header"><img src="./opmercato-logo.jpg?v=1" alt="OPMercato, la boussole des pirates" /></div></div>${!state?'<nav class="home-nav" aria-label="Navigation"><button class="btn-ghost" data-action="catalog" type="button">📚 Catalogue</button><button class="btn-ghost" data-action="rules" type="button">📖 Règles</button></nav>':''}</div>`;}
+  function header(){return `<header class="topbar opmercato-local-head"><a class="opmercato-menu-return" href="./classique-accueil.html">← Retour au menu</a><img class="opmercato-local-logo" src="./opmercato-logo-transparent.png" alt="Logo officiel OPMercato" width="350" height="140"></header>`;}
   function gameFooter(){return '<div class="footer-actions op-game-footer">'+
-    '<button type="button" class="op-footer-btn op-footer-rules" data-action="rules">📖 Règles</button>'+
+
     '<button type="button" class="op-footer-btn op-footer-restart" data-action="reset-request">↻ Recommencer</button>'+
     '<button type="button" class="op-footer-btn op-footer-finish" data-action="finish-request">Terminer</button></div>';}
   function setupScreen(){
-    return `${header()}<nav class="opfc-return-home"><a href="./classique-accueil.html" aria-label="Revenir à l’accueil OPMercato">← Accueil OPMercato</a></nav><section class="intro"><div class="op-logo-home-wrap"><div class="op-logo-frame op-logo-home"><img src="./opmercato-logo.jpg?v=1" alt="Logo OPMercato" /></div></div><span class="eyebrow">Le jeu d'enchères des mers</span><h1>Forme l'équipage<br/>le plus puissant.</h1><p>Recrute des personnages One Piece aux enchères, gère ton budget et affronte tes amis. Celui qui a le plus de points avec ses <strong>${TEAM_SIZE} personnages</strong> remporte la partie.</p></section>
+    return `${header()}<section class="intro"><span class="eyebrow">Le jeu d'enchères des mers</span><h1>Forme l'équipage<br/>le plus puissant.</h1><p>Recrute des personnages One Piece aux enchères, gère ton budget et affronte tes amis. Celui qui a le plus de points avec ses <strong>${TEAM_SIZE} personnages</strong> remporte la partie.</p></section>
       <section class="card settings"><span class="section-label">Combien de pirates ?</span><div class="settings-row"><span class="hint" style="margin:0">De 2 à 5 joueurs</span><div class="counter"><button class="round-button" data-action="less" aria-label="Moins de joueurs">−</button><span id="numPlayers" class="count">${playerCount}</span><button class="round-button" data-action="more" aria-label="Plus de joueurs">+</button></div></div>
       <span class="section-label">Noms des joueurs</span><div id="names" class="players-inputs">${names.slice(0,playerCount).map((n,i)=>`<div class="field"><label for="name-${i}">Joueur ${i+1}</label><input id="name-${i}" type="text" data-player-input="${i}" maxlength="25" value="${esc(n)}" autocomplete="off" /></div>`).join('')}</div>
       <div class="field field-budget"><label for="budget">Budget de départ (฿)</label><input id="budget" type="number" min="100" max="100000" step="100" value="${startingBudget}" inputmode="numeric" /></div>
-      <button class="primary" data-action="start">⚓ Lancer le mercato</button><button class="home-online-button" data-online="open" type="button">🌐 Mode en ligne <small>Jouer chacun sur son téléphone</small></button><p class="hint">Un seul téléphone suffit : à chaque tour, l'écran indique qui doit enchérir. Le classement et la progression sont sauvegardés sur cet appareil.</p></section><footer class="footer-actions"><button class="text-btn" data-action="rules">Lire toutes les règles</button></footer>`;
+      <button class="primary" data-action="start">⚓ Lancer le mercato</button><p class="hint">Un seul téléphone suffit : à chaque tour, l'écran indique qui doit enchérir. Le classement et la progression sont sauvegardés sur cet appareil.</p></section>`;
   }
   function charCard(character) {
     const t=tierOf(character.power);
@@ -398,13 +439,27 @@
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script defer src="./mercato-online.js?v=20261017-morgans-reveal1"></script>
 
-<!-- Le menu intermédiaire ne fait que naviguer vers les fonctionnalités
-     déjà existantes : aucune sauvegarde ou règle de jeu n'est modifiée. -->
+<!-- Accès direct aux fonctionnalités existantes, sans montrer les réglages locaux
+     lorsque le joueur vient du Catalogue ou des Règles du menu général. -->
 <script>
 (function(){
-  const entry = new URLSearchParams(location.search).get('launch');
+  const entry=new URLSearchParams(location.search).get('launch');
   if(!['online','catalog','rules'].includes(entry))return;
-  document.addEventListener('DOMContentLoaded',function(){
+  const info=entry==='catalog'||entry==='rules';
+  if(info){
+    const menu=()=>location.assign('./classique-accueil.html');
+    // Sur les fiches, "Retour au catalogue" garde son comportement normal.
+    document.addEventListener('click',event=>{
+      if(event.target.closest('[data-action="close-modal"]'))menu();
+    },true);
+    document.addEventListener('click',event=>{
+      if(event.target.id==='modal')menu();
+    });
+    document.addEventListener('keydown',event=>{
+      if(event.key==='Escape')menu();
+    });
+  }
+  document.addEventListener('DOMContentLoaded',()=>{
     const trigger=document.createElement('button');
     trigger.type='button';trigger.hidden=true;
     if(entry==='online')trigger.dataset.online='open';
