@@ -5,6 +5,7 @@
  */
 import {normalizeRoomCode,validateClub,validateSessionToken,validateRoomId,ONLINE_PROTOCOL_VERSION} from './online-protocol.mjs';
 import {OPFC_ONLINE_API_URL,OPFC_ONLINE_PUBLISHABLE_KEY} from './online-config.mjs';
+import {chooseClubPair,validateDisplayClub} from './club-identities.mjs';
 
 export const ONLINE_SESSION_KEY='opfc-v1-online-session';
 const FORBIDDEN_PROJECTS=['nezqupnhcqwuewfilioa','lrmgtnbxujdvswaykyxi'];
@@ -22,6 +23,7 @@ function validRoom(room,session=null){
  validateRoomId(room.id);
  normalizeRoomCode(room.code);
  validateClub(room.hostClub);validateClub(room.guestClub);validateClub(room.myClub);
+ if(room.clubChoices)chooseClubPair(room.clubChoices.PSG,room.clubChoices.OM);
  if(room.hostClub===room.guestClub||room.guestClub!==(room.hostClub==='PSG'?'OM':'PSG'))
   fail('Attribution des clubs incohérente');
  if(!ROOM_STATUSES.includes(room.status))fail('Statut du salon invalide');
@@ -181,14 +183,20 @@ export function createOnlineClient({
    try{session=validSession(JSON.parse(raw));room=null;marketGame=null;return true;}
    catch{session=null;room=null;marketGame=null;persist();return false;}
   },
-  async createRoom(firstClub='PSG'){
+  async createRoom(firstClub='PSG',identityId=firstClub){
    ensureOnline();if(session)fail('Quitte d’abord le salon en cours');
-   const data=await request({action:'create',firstClub:validateClub(firstClub)});
+   validateDisplayClub(identityId);
+   const command={action:'create',firstClub:validateClub(firstClub)};
+   if(identityId!==firstClub)command.identityId=identityId;
+   const data=await request(command);
    return accept(data,true);
   },
-  async joinRoom(code){
+  async joinRoom(code,identityId='OM'){
    ensureOnline();if(session)fail('Quitte d’abord le salon en cours');
-   const data=await request({action:'join',code:normalizeRoomCode(code)});
+   validateDisplayClub(identityId);
+   const command={action:'join',code:normalizeRoomCode(code)};
+   if(identityId!=='OM')command.identityId=identityId;
+   const data=await request(command);
    return accept(data,true);
   },
   async refreshRoom(){
