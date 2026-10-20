@@ -45,12 +45,13 @@ test('Accueil : club au choix, deux formations, salon en ligne disponible',()=>{
  click('online-back');
  click('online-back');
  assert.match(app.innerHTML,/La Grandline Cup/);
- click('club',{club:'OM'});
+ change('club-identity','PSG','BDW');
  change('initial-formation','OM','3-2-1');
  click('start');
  const s=stateOf();
  assert.equal(s.phase,'mercato');
- assert.equal(s.teams[0].club,'OM');
+ assert.equal(s.teams[0].club,'PSG');
+ assert.equal(s.teams[0].identityId,'BDW');
  assert.equal(s.teams.find(t=>t.club==='OM').formation,'3-2-1');
  assert.match(app.innerHTML,/Départ du mercato/);
  click('close');
