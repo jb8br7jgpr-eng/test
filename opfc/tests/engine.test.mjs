@@ -59,9 +59,25 @@ test('Passage après offre = gratuit',()=>{
  let s=init();s=bid(s,'PSG',5);s=bid(s,'OM',6);s=pass(s,'PSG');
  assert.equal(s.teams[0].refusals,0);assert.equal(s.teams[1].budget,244);
 });
-test('Refus sans avoir offert même après offre adverse = 1 refus',()=>{
+test('Après une offre PSG, OM passe gratuitement',()=>{
  let s=init();s=bid(s,'PSG',5);s=pass(s,'OM');
- assert.equal(s.teams[1].refusals,1);assert.equal(s.teams[0].roster.length,1);
+ assert.equal(s.teams[1].refusals,0);assert.equal(s.teams[0].roster.length,1);
+ assert.equal(s.history.filter(x=>x.kind==='pass').at(-1).cost,0);
+});
+test('Après une offre OM, PSG passe gratuitement',()=>{
+ let s=init();s=pass(s,'PSG');s=bid(s,'OM',5);s=pass(s,'PSG');
+ assert.equal(s.teams[0].refusals,1); // Seul le premier refus est payant.
+ assert.equal(s.history.filter(x=>x.kind==='pass').at(-1).cost,0);
+});
+test('Même avec 5 refus épuisés, passer après une offre adverse reste gratuit',()=>{
+ let s=init();
+ for(let i=0;i<5;i++){s=pass(s,s.auction.turn);s=pass(s,s.auction.turn);}
+ assert.equal(s.teams[0].refusals,5);assert.equal(s.teams[1].refusals,5);
+ s=bid(s,s.auction.turn,5);
+ const passer=s.auction.turn,avant=s.teams.find(t=>t.club===passer).refusals;
+ s=pass(s,passer);
+ assert.equal(s.teams.find(t=>t.club===passer).refusals,avant);
+ assert.equal(s.history.filter(x=>x.kind==='pass').at(-1).cost,0);
 });
 test('Cinq refus maximum; sixième interdit',()=>{
  let s=init();for(let i=0;i<5;i++){s=pass(s,s.auction.turn);s=pass(s,s.auction.turn);}
