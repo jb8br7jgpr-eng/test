@@ -9,6 +9,7 @@ import {matchTacticalChoices,renderShotFaceOff,renderShotResult,renderReceiverCa
 import {renderSetPieceAction,isSetPieceKind} from './ui-set-piece.mjs';
 import {renderShootoutTracker} from './ui-shootout.mjs';
 import {renderFinalResult} from './ui-final.mjs';
+import {renderOnlineShootoutScreen} from './ui-shootout.mjs';
 import {renderOnlineMatchScreen} from './ui-match.mjs';
 import {setDisplayedClubs,visualAbbr} from './club-identities.mjs';
 
@@ -110,7 +111,7 @@ function matchStage(g,club,hostClub){
  if(g.phase==='finished'){
   // Le dernier tir est révélé avant le bilan final, même si le moteur
   // a déjà marqué la rencontre comme terminée.
-  if(g.match?.shootout?.lastResult)return board(m)+shootoutStage(g,club);
+  if(g.match?.shootout?.lastResult)return board(m)+renderOnlineShootoutScreen(g,{myClub:club,hostClub});
   return renderFinalResult(g);
  }
  if(g.phase==='half-time'||g.phase==='resume-ready'){
@@ -129,12 +130,8 @@ function matchStage(g,club,hostClub){
     '<p>Sur le terrain ci-dessous, place et valide uniquement les joueurs de ton club.</p>')+
    '</section></div>';
  }
- if(g.phase==='shootout-ready')
-  return board(m)+(club===hostClub?
-   stage('Égalité après 90 minutes','<p>Un lancer de pièce déterminera le premier tireur.</p>'+
-    btn('begin-shootout','🪙 Lancer la pièce et commencer')):
-   waiting(hostClub,'Le club hôte lance le départage aux tirs au but.'));
- if(g.phase==='shootout')return board(m)+shootoutStage(g,club);
+ if(g.phase==='shootout-ready'||g.phase==='shootout')
+  return board(m)+renderOnlineShootoutScreen(g,{myClub:club,hostClub});
  if(g.phase==='moment-result'){
   const result=m.lastResult;
   if(!result)return board(m)+stage('Résultat à venir','');
