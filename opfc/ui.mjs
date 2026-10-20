@@ -306,9 +306,9 @@ function sale(){
  '<strong class="bid-amount">'+(a.highestBid?fullBerrys(a.highestBid):'Aucune')+'</strong></div>'+
  '<div class="bid-leader">'+(a.highestClub?'En tête : <strong>'+esc(clubName(a.highestClub))+'</strong>':
  'Mise de départ : <strong>'+fullBerrys(min)+'</strong>')+'</div></div>'+
- '<div class="turn-banner"><div><span>AU TOUR DE</span><strong>'+esc(a.turn)+'</strong></div>'+
+ '<div class="turn-banner"><div><span>AU TOUR DE</span><strong>'+esc(visualAbbr(a.turn))+'</strong></div>'+
  '<div class="turn-budget">'+fullBerrys(t.budget)+'<br><span>disponibles</span></div></div>'+
- (a.king?'<p class="warning-copy">👑 Haki des Rois activé par '+a.king.holder+'.</p>':'')+
+ (a.king?'<p class="warning-copy">👑 Haki des Rois activé par '+esc(visualAbbr(a.king.holder))+'.</p>':'')+
  (a.solo?'<div class="solo-auction"><p>Une seule équipe recrute encore : prix fixe '+fullBerrys(5)+'.</p>'+
  '<button class="primary" data-action="solo">Recruter · '+fullBerrys(5)+'</button></div>':
  '<div class="offers">'+steps.map(step=>{
@@ -355,7 +355,7 @@ function fieldHalf(team,top){
  const spectator=onlineOwnClubScope!==null?
   (team.club!==onlineOwnClubScope||!['lineup','half-time'].includes(game.phase)):
   !['mercato','lineup','half-time'].includes(game.phase);
- const label='<div class="field-label '+team.club.toLowerCase()+'"><span>'+team.club+' · '+u.formation+
+ const label='<div class="field-label '+team.club.toLowerCase()+'"><span>'+esc(visualAbbr(team.club))+' · '+u.formation+
  '</span><span>'+u.entente+'/10 entente</span></div>';
  const lines=positions.map(pos=>'<div class="pitch-row pitch-row-'+pos.toLowerCase()+'">'+
   u.lineup.filter(p=>p.position===pos).map(p=>{
@@ -393,11 +393,11 @@ function pitch(){
  (placement?'<p class="placement-guidance">Recrue sélectionnée : <strong>'+esc(card(placement.cardId)?.name)+
  '</strong>. Touche une case de ton équipe pour la placer.</p>':
  '<div class="pitch-orientation"><span>Équipe en haut :</span>'+
- game.teams.map(t=>btn('pitch-view',t.club,(upper===t.club?'primary':'ghost')+' small',false,
+ game.teams.map(t=>btn('pitch-view',visualAbbr(t.club),(upper===t.club?'primary':'ghost')+' small',false,
  'data-club="'+t.club+'" aria-pressed="'+(upper===t.club)+'"')).join('')+'</div>')+
  '<p class="lineup-help">'+(spectator?
  'Compositions sur le terrain · les changements sont possibles uniquement à la mi-temps.':
- selection?'Sélection : '+esc(card(selection.id)?.name)+' · touche une case '+selection.club+' pour placer ou échanger.':
+ selection?'Sélection : '+esc(card(selection.id)?.name)+' · touche une case '+esc(visualAbbr(selection.club))+' pour placer ou échanger.':
  'Sélectionne une recrue puis touche une case de son club. Les cases occupées peuvent être échangées.')+'</p>'+
  '<div class="slot-field '+(placement?'slot-field-single':'slot-field-full')+'" data-top-club="'+upper+'">'+
  pitchMarkings()+fieldHalf(first,true)+(placement?'':'<div class="field-divider"></div>'+fieldHalf(other,false))+
@@ -412,7 +412,7 @@ function teamPanel(team){
  return '<section class="panel team-panel"><div class="team-heading"><h2>'+
  renderClubCrest(team.club,'team-crest')+esc(clubName(team.club))+
  '</h2><small>'+u.rosterCount+'/7</small></div><div class="team-tools"><span class="caption">Entente '+u.entente+'/10</span>'+
- '<select data-action="formation" data-club="'+team.club+'" aria-label="Formation '+team.club+'" '+(editable?'':'disabled')+'>'+
+ '<select data-action="formation" data-club="'+team.club+'" aria-label="Formation '+esc(visualAbbr(team.club))+'" '+(editable?'':'disabled')+'>'+
  options(FORMATION_NAMES,u.formation)+'</select></div><div class="chip-row">'+
  (roster.length?roster.map(player=>{
   const {cardId:id,card:info,position,rating,outOfPosition,placed}=player;
@@ -446,7 +446,7 @@ function placementPage(){
  const recruit=card(placement.cardId),ranks={DIA:'Diamant',OR:'Or',ARG:'Argent',BRZ:'Bronze'};
  return '<section class="panel placement-intro"><span class="eyebrow">Recrutement confirmé</span>'+
  '<div class="placement-summary">'+renderCharacterPortrait(placement.cardId,'placement-portrait')+
- '<div class="placement-summary-body"><h2>'+esc(recruit.name)+' rejoint '+placement.club+'</h2>'+
+ '<div class="placement-summary-body"><h2>'+esc(recruit.name)+' rejoint '+esc(clubName(placement.club))+'</h2>'+
  '<div class="placement-metadata"><span class="roster-position">'+recruit.position+'</span>'+
  '<span class="roster-rating">Note '+recruit.rating+'</span>'+
  '<span class="roster-tier tier-'+recruit.rarity.toLowerCase()+'">'+ranks[recruit.rarity]+'</span>'+
@@ -496,19 +496,19 @@ function popup(){
  if(!modal)return '';
  let body='';
  if(modal.type==='dice')body='<div class="big-symbol">🎲</div><h2>Départ du mercato</h2><p>'+game.dice.join(' contre ')+
- '</p><p>Premier club prioritaire : <strong>'+game.auction.priority+'</strong></p>'+
+ '</p><p>Premier club prioritaire : <strong>'+esc(clubName(game.auction.priority))+'</strong></p>'+
  btn('close','Commencer les enchères','primary full');
  if(modal.type==='sale'){
   const result=modal.result;
   body='<h2>'+(result.winner?'Recrue remportée !':'Carte invendue')+'</h2>'+
   '<div class="sale-reveal">'+renderCharacterPortrait(result.cardId,'sale-result-portrait')+
-  '<p><strong>'+esc(card(result.cardId)?.name)+'</strong> '+(result.winner?'rejoint '+result.winner+' pour '+result.price+' M.':'quitte ce mercato.')+'</p></div>'+
+  '<p><strong>'+esc(card(result.cardId)?.name)+'</strong> '+(result.winner?'rejoint '+esc(clubName(result.winner))+' pour '+result.price+' M.':'quitte ce mercato.')+'</p></div>'+
   btn('close','Continuer','primary full');
  }
  if(modal.type==='observation-pass')body='<div class="big-symbol">👁</div><h2>Choix secret</h2>'+
- '<p>Donne le téléphone au joueur <strong>'+modal.club+'</strong>, puis ouvre les cinq prochaines cartes.</p>'+
- btn('observation-show','Je suis '+modal.club+' · Voir','primary full');
- if(modal.type==='observation-show')body='<div class="big-symbol">👁</div><h2>Observation · '+modal.club+'</h2>'+
+ '<p>Donne le téléphone au joueur <strong>'+esc(visualAbbr(modal.club))+'</strong>, puis ouvre les cinq prochaines cartes.</p>'+
+ btn('observation-show','Je suis '+visualAbbr(modal.club)+' · Voir','primary full');
+ if(modal.type==='observation-show')body='<div class="big-symbol">👁</div><h2>Observation · '+esc(visualAbbr(modal.club))+'</h2>'+
  '<div class="preview-list">'+modal.ids.map((id,index)=>'<div class="preview-item"><span class="preview-main">'+
  '<small>'+(index+1)+'</small>'+renderCharacterPortrait(id,'preview-portrait')+
  esc(card(id)?.name)+'</span><strong>'+card(id)?.rating+'</strong></div>').join('')+'</div>'+

@@ -74,7 +74,7 @@ export function renderSetPieceAction(state,viewAction,{uncovered=false}={}){
  if(a.stage==='taker-choice'){
   const team=state.teams.find(t=>t.club===a.attacker);
   const ids=team?.slots??[];
-  return section('Choisis le tireur · '+a.attacker,
+  return section('Choisis le tireur · '+escape(visualAbbr(a.attacker)),
    '<p class="muted">Un des sept titulaires, gardien compris. Son choix sera annoncé avant les tactiques.</p>'+
    '<div class="match-choice-grid match-tactical-choices">'+ids.map(id=>
     '<button type="button" class="btn match-choice setpiece-taker" data-action="match-taker" data-card="'+escape(id)+'">'+
@@ -86,7 +86,7 @@ export function renderSetPieceAction(state,viewAction,{uncovered=false}={}){
   const attacking=a.stage==='attack-choice',role=attacking?'attack':'defense';
   const desc=attacking?'Choix offensif':'Réponse défensive';
   const actor=attacking?a.attacker:a.defender;
-  return section(desc+' · '+actor,
+  return section(desc+' · '+escape(visualAbbr(actor)),
    '<p class="muted">La tactique choisie est verrouillée. Elle reste invisible pour l’adversaire.</p>'+
    actorsFaceOff(state,a)+receiverCard(state,a)+
    choices(options[a.kind][role]),type);
@@ -106,7 +106,7 @@ export function renderSetPieceAction(state,viewAction,{uncovered=false}={}){
    button('match-continue-setpiece-duel','Continuer'),type);
  }
  if(a.stage==='corner-gesture-choice')
-  return section('Choisis la finition du corner · '+a.attacker,
+  return section('Choisis la finition du corner · '+escape(visualAbbr(a.attacker)),
    actorsFaceOff(state,a,{receiver:true})+
    '<p>Le réceptionneur choisit son geste. Aucun second choix du gardien.</p>'+
    receiverCard(state,a)+
