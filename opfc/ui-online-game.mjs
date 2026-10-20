@@ -137,7 +137,7 @@ function matchStage(g,club,hostClub){
   if(!result)return board(m)+stage('Résultat à venir','');
   const allowed=club===result.attacker;
   const detail=result.details??{};
-  const content=['goal','save','miss'].includes(result.outcome)?
+  const content=['goal','save','miss','stopped'].includes(result.outcome)?
    renderShotResult(g,{outcome:result.outcome,attacker:result.attacker,
     minute:result.minute,score:m.score,
     shooterId:result.scorerId??detail.finisherId??detail.takerId??null,
@@ -147,7 +147,7 @@ function matchStage(g,club,hostClub){
      (allowed?'':' disabled aria-disabled="true"'))
    :stage('Séquence terminée','<p>'+esc(result.outcome)+'</p>');
   return board(m)+content+(allowed?
-   (['goal','save','miss'].includes(result.outcome)?'':btn('continue-result','Continuer')):
+   (['goal','save','miss','stopped'].includes(result.outcome)?'':btn('continue-result','Continuer')):
    waiting(result.attacker,'Le club attaquant valide la séquence.'));
  }
  if(g.phase!=='match')return stage('Partie en cours','');
