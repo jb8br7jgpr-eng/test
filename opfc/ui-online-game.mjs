@@ -80,7 +80,8 @@ function visualMarket(g,club){
   '" '+(enabled?'':'disabled')+'><button type="button" class="btn-ghost" data-action="online-bid-custom"'+
   (enabled?'':' disabled')+'>Enchérir</button></div></div>'+
   '<button type="button" class="pass-btn" data-action="online-game" data-type="pass"'+
-  (canPass?'':' disabled')+'>'+esc(context.everOffered?'Arrêter d’enchérir (gratuit)':
+  (canPass?'':' disabled')+'>'+esc(a.highestBid>0?
+   (context.everOffered?'Arrêter d’enchérir (gratuit)':'Passer gratuitement · enchère adverse'):
    'Refuser ce personnage · '+Math.max(0,5-(team?.refusals??0))+'/5 restants')+'</button>'+
   '<div class="auction-hakis">'+
   '<button type="button" class="haki-btn" data-action="online-game" data-type="kings"'+

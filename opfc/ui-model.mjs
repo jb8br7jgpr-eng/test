@@ -13,10 +13,9 @@ export function uiAuction(state){
  const maximum=maxBid(team);
  const everOffered=a.offered.includes(team.club);
  const canBid=!a.solo&&maximum>=minimum&&!a.passed.includes(team.club);
- // Avant une offre, seuls les 5 refus limités sont consommés.
- // Les retraits pour impossibilité financière sont gérés par engine.mjs.
+ // Dès la première offre (même adverse), passer est gratuit, même à 5/5 refus.
  const canPass=!a.solo&&(!a.king||a.king.holder!==team.club||a.king.phase!=='open')&&
-   (everOffered||team.refusals<5||maximum<minimum);
+   (a.highestBid>0||team.refusals<5||maximum<minimum);
  const canKings=!a.solo&&!team.hakis.kings&&a.priority===team.club&&
    a.highestBid===0&&a.offered.length===0&&a.passed.length===0&&!a.king;
  return {auction:a,team,card:CARD_BY_ID.get(a.cardId),minimum,maximum,
