@@ -91,9 +91,10 @@ export function renderShotFaceOff(state,{shooterId,keeperId,attacker,defender,sh
 const RESULTS=Object.freeze({
  goal:{title:'BUUUUT !',detail:'Le ballon termine au fond des filets !',tone:'goal',tag:'⚽'},
  save:{title:'ARRÊT DU GARDIEN !',detail:'Le gardien repousse la frappe !',tone:'save',tag:'🧤'},
- miss:{title:'TIR MANQUÉ !',detail:'Le ballon ne trouve pas le cadre.',tone:'miss',tag:'✕'}
+ miss:{title:'TIR RATÉ !',detail:'Le ballon ne trouve pas le cadre !',tone:'miss',tag:'🎯'},
+ stopped:{title:'ATTAQUE STOPPÉE !',detail:"La défense interrompt l'offensive avant le tir.",tone:'stopped',tag:'🛡️'}
 });
-/** Rend UNIQUEMENT un résultat de frappe, jamais une action stoppée avant tir. */
+/** Écran premium unifié des buts, arrêts, tirs ratés et attaques stoppées. */
 export function renderShotResult(state,{outcome,attacker,minute,shooterId,keeperId,
  score,action='match-continue-result',continueLabel='Continuer',context='Résultat du tir',detailExtra=''}={}){
  const cfg=RESULTS[outcome];if(!cfg)return '';
@@ -117,6 +118,7 @@ export function renderShotResult(state,{outcome,attacker,minute,shooterId,keeper
   '<h2 class="shot-result-headline">'+cfg.title+'</h2>'+
   '<p class="shot-result-description">'+cfg.detail+'</p>'+
   (detailExtra?'<p class="shot-result-directions">'+h(detailExtra)+'</p>':'')+
+  (outcome==='stopped'?'<div class="shot-result-defense">🛡️ Défense de '+h(visualAbbr(defender))+' victorieuse</div>':'')+
   portrait+scoreboard+
   '<p class="shot-result-wait">Le résultat reste affiché jusqu’à validation.</p>'+
   '<button class="btn primary full" data-action="'+h(action)+'">'+h(continueLabel)+'</button></section>';
