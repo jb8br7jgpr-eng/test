@@ -281,8 +281,8 @@ function sale(){
  // Les incréments sont ceux du moteur OPFC : 1 M par palier, contrairement au jeu classique.
  const context=uiAuction(game),a=context.auction,t=context.team;
  const min=context.minimum,max=context.maximum,remaining=Math.max(0,5-t.refusals);
- const steps=[0,1,5,10],withdrawal=context.everOffered;
- const refusal=withdrawal?'Arrêter d’enchérir (gratuit)':
+ const steps=[0,1,5,10],withdrawal=context.everOffered,freePass=a.highestBid>0;
+ const refusal=freePass?(withdrawal?'Arrêter d’enchérir (gratuit)':'Passer gratuitement · enchère adverse'):
   context.canPass?'Refuser ce personnage · '+remaining+'/5 restants':
   '⛔ Plus de refus sans enchère disponibles';
  const kingInfo=t.hakis.kings?'Déjà utilisé':
@@ -321,9 +321,9 @@ function sale(){
  '👑 Haki des Rois<small>'+kingInfo+'</small></button>'+
  '<button class="extra-power" type="button" data-action="observation"'+
  (context.canObserve?'':' disabled')+'>👁 Observation<small>'+eyeInfo+'</small></button></div>'+
- '<p class="notice">'+(withdrawal?
- 'Se retirer après une mise ne consomme aucun refus.':
- 'Seul un refus avant la première offre consomme un de tes 5 refus.')+
+ '<p class="notice">'+(freePass?
+ 'Une enchère a été placée : passer est gratuit pour les deux joueurs.':
+ 'Sans enchère sur ce personnage, passer consomme un de tes 5 refus.')+
  '<span class="refusal-counter">Refus utilisés : <strong>'+t.refusals+'/5</strong>'+
  ' · Restants : <strong>'+remaining+'/5</strong></span></p>')+
  '</section></div>';
