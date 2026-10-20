@@ -55,7 +55,21 @@ export function dispatchShootout(state,command,{choice,rng=Math.random}={}){
   if(!pending)next.match.shootoutPending={
    club:p.club,shooterId:p.cardId,shotDirection:choice,keeperDirection:null
   };
-  else next.match.shootoutPending.keeperDirection=choice;
+  else{
+   next.match.shootoutPending.keeperDirection=choice;
+   // Même fonctionnement local et en ligne : résolution automatique
+   // après le dernier choix secret, sans bouton « Révéler et tirer ».
+   const pending=next.match.shootoutPending;
+   const resolved=advanceShootout(next,{
+    club:p.club,shooterId:p.cardId,
+    shotDirection:pending.shotDirection,keeperDirection:pending.keeperDirection,
+    draw:rng()
+   });
+   const latest=resolved.match.shootout.timeline.at(-1);
+   resolved.match.shootoutPending=null;
+   resolved.match.shootoutLastResult=structuredClone(latest);
+   return resolved;
+  }
   return next;
  }
  if(command==='shootout-reveal'){
