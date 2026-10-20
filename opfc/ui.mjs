@@ -330,7 +330,10 @@ function sale(){
  '<div class="turn-budget">'+fullBerrys(t.budget)+'<br><span>disponibles</span></div></div>'+
  (a.king?'<p class="warning-copy">👑 Haki des Rois activé par '+esc(visualAbbr(a.king.holder))+'.</p>':'')+
  (a.solo?'<div class="solo-auction"><p>Une seule équipe recrute encore : prix fixe '+fullBerrys(5)+'.</p>'+
- '<button class="primary" data-action="solo">Recruter · '+fullBerrys(5)+'</button></div>':
+ '<button type="button" class="btn primary full" data-action="solo">Recruter · '+fullBerrys(5)+'</button>'+
+ '<button type="button" class="btn ghost full" data-action="pass"'+(context.canPass?'':' disabled')+'>'+
+ (context.canPass?'Refuser ce personnage · '+remaining+'/5 restants':'⛔ Refus épuisés · recrutement obligatoire')+
+ '</button><p class="caption">Refus utilisés : '+t.refusals+'/5. Le refus passe à la carte suivante.</p></div>':
  '<div class="offers">'+steps.map(step=>{
   const amount=min+step;
   return '<button class="offer-btn" type="button" data-action="bid-quick" data-amount="'+amount+
@@ -382,8 +385,9 @@ function fieldHalf(team,top){
    const active=selection?.club===team.club&&selection?.id===p.cardId;
    const viewOnly=spectator&&!!p.cardId;
    const action=viewOnly?'inspect-player':'slot';
-   const aria=p.card?.name?pos+' · '+p.card.name+' · note effective '+p.rating+
-     (p.outOfPosition?' · hors poste':'')+', ouvrir sa fiche':pos+' · emplacement libre';
+   const aria=p.card?.name?pos+' · '+p.card.name+' · poste naturel '+p.card.position+
+     ' · note effective '+p.rating+(p.outOfPosition?' · hors poste':'')+
+     (spectator?' · ouvrir sa fiche':' · sélectionner ou échanger'):pos+' · emplacement libre';
    return '<button type="button" class="pitch-player '+(p.cardId?'':'empty')+' '+(active?'selected':'')+
     '" data-action="'+action+'" data-club="'+team.club+'" data-slot="'+p.slot+'"'+
     (viewOnly?' data-card="'+esc(p.cardId)+'"':'')+' aria-label="'+esc(aria)+'"'+
@@ -393,7 +397,9 @@ function fieldHalf(team,top){
     '<span class="pitch-player-badges"><span class="position">'+pos+'</span>'+
     (p.rating===null?'':'<span class="rating">'+p.rating+'</span>')+
     (p.outOfPosition?'<span class="out" title="Hors poste" aria-label="Hors poste">!</span>':'')+
-    '</span></button>';
+    '</span>'+
+    (p.card?'<span class="pitch-player-natural">Préf. '+esc(p.card.position)+'</span>':'')+
+    '</button>';
   }).join('')+'</div>').join('');
  return '<div class="field-half '+(top?'field-half-top':'field-half-bottom')+'">'+
  (top?label:'')+lines+(top?'':label)+'</div>';
@@ -418,7 +424,7 @@ function pitch(){
  '<p class="lineup-help">'+(spectator?
  'Compositions sur le terrain · les changements sont possibles uniquement à la mi-temps.':
  selection?'Sélection : '+esc(card(selection.id)?.name)+' · touche une case '+esc(visualAbbr(selection.club))+' pour placer ou échanger.':
- 'Sélectionne une recrue puis touche une case de son club. Les cases occupées peuvent être échangées.')+'</p>'+
+ 'Touche deux joueurs sur le terrain pour échanger leurs places, ou choisis une recrue puis une case. Poste préféré visible sous chaque portrait.')+'</p>'+
  '<div class="slot-field '+(placement?'slot-field-single':'slot-field-full')+'" data-top-club="'+upper+'">'+
  pitchMarkings()+fieldHalf(first,true)+(placement?'':'<div class="field-divider"></div>'+fieldHalf(other,false))+
  '</div></section>';
@@ -440,13 +446,15 @@ function teamPanel(team){
   const chosen=selection?.club===team.club&&selection?.id===id;
   const selectable=editable ||(placement&&placement.club===team.club&&placement.cardId===id);
   const listAction=selectable?'pick':'inspect-player';
-  const label=info.name+' · '+displayPosition+(placed?' · note effective '+displayRating:' · note à définir')+
+  const label=info.name+' · poste naturel '+info.position+' · poste occupé '+displayPosition+
+   (placed?' · note effective '+displayRating:' · note à définir')+
    (outOfPosition?' · hors poste':'')+' · '+ranks[info.rarity];
   return '<button class="team-chip '+(chosen?'selected':'')+'" data-action="'+listAction+'" data-club="'+team.club+
    '" data-card="'+esc(id)+'" aria-pressed="'+!!chosen+'" aria-label="'+esc(label)+'">'+
    renderCharacterPortrait(id,'chip-portrait')+
    '<span class="team-chip-content"><span class="team-chip-name">'+esc(info.name)+'</span>'+
-   '<span class="team-chip-details"><span class="roster-position">'+displayPosition+'</span>'+
+   '<span class="team-chip-details"><span class="roster-natural">Préf. '+info.position+'</span>'+
+   '<span class="roster-position">'+(placed?'Joue '+displayPosition:'À placer')+'</span>'+
    '<span class="roster-rating" title="'+(placed?'Note effective':'Note après placement')+'">'+displayRating+'</span>'+
    (outOfPosition?'<span class="roster-warning" title="Hors poste" aria-label="Hors poste">! Hors poste</span>':'')+
    '<span class="roster-tier tier-'+info.rarity.toLowerCase()+'">'+ranks[info.rarity]+'</span></span></span>'+
@@ -592,6 +600,11 @@ function render(){
 function change(fn){
  const before=game,next=fn(before),end=before.phase==='mercato'?currentAuctionEnding(before,next):null;
  game=next;error='';selection=null;
+ // La dernière recrue étant déjà sur le terrain, afficher directement
+ // les compositions sans laisser un ancien verrou de placement actif.
+ if(placement&&game.phase==='lineup'&&game.teams.find(t=>t.club===placement.club)?.slots.includes(placement.cardId)){
+   placement=null;teamsVisible=true;
+ }
  if(teamsVisible&&!placement&&before.phase==='mercato'&&next.phase==='mercato'&&
    before.auction?.turn!==next.auction?.turn)
    pitchClub=next.auction.turn;
@@ -736,10 +749,15 @@ function clicked(button){
   if(selection){
    if(selection.club!==club)throw Error('Tu ne peux déplacer que tes propres joueurs.');
    const id=selection.id;change(s=>place(s,club,id,slot));
-  }else if(team?.slots[slot]){modal={type:'card',id:team.slots[slot]};render();}
+  }else if(team?.slots[slot]){selection={club,id:team.slots[slot]};render();}
   return;
  }
- if(action==='ready'){change(s=>ready(s,club));return;}
+ if(action==='ready'){
+  // Compatibilité des parties enregistrées avec un dernier placement terminé.
+  if(placement&&game.phase==='lineup'&&game.teams.find(t=>t.club===placement.club)?.slots.includes(placement.cardId))
+   placement=null;
+  change(s=>ready(s,club));return;
+ }
 }
 app.addEventListener('click',event=>{
  const target=event.target.closest('button[data-action]');
