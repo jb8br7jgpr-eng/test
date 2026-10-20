@@ -59,7 +59,7 @@ export function renderReceiverCard(state,{receiverId,club,possible=false}={}){
   '<div class="receiver-card-portrait">'+renderCharacterPortrait(receiverId,'receiver-portrait')+'</div>'+
   '<div class="receiver-card-content"><span class="receiver-card-label">⚽ '+caption+'</span>'+
   '<strong class="receiver-card-name">'+h(name)+'</strong>'+
-  '<div class="receiver-card-details"><span class="receiver-card-club">'+h(club)+'</span>'+
+  '<div class="receiver-card-details"><span class="receiver-card-club">'+h(visualAbbr(club))+'</span>'+
   '<span class="receiver-card-position">'+h(playing.position)+'</span>'+
   '<span class="receiver-card-rating">NOTE '+playing.rating+'</span>'+
   (playing.outOfPosition?'<span class="receiver-card-warning">! Hors poste</span>':'')+
@@ -73,7 +73,7 @@ export function renderShotFaceOff(state,{shooterId,keeperId,attacker,defender,sh
   const name=original?.name??id,position=actual?.position??original?.position??'?',
    rating=actual?.rating??original?.rating??'—';
   return '<div class="match-duelist '+h(club.toLowerCase())+'">'+
-   '<span class="match-duelist-team">'+h(club)+' · '+h(role)+'</span>'+
+   '<span class="match-duelist-team">'+h(visualAbbr(club))+' · '+h(role)+'</span>'+
    renderCharacterPortrait(id,'faceoff-portrait')+
    '<strong class="match-duelist-name">'+h(name)+'</strong>'+
    '<div class="match-duelist-badges"><span class="match-duelist-position">'+h(position)+'</span>'+
