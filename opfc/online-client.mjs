@@ -5,7 +5,7 @@
  */
 import {normalizeRoomCode,validateClub,validateSessionToken,validateRoomId,ONLINE_PROTOCOL_VERSION} from './online-protocol.mjs';
 import {OPFC_ONLINE_API_URL,OPFC_ONLINE_PUBLISHABLE_KEY} from './online-config.mjs';
-import {chooseClubPair,validateDisplayClub} from './club-identities.mjs';
+import {chooseClubPair,validateDisplayClub,isDisplayClub} from './club-identities.mjs';
 
 export const ONLINE_SESSION_KEY='opfc-v1-online-session';
 const FORBIDDEN_PROJECTS=['nezqupnhcqwuewfilioa','lrmgtnbxujdvswaykyxi'];
@@ -80,6 +80,9 @@ export function createOnlineClient({
   if(!Array.isArray(payload.dice)||payload.dice.length!==2||
    payload.teams.some(t=>!t||!['PSG','OM'].includes(t.club)))
    fail('Vue de partie incohérente');
+  const identities=payload.teams.map(t=>t.identityId??t.club);
+  if(identities.some(id=>!isDisplayClub(id))||identities[0]===identities[1])
+   fail('Identités de clubs reçues incohérentes');
   if(withMatch){
    const m=payload.match;
    const matchFields=['index','minute','score','statistics','goals',
