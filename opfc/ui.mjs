@@ -89,7 +89,7 @@ async function onlineGameClicked(action,button){
  if(['amount-min','amount-max','amount-plus'].includes(action)){
   const input=document.getElementById('bid-value'),context=uiAuction(snapshot);
   if(!input||!context)return;
-  const raw=Number(String(input.value).replace(/[\\s\\u00a0\\u202f]/g,''))/1000000;
+  const raw=Number(String(input.value).replace(/[\s\u00a0\u202f]/g,''))/1000000;
   const selected=action==='amount-min'?context.minimum:action==='amount-max'?context.maximum:
    Math.min(context.maximum,Math.max(context.minimum,(Number.isFinite(raw)?raw:context.minimum)+5));
   input.value=String(Math.round(selected)*1000000);return;
@@ -98,8 +98,8 @@ async function onlineGameClicked(action,button){
   if(snapshot.phase!=='mercato'||snapshot.auction?.turn!==club)throw Error('Ce n’est pas ton tour');
   let amount=Number(button.dataset.amount);
   if(action==='bid'){
-   const raw=String(document.getElementById('bid-value')?.value??'').replace(/[\\s\\u00a0\\u202f]/g,'');
-   if(!/^\\d+$/.test(raw)||Number(raw)%1000000!==0)
+   const raw=String(document.getElementById('bid-value')?.value??'').replace(/[\s\u00a0\u202f]/g,'');
+   if(!/^\d+$/.test(raw)||Number(raw)%1000000!==0)
     throw Error('Offre invalide : montant entier en millions de Berrys');
    amount=Number(raw)/1000000;
   }
@@ -119,7 +119,9 @@ async function onlineGameClicked(action,button){
    throw Error('Carte absente de ton équipe');
   const pending=onlinePending(snapshot);
   if(pending?.club===club&&pending.id!==cardId)throw Error('Place d’abord ta nouvelle recrue');
-  onlineSelection=onlineSelection?.id===cardId?null:{club,id:cardId};
+  if(onlineSelection?.club===club&&onlineSelection.id===cardId){
+   modal={type:'card',id:cardId};onlineSelection=null;
+  }else onlineSelection={club,id:cardId};
   render();return;
  }
  if(action==='inspect-player'){
@@ -136,6 +138,10 @@ async function onlineGameClicked(action,button){
   const pending=onlinePending(snapshot);
   // Un nouveau joueur non placé doit toujours passer avant une ancienne sélection.
   const selected=pending?.club===club?{club,id:pending.id}:onlineSelection;
+  const touched=snapshot.teams.find(t=>t.club===club)?.slots[slot];
+  if(!pending&&selected?.club===club&&selected.id===touched){
+   modal={type:'card',id:touched};onlineSelection=null;render();return;
+  }
   if(!selected||selected.club!==club){
    const chosen=snapshot.teams.find(t=>t.club===club).slots[slot];
    if(chosen){onlineSelection={club,id:chosen};render();}
@@ -247,6 +253,13 @@ async function onlineClicked(action,button){
    onlineStage='room';
    try{await onlineClient.refreshRoom();}catch{ /* reprise par actualisation automatique */ }
   });return;
+ }
+ if(action==='online-exit-finished'){
+  if(onlineClient.game?.phase!=='finished'||onlineClient.game?.match?.shootout?.lastResult)
+   throw Error('Attends la fin de la partie avant de quitter');
+  stopOnlinePoll();onlineClient.leaveDevice();onlineVisible=false;onlineStage='choose';
+  entryView='modes';onlineModal=null;modal=null;onlineSeenRoom=null;onlineSeenAuctionCard=null;
+  onlineSelection=null;onlineError='';render();return;
  }
  if(action==='online-modal-continue'){onlineModal=null;render();return;}
  if(action==='online-room-details'){onlineRoomDetails=!onlineRoomDetails;render();return;}
@@ -573,8 +586,9 @@ function matchPage(){
  '<div class="match-team-overview-heading"><span>⚽ TERRAIN ET COMPOSITIONS</span>'+
  '<small>'+ (game.phase==='half-time'?'Modifications autorisées à la mi-temps':'Effectifs des deux équipes')+'</small></div>'+
  teams()+'</section>';
- return shell()+'<main class="ready-layout">'+middle+overview+
- '<div class="gameplay-nav"><span class="caption">Grandline Cup · Mode local</span>'+btn('confirm-reset','Nouvelle partie','ghost small')+'</div></main>';
+ return shell()+'<main class="ready-layout">'+middle+
+ (game.phase==='finished'?btn('exit-finished-local','← Quitter la partie et revenir au menu','ghost full'):'')+
+ overview+'<div class="gameplay-nav"><span class="caption">Grandline Cup · Mode local</span>'+btn('confirm-reset','Nouvelle partie','ghost small')+'</div></main>';
 }
 function popup(){
  if(!modal)return '';
@@ -753,6 +767,8 @@ function render(){
   (showingGame?(['mercato','lineup','kickoff-ready'].includes(snapshot.phase)?onlineSharedMarket(snapshot):
    '<main class="online-game-content opfc-online-playing">'+
    renderOnlineGame(snapshot,{myClub:room.myClub,hostClub:room.hostClub})+
+   (snapshot.phase==='finished'&&!snapshot.match?.shootout?.lastResult?
+     btn('online-exit-finished','← Quitter la partie et revenir au menu','ghost full'):'')+
    (['match','moment-result','half-time','resume-ready','shootout-ready','shootout','finished'].includes(snapshot.phase)?
     onlineTeams():'')+'</main>'):'');
  app.innerHTML=(onlineVisible?onlineDisplay:entryView==='modes'?modeChooser():entryView==='local'?welcome():game?
@@ -785,6 +801,10 @@ function start(){
 function clicked(button){
  const action=button.dataset.action,club=button.dataset.club;
  if(action==='open-local'){entryView='local';error='';render();return;}
+ if(action==='exit-finished-local'){
+  if(game?.phase!=='finished')throw Error('La partie n’est pas terminée');
+  entryView='modes';modal=null;selection=null;error='';render();return;
+ }
  if(action==='back-modes'){entryView='modes';error='';render();return;}
  if(action==='online'){
   entryView='modes';onlineVisible=true;onlineStage=onlineClient.hasSession?(onlineClient.room?'room':'restore'):'choose';
@@ -905,8 +925,9 @@ function clicked(button){
   const id=button.dataset.card;
   if(placement&&(club!==placement.club||id!==placement.cardId))
    throw Error('Place d’abord la nouvelle recrue avant de modifier un autre joueur.');
-  selection=placement?{club:placement.club,id:placement.cardId}:
-   (selection?.club===club&&selection.id===id?null:{club,id});
+  if(!placement&&selection?.club===club&&selection.id===id){
+   modal={type:'card',id};selection=null;
+  }else selection=placement?{club:placement.club,id:placement.cardId}:{club,id};
   pitchClub=club;render();return;
  }
  if(action==='slot'){
@@ -915,7 +936,10 @@ function clicked(button){
   pitchClub=club;
   if(selection){
    if(selection.club!==club)throw Error('Tu ne peux déplacer que tes propres joueurs.');
-   const id=selection.id;change(s=>place(s,club,id,slot));
+   const id=selection.id;
+   if(!placement&&team?.slots[slot]===id){
+    modal={type:'card',id};selection=null;render();
+   }else change(s=>place(s,club,id,slot));
   }else if(team?.slots[slot]){selection={club,id:team.slots[slot]};render();}
   return;
  }
