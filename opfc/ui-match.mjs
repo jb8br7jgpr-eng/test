@@ -11,6 +11,7 @@ import {beginOpenPlayAction,lockOpenPlayChoice,revealOpenPlayDuel,continueOpenPl
 import {isSetPieceKind,setPieceTurnOwner,dispatchSetPieceMatch,renderSetPieceAction} from './ui-set-piece.mjs';
 import {shootoutTurnOwner,dispatchShootout,renderShootoutScreen} from './ui-shootout.mjs';
 import {renderFinalResult} from './ui-final.mjs';
+import {setDisplayedClubs,visualName,visualAbbr} from './club-identities.mjs';
 import {matchTacticalChoices,renderShotFaceOff,renderShotResult,renderReceiverCard,matchKeeperId} from './ui-match-widgets.mjs';
 
 const html=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -81,12 +82,12 @@ export function dispatchOpenMatch(state,command,{choice,takerId,rng=Math.random}
  throw Error('Commande de match inconnue');
 }
 function scoreBoard(m){
- return '<div class="match-scoreboard"><div>'+renderClubCrest('PSG','score-crest')+'<small>Pirates Saint-Grandline</small></div>'+
+ return '<div class="match-scoreboard"><div>'+renderClubCrest('PSG','score-crest')+'<small>'+html(visualName('PSG'))+'</small></div>'+
  '<div class="match-score"><strong>'+m.score.PSG+' – '+m.score.OM+'</strong><span>'+m.minute+'e minute</span></div>'+
- '<div>'+renderClubCrest('OM','score-crest')+'<small>Olympique de MaryGeoise</small></div></div>';
+ '<div>'+renderClubCrest('OM','score-crest')+'<small>'+html(visualName('OM'))+'</small></div></div>';
 }
 function scoreStats(m){
- return '<div class="match-mini-stats">'+['PSG','OM'].map(id=>'<div><strong>'+id+'</strong><span>'+
+ return '<div class="match-mini-stats">'+['PSG','OM'].map(id=>'<div><strong>'+html(visualAbbr(id))+'</strong><span>'+
  m.statistics[id].shots+' tirs · '+m.statistics[id].onTarget+' cadrés</span></div>').join('')+'</div>';
 }
 /** Le contexte de l'occasion provient du moteur existant, jamais d'une estimation UI. */
@@ -94,10 +95,10 @@ function attackBanner(attacker,context,kind,minute){
  if(!['PSG','OM'].includes(attacker))return '';
  const defense=attacker==='PSG'?'OM':'PSG';
  const quality=QUALITY[context];
- return '<section class="match-attack-banner '+attacker.toLowerCase()+'" aria-label="Équipe attaquante : '+attacker+'">'+
- '<div class="match-attack-teams"><div class="match-attacking-team"><span>⚽ À L’ATTAQUE</span><strong>'+attacker+'</strong></div>'+
+ return '<section class="match-attack-banner '+attacker.toLowerCase()+'" aria-label="Équipe attaquante : '+html(visualAbbr(attacker))+'">'+
+ '<div class="match-attack-teams"><div class="match-attacking-team"><span>⚽ À L’ATTAQUE</span><strong>'+html(visualAbbr(attacker))+'</strong></div>'+
  '<div class="match-attack-arrow" aria-hidden="true">→</div>'+
- '<div class="match-defending-team"><span>EN DÉFENSE</span><strong>'+defense+'</strong></div></div>'+
+ '<div class="match-defending-team"><span>EN DÉFENSE</span><strong>'+html(visualAbbr(defense))+'</strong></div></div>'+
  '<div class="match-action-type '+(quality?'type-'+quality.tone:'type-neutral')+'">'+
  (quality?'<strong>'+quality.icon+' '+quality.label+'</strong><small>'+quality.detail+'</small>':
  '<strong>'+html(ACTION_LABEL[kind]??'Action en cours')+'</strong><small>'+html(minute)+'e minute</small>')+
@@ -128,7 +129,7 @@ function faceOff(state,left,right,leftLabel,rightLabel,attacker,defender){
   const slot=player?.position??original?.position??'?';
   const rating=player?.rating??original?.rating??'—';
   return '<div class="match-duelist '+(club==='PSG'?'psg':'om')+'">'+
-   '<span class="match-duelist-team">'+club+' · '+html(role)+'</span>'+
+   '<span class="match-duelist-team">'+html(visualAbbr(club))+' · '+html(role)+'</span>'+
    renderCharacterPortrait(id,'faceoff-portrait')+
    '<strong class="match-duelist-name">'+html(name(id))+'</strong>'+
    '<div class="match-duelist-badges"><span class="match-duelist-position">'+html(slot)+'</span>'+
@@ -226,7 +227,7 @@ function halftimeView(state,m){
  const statuses=state.teams.map(t=>
   '<div class="halftime-team-status '+(t.ready?'is-ready':'is-pending')+'">'+
   '<span class="halftime-status-symbol" aria-hidden="true">'+(t.ready?'✓':'◷')+'</span>'+
-  '<span><strong>'+html(t.club)+'</strong> : '+
+  '<span><strong>'+html(visualAbbr(t.club))+'</strong> : '+
    (t.ready?'✓ composition validée':'composition à valider')+'</span></div>'
  ).join('');
  return '<div class="halftime-screen">'+
@@ -236,7 +237,7 @@ function halftimeView(state,m){
   '</header>'+scoreBoard(m)+
   '<section class="panel halftime-stats" aria-label="Bilan de la première période">'+
    '<h3>📊 Bilan de la première période</h3>'+
-   '<div class="halftime-stats-heading"><strong>PSG</strong><span>Statistiques officielles</span><strong>OM</strong></div>'+
+   '<div class="halftime-stats-heading"><strong>'+html(visualAbbr('PSG'))+'</strong><span>Statistiques officielles</span><strong>'+html(visualAbbr('OM'))+'</strong></div>'+
    '<div class="halftime-stat-rows">'+rows+'</div>'+
   '</section>'+
   '<section class="panel halftime-tactics" aria-label="Ajustements tactiques à la mi-temps">'+
@@ -249,6 +250,7 @@ function halftimeView(state,m){
   '</section></div>';
 }
 export function renderMatchScreen(state,{uncovered=false}={}){
+ if(state?.teams)setDisplayedClubs(state.teams);
  if(state?.phase==='kickoff-ready')return '<section class="panel match-stage">'+
   '<span class="eyebrow">Grandline Cup · Avant-match</span><h2>Les équipes sont prêtes !</h2>'+
   '<p>Sept joueurs de chaque côté. Les compositions se verrouillent au coup d’envoi.</p>'+

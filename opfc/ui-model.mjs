@@ -2,6 +2,7 @@
 import {CARD_BY_ID} from './catalog.mjs';
 import {formationPositions,effectiveRating,chemistry,lineupDetails} from './rules.mjs';
 import {maxBid} from './engine.mjs';
+import {visualName} from './club-identities.mjs';
 
 const other=id=>id==='PSG'?'OM':'PSG';
 export const FORMATION_NAMES=Object.freeze(['2-2-2','2-3-1','1-2-3','3-2-1','1-3-2','2-1-3','3-1-2']);
@@ -71,8 +72,5 @@ export function currentAuctionEnding(before,after){
   after.history.slice(before.history.length).some(e=>e.kind==='auction-end')?
    after.lastResult:null;
 }
-export function clubName(id){
- return id==='PSG'?'Pirates Saint-Grandline':
-  id==='OM'?'Olympique de MaryGeoise':'Club inconnu';
-}
+export function clubName(id){return visualName(id);}
 export function opponent(id){return other(id);}

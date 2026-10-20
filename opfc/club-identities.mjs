@@ -1,0 +1,60 @@
+/**
+ * OPMercato FC — identités VISUELLES des clubs.
+ * Les identifiants PSG et OM demeurent les deux positions techniques du moteur.
+ * Les choix de club ne modifient jamais les règles ni les scores.
+ */
+const entries=[
+ ['PSG','Pirates Saint-Grandline','#112c59','#ba1738','#ffffff'],
+ ['OM','Olympique de MaryGeoise','#ffffff','#60b9db','#c4a062'],
+ ['BDW','Bayern de Wano','#c12d40','#ffffff','#192e73'],
+ ['SPJ','Sporting Jaya','#177d58','#ffffff','#c8d4bf'],
+ ['WSC','Water Seven City','#72c3e1','#ffffff','#173653'],
+ ['AWC','AC Whole Cake','#20212a','#f04f5c','#ffffff'],
+ ['SU','Sabaody United','#b82b39','#dfb45c','#ffffff'],
+ ['RM','Real Marineford','#f3f1eb','#b38d45','#7860b6'],
+ ['LFC','Loguetown FC','#ad293b','#ffffff','#e2b75f'],
+ ['BDR','Borussia Dressrosa','#f4d42e','#171717','#ffffff']
+];
+export const DISPLAY_CLUBS=Object.freeze(entries.map(([id,name,primary,secondary,accent])=>
+ Object.freeze({id,name,primary,secondary,accent})));
+export const DISPLAY_BY_ID=new Map(DISPLAY_CLUBS.map(x=>[x.id,x]));
+export const SLOT_IDS=Object.freeze(['PSG','OM']);
+export const DEFAULT_IDENTITIES=Object.freeze({PSG:'PSG',OM:'OM'});
+export const isDisplayClub=id=>typeof id==='string'&&DISPLAY_BY_ID.has(id);
+export const displayClub=id=>DISPLAY_BY_ID.get(id)??null;
+export function validateDisplayClub(id){
+ if(!isDisplayClub(id))throw Error('Club sélectionné invalide');
+ return id;
+}
+export function chooseClubPair(psg='PSG',om='OM'){
+ validateDisplayClub(psg);validateDisplayClub(om);
+ if(psg===om)throw Error('Les deux joueurs doivent choisir des clubs différents');
+ return Object.freeze({PSG:psg,OM:om});
+}
+export function currentClubChoices(teams){
+ const result={...DEFAULT_IDENTITIES};
+ if(!Array.isArray(teams))return result;
+ for(const team of teams){
+  if(SLOT_IDS.includes(team?.club)&&isDisplayClub(team?.identityId))
+   result[team.club]=team.identityId;
+ }
+ // Repli ancien format (partie commencée avant l'ajout des clubs).
+ if(result.PSG===result.OM)return {...DEFAULT_IDENTITIES};
+ return result;
+}
+let displayChoices={...DEFAULT_IDENTITIES};
+export function setDisplayedClubs(teams){
+ displayChoices=currentClubChoices(teams);
+ return displayChoices;
+}
+export function setDisplayedChoices(choices){
+ if(!choices)return setDisplayedClubs(null);
+ displayChoices=chooseClubPair(choices.PSG,choices.OM);
+ return displayChoices;
+}
+export function visualClub(slot){
+ const id=displayChoices[slot]??slot;
+ return DISPLAY_BY_ID.get(id)??DISPLAY_BY_ID.get(slot)??null;
+}
+export const visualName=slot=>visualClub(slot)?.name??'Club inconnu';
+export const visualAbbr=slot=>visualClub(slot)?.id??'—';

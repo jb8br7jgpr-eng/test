@@ -4,6 +4,7 @@
  * Le monogramme n'est qu'un secours si une image ne charge pas.
  */
 import {CARD_BY_ID} from './catalog.mjs';
+import {visualClub} from './club-identities.mjs';
 
 const PORTRAIT_NAMES=Object.freeze({
  'luffy':'luffy',
@@ -72,9 +73,18 @@ export function renderCharacterPortrait(id,cssClass=''){
   '</span>';
 }
 export function renderClubCrest(club,cssClass=''){
- const om=club==='OM';
- return '<span class="club-crest '+(om?'om':'psg')+' '+h(cssClass)+'" aria-hidden="true">'+
-  '<span class="club-crest-top">'+(om?'OLYMPIQUE':'PIRATES')+'</span>'+
-  '<strong>'+(om?'OM':'PSG')+'</strong>'+
-  '<span class="club-crest-bottom">'+(om?'MARYGEOISE':'GRANDLINE')+'</span></span>';
+ const identity=visualClub(club);
+ const words=identity?.name.split(' ')??['CLUB','INCONNU'];
+ const top=words.slice(0,-1).join(' ').toUpperCase();
+ const bottom=words.at(-1).toUpperCase();
+ const primary=identity?.primary??'#112c59',secondary=identity?.secondary??'#ffffff';
+ const n=parseInt(primary.slice(1),16);
+ const light=((n>>16)&255)*.299+((n>>8)&255)*.587+(n&255)*.114>165;
+ const ink=light?'#122336':'#ffffff';
+ const style='color:'+ink+';background:linear-gradient(145deg,'+primary+','+secondary+')';
+ return '<span class="club-crest '+h(club.toLowerCase())+' '+h(cssClass)+
+  '" style="'+style+'" aria-label="'+h(identity?.name??'Club')+'">'+
+  '<span class="club-crest-top">'+h(top)+'</span>'+
+  '<strong>'+h(identity?.id??club)+'</strong>'+
+  '<span class="club-crest-bottom">'+h(bottom)+'</span></span>';
 }

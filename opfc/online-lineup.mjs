@@ -18,7 +18,7 @@ function secureRng(){
 }
 function copyTeam(team){
  return {
-  club:team.club,budget:team.budget,refusals:team.refusals,
+  club:team.club,identityId:team.identityId??team.club,budget:team.budget,refusals:team.refusals,
   roster:[...team.roster],formation:team.formation,
   slots:[...team.slots],ready:team.ready,
   hakis:{observation:!!team.hakis.observation,kings:!!team.hakis.kings}

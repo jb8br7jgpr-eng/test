@@ -30,7 +30,7 @@ function safeCardList(ids){
 }
 function safeTeam(team){
  return {
-  club:team.club,budget:team.budget,refusals:team.refusals,
+  club:team.club,identityId:team.identityId??team.club,budget:team.budget,refusals:team.refusals,
   roster:safeCardList(team.roster),formation:team.formation,
   slots:[...team.slots],ready:team.ready,
   hakis:{observation:Boolean(team.hakis?.observation),kings:Boolean(team.hakis?.kings)}

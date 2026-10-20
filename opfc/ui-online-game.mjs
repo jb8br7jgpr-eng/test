@@ -9,6 +9,7 @@ import {matchTacticalChoices,renderShotFaceOff,renderShotResult,renderReceiverCa
 import {renderSetPieceAction,isSetPieceKind} from './ui-set-piece.mjs';
 import {renderShootoutTracker} from './ui-shootout.mjs';
 import {renderFinalResult} from './ui-final.mjs';
+import {setDisplayedClubs,visualAbbr} from './club-identities.mjs';
 
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const other=c=>c==='PSG'?'OM':'PSG';
@@ -18,7 +19,7 @@ const btn=(type,label,disabled=false,extra='',kind='primary full')=>
  '<button type="button" class="btn '+kind+'" data-action="online-game" data-type="'+esc(type)+'" '+
  extra+(disabled?' disabled aria-disabled="true"':'')+'>'+esc(label)+'</button>';
 const waiting=(club,text='')=>'<section class="panel online-turn-wait" role="status">'+
- '<span class="eyebrow">Synchronisation à deux téléphones</span><h2>⏳ Au tour de '+esc(club)+'</h2>'+
+ '<span class="eyebrow">Synchronisation à deux téléphones</span><h2>⏳ Au tour de '+esc(visualAbbr(club))+'</h2>'+
  '<p>'+esc(text||"L'autre téléphone choisit sa prochaine action.")+'</p>'+
  '<p class="caption">Le jeu s’actualise automatiquement.</p></section>';
 const stage=(title,inner)=>'<section class="panel match-stage online-match-stage"><h2>'+
@@ -107,7 +108,7 @@ function matchStage(g,club,hostClub){
  }
  if(g.phase==='half-time'||g.phase==='resume-ready'){
   const status=g.teams.map(t=>'<span class="halftime-team-status '+(t.ready?'is-ready':'is-pending')+'">'+
-   (t.ready?'✓':'◷')+' '+esc(t.club)+' : '+(t.ready?'prêt':'en préparation')+'</span>').join('');
+   (t.ready?'✓':'◷')+' '+esc(visualAbbr(t.club))+' : '+(t.ready?'prêt':'en préparation')+'</span>').join('');
   const stats=['shots','onTarget','saves'].map((k,i)=>'<div class="halftime-stat-row">'+
    '<strong>'+m.statistics.PSG[k]+'</strong><span>'+['Tirs','Tirs cadrés','Arrêts'][i]+
    '</span><strong>'+m.statistics.OM[k]+'</strong></div>').join('');
@@ -205,7 +206,7 @@ function shootoutStage(g,club){
  const tracker=renderShootoutTracker({...s,attempts});
  const history='<section class="panel shootout-log"><h3 class="section-title">Historique des tentatives</h3>'+
   (s.timeline.length?s.timeline.map(t=>
-   '<div class="shootout-attempt"><span class="shootout-attempt-club">'+esc(t.club)+'</span>'+
+   '<div class="shootout-attempt"><span class="shootout-attempt-club">'+esc(visualAbbr(t.club))+'</span>'+
    '<span class="shootout-kick-player">'+renderCharacterPortrait(t.shooterId,'kick-portrait')+
    esc(name(t.shooterId))+'</span><strong class="'+(t.scored?'kick-goal':'kick-fail')+'">'+
    (t.scored?'✓ But':t.result==='save'?'✕ Arrêt':'✕ Raté')+'</strong></div>').join(''):
@@ -235,10 +236,11 @@ function shootoutStage(g,club){
  return tracker+data+history;
 }
 export function renderOnlineGame(g,{myClub,hostClub}={}){
+ if(g?.teams)setDisplayedClubs(g.teams);
  if(!g||!['PSG','OM'].includes(myClub)||!['PSG','OM'].includes(hostClub))
   return '<section class="panel"><p>Synchronisation en cours…</p></section>';
  const top='<section class="online-game-heading"><span class="eyebrow">Grandline Cup · Mode en ligne</span>'+
-  '<strong>'+esc(clubName(myClub))+' · '+esc(myClub)+'</strong></section>';
+  '<strong>'+esc(clubName(myClub))+' · '+esc(visualAbbr(myClub))+'</strong></section>';
  if(g.phase==='mercato')return top+visualMarket(g,myClub);
  if(g.phase==='lineup')return top+stage('Prépare ta composition',
   '<p>Choisis tes sept titulaires et leur formation sur le terrain ci-dessous.</p>');
