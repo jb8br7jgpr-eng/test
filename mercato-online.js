@@ -871,13 +871,14 @@
       overflow-y:auto;overscroll-behavior:contain;color:#e8f1f3}
     .online-shell{max-width:760px;margin:auto;padding:calc(env(safe-area-inset-top) + 20px) 14px calc(env(safe-area-inset-bottom) + 60px)}
     .online-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:5px 0 20px}
-    .online-head.online-brand-header{flex-direction:column;align-items:center;justify-content:center;gap:7px;margin-bottom:16px}
+    .online-head.online-brand-header{flex-direction:column;align-items:center;justify-content:center;gap:4px;margin-bottom:10px}
     .online-menu-return{align-self:flex-start;display:inline-flex;align-items:center;justify-content:center;
       min-height:38px;padding:8px 12px;border:1px solid #d9bd8175;border-radius:11px;
       background:#143445;color:#ffe0a5;font-size:12px;font-weight:850;text-decoration:none}
     .online-menu-return:focus-visible{outline:3px solid #7de3d3;outline-offset:3px}
-    .online-brand-header .online-transparent-logo{display:block;width:min(88vw,350px);
-      height:clamp(78px,14vh,132px);object-fit:contain;object-position:center;
+    .online-brand-header .online-transparent-logo{display:block;
+      width:min(108vw,480px);max-width:none;
+      height:clamp(155px,25vh,220px);object-fit:contain;object-position:center;
       filter:drop-shadow(0 9px 15px #0009)}
     .online-brand-header .online-eyebrow{text-align:center;margin-top:4px}
     .online-brand-header h1{text-align:center;margin:0}
