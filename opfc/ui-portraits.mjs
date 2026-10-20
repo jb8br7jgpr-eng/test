@@ -4,7 +4,7 @@
  * Le monogramme n'est qu'un secours si une image ne charge pas.
  */
 import {CARD_BY_ID} from './catalog.mjs';
-import {visualClub} from './club-identities.mjs';
+import {visualClub,displayClub,clubLogoFile} from './club-identities.mjs';
 
 const PORTRAIT_NAMES=Object.freeze({
  'luffy':'luffy',
@@ -72,19 +72,22 @@ export function renderCharacterPortrait(id,cssClass=''){
   (src?'<img src="'+h(src)+'" loading="lazy" decoding="async" alt="">':'')+
   '</span>';
 }
+/** Écusson réel pour un ID VISUEL (sélection des clubs, salon). */
+export function renderIdentityCrest(identityId,cssClass=''){
+ const identity=displayClub(identityId);
+ const src=clubLogoFile(identityId);
+ const label=identity?.name??'Club inconnu';
+ if(src){
+  return '<span class="club-crest club-crest-photo '+h(String(identityId).toLowerCase())+' '+h(cssClass)+
+   '" role="img" aria-label="'+h(label)+'">'+
+   '<img class="club-crest-image" src="'+h(src)+'" alt="" loading="lazy" decoding="async"></span>';
+ }
+ // Repli lisible si l'identité n'est pas disponible.
+ return '<span class="club-crest '+h(cssClass)+'" role="img" aria-label="'+h(label)+'"><strong>'+
+  h(identity?.id??'?')+'</strong></span>';
+}
+/** Club logique PSG/OM -> identité réelle sélectionnée, mode local ET en ligne. */
 export function renderClubCrest(club,cssClass=''){
  const identity=visualClub(club);
- const words=identity?.name.split(' ')??['CLUB','INCONNU'];
- const top=words.slice(0,-1).join(' ').toUpperCase();
- const bottom=words.at(-1).toUpperCase();
- const primary=identity?.primary??'#112c59',secondary=identity?.secondary??'#ffffff';
- const n=parseInt(primary.slice(1),16);
- const light=((n>>16)&255)*.299+((n>>8)&255)*.587+(n&255)*.114>165;
- const ink=light?'#122336':'#ffffff';
- const style='color:'+ink+';background:linear-gradient(145deg,'+primary+','+secondary+')';
- return '<span class="club-crest '+h(club.toLowerCase())+' '+h(cssClass)+
-  '" style="'+style+'" aria-label="'+h(identity?.name??'Club')+'">'+
-  '<span class="club-crest-top">'+h(top)+'</span>'+
-  '<strong>'+h(identity?.id??club)+'</strong>'+
-  '<span class="club-crest-bottom">'+h(bottom)+'</span></span>';
+ return renderIdentityCrest(identity?.id??club,cssClass);
 }
