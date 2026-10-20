@@ -56,16 +56,18 @@ export function renderOnlineLobby({stage='choose',firstClub='PSG',hostIdentity='
    '<p class="caption">'+(linked?(gameActive?'✅ Salon synchronisé. La partie continue juste en dessous.':
    'Les deux joueurs sont connectés. Chargement de la partie…'):
    'Partage uniquement le code à six caractères. Ne partage jamais ton jeton de session.')+'</p>'+
-   button('forget-confirm','Quitter ce salon sur cet appareil','ghost full')+'</section>';
+   button('menu','← Retour au menu · garder la partie','ghost full')+
+   button('forget-confirm','Effacer mon accès au salon','negative full')+'</section>';
  }else if(stage==='restore'){
   out+='<section class="panel online-lobby-card"><h2>Session retrouvée sur cet iPhone</h2>'+
    '<p>Actualise pour récupérer le salon. La session est conservée séparément de ta partie locale.</p>'+
-   button('refresh','Actualiser mon salon','primary full',busy||!configured)+
-   button('forget-confirm','Oublier cette session','ghost full')+'</section>';
+   button('refresh','Reprendre ma partie','primary full',busy||!configured)+
+   button('menu','← Retour au menu · garder la partie','ghost full')+
+   button('forget-confirm','Effacer mon accès au salon','negative full')+'</section>';
  }else if(stage==='forget-confirm'){
   out+='<section class="panel online-lobby-card"><h2>Oublier la session ?</h2>'+
-  '<p>Cela supprime l’accès sauvegardé sur cet iPhone, mais ne ferme pas le salon du serveur.</p>'+
-  button('forget','Oublier ce salon','negative full')+
+  '<p>ATTENTION : ceci efface définitivement le jeton privé sauvegardé sur cet iPhone. Le salon reste occupé et son code ne permettra pas forcément de le rejoindre. Pour faire une pause, utilise Retour au menu.</p>'+
+  button('forget','Effacer définitivement mon accès','negative full')+
   button('cancel-forget','Annuler','ghost full')+'</section>';
  }else throw Error('Écran de salon invalide');
  if(!configured)out+=note();
