@@ -172,12 +172,12 @@ test('Accueil, création, rejoindre, attente, prêt, reprise et oubli ont leurs 
 test('Sans serveur : écrans visibles mais boutons réseau désactivés',()=>{
  for(const stage of ['create','join']){
   const html=renderOnlineLobby({stage,configured:false});
-  assert.match(html,/n’est pas encore déployé/);
+  assert.match(html,/connexion aux salons est indisponible/i);
   assert.match(html,/disabled aria-disabled="true"/);
  }
  const roomHtml=renderOnlineLobby({stage:'room',configured:false,room:room()});
  assert.match(roomHtml,/ABC/);
- assert.match(roomHtml,/n’est pas encore déployé/);
+ assert.match(roomHtml,/connexion aux salons est indisponible/i);
 });
 test('Aucun secret ni ancien projet codé dans le rendu ou la configuration',()=>{
  const config=readFileSync(new URL('../online-config.mjs',import.meta.url),'utf8');
