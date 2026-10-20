@@ -1436,3 +1436,25 @@ a{color:inherit}p{line-height:1.45}.app{width:min(100%,760px);margin:0 auto;padd
 .shot-result-panel button[disabled],.match-stage button[disabled]{
  opacity:.5;cursor:not-allowed;
 }
+
+/* OPFC en ligne : échec de synchronisation et choix du tireur visibles. */
+.online-session-actions{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+.online-session-bar .online-session-actions button{min-height:37px}
+.online-network-error{
+ display:grid;gap:8px;margin:9px 0 12px;
+ border:2px solid #e7a073;border-radius:13px;
+ box-shadow:0 0 0 2px #62351955;background:#582e26ed;
+}
+.online-network-error strong{font-size:15px;color:#fff0d9}
+.online-network-error p{margin:0;font-size:12px;line-height:1.4;color:#ffe2cc}
+.online-network-error .btn{color:#fff;border-color:#f3c39f88;background:#715040}
+.online-choice-pending{
+ display:block;padding:12px 14px;margin:9px 0;
+ border-radius:12px;border:1px solid #dfc988a8;
+ background:#443f2bd9;color:#fff2c4;
+ font-size:13px;line-height:1.4;text-align:center;
+}
+@media(max-width:380px){
+ .online-session-actions{gap:4px}
+ .online-session-bar .online-session-actions button{padding:6px;font-size:9px}
+}

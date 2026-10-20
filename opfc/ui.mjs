@@ -23,6 +23,7 @@ let entryView='modes'; // écran de choix au lancement d'OPFC.
 let onlineVisible=false,onlineStage='choose',onlineJoinCode='',onlineBusy=false,onlineError='';
 let onlineSelection=null,onlineOwnClubScope=null,onlinePitchClub=null,onlineTeamsVisible=false,onlineRoomDetails=false;
 let onlineModal=null,onlineSeenRoom=null,onlineSeenAuctionCard=null;
+let onlinePendingTaker=null;
 let onlineTimer=null,onlineRefreshInFlight=false;
 const scrollMatchToTop=()=>{try{window.scrollTo({top:0,behavior:'instant'});}catch{window.scrollTo(0,0);}};
 function onlineMatchDisplayKey(snapshot){
@@ -57,7 +58,7 @@ async function onlineMutation(fn){
  }catch(err){
   onlineError=err?.message||'Impossible de contacter le salon.';
  }finally{
-  onlineBusy=false;render();syncOnlinePoll();
+  onlineBusy=false;onlinePendingTaker=null;render();syncOnlinePoll();
  }
 }
 async function refreshOnlineRoom(silent=false){
@@ -201,7 +202,13 @@ async function onlineGameClicked(action,button){
  if(action==='online-game'){
   const type=button.dataset.type;
   const command={type};
-  if(type==='select-taker')command.takerId=button.dataset.card;
+  if(type==='select-taker'){
+   command.takerId=button.dataset.card;
+   if(!command.takerId||!snapshot.teams.find(t=>t.club===club)?.slots.includes(command.takerId))
+    throw Error('Choisis un des sept titulaires de ton équipe pour tirer le corner.');
+   if(onlineBusy)return; // une seule requête malgré plusieurs touches
+   onlinePendingTaker=command.takerId;
+  }
   if(type==='choose'||type==='shootout-choose')command.choice=button.dataset.choice;
   await onlineMutation(async()=>{
    if(snapshot.phase==='mercato')
@@ -231,6 +238,11 @@ async function onlineFormationChanged(target){
  });
 }
 async function onlineClicked(action,button){
+ if(action==='online-menu'){
+  // Retour au menu SANS effacer le jeton, le salon ni la progression.
+  stopOnlinePoll();onlineVisible=false;entryView='modes';onlineRoomDetails=false;
+  onlineError='';onlineModal=null;render();return;
+ }
  if(action==='online-back'){
   if(onlineStage==='choose'||onlineStage==='room'||onlineStage==='restore'){
    onlineVisible=false;stopOnlinePoll();
@@ -769,15 +781,22 @@ function render(){
  const compactRoom=showingGame?'<div class="online-session-bar" role="status">'+
   '<span>🌐 Partie en ligne · '+esc(visualAbbr(room.myClub))+' vs '+
   esc(visualAbbr(room.myClub==='PSG'?'OM':'PSG'))+'</span>'+
-  '<button type="button" data-action="online-room-details">'+
-  (onlineRoomDetails?'Masquer le salon':'Infos du salon')+'</button></div>':'';
+  '<div class="online-session-actions"><button type="button" data-action="online-room-details">'+
+  (onlineRoomDetails?'Masquer le salon':'Infos du salon')+'</button>'+
+  '<button type="button" data-action="online-menu">← Menu</button></div></div>':'';
  const lobby=(!showingGame||onlineRoomDetails)?renderOnlineLobby({
   stage:onlineStage,firstClub,room:onlineClient.room,
   hostIdentity:onlineHostIdentity,guestIdentity:onlineGuestIdentity,
   configured:onlineClient.configured,joinCode:onlineJoinCode,
   busy:onlineBusy,error:onlineError,gameActive:showingGame
  }):'';
- const onlineDisplay=shell()+compactRoom+lobby+
+ const liveStatus=showingGame?
+  (onlineError?'<section class="alert online-network-error" role="alert"><strong>Synchronisation interrompue</strong>'+
+   '<p>'+esc(onlineError)+'</p><button class="btn ghost full" type="button" data-action="online-refresh">🔄 Actualiser la partie</button></section>':'')+
+  (onlinePendingTaker?'<section class="online-choice-pending" role="status">⏳ Sélection de <strong>'+
+   esc(card(onlinePendingTaker)?.name??onlinePendingTaker)+
+   '</strong> en cours… La connexion est vérifiée avant de continuer.</section>':''):'';
+ const onlineDisplay=shell()+compactRoom+lobby+liveStatus+
   (showingGame?(['mercato','lineup','kickoff-ready'].includes(snapshot.phase)?onlineSharedMarket(snapshot):
    '<main class="online-game-content opfc-online-playing">'+
    renderOnlineGame(snapshot,{myClub:room.myClub,hostClub:room.hostClub})+

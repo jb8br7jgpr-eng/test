@@ -57,7 +57,7 @@ export function createOnlineClient({
  publishableKey=OPFC_ONLINE_PUBLISHABLE_KEY,
  fetchImpl=globalThis.fetch,
  storage=globalThis.localStorage,
- timeoutMs=12000
+ timeoutMs=20000
 }={}){
  const url=validateOnlineApiUrl(apiUrl);
  if(!Number.isInteger(timeoutMs)||timeoutMs<100||timeoutMs>120000)fail('Délai réseau invalide');
@@ -148,7 +148,11 @@ export function createOnlineClient({
    if(!data||typeof data!=='object')fail('Réponse serveur invalide');
    return data;
   }catch(error){
-   if(error?.name==='AbortError')fail('Connexion au salon expirée. Réessaie.');
+   if(error?.name==='AbortError'){
+    const problem=new Error('Le serveur répond trop lentement. Ta session est conservée : actualise pour reprendre.');
+    problem.opfcTransient=true;throw problem;
+   }
+   if(error instanceof TypeError)error.opfcTransient=true;
    throw error;
   }finally{clearTimeout(timer);}
  }
@@ -164,6 +168,19 @@ export function createOnlineClient({
   const next=validRoom(data.room,session),snapshot=validSnapshot(data.game);
   if(!room||next.version>=room.version){room=next;marketGame=snapshot;}
  };
+ const isTransient=e=>!!e?.opfcTransient||
+  /Salon modifié|actualise la partie|Serveur OPFC temporairement indisponible/i.test(e?.message??'');
+ /** Aucun tireur n'est renvoyé tant que le serveur n'a pas confirmé
+  * qu'il n'a pas déjà pris la première sélection en compte. */
+ const checkTakerSelection=(beforeGame,command)=>{
+  const old=beforeGame?.match,now=marketGame?.match,a=now?.action;
+  if(marketGame?.phase!=='match'||!a||old?.index!==now?.index||
+     old.action?.kind!==a.kind)
+   fail('Le match a avancé. Consulte le nouvel écran avant de refaire ton choix.');
+  if(a.stage==='taker-choice')return 'retry';
+  if(a.actors?.taker?.cardId===command.takerId)return 'applied';
+  fail('Un autre tireur est déjà sélectionné. La partie a été resynchronisée.');
+ };
  const sendCommand=async(action,command)=>{
   ensureOnline();
   if(!session||!room||room.status!=='ready')
@@ -171,19 +188,43 @@ export function createOnlineClient({
   if(!command||typeof command!=='object'||Array.isArray(command))
    fail('Commande de jeu invalide');
   let before=room.version, data;
+  const originalGame=marketGame;
+  const payload=()=>({action,roomId:session.roomId,token:session.token,
+   expectedVersion:before,command});
   try{
-   data=await request({action,roomId:session.roomId,token:session.token,
-    expectedVersion:before,command});
+   data=await request(payload());
   }catch(error){
-   // Une validation de résultat peut partir au même moment de deux iPhone.
-   // Sur conflit atomique, relire puis réessayer UNE fois avec la nouvelle
-   // version. Jamais de rejeu automatique pour les enchères et les achats.
-   if(command.type!=='ack'||!(/Salon modifié|actualise la partie/i.test(error?.message??'')))
-    throw error;
-   await refreshAfterVersionConflict();
+   // Seuls les ACK et le tireur bénéficient d'un retry conservateur.
+   // Ne jamais rejouer un achat, une enchère ou une tactique à l'aveugle.
+   const taker=action==='match'&&command.type==='select-taker';
+   const acknowledgement=command.type==='ack';
+   if(!isTransient(error)||(!taker&&!acknowledgement))throw error;
+   try{await refreshAfterVersionConflict();}
+   catch{
+    throw new Error('La réponse est incertaine, mais ton salon est sauvegardé. Actualise dès que le réseau revient.');
+   }
+   if(taker&&checkTakerSelection(originalGame,command)==='applied')
+    return marketGame;
+   if(acknowledgement){
+    const flags=marketGame?.match?.resultAcks;
+    const club=session.club;
+    if(flags?.[club])return marketGame;
+    const old=originalGame?.match,newer=marketGame?.match;
+    if(marketGame?.phase!==originalGame?.phase||old?.index!==newer?.index||
+      (old?.action?.stage&&old.action.stage!==newer?.action?.stage))
+     return marketGame;
+   }
    before=room.version;
-   data=await request({action,roomId:session.roomId,token:session.token,
-    expectedVersion:before,command});
+   try{data=await request(payload());}
+   catch(retryError){
+    if(taker&&isTransient(retryError)){
+     try{
+      await refreshAfterVersionConflict();
+      if(checkTakerSelection(originalGame,command)==='applied')return marketGame;
+     }catch{ /* message prudent ci-dessous */ }
+    }
+    throw new Error('Action non confirmée. Ton salon est sauvegardé ; actualise, puis réessaie si le tireur est encore à choisir.');
+   }
   }
   const nextRoom=validRoom(data.room,session);
   if(nextRoom.version!==before+1)
