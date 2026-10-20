@@ -84,7 +84,7 @@ function history(s){
  const timeline=s?.timeline??[];
  if(!timeline.length)return '<p class="caption">Aucune tentative pour le moment.</p>';
  return '<div class="shootout-history">'+timeline.map((t,index)=>
-  '<div class="shootout-attempt"><span class="shootout-attempt-club">'+escape(t.club)+'</span>'+
+  '<div class="shootout-attempt"><span class="shootout-attempt-club">'+escape(visualAbbr(t.club))+'</span>'+
   '<span class="shootout-kick-player">'+renderCharacterPortrait(t.shooterId,'kick-portrait')+escape(name(t.shooterId))+'</span><strong class="'+(t.scored?'kick-goal':'kick-fail')+'">'+
   (t.scored?'✓ But':t.result==='save'?'✕ Arrêt':'✕ Raté')+
   '</strong><small>n° '+t.shotNumber+'</small></div>').join('')+'</div>';
@@ -157,13 +157,13 @@ export function renderShootoutScreen(state,{uncovered=false}={}){
   const p=current(state),owner=shootoutTurnOwner(state),pending=state.match.shootoutPending;
   if(owner&&!uncovered)
    out+='<section class="match-handover"><div class="match-handover-icon">🔒</div>'+
-    '<h2>À toi de jouer, '+owner+'</h2><p>Passe le téléphone au joueur '+owner+
+    '<h2>À toi de jouer, '+escape(visualAbbr(owner))+'</h2><p>Passe le téléphone au joueur '+escape(visualAbbr(owner))+
     '. La direction précédente reste masquée.</p>'+
-    btn('match-uncover','Je suis '+owner+' · afficher mon choix')+'</section>';
+    btn('match-uncover','Je suis '+visualAbbr(owner)+' · afficher mon choix')+'</section>';
   else if(owner){
    const shooterTurn=owner===p.club;
    out+='<section class="panel match-stage"><span class="eyebrow">'+(shooterTurn?'Tireur':'Gardien')+
-    ' · '+escape(owner)+'</span><h2 class="match-shot-ready-heading">'+(shooterTurn?'Choisis ta frappe':'Réaction du gardien')+'</h2>'+
+    ' · '+escape(visualAbbr(owner))+'</span><h2 class="match-shot-ready-heading">'+(shooterTurn?'Choisis ta frappe':'Réaction du gardien')+'</h2>'+
     shootoutFaceOff(state,p)+
     '<p>'+(shooterTurn?'Choisis secrètement où tirer.':'Choisis secrètement où plonger.')+
     '</p>'+buttonChoices()+'</section>';

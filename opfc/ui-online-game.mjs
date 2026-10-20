@@ -53,7 +53,7 @@ function visualMarket(g,club){
   '<div class="stat opfc-stat"><span>'+stat.label+'</span><strong class="opfc-stat-value">'+
   stat.value+'</strong></div>').join('');
  let html='<div class="opfc-auction-stage online-market"><div class="auction-top"><span class="eyebrow">'+
-  '⚓ MERCATO EN LIGNE</span><span class="turn-pill">'+esc(a.turn)+' à l’enchère</span></div>'+
+  '⚓ MERCATO EN LIGNE</span><span class="turn-pill">'+esc(visualAbbr(a.turn))+' à l’enchère</span></div>'+
   '<div class="player-card opfc-player-card rarity-'+esc(c.rarity)+'">'+
   '<div class="portrait-shell portrait-shell-photo">'+renderCharacterPortrait(c.id,'portrait-card')+'</div>'+
   '<div class="player-identity"><h2 class="player-name">'+esc(c.name)+'</h2>'+
@@ -64,9 +64,9 @@ function visualMarket(g,club){
   '<div class="stats-grid">'+meta+'</div></div>'+
   '<section class="opfc-auction card auction"><div class="bid-title"><div><span class="kicker">Meilleure offre</span>'+
   '<strong class="bid-amount">'+(a.highestBid?number(a.highestBid):'Aucune')+'</strong></div>'+
-  '<div class="bid-leader">'+(a.highestClub?'En tête : '+esc(a.highestClub):
+  '<div class="bid-leader">'+(a.highestClub?'En tête : '+esc(visualAbbr(a.highestClub)):
    'Mise de départ : '+number(amount))+'</div></div>'+
-  '<div class="turn-banner"><div><span>AU TOUR DE</span><strong>'+esc(a.turn)+'</strong></div>'+
+  '<div class="turn-banner"><div><span>AU TOUR DE</span><strong>'+esc(visualAbbr(a.turn))+'</strong></div>'+
   '<div class="turn-budget">'+number(budget)+'<br><span>ton budget</span></div></div>';
  if(mine)html+=(a.solo?
   btn('solo','Recruter pour '+number(5),false,'','primary full'):
@@ -89,7 +89,7 @@ function visualMarket(g,club){
   (context.canKings?'':' disabled')+'>👑 Haki des Rois</button>'+
   '<button type="button" class="extra-power" data-action="online-game" data-type="observation"'+
   (!team.hakis.observation?'':' disabled')+'>👁 Observation</button></div>');
- else html+='<p class="online-wait-inline">⏳ '+esc(other(club))+' décide de sa prochaine enchère.</p>'+
+ else html+='<p class="online-wait-inline">⏳ '+esc(visualAbbr(other(club)))+' décide de sa prochaine enchère.</p>'+
   (!team.hakis.observation?btn('observation','👁 Utiliser ton Observation',false,'','ghost full'):'');
  html+='</section>';
  if(g.myObservation?.length)html+='<section class="panel online-observation"><strong>👁 Tes cinq révélations</strong>'+
@@ -152,7 +152,7 @@ function matchStage(g,club,hostClub){
   if(!moment)return board(m)+stage('Synchronisation','<p>En attente de la prochaine action.</p>');
   const type=moment.type==='open'?'begin-open':'begin-setpiece';
   const label=moment.type==='open'?'Commencer cette action':'Commencer cette phase arrêtée';
-  return board(m)+(club===moment.attacker?stage('⚽ '+moment.attacker+' passe à l’attaque',
+  return board(m)+(club===moment.attacker?stage('⚽ '+visualAbbr(moment.attacker)+' passe à l’attaque',
    '<p>'+esc(moment.type==='open'?'Jeu ouvert':moment.type)+'</p>'+btn(type,label)):
    waiting(moment.attacker,'L’adversaire prépare sa séquence.'));
  }

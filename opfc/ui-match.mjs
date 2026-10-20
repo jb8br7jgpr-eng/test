@@ -152,9 +152,9 @@ const shotFaceOff=state=>{
 
 function handover(owner){
  return '<section class="match-handover" aria-label="Transmission confidentielle">'+
- '<div class="match-handover-icon" aria-hidden="true">🔒</div><h2>À toi de jouer, '+owner+'</h2>'+
- '<p>Passe le téléphone au joueur '+owner+'. La décision précédente reste masquée.</p>'+
- button('match-uncover','Je suis '+owner+' · afficher mon choix')+'</section>';
+ '<div class="match-handover-icon" aria-hidden="true">🔒</div><h2>À toi de jouer, '+html(visualAbbr(owner))+'</h2>'+
+ '<p>Passe le téléphone au joueur '+html(visualAbbr(owner))+'. La décision précédente reste masquée.</p>'+
+ button('match-uncover','Je suis '+visualAbbr(owner)+' · afficher mon choix')+'</section>';
 }
 function renderAction(state,view,uncovered){
  const a=view.match.action;
@@ -164,7 +164,7 @@ function renderAction(state,view,uncovered){
  if(owner){
   const isShot=a.stage.startsWith('shot-'),role=ACTOR[a.stage];
   return '<section class="panel match-stage"><span class="eyebrow">'+html(stageLabels[a.stage])+'</span>'+
-   '<h2>'+a[role]+' · '+(role==='attacker'?'Attaque':'Défense')+'</h2>'+
+   '<h2>'+html(visualAbbr(a[role]))+' · '+(role==='attacker'?'Attaque':'Défense')+'</h2>'+
    '<p class="muted">Ta décision est secrète jusqu’à la confirmation de ton adversaire.</p>'+
    (isShot?shotFaceOff(state):
     fieldNames(a)+renderReceiverCard(state,{
@@ -274,7 +274,7 @@ export function renderMatchScreen(state,{uncovered=false}={}){
   const setPiece=isSetPieceKind(moment?.type);
   out+=attackBanner(moment?.attacker,null,moment?.type,moment?.minute)+
   '<section class="panel match-stage"><span class="eyebrow">'+html(moment?.minute)+'e · '+html(ACTION_LABEL[moment?.type]??'Action')+'</span>'+
-   '<h2>'+html(moment?.attacker)+' passe à l’attaque</h2>'+
+   '<h2>'+html(visualAbbr(moment?.attacker))+' passe à l’attaque</h2>'+
    (supported?'<p>Annonce des personnages et choix tactiques confidentiels.</p>'+
     button('match-begin-open','Commencer cette action'):
     setPiece?'<p>Choix du tireur et tactiques confidentielles.</p>'+button('match-begin-setpiece','Commencer cette phase arrêtée'):
