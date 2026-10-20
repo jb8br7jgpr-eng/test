@@ -18,6 +18,8 @@ const entries=[
 export const DISPLAY_CLUBS=Object.freeze(entries.map(([id,name,primary,secondary,accent])=>
  Object.freeze({id,name,primary,secondary,accent})));
 export const DISPLAY_BY_ID=new Map(DISPLAY_CLUBS.map(x=>[x.id,x]));
+/** Abréviation publique ; l'identifiant historique AWC reste compatible avec les parties sauvegardées et le serveur. */
+export const displayAbbr=id=>id==='AWC'?'ACW':id;
 /** Fichiers des écussons validés : identités affichées, pas les slots du moteur. */
 const CLUB_LOGO_NAMES=Object.freeze({
  PSG:'pirates_saint_grandline.webp',
@@ -72,4 +74,4 @@ export function visualClub(slot){
  return DISPLAY_BY_ID.get(id)??DISPLAY_BY_ID.get(slot)??null;
 }
 export const visualName=slot=>visualClub(slot)?.name??'Club inconnu';
-export const visualAbbr=slot=>visualClub(slot)?.id??'—';
+export const visualAbbr=slot=>displayAbbr(visualClub(slot)?.id??'—');
