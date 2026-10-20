@@ -24,6 +24,13 @@ const serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 if(!supabaseUrl||!serviceKey)throw Error('Supabase OPFC non configuré');
 const db=createClient(supabaseUrl,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
 const maxBody=2048,MAX_CREATE_RETRIES=8;
+// Quota GLOBAL atomique : solution provisoire pour lancement privé.
+// Dépend de la migration SQL opfc_rate_limit dans le seul projet OPFC.
+async function allowPublicAction(action){
+ const {data,error:rateError}=await db.rpc('opfc_take_rate_token',{p_action:action});
+ if(rateError||typeof data!=='boolean')throw Error('Protection anti-abus indisponible');
+ return data;
+}
 const expiry=()=>new Date(Date.now()+7*86400_000).toISOString();
 function headers(){
  return {
@@ -172,8 +179,19 @@ Deno.serve(async req=>{
   let body;
   try{body=JSON.parse(raw);}catch{return error('JSON invalide');}
   if(!body||Array.isArray(body)||typeof body!=='object')return error('Requête invalide');
-  if(body.action==='create')return await create(body);
-  if(body.action==='join')return await join(body);
+  if(body.action==='create'){
+   if(body.firstClub!==undefined&&!['PSG','OM'].includes(body.firstClub))
+    return error('Club inconnu',400);
+   if(!await allowPublicAction('create'))
+    return error('Trop de salons créés récemment. Réessaie plus tard.',429);
+   return await create(body);
+  }
+  if(body.action==='join'){
+   if(!safeCode(body.code))return error('Code de salon invalide',400);
+   if(!await allowPublicAction('join'))
+    return error('Trop de tentatives de connexion. Réessaie plus tard.',429);
+   return await join(body);
+  }
   if(body.action==='get')return await get(body);
   if(body.action==='market')return await mutate(body,'market');
   if(body.action==='lineup')return await mutate(body,'lineup');
