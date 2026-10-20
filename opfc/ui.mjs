@@ -22,6 +22,7 @@ const onlineClient=createOnlineClient();
 let entryView='modes'; // écran de choix au lancement d'OPFC.
 let onlineVisible=false,onlineStage='choose',onlineJoinCode='',onlineBusy=false,onlineError='';
 let onlineSelection=null,onlineOwnClubScope=null,onlinePitchClub=null,onlineTeamsVisible=false,onlineRoomDetails=false;
+let onlineModal=null,onlineSeenRoom=null,onlineSeenAuctionCard=null;
 let onlineTimer=null;
 function stopOnlinePoll(){
  if(onlineTimer!==null){clearInterval(onlineTimer);onlineTimer=null;}
@@ -221,7 +222,8 @@ async function onlineClicked(action,button){
  if(action==='online-cancel-forget'){onlineStage=onlineClient.room?'room':'restore';render();return;}
  if(action==='online-forget-confirm'){onlineStage='forget-confirm';render();return;}
  if(action==='online-forget'){
-  stopOnlinePoll();onlineClient.leaveDevice();onlineStage='choose';onlineError='';render();return;
+  stopOnlinePoll();onlineClient.leaveDevice();onlineStage='choose';onlineError='';
+  onlineModal=null;onlineSeenRoom=null;onlineSeenAuctionCard=null;render();return;
  }
  if(action==='online-copy-code'){
   const code=onlineClient.room?.code;
@@ -246,6 +248,7 @@ async function onlineClicked(action,button){
    try{await onlineClient.refreshRoom();}catch{ /* reprise par actualisation automatique */ }
   });return;
  }
+ if(action==='online-modal-continue'){onlineModal=null;render();return;}
  if(action==='online-room-details'){onlineRoomDetails=!onlineRoomDetails;render();return;}
  if(action==='online-refresh'){await refreshOnlineRoom();return;}
  await onlineGameClicked(action,button);
@@ -684,10 +687,50 @@ function onlineSharedMarket(snapshot){
   renderOnlineGame(snapshot,{myClub:ownClub,hostClub:onlineClient.room.hostClub})+
   onlineTeams()+'</main>';
 }
+/**
+ * Les mêmes annonces de départ de partie et de recrutement qu'en local.
+ * Elles sont propres au téléphone, sans bloquer le tour du serveur.
+ */
+function trackOnlineAnnouncements(snapshot,room){
+ if(!snapshot||!room)return;
+ const roomKey=room.id??room.code;
+ const currentCard=snapshot.lastResult?.cardId??null;
+ if(onlineSeenRoom!==roomKey){
+  onlineSeenRoom=roomKey;onlineSeenAuctionCard=currentCard;onlineModal=null;
+  if(snapshot.phase==='mercato'&&
+     snapshot.teams.every(team=>team.roster.length===0))
+   onlineModal={type:'dice',dice:[...snapshot.dice],priority:snapshot.auction?.priority};
+  return;
+ }
+ if(currentCard&&currentCard!==onlineSeenAuctionCard){
+  onlineSeenAuctionCard=currentCard;
+  onlineModal={type:'sale',result:snapshot.lastResult};
+ }
+}
+function onlineAnnouncementView(){
+ if(!onlineModal)return '';
+ let body='';
+ if(onlineModal.type==='dice')body='<div class="big-symbol">🎲</div>'+
+  '<h2>Départ du mercato</h2><p>'+onlineModal.dice.join(' contre ')+
+  '</p><p>Premier club prioritaire : <strong>'+
+  esc(clubName(onlineModal.priority))+'</strong></p>';
+ else if(onlineModal.type==='sale'){
+  const result=onlineModal.result;
+  body='<h2>'+(result.winner?'Recrue remportée !':'Carte invendue')+'</h2>'+
+   '<div class="sale-reveal">'+renderCharacterPortrait(result.cardId,'sale-result-portrait')+
+   '<p><strong>'+esc(card(result.cardId)?.name??result.cardId)+'</strong> '+
+   (result.winner?'rejoint '+esc(clubName(result.winner))+' pour '+result.price+' M.':
+    'quitte ce mercato.')+'</p></div>';
+ }
+ return '<div class="modal-backdrop"><section class="modal" role="dialog" aria-modal="true">'+
+  body+'<button type="button" class="btn primary full" data-action="online-modal-continue">'+
+  (onlineModal.type==='dice'?'Commencer les enchères':'Continuer')+'</button></section></div>';
+}
 function render(){
  const showingGame=onlineVisible&&onlineStage==='room'&&
   onlineClient.room?.status==='ready'&&!!onlineClient.game;
  const snapshot=showingGame?onlineClient.game:null;
+ if(showingGame)trackOnlineAnnouncements(snapshot,onlineClient.room);
  if(onlineVisible){
   if(onlineClient.game)setDisplayedClubs(onlineClient.game.teams);
   else if(onlineClient.room?.clubChoices)setDisplayedChoices(onlineClient.room.clubChoices);
@@ -714,7 +757,8 @@ function render(){
     onlineTeams():'')+'</main>'):'');
  app.innerHTML=(onlineVisible?onlineDisplay:entryView==='modes'?modeChooser():entryView==='local'?welcome():game?
   (game.phase==='kickoff-ready'?endMercato():['mercato','lineup'].includes(game.phase)?playing():matchPage()):welcome())+
- (error?'<div class="alert" role="alert">'+esc(error)+'</div>':'')+popup();
+ (error?'<div class="alert" role="alert">'+esc(error)+'</div>':'')+
+ (onlineVisible?onlineAnnouncementView():'')+popup();
 }
 function change(fn){
  const before=game,next=fn(before),end=before.phase==='mercato'?currentAuctionEnding(before,next):null;

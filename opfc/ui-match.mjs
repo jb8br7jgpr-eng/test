@@ -146,7 +146,7 @@ const duelFaceOff=(state,a)=>faceOff(state,a?.roles?.carrier?.cardId,a?.roles?.d
  'Attaque','Défense',a?.attacker,a?.defender);
 const shotFaceOff=state=>{
  const a=state?.match?.action;
- return renderShotFaceOff(state,{shooterId:a?.shooterId,keeperId:a?.keeper?.cardId,
+ return renderShotFaceOff(state,{shooterId:a?.shooterId,keeperId:a?.keeper?.cardId??matchKeeperId(state,a?.defender),
   attacker:a?.attacker,defender:a?.defender});
 };
 
@@ -260,16 +260,45 @@ function halftimeView(state,m){
     '<p class="halftime-ready-note">La reprise sera disponible après validation des deux équipes.</p>')+
   '</section></div>';
 }
-export function renderMatchScreen(state,{uncovered=false}={}){
+
+/** Le moteur et la structure de l'écran restent communs aux deux modes. */
+function onlineWaiting(club,description){
+ return '<section class="panel online-turn-wait" role="status">'+
+ '<span class="eyebrow">Deux iPhone · synchronisation</span>'+
+ '<h2>⏳ Au tour de '+html(visualAbbr(club??'PSG'))+'</h2>'+
+ '<p>'+html(description)+'</p><p class="caption">Mise à jour automatique.</p></section>';
+}
+const ONLINE_MATCH_COMMANDS=Object.freeze({
+ 'match-kickoff':'kickoff','match-resume':'resume',
+ 'match-begin-open':'begin-open','match-begin-setpiece':'begin-setpiece',
+ 'match-reveal-duel':'reveal-duel','match-continue-duel':'continue-duel',
+ 'match-reveal-shot':'reveal-shot','match-continue-result':'continue-result',
+ 'match-taker':'select-taker','match-reveal-setpiece-duel':'reveal-setpiece-duel',
+ 'match-continue-setpiece-duel':'continue-setpiece-duel',
+ 'match-finish-corner':'finish-corner','match-reveal-penalty':'reveal-penalty'
+});
+function asOnlineActions(htmlView){
+ return htmlView.replace(/data-action="(match-[a-z-]+)"/g,(entire,action)=>{
+  if(action==='match-choose')return 'data-action="online-choice"';
+  const command=ONLINE_MATCH_COMMANDS[action];
+  return command?'data-action="online-game" data-type="'+command+'"':entire;
+ });
+}
+function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null}={}){
  if(state?.teams)setDisplayedClubs(state.teams);
  if(state?.phase==='kickoff-ready')return '<section class="panel match-stage">'+
   '<span class="eyebrow">Grandline Cup · Avant-match</span><h2>Les équipes sont prêtes !</h2>'+
   '<p>Sept joueurs de chaque côté. Les compositions se verrouillent au coup d’envoi.</p>'+
   button('match-kickoff','Donner le coup d’envoi')+'</section>';
- const view=matchPublicView(state),m=view.match;
+ const view=onlineClub?state:matchPublicView(state),m=view.match;
  if(!m)return '<section class="panel match-stage"><h2>Aucun match en cours</h2></section>';
  let out=scoreBoard(m);
- if(state.phase==='half-time'||state.phase==='resume-ready')return halftimeView(state,m);
+ if(state.phase==='half-time'||state.phase==='resume-ready'){
+  const markup=halftimeView(state,m);
+  return onlineClub&&state.phase==='resume-ready'&&onlineClub!==hostClub?
+   markup.replace(/data-action="match-resume"/g,'data-action="match-resume" disabled aria-disabled="true"')+
+   onlineWaiting(hostClub,'Le club hôte reprend la deuxième période.'):markup;
+ }
  if(state.phase==='shootout-ready'||state.phase==='shootout')return out+renderShootoutScreen(state,{uncovered});
  if(state.phase==='finished'){
   if(state.match.shootoutLastResult)return out+renderShootoutScreen(state,{uncovered});
@@ -277,10 +306,18 @@ export function renderMatchScreen(state,{uncovered=false}={}){
  }
  if(state.phase==='moment-result'){
   const last=m.lastResult;
-  return out+attackBanner(last?.attacker,last?.details?.context,last?.type,last?.minute)+scoreStats(m)+resultView(m,state);
+  const announced=out+attackBanner(last?.attacker,last?.details?.context,last?.type,last?.minute)+scoreStats(m)+resultView(m,state);
+  return onlineClub&&onlineClub!==last?.attacker?
+   announced.replace(/data-action="match-continue-result"/g,'data-action="match-continue-result" disabled aria-disabled="true"')+
+   onlineWaiting(last?.attacker,'Le club attaquant valide le résultat.'):announced;
  }
  const moment=m.currentMoment;
  if(!m.action){
+  // Avant de construire un bouton d'action, vérifier le club autorisé.
+  // L'autre téléphone n'obtient jamais de commande qui pourrait être cliquée.
+  if(onlineClub&&onlineClub!==moment?.attacker)
+   return out+attackBanner(moment?.attacker,null,moment?.type,moment?.minute)+
+    scoreStats(m)+onlineWaiting(moment?.attacker,'Le club attaquant prépare la séquence.');
   const supported=moment?.type==='open';
   const setPiece=isSetPieceKind(moment?.type);
   out+=attackBanner(moment?.attacker,null,moment?.type,moment?.minute)+
@@ -291,8 +328,30 @@ export function renderMatchScreen(state,{uncovered=false}={}){
     setPiece?'<p>Choix du tireur et tactiques confidentielles.</p>'+button('match-begin-setpiece','Commencer cette phase arrêtée'):
     '<p>Séquence inconnue : aucune action simulée.</p>')+
    '</section>';
-  return out+scoreStats(m);
+  return onlineClub&&onlineClub!==moment?.attacker?
+   out+scoreStats(m)+onlineWaiting(moment?.attacker,'Le club attaquant prépare la séquence.') :
+   out+scoreStats(m);
  }
  out+=attackBanner(m.action.attacker,m.action.context??m.action.originContext,m.action.kind,m.action.minute);
- return out+scoreStats(m)+renderAction(state,view,uncovered);
+ if(onlineClub){
+  const action=m.action,owner=action.kind==='open'?
+   (ACTOR[action.stage]?action[ACTOR[action.stage]]:action.attacker):
+   action.stage==='defense-choice'?action.defender:action.attacker;
+  if(owner!==onlineClub)
+   return out+scoreStats(m)+onlineWaiting(owner,'Le choix de l’adversaire reste secret.');
+ }
+ return out+scoreStats(m)+renderAction(state,view,onlineClub?true:uncovered);
+}
+
+/** Local : les mêmes événements, aucun changement des actions. */
+export function renderMatchScreen(state,options={}){
+ return matchCore(state,options);
+}
+/** En ligne : présentation locale identique, confidentialité propre à chacun. */
+export function renderOnlineMatchScreen(state,{myClub,hostClub}={}){
+ if(!['PSG','OM'].includes(myClub)||!['PSG','OM'].includes(hostClub))
+  return '<section class="panel"><p>Synchronisation de la partie…</p></section>';
+ if(state.phase==='kickoff-ready'&&myClub!==hostClub)
+  return onlineWaiting(hostClub,'Le club hôte donne le coup d’envoi.');
+ return asOnlineActions(matchCore(state,{onlineClub:myClub,hostClub}));
 }

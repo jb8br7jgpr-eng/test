@@ -177,3 +177,72 @@ export function renderShootoutScreen(state,{uncovered=false}={}){
  }
  return out+'<section class="panel shootout-log"><h3 class="section-title">Historique des tentatives</h3>'+history(s)+'</section>';
 }
+
+/** Présentation de la séance commune aux deux modes.
+ * Le serveur ne renvoie pas de direction secrète avant l'exécution du tir. */
+export function renderOnlineShootoutScreen(state,{myClub,hostClub}={}){
+ const guestWaiting=(owner,message)=>'<section class="panel online-turn-wait" role="status">'+
+  '<h2>⏳ Au tour de '+escape(visualAbbr(owner))+'</h2><p>'+escape(message)+'</p>'+
+  '<p class="caption">Synchronisation automatique.</p></section>';
+ if(state.phase==='shootout-ready'){
+  return myClub===hostClub?introPanel('Égalité après 90 minutes',
+   'Lancer de pièce pour déterminer qui tire en premier. Les deux équipes conservent leur composition de la 90e minute.',
+   'match-begin-shootout','Lancer la pièce et commencer la séance')
+   .replace('data-action="match-begin-shootout"',
+    'data-action="online-game" data-type="begin-shootout"'):
+   guestWaiting(hostClub,'Le club hôte lance le départage aux tirs au but.');
+ }
+ const publicS=state?.match?.shootout;
+ if(!publicS)return '';
+ const s={...publicS,attempts:{
+  PSG:publicS.timeline.filter(t=>t.club==='PSG'),
+  OM:publicS.timeline.filter(t=>t.club==='OM')
+ }};
+ let out=renderShootoutTracker(s);
+ const last=publicS.lastResult;
+ if(last){
+  const result=renderShotResult(state,{
+   outcome:last.scored?'goal':last.result==='save'?'save':'miss',
+   attacker:last.club,shooterId:last.shooterId,keeperId:last.keeperId,
+   score:s.score,context:'Séance de tirs au but',
+   detailExtra:'Direction de la frappe : '+last.shotDirection+' · Gardien : '+last.keeperDirection,
+   action:'online-game',
+   continueLabel:state.phase==='finished'?'Voir le résultat final':'Continuer'
+  });
+  out+=result.replace('data-action="online-game"',
+   'data-action="online-game" data-type="shootout-continue"'+
+   (myClub===last.club?'':' disabled aria-disabled="true"'));
+  if(myClub!==last.club)out+=guestWaiting(last.club,'Le tireur valide le résultat.');
+ }else if(state.phase==='shootout'){
+  const p=s.active;
+  if(!p)out+=guestWaiting(s.nextClub??myClub,'Le prochain tireur est désigné.');
+  else{
+   const confirmed=s.confirmed??{shooter:false,keeper:false};
+   const shooterTurn=!confirmed.shooter,keeperTurn=confirmed.shooter&&!confirmed.keeper;
+   const owner=shooterTurn?p.club:keeperTurn?(p.club==='PSG'?'OM':'PSG'):p.club;
+   if(owner!==myClub)out+=guestWaiting(owner,'La direction précédente reste confidentielle.');
+   else if(shooterTurn||keeperTurn){
+    out+='<section class="panel match-stage"><span class="eyebrow">'+
+     (shooterTurn?'Tireur':'Gardien')+' · '+escape(visualAbbr(owner))+'</span>'+
+     '<h2 class="match-shot-ready-heading">'+
+     (shooterTurn?'Choisis ta frappe':'Réaction du gardien')+'</h2>'+
+     renderShotFaceOff(state,{shooterId:p.shooterId,keeperId:p.keeperId,
+       attacker:p.club,defender:p.club==='PSG'?'OM':'PSG'})+
+     '<p>'+(shooterTurn?'Choisis secrètement où tirer.':'Choisis secrètement où plonger.')+
+     '</p>'+buttonChoices().replaceAll('data-action="match-shootout-choose"',
+      'data-action="online-choice" data-shootout="true"')+'</section>';
+   }else{
+    out+='<section class="panel match-stage"><span class="eyebrow">Tirs au but</span>'+
+     '<h2 class="match-shot-ready-heading">Les deux directions sont verrouillées</h2>'+
+     renderShotFaceOff(state,{shooterId:p.shooterId,keeperId:p.keeperId,
+      attacker:p.club,defender:p.club==='PSG'?'OM':'PSG'})+
+     '<p>Le tir et le plongeon vont être révélés ensemble.</p>'+
+     btn('match-shootout-reveal','Révéler et tirer')
+      .replace('data-action="match-shootout-reveal"',
+       'data-action="online-game" data-type="shootout-reveal"')+'</section>';
+   }
+  }
+ }
+ return out+'<section class="panel shootout-log"><h3 class="section-title">Historique des tentatives</h3>'+
+  history(s)+'</section>';
+}
