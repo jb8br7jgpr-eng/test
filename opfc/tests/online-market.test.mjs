@@ -50,6 +50,7 @@ test('Une offre et le passage doivent venir du club dont c’est le tour',()=>{
  assert.equal(s.auction.turn,opp);
  assert.throws(()=>action(s,turn,'bid',{amount:6}),/ton tour/);
  s=action(s,opp,'pass').state;
+ assert.equal(s.teams.find(t=>t.club===opp).refusals,0);
  assert.equal(s.lastResult.winner,turn);
  assert.equal(s.teams.find(t=>t.club===turn).roster.length,1);
  assert.equal(s.teams.find(t=>t.club===turn).budget,245);
