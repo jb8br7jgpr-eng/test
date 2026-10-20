@@ -313,6 +313,11 @@ function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null}={}){
  }
  const moment=m.currentMoment;
  if(!m.action){
+  // Avant de construire un bouton d'action, vérifier le club autorisé.
+  // L'autre téléphone n'obtient jamais de commande qui pourrait être cliquée.
+  if(onlineClub&&onlineClub!==moment?.attacker)
+   return out+attackBanner(moment?.attacker,null,moment?.type,moment?.minute)+
+    scoreStats(m)+onlineWaiting(moment?.attacker,'Le club attaquant prépare la séquence.');
   const supported=moment?.type==='open';
   const setPiece=isSetPieceKind(moment?.type);
   out+=attackBanner(moment?.attacker,null,moment?.type,moment?.minute)+
