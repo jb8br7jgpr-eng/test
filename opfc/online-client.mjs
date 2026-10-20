@@ -273,6 +273,7 @@ export function createOnlineClient({
   if(!command||typeof command!=='object'||Array.isArray(command))
    fail('Commande de jeu invalide');
   if(pending){
+   if(inFlight)fail('Une action est déjà en cours de synchronisation');
    await sendPending();
    fail('Action précédente synchronisée. Vérifie le nouvel écran avant de recommencer.');
   }
