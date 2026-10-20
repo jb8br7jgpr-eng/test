@@ -65,8 +65,9 @@ test('Après une offre PSG, OM passe gratuitement',()=>{
  assert.equal(s.history.filter(x=>x.kind==='pass').at(-1).cost,0);
 });
 test('Après une offre OM, PSG passe gratuitement',()=>{
- let s=init();s=pass(s,'PSG');s=bid(s,'OM',5);s=pass(s,'PSG');
- assert.equal(s.teams[0].refusals,1); // Seul le premier refus est payant.
+ let s=createGame({rng:random(12),dice:[2,4]}); // OM commence sans refus préalable.
+ s=bid(s,'OM',5);s=pass(s,'PSG');
+ assert.equal(s.teams[0].refusals,0);
  assert.equal(s.history.filter(x=>x.kind==='pass').at(-1).cost,0);
 });
 test('Même avec 5 refus épuisés, passer après une offre adverse reste gratuit',()=>{
