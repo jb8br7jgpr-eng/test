@@ -240,7 +240,7 @@ function welcome(){
  '</div><p class="caption">Modifiables pendant le mercato puis à la mi-temps.</p></section>'+
  '<div class="intro-actions">'+btn('start','Jouer en local · 2 joueurs','primary full')+
  btn('online','Mode en ligne · salons privés','ghost full')+
- '<p class="online-note">Découvre les salons privés. Les parties à deux iPhone nécessiteront le serveur OPFC indépendant.</p></div></main>';
+ '<p class="online-note">En ligne : crée un salon privé et affronte un autre joueur sur deux iPhone.</p></div></main>';
 }
 function wallets(){
  return '<div class="huds">'+game.teams.map(team=>{
