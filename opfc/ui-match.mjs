@@ -209,7 +209,9 @@ function resultView(m,state){
    shooterId:r.scorerId??detail.finisherId??detail.takerId??null,
    keeperId:matchKeeperId(state,r.attacker==='PSG'?'OM':'PSG'),
    defenderId:detail.defenderId??detail.roles?.defender?.cardId??null,
-   context:r.type==='open'?(r.outcome==='stopped'?'Jeu ouvert':'Tir en jeu ouvert'):
+   context:detail.kind==='free-kick'?'Coup franc':detail.kind==='corner'?'Corner':
+    detail.kind==='penalty'?'Penalty':
+    r.type==='open'?(r.outcome==='stopped'?'Jeu ouvert':'Tir en jeu ouvert'):
     r.type==='corner'?'Corner':r.type==='free-kick'?'Coup franc':'Penalty'
   });
  }
