@@ -183,11 +183,13 @@ export function renderShootoutScreen(state,{uncovered=false}={}){
 export function renderOnlineShootoutScreen(state,{myClub,hostClub}={}){
  const guestWaiting=(owner,message)=>'<section class="panel online-turn-wait" role="status">'+
   '<h2>⏳ Au tour de '+escape(visualAbbr(owner))+'</h2><p>'+escape(message)+'</p>'+
-  '<p class="caption">Le jeu s'+'\'actualise automatiquement.</p></section>';
+  '<p class="caption">Synchronisation automatique.</p></section>';
  if(state.phase==='shootout-ready'){
   return myClub===hostClub?introPanel('Égalité après 90 minutes',
    'Lancer de pièce pour déterminer qui tire en premier. Les deux équipes conservent leur composition de la 90e minute.',
-   'online-game" data-type="begin-shootout','Lancer la pièce et commencer la séance'):
+   'match-begin-shootout','Lancer la pièce et commencer la séance')
+   .replace('data-action="match-begin-shootout"',
+    'data-action="online-game" data-type="begin-shootout"'):
    guestWaiting(hostClub,'Le club hôte lance le départage aux tirs au but.');
  }
  const publicS=state?.match?.shootout;
@@ -235,7 +237,9 @@ export function renderOnlineShootoutScreen(state,{myClub,hostClub}={}){
      renderShotFaceOff(state,{shooterId:p.shooterId,keeperId:p.keeperId,
       attacker:p.club,defender:p.club==='PSG'?'OM':'PSG'})+
      '<p>Le tir et le plongeon vont être révélés ensemble.</p>'+
-     btn('online-game" data-type="shootout-reveal','Révéler et tirer')+'</section>';
+     btn('match-shootout-reveal','Révéler et tirer')
+      .replace('data-action="match-shootout-reveal"',
+       'data-action="online-game" data-type="shootout-reveal"')+'</section>';
    }
   }
  }
