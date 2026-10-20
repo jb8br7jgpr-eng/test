@@ -38,7 +38,9 @@ export function renderFinalResult(state){
  const m=state.match,st=m.statistics;
  return '<div class="final-screen">'+
  '<section class="panel final-score"><span class="eyebrow">Grandline Cup · Coup de sifflet final</span>'+
- '<div class="final-celebration" aria-label="Victoire">🏆</div>'+
+ '<div class="final-celebration" aria-label="Trophée Grandline Cup">'+
+ '<img class="final-trophy-image" src="./opfc/illustrations/grandline_cup_trophee.PNG" '+
+ 'alt="Trophée officiel de la Grandline Cup" width="1254" height="1254" decoding="async" loading="lazy"></div>'+
  '<h2 class="final-victory-title">VICTOIRE !</h2>'+
  '<p class="final-winner-name">Victoire de '+h(visualName(m.winner))+'</p>'+
  '<div class="final-scoreline"><div class="'+(m.winner==='PSG'?'final-winner-club':'')+'">'+
