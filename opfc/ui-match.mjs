@@ -129,7 +129,7 @@ function faceOff(state,left,right,leftLabel,rightLabel,attacker,defender){
   const slot=player?.position??original?.position??'?';
   const rating=player?.rating??original?.rating??'—';
   return '<div class="match-duelist '+(club==='PSG'?'psg':'om')+'">'+
-   '<span class="match-duelist-team">'+html(visualAbbr(club))+' · +html(role)+'</span>'+
+   '<span class="match-duelist-team">'+html(visualAbbr(club))+' · '+html(role)+'</span>'+
    renderCharacterPortrait(id,'faceoff-portrait')+
    '<strong class="match-duelist-name">'+html(name(id))+'</strong>'+
    '<div class="match-duelist-badges"><span class="match-duelist-position">'+html(slot)+'</span>'+
