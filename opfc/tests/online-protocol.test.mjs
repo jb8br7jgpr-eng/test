@@ -87,6 +87,16 @@ test('Vue de salon explicitement limitée aux informations publiques',()=>{
  assert.equal(guest.myClub,'OM');
  assert.ok(Object.isFrozen(v));
 });
+test('La vue de salon expose BDW contre BDR sans divulguer de secrets',()=>{
+ const source=row({private_state:{
+  teams:[{club:'PSG',identityId:'BDW'},{club:'OM',identityId:'BDR'}],
+  deck:['TOPSECRET'],private:'SECRET'
+ }});
+ const view=lobbyPublicView(source,'guest');
+ assert.deepEqual(view.clubChoices,{PSG:'BDW',OM:'BDR'});
+ assert.equal(view.myClub,'OM');
+ assert.doesNotMatch(JSON.stringify(view),/TOPSECRET|private_state|SECRET/);
+});
 test('Validation des rôles, clubs, versions et UUID',()=>{
  assert.equal(validateClub('OM'),'OM');
  assert.throws(()=>validateClub('autre'),/Club/);
