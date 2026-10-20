@@ -6,7 +6,7 @@
 import {CARD_BY_ID} from './catalog.mjs';
 import {renderCharacterPortrait} from './ui-portraits.mjs';
 import {visualAbbr} from './club-identities.mjs';
-import {matchTacticalChoices,renderShotFaceOff,renderReceiverCard} from './ui-match-widgets.mjs';
+import {matchTacticalChoices,renderShotFaceOff,renderReceiverCard,renderShotResult} from './ui-match-widgets.mjs';
 import {beginSetPieceAction,selectSetPieceTaker,lockSetPieceChoice,
  revealSetPieceDuel,continueSetPieceDuel,finishSetPieceCorner,revealSetPiecePenalty} from './set-piece-actions.mjs';
 const escape=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -62,7 +62,7 @@ export function dispatchSetPieceMatch(state,command,{choice,takerId,rng=Math.ran
   if(!club)throw Error('Aucun choix de phase arrêtée attendu');
   return lockSetPieceChoice(state,club,choice);
  }
- if(command==='reveal-setpiece-duel')return revealSetPieceDuel(state,rng());
+ if(command==='reveal-setpiece-duel')return revealSetPieceDuel(state,rng(),rng);
  if(command==='continue-setpiece-duel')return continueSetPieceDuel(state,rng());
  if(command==='finish-corner')return finishSetPieceCorner(state,rng());
  if(command==='reveal-penalty')return revealSetPiecePenalty(state,rng());
@@ -96,14 +96,21 @@ export function renderSetPieceAction(state,viewAction,{uncovered=false}={}){
    actorsFaceOff(state,a)+'<p>Les choix de zones et de défense seront dévoilés ensemble.</p>'+
    button('match-reveal-setpiece-duel','Révéler et résoudre le duel'),type);
  if(a.stage==='duel-revealed'){
-  const r=a.duel,success=r?.outcome?.outcome==='chance';
-  const attack=r?.calculation?.attackZone??r?.calculation?.attack;
-  const defense=r?.calculation?.defenseZone??r?.calculation?.defense;
-  return section(success?'Occasion créée !':'La défense récupère le ballon',
-   '<p>'+escape(attack)+' face à '+escape(defense)+'</p>'+
-   '<p class="caption">Probabilité de réussite du duel : '+
-   Number(r?.calculation?.successProbability??0).toFixed(1)+' %</p>'+
-   button('match-continue-setpiece-duel','Continuer'),type);
+  const outcome=a.duel?.outcome?.outcome;
+  const typeDescription=a.kind==='corner'?'Corner':'Coup franc';
+  return renderShotResult(state,{
+   outcome,attacker:a.attacker,minute:a.minute,score:state.match?.score,
+   shooterId:a.actors?.receiver?.cardId??a.actors?.taker?.cardId,
+   defenderId:a.actors?.defender?.cardId,
+   context:typeDescription+' · Résultat du duel',
+   detailExtra:outcome==='chance'?
+    (a.kind==='corner'?'Le réceptionneur va choisir son geste.':
+     'Le tireur va tenter sa finition.'):
+    'La défense a récupéré le ballon. Prochaine action après Continuer.',
+   action:'match-continue-setpiece-duel',
+   continueLabel:outcome==='chance'?
+    (a.kind==='corner'?'Choisir la finition':'Résoudre le tir'):'Continuer'
+  });
  }
  if(a.stage==='corner-gesture-choice')
   return section('Choisis la finition du corner · '+escape(visualAbbr(a.attacker)),

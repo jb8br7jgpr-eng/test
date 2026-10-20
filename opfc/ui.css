@@ -1358,3 +1358,31 @@ a{color:inherit}p{line-height:1.45}.app{width:min(100%,760px);margin:0 auto;padd
  .team-panel .roster-natural{padding:3px 4px;font-size:9px}
  .slot-field .pitch-player-natural{font-size:8px}
 }
+
+/* OPFC — annonces premium lisibles, sans événement dupliqué. */
+.shot-result-panel.shot-result-chance{
+ --outcome-edge:#f5c466;
+ --outcome-bg1:#67421d;
+ --outcome-bg2:#262a3a;
+ --outcome-highlight:#fff0bd;
+ box-shadow:0 0 0 2px #e5b86355,0 14px 33px #0009,inset 0 0 25px #ffd88916;
+}
+.shot-result-panel.shot-result-foul{
+ --outcome-edge:#ffa664;
+ --outcome-bg1:#66392d;
+ --outcome-bg2:#352733;
+ --outcome-highlight:#ffe6cf;
+}
+.shot-result-panel.shot-result-chance .shot-result-icon,
+.shot-result-panel.shot-result-foul .shot-result-icon{
+ font-size:clamp(64px,18vw,85px);
+}
+.shot-result-panel.shot-result-chance .shot-result-description{
+ font-size:clamp(15px,4.4vw,18px);
+ font-weight:950;
+}
+.shot-result-panel .shot-result-directions{
+ border:1px solid var(--outcome-edge);border-radius:11px;
+ background:#06152277;padding:10px 9px;margin:12px auto;
+ font-size:12px;line-height:1.45;
+}

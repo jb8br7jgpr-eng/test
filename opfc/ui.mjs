@@ -152,7 +152,10 @@ async function onlineGameClicked(action,button){
    else if(['lineup','kickoff-ready'].includes(snapshot.phase))
     await onlineClient.lineupAction(command);
    else await onlineClient.matchAction(command);
-  });return;
+  });
+  if(type==='kickoff'&&onlineClient.game?.phase==='match')
+   window.scrollTo({top:0,behavior:'instant'});
+  return;
  }
  throw Error('Cette action n’est pas disponible en ligne');
 }
@@ -666,7 +669,9 @@ function clicked(button){
    throw Error('Le joueur doit d’abord confirmer la transmission du téléphone.');
   const choice=button.dataset.choice,takerId=button.dataset.card;
   matchUncovered=false; // masque immédiatement toute décision précédente
-  change(s=>dispatchOpenMatch(s,command,{choice,takerId}));return;
+  change(s=>dispatchOpenMatch(s,command,{choice,takerId}));
+  if(command==='kickoff'&&game?.phase==='match')window.scrollTo({top:0,behavior:'instant'});
+  return;
  }
  if(action==='club'){firstClub=club;render();return;}
  if(action==='resume-local'){if(game){entryView='playing';modal=null;error='';render();}return;}

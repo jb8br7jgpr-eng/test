@@ -10,7 +10,8 @@ import {lineupDetails,chemistryAdvantage} from './rules.mjs';
 import {prepareOpenPlayRoles,finisherFor} from './roles.mjs';
 import {ATTACK_CHOICES,DEFENSE_CHOICES,drawOpenPlayContext,calculateOpenPlay,resolveOpenPlay} from './open-play.mjs';
 import {SHOT_CHOICES,KEEPER_CHOICES,calculateOpenShot,resolveOpenShot} from './shot.mjs';
-import {currentMatchMoment,resolveMatchMoment} from './match.mjs';
+import {currentMatchMoment,resolveMatchMoment,continueMatch} from './match.mjs';
+import {beginSetPieceAction} from './set-piece-actions.mjs';
 
 const copy=s=>structuredClone(s);
 const fail=message=>{throw Error(message);};
@@ -100,17 +101,22 @@ export function continueOpenPlayDuel(state){
  const a=actionAt(state,['duel-revealed']);
  const s=copy(state),x=s.match.action;
  if(a.duel.outcome.outcome==='stopped'){
-  return finishMoment(s,{outcome:'stopped'},{
-   kind:'open',context:a.context,duel:a.duel,roles:a.roles
-  });
+  // L'écran duel-révélé annonce déjà l'attaque stoppée, avec portrait.
+  // En continuant, on enregistre le résultat puis on passe sans second écran.
+  return continueMatch(finishMoment(s,{outcome:'stopped'},{
+   kind:'open',context:a.context,duel:a.duel,roles:a.roles,
+   defenderId:a.roles?.defender?.cardId??null
+  }));
  }
  if(a.duel.outcome.outcome==='chance'){
   x.stage='shot-attack-choice';
   return s;
  }
  if(a.duel.outcome.outcome==='foul'){
+  // L'annonce « Faute sifflée » est déjà affichée sur le duel.
+  // Aller directement au choix du tireur, sans répéter « Faute sifflée ».
   x.stage='set-piece-pending';
-  return s; // 8B2: coup franc ou penalty, ne pas compter la séquence maintenant.
+  return beginSetPieceAction(s);
  }
  fail('Résultat de duel invalide');
 }

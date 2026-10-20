@@ -5,7 +5,7 @@
  * matchPublicView(). Aucun choix adverse ne peut être modifié après validation.
  */
 import {lineupDetails,chemistryAdvantage} from './rules.mjs';
-import {currentMatchMoment,resolveMatchMoment} from './match.mjs';
+import {currentMatchMoment,resolveMatchMoment,continueMatch} from './match.mjs';
 import {CORNER_ZONES,CORNER_GESTURES,prepareCornerActors,calculateCornerDuel,resolveCornerDuel,calculateCornerFinish,resolveCornerFinish} from './corner.mjs';
 import {FREE_KICK_ATTACKS,FREE_KICK_DEFENSES,prepareFreeKickActors,freeKickFinisherId,calculateFreeKickDuel,resolveFreeKickDuel,calculateFreeKickFinish,resolveFreeKickFinish} from './free-kick.mjs';
 import {PENALTY_DIRECTIONS,calculatePenalty,resolvePenalty} from './penalty.mjs';
@@ -42,6 +42,7 @@ function detailsOf(a,extra={}){
   ...(a.source==='foul'?{originContext:a.originContext,originalDuel:a.originalDuel}:{}),
   takerId:a.actors?.taker?.cardId??null,
   receiverId:a.actors?.receiver?.cardId??null,
+  defenderId:a.actors?.defender?.cardId??null,
   ...extra};
 }
 /** Action directe : issue du calendrier secret. Après faute : conversion
@@ -121,7 +122,7 @@ export function lockSetPieceChoice(state,club,choice){
 }
 /** Après LES DEUX confirmations, révèle tactiques, calcul et duel,
  * et attend le bouton Continuer. */
-export function revealSetPieceDuel(state,draw){
+export function revealSetPieceDuel(state,draw,finishRng){
  const a=active(state,['duel-ready']);
  let calculation,result;
  if(a.kind==='corner'){
@@ -139,6 +140,22 @@ export function revealSetPieceDuel(state,draw){
  }else fail('Aucun duel de construction pour un penalty');
  const s=clone(state);
  s.match.action.duel={calculation,outcome:result};
+ // Coup franc DIRECT : aucune seconde étape « Occasion créée ».
+ // Après les deux tactiques, tirer ou arrêter immédiatement, avec tirage
+ // de finition distinct uniquement lorsque le duel a été remporté.
+ if(a.kind==='free-kick'&&a.choices.attack==='DIRECT'){
+  if(result.outcome==='stopped')
+   return finish(s,'stopped',null,detailsOf(a,{duel:s.match.action.duel}));
+  if(typeof finishRng!=='function')fail('Tirage de finition indisponible');
+  const calc=calculateFreeKickFinish({
+   taker:a.actors.taker,receiver:a.actors.receiver,
+   keeper:a.keeper,attack:a.choices.attack
+  });
+  const shot=resolveFreeKickFinish(calc,finishRng());
+  const finisherId=freeKickFinisherId(a.actors,a.choices.attack);
+  return finish(s,shot.outcome,shot.isGoal?finisherId:null,
+   detailsOf(a,{duel:s.match.action.duel,finisherId,shot:{calculation:calc,result:shot}}));
+ }
  s.match.action.stage='duel-revealed';
  return s;
 }
@@ -147,7 +164,8 @@ export function revealSetPieceDuel(state,draw){
 export function continueSetPieceDuel(state,finishDraw){
  const a=active(state,['duel-revealed']);
  if(a.duel?.outcome?.outcome==='stopped'){
-  return finish(clone(state),'stopped',null,detailsOf(a,{duel:a.duel}));
+  // Défenseur déjà célébré sur l'écran du duel : éviter le second résultat.
+  return continueMatch(finish(clone(state),'stopped',null,detailsOf(a,{duel:a.duel})));
  }
  if(a.duel?.outcome?.outcome!=='chance')fail('Issue de duel invalide');
  if(a.kind==='corner'){

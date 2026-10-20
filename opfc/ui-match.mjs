@@ -174,12 +174,20 @@ function renderAction(state,view,uncovered){
  if(a.stage==='duel-ready')return '<section class="panel match-stage"><h2 class="match-duel-ready-heading">Les deux tactiques sont validées</h2>'+
   duelFaceOff(state,a)+'<p class="muted">Elles vont être révélées simultanément.</p>'+button('match-reveal-duel','Révéler et résoudre le duel')+'</section>';
  if(a.stage==='duel-revealed'){
-  const duel=a.duel;
-  return '<section class="panel match-stage"><span class="eyebrow">Résultat du duel</span><h2>'+
-   html(OUTCOME[duel?.outcome?.outcome]??'Duel résolu')+'</h2>'+
-   duelFaceOff(state,a)+'<p>'+html(duel?.calculation?.attack)+' face à '+html(duel?.calculation?.defense)+'</p>'+
-   '<p class="caption">Probabilité calculée : '+Number(duel?.calculation?.successConditional??duel?.calculation?.successProbability??0).toFixed(1)+' % (hors faute le cas échéant).</p>'+
-   button('match-continue-duel','Continuer')+'</section>';
+  const outcome=a.duel?.outcome?.outcome,quality=QUALITY[a.context];
+  const detail=outcome==='chance'?
+   (quality?.label??'Occasion')+' · Le tireur va maintenant choisir sa frappe.':
+   outcome==='stopped'?'La défense a récupéré le ballon. Prochaine action après Continuer.':
+   'Une faute a été commise. Place au coup franc ou au penalty.';
+  return renderShotResult(state,{
+   outcome,attacker:a.attacker,minute:a.minute,score:state.match?.score,
+   shooterId:outcome==='foul'?a.roles?.carrier?.cardId:(a.shooterId??a.roles?.carrier?.cardId),
+   defenderId:a.roles?.defender?.cardId,
+   context:'Résultat du duel · '+(quality?.label??'Jeu ouvert'),
+   detailExtra:detail,action:'match-continue-duel',
+   continueLabel:outcome==='chance'?'Passer au tir':
+    outcome==='foul'?'Jouer la phase arrêtée':'Continuer'
+  });
  }
  if(a.stage==='shot-ready')return '<section class="panel match-stage"><h2 class="match-shot-ready-heading">Le tireur et le gardien ont choisi</h2>'+
   shotFaceOff(state)+'<p>Les deux choix vont être révélés simultanément.</p>'+
@@ -200,7 +208,10 @@ function resultView(m,state){
    outcome:r.outcome,attacker:r.attacker,minute:r.minute,score:m.score,
    shooterId:r.scorerId??detail.finisherId??detail.takerId??null,
    keeperId:matchKeeperId(state,r.attacker==='PSG'?'OM':'PSG'),
-   context:r.type==='open'?'Tir en jeu ouvert':
+   defenderId:detail.defenderId??detail.roles?.defender?.cardId??null,
+   context:detail.kind==='free-kick'?'Coup franc':detail.kind==='corner'?'Corner':
+    detail.kind==='penalty'?'Penalty':
+    r.type==='open'?(r.outcome==='stopped'?'Jeu ouvert':'Tir en jeu ouvert'):
     r.type==='corner'?'Corner':r.type==='free-kick'?'Coup franc':'Penalty'
   });
  }
