@@ -724,6 +724,13 @@ app.addEventListener('change',event=>{
  const target=event.target;
  try{
   if(onlineVisible){
+   if(target.dataset.action==='online-host-identity'&&DISPLAY_CLUBS.some(c=>c.id===target.value)){
+    onlineHostIdentity=target.value;render();return;
+   }
+   if(target.dataset.action==='online-guest-identity'&&DISPLAY_CLUBS.some(c=>c.id===target.value)){
+    onlineJoinCode=document.getElementById('opfc-room-code')?.value??onlineJoinCode;
+    onlineGuestIdentity=target.value;render();return;
+   }
    if(target.dataset.action==='formation')
     void onlineFormationChanged(target).catch(e=>{onlineError=e?.message||'Formation réseau impossible';render();});
    return;
@@ -734,12 +741,6 @@ app.addEventListener('change',event=>{
    const previous=localClubChoices[slot];localClubChoices[slot]=target.value;
    if(localClubChoices[other]===target.value)localClubChoices[other]=previous;
    render();return;
-  }
-  if(target.dataset.action==='online-host-identity'&&DISPLAY_CLUBS.some(c=>c.id===target.value)){
-   onlineHostIdentity=target.value;render();return;
-  }
-  if(target.dataset.action==='online-guest-identity'&&DISPLAY_CLUBS.some(c=>c.id===target.value)){
-   onlineGuestIdentity=target.value;render();return;
   }
   if(target.dataset.action==='initial-formation'&&FORMATION_NAMES.includes(target.value)){
    beforeForm[target.dataset.club]=target.value;render();
