@@ -118,3 +118,18 @@ test('Les deux clients ne peuvent pas choisir le club via la commande réseau',a
  assert.equal(server.version,2);
  assert.equal(server.game.auction.highestBid,0);
 });
+
+test('Un salon contenant des identités inventées ou dupliquées est rejeté',async()=>{
+ const {server,fetchImpl}=fakeServer();
+ const host=createOnlineClient({apiUrl:API,fetchImpl,storage:storage()});
+ const guest=createOnlineClient({apiUrl:API,fetchImpl,storage:storage()});
+ await host.createRoom('PSG');await guest.joinRoom('ABCD23');
+ server.game.teams[0].identityId='FAUX';
+ await assert.rejects(host.refreshRoom(),/Identités de clubs/);
+ server.game.teams[0].identityId='BDW';
+ server.game.teams[1].identityId='BDW';
+ await assert.rejects(guest.refreshRoom(),/Identités de clubs/);
+ server.game.teams[1].identityId='BDR';
+ await host.refreshRoom();
+ assert.deepEqual(host.game.teams.map(t=>t.identityId),['BDW','BDR']);
+});
