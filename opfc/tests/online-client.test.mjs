@@ -83,6 +83,25 @@ test('Joindre un salon accepte un code avec espaces et attribue OM au second jou
  assert.equal(f.client.sessionRole,'guest');
  assert.throws(()=>normalizeJoinCodeInput('AB I023'),/Code/);
 });
+test('Deux iPhone peuvent choisir BDW et BDR sans toucher aux identifiants PSG/OM',async()=>{
+ const host=fixture();
+ const selected={PSG:'BDW',OM:'BDR'};
+ host.responses.push({json:{session:session(),room:room({clubChoices:selected})}});
+ const a=await host.client.createRoom('PSG','BDW');
+ assert.deepEqual(host.requests[0].body,{action:'create',firstClub:'PSG',identityId:'BDW'});
+ assert.equal(a.myClub,'PSG');
+ assert.equal(a.clubChoices.PSG,'BDW');
+ const guest=fixture();
+ const guestRoom=room({clubChoices:selected,role:'guest',myClub:'OM',
+  status:'ready',version:2,opponentConnected:true});
+ guest.responses.push({json:{session:session({role:'guest',club:'OM'}),room:guestRoom}});
+ const b=await guest.client.joinRoom('ABCD23','BDR');
+ assert.deepEqual(guest.requests[0].body,{action:'join',code:'ABCD23',identityId:'BDR'});
+ assert.equal(b.clubChoices.OM,'BDR');
+ const bad=fixture();
+ bad.responses.push({json:{session:session(),room:room({clubChoices:{PSG:'BDW',OM:'BDW'}})}});
+ await assert.rejects(bad.client.createRoom('PSG','BDW'),/différents/);
+});
 test('Deux sessions ne peuvent pas être créées depuis le même iPhone sans quitter',async()=>{
  const f=fixture();f.responses.push({json:{session:session(),room:room()}});
  await f.client.createRoom('PSG');
