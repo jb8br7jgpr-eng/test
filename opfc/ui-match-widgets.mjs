@@ -92,18 +92,23 @@ const RESULTS=Object.freeze({
  goal:{title:'BUUUUT !',detail:'Le ballon termine au fond des filets !',tone:'goal',tag:'⚽'},
  save:{title:'ARRÊT DU GARDIEN !',detail:'Le gardien repousse la frappe !',tone:'save',tag:'🧤'},
  miss:{title:'TIR RATÉ !',detail:'Le ballon ne trouve pas le cadre !',tone:'miss',tag:'🎯'},
- stopped:{title:'ATTAQUE STOPPÉE !',detail:"La défense interrompt l'offensive avant le tir.",tone:'stopped',tag:'🛡️'}
+ stopped:{title:'ATTAQUE STOPPÉE !',detail:"Le défenseur récupère le ballon, l'attaque est terminée.",tone:'stopped',tag:'🛡️'},
+ chance:{title:'OCCASION CRÉÉE !',detail:'Le duel offensif est remporté ! Le tir va pouvoir être préparé.',tone:'chance',tag:'🔥'},
+ foul:{title:'FAUTE SIFFLÉE !',detail:'Le jeu est arrêté : un coup franc ou un penalty va être tiré.',tone:'foul',tag:'🚩'}
 });
-/** Écran premium unifié des buts, arrêts, tirs ratés et attaques stoppées. */
-export function renderShotResult(state,{outcome,attacker,minute,shooterId,keeperId,
+/** Écran premium unique pour chaque véritable issue du match et chaque occasion. */
+export function renderShotResult(state,{outcome,attacker,minute,shooterId,keeperId,defenderId,
  score,action='match-continue-result',continueLabel='Continuer',context='Résultat du tir',detailExtra=''}={}){
  const cfg=RESULTS[outcome];if(!cfg)return '';
  const defender=opposite(attacker);
- const actorId=outcome==='save'?(keeperId??keeperOf(state,defender)):shooterId;
- const club=outcome==='save'?defender:attacker;
+ const actorId=outcome==='save'?(keeperId??keeperOf(state,defender)):
+  outcome==='stopped'?(defenderId??null):shooterId;
+ const club=['save','stopped'].includes(outcome)?defender:attacker;
  const actual=actorId?playerOf(state,club,actorId):null;
  const natural=actorId?CARD_BY_ID.get(actorId):null;
- const role=outcome==='goal'?'Buteur':outcome==='save'?'Gardien':'Tireur';
+ const role=outcome==='goal'?'Buteur':outcome==='save'?'Gardien':
+  outcome==='stopped'?'Défenseur décisif':outcome==='chance'?'Attaquant décisif':
+  outcome==='foul'?'Joueur impliqué':'Tireur';
  const portrait=actorId?'<div class="shot-result-player">'+
   renderCharacterPortrait(actorId,'shot-result-portrait')+
   '<strong>'+h(natural?.name??actorId)+'</strong>'+
@@ -118,7 +123,7 @@ export function renderShotResult(state,{outcome,attacker,minute,shooterId,keeper
   '<h2 class="shot-result-headline">'+cfg.title+'</h2>'+
   '<p class="shot-result-description">'+cfg.detail+'</p>'+
   (detailExtra?'<p class="shot-result-directions">'+h(detailExtra)+'</p>':'')+
-  (outcome==='stopped'?'<div class="shot-result-defense">🛡️ Défense de '+h(visualAbbr(defender))+' victorieuse</div>':'')+
+  (outcome==='stopped'?'<div class="shot-result-defense">🛡️ Ballon récupéré par '+h(visualAbbr(defender))+'</div>':'')+
   portrait+scoreboard+
   '<p class="shot-result-wait">Le résultat reste affiché jusqu’à validation.</p>'+
   '<button class="btn primary full" data-action="'+h(action)+'">'+h(continueLabel)+'</button></section>';
