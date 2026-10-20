@@ -141,7 +141,10 @@ function matchStage(g,club,hostClub){
    renderShotResult(g,{outcome:result.outcome,attacker:result.attacker,
     minute:result.minute,score:m.score,
     shooterId:result.scorerId??detail.finisherId??detail.takerId??null,
-    keeperId:matchKeeperId(g,other(result.attacker)),action:'online-game'})
+    keeperId:matchKeeperId(g,other(result.attacker)),
+    defenderId:detail.defenderId??detail.roles?.defender?.cardId??null,
+    context:result.type==='open'?'Jeu ouvert':result.type==='free-kick'?'Coup franc':
+     result.type==='corner'?'Corner':'Penalty',action:'online-game'})
     .replace('data-action="online-game"',
      'data-action="online-game" data-type="continue-result"'+
      (allowed?'':' disabled aria-disabled="true"'))
@@ -192,9 +195,25 @@ function matchStage(g,club,hostClub){
    player+choices(TACTICS[a.stage]));
  }else if(a.stage==='duel-ready')
   panel=stage('Les deux tactiques sont verrouillées',btn('reveal-duel','Révéler et résoudre le duel'));
- else if(a.stage==='duel-revealed')
-  panel=stage('Résultat du duel','<p>'+esc(a.duel?.outcome?.outcome??'Duel résolu')+
-   '</p>'+btn('continue-duel','Continuer'));
+ else if(a.stage==='duel-revealed'){
+  const outcome=a.duel?.outcome?.outcome;
+  const context=a.context==='FRANCHE'?'OCCASION FRANCHE':
+   a.context==='BONNE'?'BONNE OCCASION':'ACTION DIFFICILE';
+  panel=renderShotResult(g,{
+   outcome,attacker:a.attacker,minute:a.minute,score:m.score,
+   shooterId:outcome==='foul'?a.roles?.carrier?.cardId:
+    (a.shooterId??a.roles?.carrier?.cardId),
+   defenderId:a.roles?.defender?.cardId,
+   context:'Résultat du duel · '+context,
+   detailExtra:outcome==='chance'?'Le tireur va maintenant préparer sa frappe.':
+    outcome==='stopped'?'La défense récupère le ballon. Prochaine action après Continuer.':
+    'Place au coup franc ou au penalty.',
+   action:'online-game',
+   continueLabel:outcome==='chance'?'Passer au tir':
+    outcome==='foul'?'Jouer la phase arrêtée':'Continuer'
+  }).replace('data-action="online-game"',
+   'data-action="online-game" data-type="continue-duel"');
+ }
  else if(a.stage==='shot-ready')
   panel=stage('Tireur face au gardien',showdown(g,a.shooterId,matchKeeperId(g,a.defender),
    a.attacker)+btn('reveal-shot','Résoudre la frappe'));
