@@ -42,6 +42,16 @@ test('Accueil : club au choix, deux formations, salon en ligne disponible',()=>{
  click('online-create-screen');
  assert.match(app.innerHTML,/Générer le code du salon/);
  assert.match(app.innerHTML,/data-action="online-create"/);
+ assert.match(app.innerHTML,/data-action="online-host-identity"/);
+ change('online-host-identity','PSG','WSC');
+ assert.match(app.innerHTML,/Water Seven City/);
+ assert.match(app.innerHTML,/value="WSC" selected/);
+ click('online-back');
+ click('online-join-screen');
+ assert.match(app.innerHTML,/data-action="online-guest-identity"/);
+ change('online-guest-identity','OM','BDR');
+ assert.match(app.innerHTML,/Borussia Dressrosa/);
+ assert.match(app.innerHTML,/value="BDR" selected/);
  click('online-back');
  click('online-back');
  assert.match(app.innerHTML,/La Grandline Cup/);
