@@ -241,7 +241,10 @@ jobs:
             if(await page.evaluate(()=>state.v3.market.exchanges.length)!==1)throw Error("Trade not accepted");
             if(!await page.getByText('Échange accepté !').count()||!await page.locator('[data-action="v3-trade-continue"]').count())
               throw Error("Accepted result screen and Continue missing");
+            const errorsBeforeReload=errors.length;
             await page.reload({waitUntil:"domcontentloaded"});
+            if(errors.length!==errorsBeforeReload)
+              throw Error("Crash pendant la reprise du marché après rechargement : "+errors.slice(errorsBeforeReload).join("; "));
             if(!await page.getByText('Échange accepté !').count())throw Error("Accepted result not restored after refresh");
             await page.locator('[data-action="v3-trade-continue"]').click();
             if(await page.evaluate(()=>state.v3.phase)!=='market')throw Error("Second trade not offered after Continue");
