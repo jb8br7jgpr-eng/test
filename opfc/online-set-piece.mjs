@@ -53,7 +53,16 @@ export function applyOnlineSetPieceTransition(state,club,command,rng){
    fail('Étape de tactique invalide');
   if(typeof command.choice!=='string'||command.choice.length>32)
    fail('Choix tactique invalide');
-  return lockSetPieceChoice(state,club,command.choice);
+  let next=lockSetPieceChoice(state,club,command.choice);
+  // Comme en jeu ouvert, les deux tactiques verrouillées déclenchent
+  // automatiquement le tirage officiel ; pas de bouton de résolution.
+  if(next.match.action?.stage==='duel-ready')
+   next=revealSetPieceDuel(next,rng(),rng);
+  else if(next.match.action?.stage==='penalty-ready')
+   next=revealSetPiecePenalty(next,rng());
+  else if(next.match.action?.stage==='corner-finish-ready')
+   next=finishSetPieceCorner(next,rng());
+  return next;
  }
  if(type==='reveal-setpiece-duel'){
   if(a.stage!=='duel-ready')fail('Étape du duel invalide');
