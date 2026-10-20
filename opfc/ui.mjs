@@ -23,7 +23,15 @@ let entryView='modes'; // écran de choix au lancement d'OPFC.
 let onlineVisible=false,onlineStage='choose',onlineJoinCode='',onlineBusy=false,onlineError='';
 let onlineSelection=null,onlineOwnClubScope=null,onlinePitchClub=null,onlineTeamsVisible=false,onlineRoomDetails=false;
 let onlineModal=null,onlineSeenRoom=null,onlineSeenAuctionCard=null;
-let onlineTimer=null;
+let onlineTimer=null,onlineRefreshInFlight=false;
+const scrollMatchToTop=()=>{try{window.scrollTo({top:0,behavior:'instant'});}catch{window.scrollTo(0,0);}};
+function onlineMatchDisplayKey(snapshot){
+ if(!snapshot||!['match','moment-result','shootout','finished','shootout-ready'].includes(snapshot.phase))
+  return null;
+ const m=snapshot.match??{},a=m.action,s=m.shootout;
+ return [snapshot.phase,m.index,a?.stage??'',m.lastResult?.outcome??'',
+  s?.active?.shotNumber??'',s?.lastResult?.shotNumber??''].join(':');
+}
 function stopOnlinePoll(){
  if(onlineTimer!==null){clearInterval(onlineTimer);onlineTimer=null;}
 }
@@ -33,7 +41,7 @@ function syncOnlinePoll(){
  }
  if(onlineTimer!==null)return;
  onlineTimer=setInterval(()=>{
-  if(onlineBusy||document.hidden)return;
+  if(onlineBusy||onlineRefreshInFlight||document.hidden)return;
   void refreshOnlineRoom(true);
  },1800);
  onlineTimer?.unref?.(); // uniquement utile sous Node lors des tests.
@@ -44,6 +52,8 @@ async function onlineMutation(fn){
  try{
   await fn();
   onlineError='';
+  if(['match','moment-result','shootout','finished','shootout-ready'].includes(onlineClient.game?.phase))
+   scrollMatchToTop();
  }catch(err){
   onlineError=err?.message||'Impossible de contacter le salon.';
  }finally{
@@ -52,7 +62,9 @@ async function onlineMutation(fn){
 }
 async function refreshOnlineRoom(silent=false){
  if(silent){
-  if(onlineBusy)return;
+  if(onlineBusy||onlineRefreshInFlight)return;
+  onlineRefreshInFlight=true;
+  const beforeScreen=onlineMatchDisplayKey(onlineClient.game);
   try{
    const version=onlineClient.room?.version;
    const before=onlineClient.room?.status;
@@ -60,11 +72,13 @@ async function refreshOnlineRoom(silent=false){
    if(onlineStage!=='room'||onlineClient.room?.version!==version||
       onlineClient.room?.status!==before){
     onlineStage='room';onlineError='';render();
+    if(beforeScreen!==onlineMatchDisplayKey(onlineClient.game)&&
+       onlineMatchDisplayKey(onlineClient.game)!==null)scrollMatchToTop();
    }
   }catch(err){
    const message=err?.message??'Actualisation impossible';
    if(onlineError!==message){onlineError=message;render();}
-  }
+  }finally{onlineRefreshInFlight=false;}
   return;
  }
  await onlineMutation(async()=>{
@@ -196,8 +210,8 @@ async function onlineGameClicked(action,button){
     await onlineClient.lineupAction(command);
    else await onlineClient.matchAction(command);
   });
-  if(type==='kickoff'&&onlineClient.game?.phase==='match')
-   window.scrollTo({top:0,behavior:'instant'});
+  if(['match','moment-result','shootout','finished'].includes(onlineClient.game?.phase))
+   scrollMatchToTop();
   return;
  }
  throw Error('Cette action n’est pas disponible en ligne');
@@ -845,7 +859,7 @@ function clicked(button){
   const choice=button.dataset.choice,takerId=button.dataset.card;
   matchUncovered=false; // masque immédiatement toute décision précédente
   change(s=>dispatchOpenMatch(s,command,{choice,takerId}));
-  if(command==='kickoff'&&game?.phase==='match')window.scrollTo({top:0,behavior:'instant'});
+  if(['match','moment-result','shootout','finished'].includes(game?.phase))scrollMatchToTop();
   return;
  }
  if(action==='club'){firstClub=club;render();return;}
@@ -996,3 +1010,11 @@ if(onlineClient.loadSession()){
 }
 render();
 if(onlineVisible&&onlineClient.configured)void refreshOnlineRoom();
+// Reconnexion iOS : rattrapage immédiat après retour au premier plan.
+document.addEventListener('visibilitychange',()=>{
+ if(onlineVisible&&!document.hidden&&onlineClient.hasSession)void refreshOnlineRoom(true);
+});
+window.addEventListener('focus',()=>{
+ if(onlineVisible&&onlineClient.hasSession&&!onlineRefreshInFlight)
+  void refreshOnlineRoom(true);
+});
