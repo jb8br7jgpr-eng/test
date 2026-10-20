@@ -57,7 +57,7 @@ export function applyOnlineSetPieceTransition(state,club,command,rng){
  }
  if(type==='reveal-setpiece-duel'){
   if(a.stage!=='duel-ready')fail('Étape du duel invalide');
-  return revealSetPieceDuel(state,rng());
+  return revealSetPieceDuel(state,rng(),rng);
  }
  if(type==='continue-setpiece-duel'){
   if(a.stage!=='duel-revealed')fail('Étape du duel invalide');
