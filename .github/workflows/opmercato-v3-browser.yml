@@ -214,9 +214,15 @@ jobs:
               state.players[0].smileModifiers={[ids[0]]:25,[ids[1]]:-25};
               state.players[0].shipBonus={[ids[0]]:3};
               state.players[0].armamentId=ids[0];state.players[0].armamentBonus=20;
+              // On isole le scénario de transferts des événements aléatoires.
+              // Les événements ont déjà leur propre contrôle plus haut ; aucun moteur n'est modifié.
+              if(state.featureConfig){state.featureConfig.active=null;state.featureConfig.plan=[];}
               state.v3.market.done=false;state.v3.phase='auction';state.auction.outcome='unsold';
               render();
               const first=document.querySelectorAll('.player-card')[0];
+              if(!first)throw Error('Équipage indisponible pendant la préparation du test de transfert : '+
+                JSON.stringify({phase:state.phase,v3Phase:state.v3?.phase,auction:state.auction?.charId,
+                  event:state.featureConfig?.active,screen:document.querySelector('#app')?.innerText?.slice(0,500)}));
               const chars=first.querySelectorAll('.oprs-character');
               if(chars.length!==half||first.querySelectorAll('.oprs-positive').length<2||!first.querySelector('.oprs-negative')||
                  !first.textContent.includes('Limite 0–100')||!first.querySelector('.oprs-grand-total')?.textContent.includes(String(getScore(state.players[0]))))
