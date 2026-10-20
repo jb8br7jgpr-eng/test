@@ -153,7 +153,7 @@ test('Mercato réel et placement immédiat de chaque recrue : atteint kickoff-re
   finishPlacement();
  }
  assert.equal(stateOf().phase,'lineup');
- assert.match(app.innerHTML,/Prépare le Classique/);
+ assert.match(app.innerHTML,/Prépare le match/);
  assert.equal(stateOf().teams.reduce((n,t)=>n+t.roster.length,0),14);
  assert.equal(stateOf().teams.reduce((n,t)=>n+t.slots.filter(Boolean).length,0),14);
  assert.equal(new Set(stateOf().teams.flatMap(t=>t.roster)).size,14);
