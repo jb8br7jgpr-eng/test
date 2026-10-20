@@ -133,7 +133,8 @@ async function onlineGameClicked(action,button){
    throw Error('Tu ne peux placer que tes propres joueurs');
   const slot=Number(button.dataset.slot);
   const pending=onlinePending(snapshot);
-  const selected=onlineSelection??(pending?.club===club?{club,id:pending.id}:null);
+  // Un nouveau joueur non placé doit toujours passer avant une ancienne sélection.
+  const selected=pending?.club===club?{club,id:pending.id}:onlineSelection;
   if(!selected||selected.club!==club){
    const chosen=snapshot.teams.find(t=>t.club===club).slots[slot];
    if(chosen){onlineSelection={club,id:chosen};render();}
