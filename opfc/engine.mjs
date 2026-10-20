@@ -79,7 +79,18 @@ export function bid(state,club,amount){
   return s;
 }
 export function pass(state,club){
-  const s=clone(state),a=requireTurn(s,club),team=s.teams[checkClub(s,club)];
+  const s=clone(state),auction=requireAuction(s,club);
+  if(auction.solo){
+    const team=s.teams[checkClub(s,club)];
+    if(auction.turn!==club||complete(team))fail('Recrutement solo indisponible');
+    if(team.refusals>=MAX_REFUSALS)fail('Les cinq refus sont épuisés : recrutement obligatoire');
+    team.refusals++;
+    auction.passed.push(club);
+    record(s,{kind:'pass',club,cost:1,solo:true});
+    closeCard(s,'solo-refused');
+    return s;
+  }
+  const a=requireTurn(s,club),team=s.teams[checkClub(s,club)];
   if(a.king?.holder===club&&a.king.phase==='open')fail('L’ouverture avec le Haki des Rois est obligatoire');
   // Dès qu'une enchère existe, tout joueur peut passer sans consommer de refus.
   const minimum=Math.max(MIN_BID,a.highestBid+1);
@@ -122,11 +133,40 @@ function allowLineupChange(s,club){
   if(s.phase==='mercato' && s.auction && (s.auction.king?.phase==='reply'||s.auction.king?.phase==='last'))fail('Duel de Haki en cours');
   t.ready=false;return t;
 }
+/**
+ * Répartit les titulaires déjà posés vers la nouvelle formation sans vider
+ * le terrain : priorité au poste naturel, puis à la ligne occupée, enfin
+ * au maintien d'emplacement. Deterministe, au plus 7! essais.
+ * Compatible avec les formations partielles pendant le mercato.
+ */
 export function chooseFormation(state,club,name){
   const s=clone(state),t=allowLineupChange(s,club);
-  formationPositions(name);
+  const nextPositions=formationPositions(name);
+  if(t.formation===name)return s;
+  const priorPositions=formationPositions(t.formation);
+  const players=t.slots.map((id,index)=>({id,index})).filter(p=>p.id);
+  let bestScore=-Infinity,bestSlots=null;
+  const slots=Array(7).fill(null);
+  function allocate(n,used,score){
+    if(n===players.length){
+      if(score>bestScore){bestScore=score;bestSlots=[...slots];}
+      return;
+    }
+    const p=players[n];
+    const natural=CARD_BY_ID.get(p.id)?.position;
+    for(let dest=0;dest<7;dest++){
+      if(used&(1<<dest))continue;
+      const value=(natural===nextPositions[dest]?300:0)+
+       (priorPositions[p.index]===nextPositions[dest]?35:0)+
+       (p.index===dest?8:0)+Math.max(0,6-Math.abs(dest-p.index));
+      slots[dest]=p.id;
+      allocate(n+1,used|(1<<dest),score+value);
+      slots[dest]=null;
+    }
+  }
+  allocate(0,0,0);
   t.formation=name;
-  t.slots=Array(7).fill(null);
+  t.slots=bestSlots??Array(7).fill(null);
   return s;
 }
 export function place(state,club,cardId,slot){
