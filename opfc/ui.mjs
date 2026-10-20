@@ -21,7 +21,7 @@ let placement=null,teamsVisible=false,pitchClub=null;
 const onlineClient=createOnlineClient();
 let entryView='modes'; // écran de choix au lancement d'OPFC.
 let onlineVisible=false,onlineStage='choose',onlineJoinCode='',onlineBusy=false,onlineError='';
-let onlineSelection=null,onlineOwnClubScope=null,onlinePitchClub=null;
+let onlineSelection=null,onlineOwnClubScope=null,onlinePitchClub=null,onlineTeamsVisible=false;
 let onlineTimer=null;
 function stopOnlinePoll(){
  if(onlineTimer!==null){clearInterval(onlineTimer);onlineTimer=null;}
@@ -34,7 +34,7 @@ function syncOnlinePoll(){
  onlineTimer=setInterval(()=>{
   if(onlineBusy||document.hidden)return;
   void refreshOnlineRoom(true);
- },3500);
+ },1800);
  onlineTimer?.unref?.(); // uniquement utile sous Node lors des tests.
 }
 async function onlineMutation(fn){
@@ -80,12 +80,43 @@ async function onlineGameClicked(action,button){
  if(action==='pitch-view'){
   onlinePitchClub=button.dataset.club;onlineSelection=null;render();return;
  }
+ if(action==='toggle-teams'){onlineTeamsVisible=!onlineTeamsVisible;render();return;}
+ if(action==='inspect'){const id=snapshot.auction?.cardId;if(id){modal={type:'card',id};render();}return;}
+ if(action==='close'){modal=null;render();return;}
+ if(action==='continue-placement'){render();return;}
+ if(['amount-min','amount-max','amount-plus'].includes(action)){
+  const input=document.getElementById('bid-value'),context=uiAuction(snapshot);
+  if(!input||!context)return;
+  const raw=Number(String(input.value).replace(/[\\s\\u00a0\\u202f]/g,''))/1000000;
+  const selected=action==='amount-min'?context.minimum:action==='amount-max'?context.maximum:
+   Math.min(context.maximum,Math.max(context.minimum,(Number.isFinite(raw)?raw:context.minimum)+5));
+  input.value=String(Math.round(selected)*1000000);return;
+ }
+ if(action==='bid-quick'||action==='bid'){
+  if(snapshot.phase!=='mercato'||snapshot.auction?.turn!==club)throw Error('Ce n’est pas ton tour');
+  let amount=Number(button.dataset.amount);
+  if(action==='bid'){
+   const raw=String(document.getElementById('bid-value')?.value??'').replace(/[\\s\\u00a0\\u202f]/g,'');
+   if(!/^\\d+$/.test(raw)||Number(raw)%1000000!==0)
+    throw Error('Offre invalide : montant entier en millions de Berrys');
+   amount=Number(raw)/1000000;
+  }
+  if(!Number.isSafeInteger(amount))throw Error('Offre invalide');
+  await onlineMutation(()=>onlineClient.marketAction({type:'bid',amount}));return;
+ }
+ if(['pass','solo','kings','observation'].includes(action)){
+  if(snapshot.phase!=='mercato')throw Error('Le mercato est terminé');
+  if(action!=='observation'&&snapshot.auction?.turn!==club)throw Error('Ce n’est pas ton tour');
+  await onlineMutation(()=>onlineClient.marketAction({type:action}));return;
+ }
  if(action==='pick'){
-  if(!['lineup','half-time'].includes(snapshot.phase)||button.dataset.club!==club)
+  if(!['mercato','lineup','half-time'].includes(snapshot.phase)||button.dataset.club!==club)
    throw Error('Tu ne peux sélectionner que ton club');
   const cardId=button.dataset.card;
   if(!snapshot.teams.find(t=>t.club===club).roster.includes(cardId))
    throw Error('Carte absente de ton équipe');
+  const pending=onlinePending(snapshot);
+  if(pending?.club===club&&pending.id!==cardId)throw Error('Place d’abord ta nouvelle recrue');
   onlineSelection=onlineSelection?.id===cardId?null:{club,id:cardId};
   render();return;
  }
@@ -97,7 +128,7 @@ async function onlineGameClicked(action,button){
   return;
  }
  if(action==='slot'){
-  if(button.dataset.club!==club||!['lineup','half-time'].includes(snapshot.phase))
+  if(button.dataset.club!==club||!['mercato','lineup','half-time'].includes(snapshot.phase))
    throw Error('Tu ne peux placer que tes propres joueurs');
   const slot=Number(button.dataset.slot);
   if(!onlineSelection||onlineSelection.club!==club){
@@ -109,6 +140,7 @@ async function onlineGameClicked(action,button){
    const command={type:snapshot.phase==='half-time'?'half-place':'place',
     cardId:onlineSelection.id,slot};
    if(snapshot.phase==='half-time')await onlineClient.matchAction(command);
+   else if(snapshot.phase==='mercato')await onlineClient.marketAction(command);
    else await onlineClient.lineupAction(command);
    onlineSelection=null;
   });return;
@@ -162,12 +194,13 @@ async function onlineGameClicked(action,button){
 async function onlineFormationChanged(target){
  const snapshot=onlineClient.game,club=onlineClient.room?.myClub;
  if(!snapshot||target.dataset.club!==club||
-  !['lineup','half-time'].includes(snapshot.phase))
+  !['mercato','lineup','half-time'].includes(snapshot.phase))
   throw Error('Tu ne peux modifier que ta propre formation');
  if(!FORMATION_NAMES.includes(target.value))throw Error('Formation inconnue');
  const phase=snapshot.phase,formation=target.value;
  await onlineMutation(async()=>{
   if(phase==='half-time')await onlineClient.matchAction({type:'half-formation',formation});
+  else if(phase==='mercato')await onlineClient.marketAction({type:'formation',formation});
   else await onlineClient.lineupAction({type:'formation',formation});
   onlineSelection=null;
  });
@@ -195,14 +228,16 @@ async function onlineClicked(action,button){
  }
  if(action==='online-create'){
   await onlineMutation(async()=>{
-   await onlineClient.createRoom('PSG',onlineHostIdentity);onlineStage='room';
+   await onlineClient.createRoom('PSG',onlineHostIdentity);
+   await onlineClient.refreshRoom();onlineStage='room';
   });return;
  }
  if(action==='online-join'){
   const typed=document.getElementById('opfc-room-code')?.value??onlineJoinCode;
   onlineJoinCode=normalizeJoinCodeInput(typed);
   await onlineMutation(async()=>{
-   await onlineClient.joinRoom(onlineJoinCode,onlineGuestIdentity);onlineStage='room';
+   await onlineClient.joinRoom(onlineJoinCode,onlineGuestIdentity);
+   await onlineClient.refreshRoom();onlineStage='room';
   });return;
  }
  if(action==='online-refresh'){await refreshOnlineRoom();return;}
