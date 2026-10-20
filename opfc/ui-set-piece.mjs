@@ -62,7 +62,7 @@ export function dispatchSetPieceMatch(state,command,{choice,takerId,rng=Math.ran
   if(!club)throw Error('Aucun choix de phase arrêtée attendu');
   return lockSetPieceChoice(state,club,choice);
  }
- if(command==='reveal-setpiece-duel')return revealSetPieceDuel(state,rng());
+ if(command==='reveal-setpiece-duel')return revealSetPieceDuel(state,rng(),rng);
  if(command==='continue-setpiece-duel')return continueSetPieceDuel(state,rng());
  if(command==='finish-corner')return finishSetPieceCorner(state,rng());
  if(command==='reveal-penalty')return revealSetPiecePenalty(state,rng());
