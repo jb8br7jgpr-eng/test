@@ -221,9 +221,16 @@ function restore(){try{
    const p=data.placement;
    if(p&&['mercato','lineup'].includes(game.phase)&&
      game.teams.some(t=>t.club===p.club&&t.roster.includes(p.cardId))){
-     placement={club:p.club,cardId:p.cardId};
-     selection={club:p.club,id:p.cardId};
-     pitchClub=p.club;
+     const finalPlaced=game.phase==='lineup'&&
+       game.teams.find(t=>t.club===p.club)?.slots.includes(p.cardId);
+     if(finalPlaced){
+       // Anciennes sauvegardes : le dernier placement est déjà terminé.
+       placement=null;selection=null;teamsVisible=true;pitchClub=p.club;
+     }else{
+       placement={club:p.club,cardId:p.cardId};
+       selection={club:p.club,id:p.cardId};
+       pitchClub=p.club;
+     }
    }
   }
 }catch{}}
