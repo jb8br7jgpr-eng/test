@@ -124,7 +124,7 @@ async function onlineGameClicked(action,button){
  if(action==='inspect-player'){
   const id=button.dataset.card;
   if(snapshot.teams.some(t=>t.roster.includes(id))){
-   onlineError='Fiche : '+(CARD_BY_ID.get(id)?.name??id);render();
+   modal={type:'card',id};render();
   }
   return;
  }
@@ -667,6 +667,12 @@ function onlineSharedMarket(snapshot){
    (mine?'':'<p class="online-turn-note">⏳ Au tour de '+esc(visualAbbr(snapshot.auction.turn))+
    '. Tu peux consulter tes joueurs et ton Haki d’Observation.</p>')+
    auction+
+   (snapshot.myObservation?.length?
+    '<section class="panel online-observation"><strong>👁 Tes révélations (privées)</strong>'+
+    '<div class="online-observation-row">'+snapshot.myObservation.map(id=>
+     '<div>'+renderCharacterPortrait(id,'kick-portrait')+
+     '<span>'+esc(card(id)?.name??id)+'</span></div>').join('')+
+    '</div></section>':'')+
    (!mine&&!ownTeam?.hakis?.observation?
     '<button class="btn ghost full" data-action="observation">👁 Utiliser ton Observation</button>':'')+
    '<div class="view-teams-actions"><button class="btn ghost full" data-action="toggle-teams" aria-expanded="'+onlineTeamsVisible+'">'+
@@ -700,7 +706,7 @@ function render(){
   busy:onlineBusy,error:onlineError,gameActive:showingGame
  }):'';
  const onlineDisplay=shell()+compactRoom+lobby+
-  (showingGame?(['mercato','lineup'].includes(snapshot.phase)?onlineSharedMarket(snapshot):
+  (showingGame?(['mercato','lineup','kickoff-ready'].includes(snapshot.phase)?onlineSharedMarket(snapshot):
    '<main class="online-game-content opfc-online-playing">'+
    renderOnlineGame(snapshot,{myClub:room.myClub,hostClub:room.hostClub})+
    (['match','moment-result','half-time','resume-ready','shootout-ready','shootout','finished'].includes(snapshot.phase)?
