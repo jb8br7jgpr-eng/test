@@ -86,7 +86,7 @@ export function createOnlineClient({
   if(withMatch){
    const m=payload.match;
    const matchFields=['index','minute','score','statistics','goals',
-    'history','lastResult','winner','victory','currentMoment','action','shootout'];
+    'history','lastResult','winner','victory','currentMoment','action','shootout','resultAcks'];
    if(!m||typeof m!=='object'||Array.isArray(m)||
     Object.keys(m).some(k=>!matchFields.includes(k))||
     !Number.isInteger(m.index)||m.index<0||
@@ -96,6 +96,11 @@ export function createOnlineClient({
     fail('Vue de match invalide');
    if(m.history!==undefined&&!Array.isArray(m.history))
     fail('Historique de match invalide');
+   if(m.resultAcks!==undefined&&(
+    !m.resultAcks||typeof m.resultAcks!=='object'||Array.isArray(m.resultAcks)||
+    Object.keys(m.resultAcks).some(k=>!['PSG','OM'].includes(k))||
+    !['PSG','OM'].every(c=>typeof m.resultAcks[c]==='boolean')))
+    fail('Synchronisation des validations invalide');
    if(m.action){
     if(typeof m.action!=='object'||Array.isArray(m.action)||
      !['open','corner','free-kick','penalty'].includes(m.action.kind)||
@@ -154,15 +159,32 @@ export function createOnlineClient({
   if(persistSession)persist();
   return room;
  };
+ const refreshAfterVersionConflict=async()=>{
+  const data=await request({action:'get',roomId:session.roomId,token:session.token});
+  const next=validRoom(data.room,session),snapshot=validSnapshot(data.game);
+  if(!room||next.version>=room.version){room=next;marketGame=snapshot;}
+ };
  const sendCommand=async(action,command)=>{
   ensureOnline();
   if(!session||!room||room.status!=='ready')
    fail('Actualise d’abord un salon avec deux joueurs');
   if(!command||typeof command!=='object'||Array.isArray(command))
    fail('Commande de jeu invalide');
-  const before=room.version;
-  const data=await request({action,roomId:session.roomId,token:session.token,
-   expectedVersion:before,command});
+  let before=room.version, data;
+  try{
+   data=await request({action,roomId:session.roomId,token:session.token,
+    expectedVersion:before,command});
+  }catch(error){
+   // Une validation de résultat peut partir au même moment de deux iPhone.
+   // Sur conflit atomique, relire puis réessayer UNE fois avec la nouvelle
+   // version. Jamais de rejeu automatique pour les enchères et les achats.
+   if(command.type!=='ack'||!(/Salon modifié|actualise la partie/i.test(error?.message??'')))
+    throw error;
+   await refreshAfterVersionConflict();
+   before=room.version;
+   data=await request({action,roomId:session.roomId,token:session.token,
+    expectedVersion:before,command});
+  }
   const nextRoom=validRoom(data.room,session);
   if(nextRoom.version!==before+1)
    fail('Version de confirmation de la partie invalide');
