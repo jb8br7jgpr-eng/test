@@ -143,7 +143,9 @@ function matchStage(g,club,hostClub){
     shooterId:result.scorerId??detail.finisherId??detail.takerId??null,
     keeperId:matchKeeperId(g,other(result.attacker)),
     defenderId:detail.defenderId??detail.roles?.defender?.cardId??null,
-    context:result.type==='open'?'Jeu ouvert':result.type==='free-kick'?'Coup franc':
+    context:detail.kind==='free-kick'?'Coup franc':detail.kind==='corner'?'Corner':
+     detail.kind==='penalty'?'Penalty':
+     result.type==='open'?'Jeu ouvert':result.type==='free-kick'?'Coup franc':
      result.type==='corner'?'Corner':'Penalty',action:'online-game'})
     .replace('data-action="online-game"',
      'data-action="online-game" data-type="continue-result"'+
