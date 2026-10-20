@@ -21,7 +21,7 @@ let placement=null,teamsVisible=false,pitchClub=null;
 const onlineClient=createOnlineClient();
 let entryView='modes'; // écran de choix au lancement d'OPFC.
 let onlineVisible=false,onlineStage='choose',onlineJoinCode='',onlineBusy=false,onlineError='';
-let onlineSelection=null,onlineOwnClubScope=null,onlinePitchClub=null;
+let onlineSelection=null,onlineOwnClubScope=null,onlinePitchClub=null,onlineTeamsVisible=false,onlineRoomDetails=false;
 let onlineTimer=null;
 function stopOnlinePoll(){
  if(onlineTimer!==null){clearInterval(onlineTimer);onlineTimer=null;}
@@ -34,7 +34,7 @@ function syncOnlinePoll(){
  onlineTimer=setInterval(()=>{
   if(onlineBusy||document.hidden)return;
   void refreshOnlineRoom(true);
- },3500);
+ },1800);
  onlineTimer?.unref?.(); // uniquement utile sous Node lors des tests.
 }
 async function onlineMutation(fn){
@@ -80,35 +80,70 @@ async function onlineGameClicked(action,button){
  if(action==='pitch-view'){
   onlinePitchClub=button.dataset.club;onlineSelection=null;render();return;
  }
+ if(action==='toggle-teams'){onlineTeamsVisible=!onlineTeamsVisible;render();return;}
+ if(action==='online-room-details'){onlineRoomDetails=!onlineRoomDetails;render();return;}
+ if(action==='inspect'){const id=snapshot.auction?.cardId;if(id){modal={type:'card',id};render();}return;}
+ if(action==='close'){modal=null;render();return;}
+ if(action==='continue-placement'){render();return;}
+ if(['amount-min','amount-max','amount-plus'].includes(action)){
+  const input=document.getElementById('bid-value'),context=uiAuction(snapshot);
+  if(!input||!context)return;
+  const raw=Number(String(input.value).replace(/[\\s\\u00a0\\u202f]/g,''))/1000000;
+  const selected=action==='amount-min'?context.minimum:action==='amount-max'?context.maximum:
+   Math.min(context.maximum,Math.max(context.minimum,(Number.isFinite(raw)?raw:context.minimum)+5));
+  input.value=String(Math.round(selected)*1000000);return;
+ }
+ if(action==='bid-quick'||action==='bid'){
+  if(snapshot.phase!=='mercato'||snapshot.auction?.turn!==club)throw Error('Ce n’est pas ton tour');
+  let amount=Number(button.dataset.amount);
+  if(action==='bid'){
+   const raw=String(document.getElementById('bid-value')?.value??'').replace(/[\\s\\u00a0\\u202f]/g,'');
+   if(!/^\\d+$/.test(raw)||Number(raw)%1000000!==0)
+    throw Error('Offre invalide : montant entier en millions de Berrys');
+   amount=Number(raw)/1000000;
+  }
+  if(!Number.isSafeInteger(amount))throw Error('Offre invalide');
+  await onlineMutation(()=>onlineClient.marketAction({type:'bid',amount}));return;
+ }
+ if(['pass','solo','kings','observation'].includes(action)){
+  if(snapshot.phase!=='mercato')throw Error('Le mercato est terminé');
+  if(action!=='observation'&&snapshot.auction?.turn!==club)throw Error('Ce n’est pas ton tour');
+  await onlineMutation(()=>onlineClient.marketAction({type:action}));return;
+ }
  if(action==='pick'){
-  if(!['lineup','half-time'].includes(snapshot.phase)||button.dataset.club!==club)
+  if(!['mercato','lineup','half-time'].includes(snapshot.phase)||button.dataset.club!==club)
    throw Error('Tu ne peux sélectionner que ton club');
   const cardId=button.dataset.card;
   if(!snapshot.teams.find(t=>t.club===club).roster.includes(cardId))
    throw Error('Carte absente de ton équipe');
+  const pending=onlinePending(snapshot);
+  if(pending?.club===club&&pending.id!==cardId)throw Error('Place d’abord ta nouvelle recrue');
   onlineSelection=onlineSelection?.id===cardId?null:{club,id:cardId};
   render();return;
  }
  if(action==='inspect-player'){
   const id=button.dataset.card;
   if(snapshot.teams.some(t=>t.roster.includes(id))){
-   onlineError='Fiche : '+(CARD_BY_ID.get(id)?.name??id);render();
+   modal={type:'card',id};render();
   }
   return;
  }
  if(action==='slot'){
-  if(button.dataset.club!==club||!['lineup','half-time'].includes(snapshot.phase))
+  if(button.dataset.club!==club||!['mercato','lineup','half-time'].includes(snapshot.phase))
    throw Error('Tu ne peux placer que tes propres joueurs');
   const slot=Number(button.dataset.slot);
-  if(!onlineSelection||onlineSelection.club!==club){
+  const pending=onlinePending(snapshot);
+  const selected=onlineSelection??(pending?.club===club?{club,id:pending.id}:null);
+  if(!selected||selected.club!==club){
    const chosen=snapshot.teams.find(t=>t.club===club).slots[slot];
    if(chosen){onlineSelection={club,id:chosen};render();}
    return;
   }
   await onlineMutation(async()=>{
    const command={type:snapshot.phase==='half-time'?'half-place':'place',
-    cardId:onlineSelection.id,slot};
+    cardId:selected.id,slot};
    if(snapshot.phase==='half-time')await onlineClient.matchAction(command);
+   else if(snapshot.phase==='mercato')await onlineClient.marketAction(command);
    else await onlineClient.lineupAction(command);
    onlineSelection=null;
   });return;
@@ -162,12 +197,13 @@ async function onlineGameClicked(action,button){
 async function onlineFormationChanged(target){
  const snapshot=onlineClient.game,club=onlineClient.room?.myClub;
  if(!snapshot||target.dataset.club!==club||
-  !['lineup','half-time'].includes(snapshot.phase))
+  !['mercato','lineup','half-time'].includes(snapshot.phase))
   throw Error('Tu ne peux modifier que ta propre formation');
  if(!FORMATION_NAMES.includes(target.value))throw Error('Formation inconnue');
  const phase=snapshot.phase,formation=target.value;
  await onlineMutation(async()=>{
   if(phase==='half-time')await onlineClient.matchAction({type:'half-formation',formation});
+  else if(phase==='mercato')await onlineClient.marketAction({type:'formation',formation});
   else await onlineClient.lineupAction({type:'formation',formation});
   onlineSelection=null;
  });
@@ -195,16 +231,21 @@ async function onlineClicked(action,button){
  }
  if(action==='online-create'){
   await onlineMutation(async()=>{
-   await onlineClient.createRoom('PSG',onlineHostIdentity);onlineStage='room';
+   await onlineClient.createRoom('PSG',onlineHostIdentity);
+   onlineStage='room';
+   try{await onlineClient.refreshRoom();}catch{ /* reprise par actualisation automatique */ }
   });return;
  }
  if(action==='online-join'){
   const typed=document.getElementById('opfc-room-code')?.value??onlineJoinCode;
   onlineJoinCode=normalizeJoinCodeInput(typed);
   await onlineMutation(async()=>{
-   await onlineClient.joinRoom(onlineJoinCode,onlineGuestIdentity);onlineStage='room';
+   await onlineClient.joinRoom(onlineJoinCode,onlineGuestIdentity);
+   onlineStage='room';
+   try{await onlineClient.refreshRoom();}catch{ /* reprise par actualisation automatique */ }
   });return;
  }
+ if(action==='online-room-details'){onlineRoomDetails=!onlineRoomDetails;render();return;}
  if(action==='online-refresh'){await refreshOnlineRoom();return;}
  await onlineGameClicked(action,button);
 }
@@ -315,10 +356,11 @@ const fullBerrys=millions=>{
  if(!Number.isSafeInteger(value)||value<0)throw Error('Montant invalide');
  return String(value).replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' ฿';
 };
-function sale(){
+function sale({ownClub=null}={}){
  // Reproduction du panneau d'enchères approuvé pour OPFC (cosmétique seulement).
  // Les incréments sont ceux du moteur OPFC : 1 M par palier, contrairement au jeu classique.
  const context=uiAuction(game),a=context.auction,t=context.team;
+ const mayAct=ownClub===null||ownClub===a.turn;
  const min=context.minimum,max=context.maximum,remaining=Math.max(0,5-t.refusals);
  const steps=[0,1,5,10],withdrawal=context.everOffered,freePass=a.highestBid>0;
  const refusal=freePass?(withdrawal?'Arrêter d’enchérir (gratuit)':'Passer gratuitement · enchère adverse'):
@@ -340,29 +382,29 @@ function sale(){
  '<div class="turn-budget">'+fullBerrys(t.budget)+'<br><span>disponibles</span></div></div>'+
  (a.king?'<p class="warning-copy">👑 Haki des Rois activé par '+esc(visualAbbr(a.king.holder))+'.</p>':'')+
  (a.solo?'<div class="solo-auction"><p>Une seule équipe recrute encore : prix fixe '+fullBerrys(5)+'.</p>'+
- '<button type="button" class="btn primary full" data-action="solo">Recruter · '+fullBerrys(5)+'</button>'+
- '<button type="button" class="btn ghost full" data-action="pass"'+(context.canPass?'':' disabled')+'>'+
- (context.canPass?'Refuser ce personnage · '+remaining+'/5 restants':'⛔ Refus épuisés · recrutement obligatoire')+
+ '<button type="button" class="btn primary full" data-action="solo"'+(mayAct?'':' disabled')+'>Recruter · '+fullBerrys(5)+'</button>'+
+ '<button type="button" class="btn ghost full" data-action="pass"'+(mayAct&&context.canPass?'':' disabled')+'>'+
+ (mayAct&&context.canPass?'Refuser ce personnage · '+remaining+'/5 restants':'⛔ Refus épuisés · recrutement obligatoire')+
  '</button><p class="caption">Refus utilisés : '+t.refusals+'/5. Le refus passe à la carte suivante.</p></div>':
  '<div class="offers">'+steps.map(step=>{
   const amount=min+step;
   return '<button class="offer-btn" type="button" data-action="bid-quick" data-amount="'+amount+
-  '" '+(context.canBid&&amount<=max?'':'disabled')+'><b>'+fullBerrys(amount)+'</b><small>'+
+  '" '+(mayAct&&context.canBid&&amount<=max?'':'disabled')+'><b>'+fullBerrys(amount)+'</b><small>'+
   (step===0?'Offre minimale':'+'+step+' palier(s)')+'</small></button>';
  }).join('')+'</div>'+
  '<div class="custom-bid"><label for="bid-value">Autre montant (฿)</label>'+
  '<div><input id="bid-value" type="text" inputmode="numeric" autocomplete="off" pattern="[0-9]*"'+
  ' aria-label="Montant personnalisé en Berrys" placeholder="'+(min*1000000)+'" value="'+(min*1000000)+'" '+
- (context.canBid?'':'disabled')+'>'+
- '<button type="button" class="btn-ghost" data-action="bid" '+(context.canBid?'':'disabled')+
+ (mayAct&&context.canBid?'':'disabled')+'>'+
+ '<button type="button" class="btn-ghost" data-action="bid" '+(mayAct&&context.canBid?'':'disabled')+
  '>Enchérir</button></div></div>'+
- '<button class="pass-btn" type="button" data-action="pass" '+(context.canPass?'':'disabled')+
+ '<button class="pass-btn" type="button" data-action="pass" '+(mayAct&&context.canPass?'':'disabled')+
  '>'+refusal+'</button>'+
  '<div class="auction-hakis"><button class="haki-btn" type="button" data-action="kings"'+
- (context.canKings?'':' disabled')+'>'+
+ (mayAct&&context.canKings?'':' disabled')+'>'+
  '👑 Haki des Rois<small>'+kingInfo+'</small></button>'+
  '<button class="extra-power" type="button" data-action="observation"'+
- (context.canObserve?'':' disabled')+'>👁 Observation<small>'+eyeInfo+'</small></button></div>'+
+ (mayAct&&context.canObserve?'':' disabled')+'>👁 Observation<small>'+eyeInfo+'</small></button></div>'+
  '<p class="notice">'+(freePass?
  'Une enchère a été placée : passer est gratuit pour les deux joueurs.':
  'Sans enchère sur ce personnage, passer consomme un de tes 5 refus.')+
@@ -386,7 +428,7 @@ function pitchMarkings(){
 function fieldHalf(team,top){
  const u=uiTeam(team),positions=top?['GAR','DEF','MIL','ATT']:['ATT','MIL','DEF','GAR'];
  const spectator=onlineOwnClubScope!==null?
-  (team.club!==onlineOwnClubScope||!['lineup','half-time'].includes(game.phase)):
+  (team.club!==onlineOwnClubScope||!['mercato','lineup','half-time'].includes(game.phase)):
   !['mercato','lineup','half-time'].includes(game.phase);
  const label='<div class="field-label '+team.club.toLowerCase()+'"><span>'+esc(visualAbbr(team.club))+' · '+u.formation+
  '</span><span>'+u.entente+'/10 entente</span></div>';
@@ -442,7 +484,7 @@ function pitch(){
 function teamPanel(team){
  const u=uiTeam(team),roster=uiRoster(team);
  const editable=(onlineOwnClubScope===null?['mercato','lineup','half-time'].includes(game.phase):
-  ['lineup','half-time'].includes(game.phase)&&team.club===onlineOwnClubScope)&&!team.ready&&
+  ['mercato','lineup','half-time'].includes(game.phase)&&team.club===onlineOwnClubScope)&&!team.ready&&
  (!placement||placement.club===team.club)&&!placement;
  const ranks={DIA:'Diamant',OR:'Or',ARG:'Argent',BRZ:'Bronze'};
  return '<section class="panel team-panel"><div class="team-heading"><h2>'+
@@ -564,25 +606,82 @@ function popup(){
  btn('reset','Effacer la partie','negative full')+btn('close','Annuler','ghost full');
  return '<div class="modal-backdrop"><section class="modal" role="dialog" aria-modal="true">'+body+'</section></div>';
 }
-function onlineTeams(){
+/** Le serveur détient les compositions ; aucune recrue n'est placée localement. */
+function onlinePending(snapshot){
+ if(!['mercato','lineup'].includes(snapshot?.phase))return null;
+ // Priorité au premier placement en attente, quel que soit l'appareil.
+ for(const team of snapshot.teams??[]){
+  const id=team.roster?.find(cardId=>!team.slots.includes(cardId));
+  if(id)return {club:team.club,id};
+ }
+ return null;
+}
+function onlineScoped(renderFn,{pending=null}={}){
  const snapshot=onlineClient.game;
  if(!snapshot)return '';
  const prior={game,selection,pitchClub,placement,own:onlineOwnClubScope};
  try{
-  game=snapshot;
-  selection=onlineSelection;
-  pitchClub=onlinePitchClub??onlineClient.room?.myClub??'PSG';
-  placement=null;
-  onlineOwnClubScope=onlineClient.room?.myClub??null;
-  return '<section class="match-team-overview online-team-overview" aria-label="Terrain et effectifs du match">'+
-   '<div class="match-team-overview-heading"><span>⚽ TERRAIN ET COMPOSITIONS</span>'+
-   '<small>'+(['lineup','half-time'].includes(snapshot.phase)?
-    'Déplace uniquement les joueurs de ton équipe':'Effectifs des deux équipes')+'</small></div>'+
-   teams()+'</section>';
+  const ownClub=onlineClient.room?.myClub??'PSG';
+  game=snapshot;onlineOwnClubScope=ownClub;
+  placement=pending?.club===ownClub?{club:ownClub,cardId:pending.id}:null;
+  selection=placement?{club:ownClub,id:pending.id}:onlineSelection;
+  pitchClub=onlinePitchClub??ownClub;
+  return renderFn();
  }finally{
   game=prior.game;selection=prior.selection;pitchClub=prior.pitchClub;
   placement=prior.placement;onlineOwnClubScope=prior.own;
  }
+}
+function onlineTeams(pending=null){
+ return onlineScoped(()=>'<section class="match-team-overview online-team-overview" aria-label="Terrain et effectifs du match">'+
+   '<div class="match-team-overview-heading"><span>⚽ TERRAIN ET COMPOSITIONS</span>'+
+   '<small>'+(['mercato','lineup','half-time'].includes(game.phase)?
+    'Ton club est modifiable · touche un joueur puis sa nouvelle case':'Effectifs des deux équipes')+'</small></div>'+
+   teams()+'</section>',{pending});
+}
+function onlineSharedMarket(snapshot){
+ const ownClub=onlineClient.room.myClub;
+ const pending=onlinePending(snapshot);
+ const hud=onlineScoped(()=>wallets());
+ if(pending){
+  if(pending.club!==ownClub)
+   return '<main class="online-game-content opfc-online-playing">'+hud+
+    '<section class="panel online-turn-wait"><h2>⏳ Recrue en cours de placement</h2>'+
+    '<p>'+esc(clubName(pending.club))+' place son personnage avant la reprise du mercato.</p></section>'+
+    '</main>';
+  const recruit=card(pending.id);
+  return '<main class="online-game-content opfc-online-playing">'+hud+
+    '<section class="panel placement-intro"><span class="eyebrow">Recrutement confirmé</span>'+
+    '<div class="placement-summary">'+renderCharacterPortrait(pending.id,'placement-portrait')+
+    '<div class="placement-summary-body"><h2>'+esc(recruit.name)+' rejoint '+esc(clubName(ownClub))+'</h2>'+
+    '<div class="placement-metadata"><span class="roster-position">Préf. '+esc(recruit.position)+'</span>'+
+    '<span class="roster-rating">Note '+recruit.rating+'</span></div></div></div>'+
+    '<p><strong>Touche une case sur ton terrain pour placer la recrue.</strong> Puis les enchères reprendront automatiquement.</p>'+
+    '</section>'+onlineTeams(pending)+'</main>';
+ }
+ if(snapshot.phase==='mercato'){
+  const auction=onlineScoped(()=>sale({ownClub}));
+  const mine=snapshot.auction?.turn===ownClub;
+  const ownTeam=snapshot.teams.find(t=>t.club===ownClub);
+  return '<main class="online-game-content opfc-online-playing">'+hud+
+   (mine?'':'<p class="online-turn-note">⏳ Au tour de '+esc(visualAbbr(snapshot.auction.turn))+
+   '. Tu peux consulter tes joueurs et ton Haki d’Observation.</p>')+
+   auction+
+   (snapshot.myObservation?.length?
+    '<section class="panel online-observation"><strong>👁 Tes révélations (privées)</strong>'+
+    '<div class="online-observation-row">'+snapshot.myObservation.map(id=>
+     '<div>'+renderCharacterPortrait(id,'kick-portrait')+
+     '<span>'+esc(card(id)?.name??id)+'</span></div>').join('')+
+    '</div></section>':'')+
+   (!mine&&!ownTeam?.hakis?.observation?
+    '<button class="btn ghost full" data-action="observation">👁 Utiliser ton Observation</button>':'')+
+   '<div class="view-teams-actions"><button class="btn ghost full" data-action="toggle-teams" aria-expanded="'+onlineTeamsVisible+'">'+
+   (onlineTeamsVisible?'Masquer les équipes':'Voir les équipes')+'</button></div>'+
+   (onlineTeamsVisible?onlineTeams():'')+'</main>';
+ }
+ return '<main class="online-game-content opfc-online-playing">'+hud+
+  renderOnlineGame(snapshot,{myClub:ownClub,hostClub:onlineClient.room.hostClub})+
+  onlineTeams()+'</main>';
 }
 function render(){
  const showingGame=onlineVisible&&onlineStage==='room'&&
@@ -594,15 +693,24 @@ function render(){
   else setDisplayedClubs(null);
  }else if(game)setDisplayedClubs(game.teams);
  else setDisplayedChoices(localClubChoices);
- const onlineDisplay=shell()+renderOnlineLobby({
+ const room=onlineClient.room;
+ const compactRoom=showingGame?'<div class="online-session-bar" role="status">'+
+  '<span>🌐 Partie en ligne · '+esc(visualAbbr(room.myClub))+' vs '+
+  esc(visualAbbr(room.myClub==='PSG'?'OM':'PSG'))+'</span>'+
+  '<button type="button" data-action="online-room-details">'+
+  (onlineRoomDetails?'Masquer le salon':'Infos du salon')+'</button></div>':'';
+ const lobby=(!showingGame||onlineRoomDetails)?renderOnlineLobby({
   stage:onlineStage,firstClub,room:onlineClient.room,
   hostIdentity:onlineHostIdentity,guestIdentity:onlineGuestIdentity,
   configured:onlineClient.configured,joinCode:onlineJoinCode,
   busy:onlineBusy,error:onlineError,gameActive:showingGame
- })+(showingGame?'<main class="online-game-content">'+
-  renderOnlineGame(snapshot,{myClub:onlineClient.room.myClub,hostClub:onlineClient.room.hostClub})+
-  (['lineup','match','moment-result','half-time','resume-ready','shootout-ready',
-    'shootout','finished'].includes(snapshot.phase)?onlineTeams():'')+'</main>':'');
+ }):'';
+ const onlineDisplay=shell()+compactRoom+lobby+
+  (showingGame?(['mercato','lineup','kickoff-ready'].includes(snapshot.phase)?onlineSharedMarket(snapshot):
+   '<main class="online-game-content opfc-online-playing">'+
+   renderOnlineGame(snapshot,{myClub:room.myClub,hostClub:room.hostClub})+
+   (['match','moment-result','half-time','resume-ready','shootout-ready','shootout','finished'].includes(snapshot.phase)?
+    onlineTeams():'')+'</main>'):'');
  app.innerHTML=(onlineVisible?onlineDisplay:entryView==='modes'?modeChooser():entryView==='local'?welcome():game?
   (game.phase==='kickoff-ready'?endMercato():['mercato','lineup'].includes(game.phase)?playing():matchPage()):welcome())+
  (error?'<div class="alert" role="alert">'+esc(error)+'</div>':'')+popup();
@@ -635,7 +743,9 @@ function clicked(button){
  if(action==='back-modes'){entryView='modes';error='';render();return;}
  if(action==='online'){
   entryView='modes';onlineVisible=true;onlineStage=onlineClient.hasSession?(onlineClient.room?'room':'restore'):'choose';
-  onlineError='';render();syncOnlinePoll();return;
+  onlineError='';render();syncOnlinePoll();
+  if(onlineClient.hasSession)void refreshOnlineRoom(true);
+  return;
  }
  if(onlineVisible){
   void onlineClicked(action,button).catch(e=>{onlineError=e?.message||'Action réseau impossible';render();});

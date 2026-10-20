@@ -5,10 +5,11 @@
  * Le paquet, cursor, secrets et états internes ne sont JAMAIS envoyés.
  * La persistance concurrente (CAS sur room.version) appartient à Edge.
  */
-import {bid,pass,useKings,useObservation,acceptSolo} from './engine.mjs';
+import {bid,pass,useKings,useObservation,acceptSolo,place,chooseFormation} from './engine.mjs';
+import {formationPositions} from './rules.mjs';
 
 const FAIL=message=>{throw Error(message);};
-const CLUBS=['PSG','OM'],ACTIONS=['bid','pass','kings','observation','solo'];
+const CLUBS=['PSG','OM'],ACTIONS=['bid','pass','kings','observation','solo','place','formation'];
 const copy=x=>structuredClone(x);
 function validateClub(club){
  if(!CLUBS.includes(club))FAIL('Club de joueur invalide');
@@ -76,12 +77,33 @@ export function applyOnlineMarketCommand(state,actorClub,command){
  if(!ACTIONS.includes(type))FAIL('Commande de mercato inconnue');
  // Aucun argument supplémentaire n'est accepté pour empêcher les commandes
  // déguisées et décourager tout stockage arbitraire via le client.
- const allowed=type==='bid'?['type','amount']:['type'];
+ const allowed=type==='bid'?['type','amount']:
+   type==='place'?['type','cardId','slot']:
+   type==='formation'?['type','formation']:['type'];
  if(Object.keys(command).some(k=>!allowed.includes(k)))
   FAIL('Paramètre de mercato interdit');
  const before=state;
+ const pending=before.teams.find(t=>t.roster.some(id=>!t.slots.includes(id)));
+ if(pending&&type!=='place')
+  FAIL('Place d’abord la recrue de '+pending.club+' avant de poursuivre les enchères');
  let next;
- if(type==='bid'){
+ if(type==='place'){
+  if(typeof command.cardId!=='string'||command.cardId.length>80||
+    !Number.isInteger(command.slot)||command.slot<0||command.slot>6)
+   FAIL('Placement de recrue invalide');
+  const team=before.teams.find(t=>t.club===actorClub);
+  if(!team?.roster.includes(command.cardId))FAIL('Cette recrue ne fait pas partie de ton club');
+  // Un recrutement en attente doit être placé en priorité comme en local.
+  if(pending&&(!pending.roster.includes(command.cardId)||
+    pending.slots.includes(command.cardId)||pending.club!==actorClub))
+   FAIL('Place d’abord ta nouvelle recrue');
+  next=place(before,actorClub,command.cardId,command.slot);
+ }else if(type==='formation'){
+  if(typeof command.formation!=='string'||command.formation.length>12)
+   FAIL('Formation invalide');
+  formationPositions(command.formation);
+  next=chooseFormation(before,actorClub,command.formation);
+ }else if(type==='bid'){
   if(!Number.isSafeInteger(command.amount))FAIL('Montant d’enchère invalide');
   next=bid(before,actorClub,command.amount);
  }else if(type==='pass')next=pass(before,actorClub);
@@ -107,6 +129,6 @@ export function marketCommandActor(state,command){
  const type=command?.type;
  if(type==='bid'||type==='pass'||type==='kings'||type==='solo')
   return state.auction.turn;
- if(type==='observation')return null; // Haki utilisable indépendamment du tour.
+ if(['observation','place','formation'].includes(type))return null; // Le serveur valide la propriété du club.
  FAIL('Commande de mercato inconnue');
 }

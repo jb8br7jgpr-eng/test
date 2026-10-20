@@ -1386,3 +1386,32 @@ a{color:inherit}p{line-height:1.45}.app{width:min(100%,760px);margin:0 auto;padd
  background:#06152277;padding:10px 9px;margin:12px auto;
  font-size:12px;line-height:1.45;
 }
+
+/* OPFC en ligne : jeu identique au local et salon discret durant le match. */
+.online-session-bar{
+ display:flex;align-items:center;justify-content:space-between;gap:10px;
+ padding:9px 12px;margin:3px 0 10px;
+ background:#103041d9;border:1px solid #90d6b65a;border-radius:12px;
+ color:#f2e7cd;font-size:11px;font-weight:900;
+}
+.online-session-bar span{min-width:0;overflow-wrap:anywhere}
+.online-session-bar button{
+ flex:0 0 auto;min-height:35px;padding:6px 9px;
+ color:#e5f3ff;background:#1a4355;border:1px solid #9bc3c466;
+ border-radius:8px;font-size:10px;font-weight:900;
+}
+.online-turn-note{
+ text-align:center;font-size:12px;line-height:1.45;
+ border-radius:12px;border:1px solid #f0cf8a6b;
+ background:#4a381c68;color:#fbe6b6;padding:10px;
+}
+.opfc-online-playing{margin-top:8px;}
+.opfc-online-playing .view-teams-actions{margin:13px 0;}
+.opfc-online-playing .view-teams-actions button{min-height:48px;}
+.opfc-online-playing .match-team-overview{margin-top:12px}
+.opfc-online-playing .placement-intro{margin:12px 0}
+.opfc-online-playing .placement-summary{gap:10px}
+@media(max-width:380px){
+ .online-session-bar{padding:7px 8px;gap:6px}
+ .online-session-bar span{font-size:10px}
+}
