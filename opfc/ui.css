@@ -1122,3 +1122,13 @@ a{color:inherit}p{line-height:1.45}.app{width:min(100%,760px);margin:0 auto;padd
  .online-wrapper:has(+ .online-game-content) .online-members{margin:8px 0}
  .online-game-content{margin-top:9px}
 }
+
+/* Sélection des dix clubs OPFC — limitée aux nouveaux composants. */
+.opfc-club-pickers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0 6px}
+.opfc-club-picker{display:flex;flex-direction:column;gap:8px;min-width:0}
+.opfc-club-picker label{font-size:13px;font-weight:800;color:#f3d89f}
+.opfc-club-picker select{appearance:auto;min-height:46px;max-width:100%;width:100%;border-radius:12px;border:1px solid #a9c4d35c;background:#132f43;color:#f8fcfe;padding:9px;font-size:14px;cursor:pointer}
+.opfc-club-picked{min-height:45px;display:block;padding:10px 11px;border-radius:9px;border-left:4px solid #f5ce83;background:#122b3b;color:#eef4f4;font-size:12px;line-height:1.45}
+.opfc-club-picked strong{font-size:14px;margin-right:4px}
+.online-lobby-card .opfc-club-picker{margin:14px 0}
+@media(max-width:500px){.opfc-club-pickers{grid-template-columns:1fr;gap:15px}}
