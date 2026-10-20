@@ -167,22 +167,46 @@ jobs:
             if(sprite[0]!==200||sprite[1]<1000)throw Error("Ship artwork missing "+sprite);
             if(errors.length)throw Error("JS crash "+errors.join("; "));
             console.log("PASS local V3 dice, ships, image asset");
-            await page.evaluate(()=>{state.v3.phase='morgans';state.v3.morgans.phase='intro';save();render();});
-            await page.locator('[data-action="v3-morgans-ready"]').click();
-            await page.locator('#v3-guess').fill('30');
-            await page.locator('[data-action="v3-morgans-guess"]').click();
-            await page.locator('#v3-guess').fill('60');
-            await page.locator('[data-action="v3-morgans-guess"]').click();
-            await page.locator('[data-action="v3-morgans-next"]').click();
-            await page.locator('[data-action="v3-morgans-next"]').click();
-            await page.locator('[data-action="v3-morgans-next"]').click();
-            if(await page.evaluate(()=>state.v3.morgans.phase)==="wheel")
-              await page.locator('[data-action="v3-morgans-wheel"]').click();
-            await page.locator('[data-action="v3-morgans-next"]').click();
-            if(await page.evaluate(()=>state.v3.morgans.phase)!=="offer")throw Error("Morgans offer missing");
-            await page.locator('[data-action="v3-morgans-reject"]').click();
-            if(await page.evaluate(()=>state.v3.morgans.done)!==true)throw Error("Morgans refuse did not finish");
-            console.log("PASS local V3 Morgans predictions and refusal");
+            // Couvre sans hasard le vainqueur direct et l'égalité suivie de la roue.
+            // Un bouton Continuer n'est cliqué QUE si l'écran l'affiche.
+            const morgansFixture=await page.evaluate(()=>structuredClone(state));
+            const morgansCases=[
+              {label:"gagnant direct",guesses:[1,100],expectWheel:false},
+              {label:"égalité départagée par la roue",guesses:[50,50],expectWheel:true}
+            ];
+            for(const scenario of morgansCases){
+              await page.evaluate(snapshot=>{
+                state=structuredClone(snapshot);
+                state.v3.phase='morgans';
+                state.v3.morgans.phase='intro';
+                save();render();
+              },morgansFixture);
+              await page.locator('[data-action="v3-morgans-ready"]').click();
+              for(const guess of scenario.guesses){
+                await page.locator('#v3-guess').fill(String(guess));
+                await page.locator('[data-action="v3-morgans-guess"]').click();
+              }
+              let sawWheel=false;
+              for(let step=0;step<6;step++){
+                const phase=await page.evaluate(()=>state.v3.morgans.phase);
+                if(phase==='offer')break;
+                if(phase==='wheel'){
+                  sawWheel=true;
+                  await page.locator('[data-action="v3-morgans-wheel"]').click();
+                }else if(['character','reveal','winner'].includes(phase)){
+                  await page.locator('[data-action="v3-morgans-next"]').click();
+                }else{
+                  throw Error("Morgans : étape inattendue "+phase+" pendant "+scenario.label);
+                }
+              }
+              const finalPhase=await page.evaluate(()=>state.v3.morgans.phase);
+              if(finalPhase!=='offer'||sawWheel!==scenario.expectWheel)
+                throw Error("Morgans "+scenario.label+" : "+JSON.stringify({finalPhase,sawWheel}));
+              await page.locator('[data-action="v3-morgans-reject"]').click();
+              if(await page.evaluate(()=>state.v3.morgans.done)!==true)
+                throw Error("Morgans : refus non enregistré pour "+scenario.label);
+              console.log("PASS local V3 Morgans : "+scenario.label+", prédictions et refus");
+            }
             await page.evaluate(()=>{
               const half=Math.ceil(TEAM_SIZE/2);
               const ids=Object.keys(CARDS).filter(id=>id!==state.v3.morgans.id).slice(0,half*2);
