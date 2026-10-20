@@ -265,7 +265,9 @@ function welcome(){
  '<section class="panel intro-panel"><h2 class="section-title">Formations de départ</h2><div class="formation-picker">'+
  ['PSG','OM'].map((id,i)=>'<div class="form-box"><label for="initial-'+id+'">Joueur '+(i+1)+' · '+esc(displayAbbr(localClubChoices[id]))+'</label><select id="initial-'+id+'" data-action="initial-formation" data-club="'+id+'">'+options(FORMATION_NAMES,beforeForm[id])+'</select></div>').join('')+
  '</div><p class="caption">Modifiables pendant le mercato puis à la mi-temps.</p></section>'+
- '<div class="intro-actions">'+btn('start','Lancer le match · 2 joueurs','primary full')+'</div></main>';
+ '<div class="intro-actions">'+
+ (game?'<section class="panel opfc-resume-card"><p>Une partie locale est sauvegardée sur cet appareil.</p>'+btn('resume-local','▶ Reprendre ma partie','ghost full')+'</section>':'')+
+ btn('start',game?'Créer une nouvelle partie':'Lancer le match · 2 joueurs','primary full')+'</div></main>';
 }
 function wallets(){
  return '<div class="huds">'+game.teams.map(team=>{
@@ -536,6 +538,8 @@ function popup(){
   '</div><p>Notes effectives selon le poste. Les six stats de la carte sont naturelles.</p>'+
   btn('close','Retour','primary full');
  }
+ if(modal.type==='overwrite-local')body='<h2>Remplacer la partie ?</h2><p>Une partie locale est sauvegardée. En créer une nouvelle effacera cette progression.</p>'+
+ btn('accept-overwrite','Créer une nouvelle partie','negative full')+btn('close','Annuler','ghost full');
  if(modal.type==='reset')body='<h2>Nouvelle partie ?</h2><p>La progression locale actuelle sera effacée.</p>'+
  btn('reset','Effacer la partie','negative full')+btn('close','Annuler','ghost full');
  return '<div class="modal-backdrop"><section class="modal" role="dialog" aria-modal="true">'+body+'</section></div>';
@@ -579,7 +583,7 @@ function render(){
   renderOnlineGame(snapshot,{myClub:onlineClient.room.myClub,hostClub:onlineClient.room.hostClub})+
   (['lineup','match','moment-result','half-time','resume-ready','shootout-ready',
     'shootout','finished'].includes(snapshot.phase)?onlineTeams():'')+'</main>':'');
- app.innerHTML=(onlineVisible?onlineDisplay:entryView==='modes'?modeChooser():game?
+ app.innerHTML=(onlineVisible?onlineDisplay:entryView==='modes'?modeChooser():entryView==='local'?welcome():game?
   (game.phase==='kickoff-ready'?endMercato():['mercato','lineup'].includes(game.phase)?playing():matchPage()):welcome())+
  (error?'<div class="alert" role="alert">'+esc(error)+'</div>':'')+popup();
 }
@@ -598,7 +602,7 @@ function change(fn){
 function start(){
  const s=createGame({firstClub:'PSG',clubChoices:localClubChoices});
  for(const id of ['PSG','OM'])if(beforeForm[id]!=='2-2-2')Object.assign(s,chooseFormation(s,id,beforeForm[id]));
- game=s;selection=null;placement=null;teamsVisible=false;pitchClub=null;modal={type:'dice'};error='';save();render();
+ game=s;entryView='playing';selection=null;placement=null;teamsVisible=false;pitchClub=null;modal={type:'dice'};error='';save();render();
 }
 function clicked(button){
  const action=button.dataset.action,club=button.dataset.club;
@@ -612,7 +616,7 @@ function clicked(button){
   void onlineClicked(action,button).catch(e=>{onlineError=e?.message||'Action réseau impossible';render();});
   return;
  }
- if(modal&&!['close','observation-show','reset'].includes(action))return;
+ if(modal&&!['close','observation-show','reset','accept-overwrite'].includes(action))return;
  if(action==='match-uncover'){
   if(!game||!matchRequiresPrivacy(game))throw Error('Aucun choix privé à révéler');
   matchUncovered=true;render();return;
@@ -643,7 +647,9 @@ function clicked(button){
   change(s=>dispatchOpenMatch(s,command,{choice,takerId}));return;
  }
  if(action==='club'){firstClub=club;render();return;}
- if(action==='start'){start();return;}
+ if(action==='resume-local'){if(game){entryView='playing';modal=null;error='';render();}return;}
+ if(action==='start'){if(game){modal={type:'overwrite-local'};render();}else start();return;}
+ if(action==='accept-overwrite'){if(modal?.type==='overwrite-local'){modal=null;start();}return;}
  if(action==='close'){
   if(modal?.type==='sale'&&placement){
    selection={club:placement.club,id:placement.cardId};
@@ -652,7 +658,7 @@ function clicked(button){
   modal=null;save();render();return;
  }
  if(action==='confirm-reset'){modal={type:'reset'};render();return;}
- if(action==='reset'){game=null;selection=null;placement=null;teamsVisible=false;pitchClub=null;modal=null;error='';matchUncovered=false;try{localStorage.removeItem(STORAGE);}catch{}render();return;}
+ if(action==='reset'){entryView='local';game=null;selection=null;placement=null;teamsVisible=false;pitchClub=null;modal=null;error='';matchUncovered=false;try{localStorage.removeItem(STORAGE);}catch{}render();return;}
  if(action==='observation-show'){if(modal?.type==='observation-pass'){modal.type='observation-show';render();}return;}
  if(!game)return;
  if(action==='toggle-teams'){
