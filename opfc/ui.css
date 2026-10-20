@@ -1415,3 +1415,24 @@ a{color:inherit}p{line-height:1.45}.app{width:min(100%,760px);margin:0 auto;padd
  .online-session-bar{padding:7px 8px;gap:6px}
  .online-session-bar span{font-size:10px}
 }
+
+/* OPFC – confirmation simultanée des deux joueurs, mode en ligne. */
+.online-ack-state{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;
+ margin:12px auto 7px;width:100%;
+}
+.online-ack-state span{
+ display:flex;justify-content:center;align-items:center;min-height:44px;
+ border:1px solid #8ba4bd7a;border-radius:12px;
+ color:#e4eefb;background:#142c3ad9;
+ font-size:12px;font-weight:900;text-align:center;padding:5px 7px;
+}
+.online-ack-state .is-confirmed{
+ border-color:#61cba08c;background:#194a3bd9;color:#e3ffec;
+}
+.online-ack-state .is-pending{
+ border-color:#d4bd7d77;background:#483d2a99;color:#ffe8ac;
+}
+.shot-result-panel button[disabled],.match-stage button[disabled]{
+ opacity:.5;cursor:not-allowed;
+}
