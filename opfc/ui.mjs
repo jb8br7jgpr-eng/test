@@ -229,7 +229,7 @@ function restore(){try{
 const shell=()=>'<header class="topbar"><a class="brand-mini" href="./"><img src="./opfc-logo-hd.PNG" alt="" width="35" height="35"> OPMERCATO FC</a><a class="small-link" href="./">← Accueil</a></header>';
 const options=(values,current)=>values.map(v=>'<option value="'+esc(v)+'" '+(v===current?'selected':'')+'>'+esc(v)+'</option>').join('');
 const btn=(action,title,klass='ghost',disabled=false,extra='')=>'<button type="button" class="btn '+klass+'" data-action="'+action+'" '+extra+' '+(disabled?'disabled':'')+'>'+title+'</button>';
-const sep=()=>'<span class="eyebrow">Le Classique de Grand Line</span>';
+const sep=()=>'<span class="eyebrow">Le tournoi de Grand Line</span>';
 function welcome(){
  return shell()+'<main class="intro">'+
  '<img class="intro-logo" src="./opfc-logo-hd.PNG" alt="Logo OPMercato FC" width="180" height="180">'+sep()+
@@ -461,7 +461,7 @@ function placementPage(){
 }
 function playing(){
  const intro=shell()+'<div class="match-header">'+sep()+'<h1 class="page-title">'+
- (game.phase==='mercato'?'Mercato des légendes':'Prépare le Classique')+'</h1>'+
+ (game.phase==='mercato'?'Mercato des légendes':'Prépare le match')+'</h1>'+
  '<div class="dice-note">Dés : '+game.dice.join(' · ')+'</div></div>'+wallets();
  if(placement)return intro+placementPage()+
  '<div class="gameplay-nav"><span class="caption">Placement de recrue</span>'+
