@@ -15,7 +15,7 @@ import {
  normalizeRoomCode,validateRoomId,validateClub,validateSessionToken
 } from '../../../opfc/online-protocol.mjs';
 import {applyOnlineMarketCommand} from '../../../opfc/online-market.mjs';
-import {validateDisplayClub} from '../../../opfc/club-identities.mjs';
+import {validateDisplayClub,isDisplayClub} from '../../../opfc/club-identities.mjs';
 import {applyOnlineLineupCommand,onlinePreMatchView} from '../../../opfc/online-lineup.mjs';
 import {applyOnlineOpenPlayCommand} from '../../../opfc/online-match.mjs';
 
@@ -193,12 +193,14 @@ Deno.serve(async req=>{
   if(body.action==='create'){
    if(body.firstClub!==undefined&&!['PSG','OM'].includes(body.firstClub))
     return error('Club inconnu',400);
+   if(body.identityId!==undefined&&!isDisplayClub(body.identityId))return error('Club sélectionné invalide',400);
    if(!await allowPublicAction('create'))
     return error('Trop de salons créés récemment. Réessaie plus tard.',429);
    return await create(body);
   }
   if(body.action==='join'){
    if(!safeCode(body.code))return error('Code de salon invalide',400);
+   if(body.identityId!==undefined&&!isDisplayClub(body.identityId))return error('Club sélectionné invalide',400);
    if(!await allowPublicAction('join'))
     return error('Trop de tentatives de connexion. Réessaie plus tard.',429);
    return await join(body);
