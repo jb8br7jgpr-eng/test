@@ -15,6 +15,7 @@ import {
  normalizeRoomCode,validateRoomId,validateClub,validateSessionToken
 } from '../../../opfc/online-protocol.mjs';
 import {applyOnlineMarketCommand} from '../../../opfc/online-market.mjs';
+import {validateDisplayClub} from '../../../opfc/club-identities.mjs';
 import {applyOnlineLineupCommand,onlinePreMatchView} from '../../../opfc/online-lineup.mjs';
 import {applyOnlineOpenPlayCommand} from '../../../opfc/online-match.mjs';
 
@@ -61,6 +62,10 @@ async function create(body){
  const token=generateSessionToken();
  const hash=await sha256Token(token);
  const initial=generateServerGame(hostClub); // paquet secret, jeu sans action client
+ const chosen=validateDisplayClub(body.identityId??hostClub);
+ const other=hostClub==='PSG'?'OM':'PSG';
+ initial.teams.find(t=>t.club===hostClub).identityId=chosen;
+ initial.teams.find(t=>t.club===other).identityId=chosen===other?hostClub:other;
  for(let attempt=0;attempt<MAX_CREATE_RETRIES;attempt++){
   const code=generateRoomCode();
   const {data, error:dbError}=await db.from('opfc_rooms')
@@ -68,7 +73,7 @@ async function create(body){
     code,host_club:hostClub,host_token_hash:hash,guest_token_hash:null,
     status:'waiting',private_state:initial,version:1,expires_at:expiry()
    })
-   .select('id,code,host_club,guest_token_hash,status,version,expires_at')
+   .select('id,code,host_club,guest_token_hash,status,version,expires_at,private_state')
    .single();
   if(!dbError&&data)return response(publicSession(data,'host',token),201);
   if(dbError?.code==='23505')continue; // collision rare du code
@@ -80,21 +85,27 @@ async function join(body){
  const code=safeCode(body.code);
  if(!code)return error('Code de salon invalide');
  const {data:found,error:readErr}=await db.from('opfc_rooms')
-  .select('id,code,host_club,guest_token_hash,status,version,expires_at')
+  .select('id,code,host_club,guest_token_hash,status,version,expires_at,private_state')
   .eq('code',code).gt('expires_at',new Date().toISOString()).maybeSingle();
  if(readErr)throw new Error('Recherche du salon indisponible');
  if(!found)return error('Salon introuvable ou expiré',404);
  if(found.status!=='waiting'||found.guest_token_hash)return error('Salon déjà complet',409);
+ const guestClub=found.host_club==='PSG'?'OM':'PSG';
+ const guestIdentity=validateDisplayClub(body.identityId??guestClub);
+ const nextState=structuredClone(found.private_state);
+ const hostIdentity=nextState.teams.find(t=>t.club===found.host_club)?.identityId??found.host_club;
+ if(guestIdentity===hostIdentity)return error('Ce club est déjà choisi par ton adversaire',409);
+ nextState.teams.find(t=>t.club===guestClub).identityId=guestIdentity;
  const token=generateSessionToken(),hash=await sha256Token(token);
  // Compare-and-swap : si les deux iPhones rejoignent simultanément, un seul gagne.
  const {data:joined,error:joinErr}=await db.from('opfc_rooms')
   .update({
-   guest_token_hash:hash,status:'ready',version:found.version+1,
+   guest_token_hash:hash,status:'ready',private_state:nextState,version:found.version+1,
    updated_at:new Date().toISOString()
   })
   .eq('id',found.id).eq('version',found.version).is('guest_token_hash',null)
   .eq('status','waiting')
-  .select('id,code,host_club,guest_token_hash,status,version,expires_at')
+  .select('id,code,host_club,guest_token_hash,status,version,expires_at,private_state')
   .maybeSingle();
  if(joinErr)throw new Error('Impossible de rejoindre ce salon');
  if(!joined)return error('Salon déjà rejoint par un autre joueur',409);
@@ -158,7 +169,7 @@ async function mutate(body,kind){
    updated_at:new Date().toISOString()
   })
   .eq('id',row.id).eq('version',row.version).eq('status','ready')
-  .select('id,code,host_club,guest_token_hash,status,version,expires_at')
+  .select('id,code,host_club,guest_token_hash,status,version,expires_at,private_state')
   .maybeSingle();
  if(writeErr)throw new Error('Sauvegarde de la partie indisponible');
  if(!updated)return error('Salon modifié : actualise la partie',409);
