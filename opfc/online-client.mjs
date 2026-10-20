@@ -201,9 +201,9 @@ export function createOnlineClient({
  const contextFor=(state,command)=>{
   const ctx={phase:state?.phase};
   if(state?.phase==='mercato'){
-   if(!['place','formation','observation'].includes(command.type)){
+   if(!['place','formation'].includes(command.type)){
     ctx.auctionCard=state?.auction?.cardId??null;
-    ctx.auctionTurn=state?.auction?.turn??null;
+    if(command.type!=='observation')ctx.auctionTurn=state?.auction?.turn??null;
    }
   }else if(['match','moment-result','half-time','resume-ready',
    'shootout-ready','shootout','finished'].includes(state?.phase)){
