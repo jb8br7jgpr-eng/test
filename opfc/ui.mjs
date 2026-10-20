@@ -315,10 +315,11 @@ const fullBerrys=millions=>{
  if(!Number.isSafeInteger(value)||value<0)throw Error('Montant invalide');
  return String(value).replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' ฿';
 };
-function sale(){
+function sale({ownClub=null}={}){
  // Reproduction du panneau d'enchères approuvé pour OPFC (cosmétique seulement).
  // Les incréments sont ceux du moteur OPFC : 1 M par palier, contrairement au jeu classique.
  const context=uiAuction(game),a=context.auction,t=context.team;
+ const mayAct=ownClub===null||ownClub===a.turn;
  const min=context.minimum,max=context.maximum,remaining=Math.max(0,5-t.refusals);
  const steps=[0,1,5,10],withdrawal=context.everOffered,freePass=a.highestBid>0;
  const refusal=freePass?(withdrawal?'Arrêter d’enchérir (gratuit)':'Passer gratuitement · enchère adverse'):
@@ -340,29 +341,29 @@ function sale(){
  '<div class="turn-budget">'+fullBerrys(t.budget)+'<br><span>disponibles</span></div></div>'+
  (a.king?'<p class="warning-copy">👑 Haki des Rois activé par '+esc(visualAbbr(a.king.holder))+'.</p>':'')+
  (a.solo?'<div class="solo-auction"><p>Une seule équipe recrute encore : prix fixe '+fullBerrys(5)+'.</p>'+
- '<button type="button" class="btn primary full" data-action="solo">Recruter · '+fullBerrys(5)+'</button>'+
- '<button type="button" class="btn ghost full" data-action="pass"'+(context.canPass?'':' disabled')+'>'+
- (context.canPass?'Refuser ce personnage · '+remaining+'/5 restants':'⛔ Refus épuisés · recrutement obligatoire')+
+ '<button type="button" class="btn primary full" data-action="solo"'+(mayAct?'':' disabled')+'>Recruter · '+fullBerrys(5)+'</button>'+
+ '<button type="button" class="btn ghost full" data-action="pass"'+(mayAct&&context.canPass?'':' disabled')+'>'+
+ (mayAct&&context.canPass?'Refuser ce personnage · '+remaining+'/5 restants':'⛔ Refus épuisés · recrutement obligatoire')+
  '</button><p class="caption">Refus utilisés : '+t.refusals+'/5. Le refus passe à la carte suivante.</p></div>':
  '<div class="offers">'+steps.map(step=>{
   const amount=min+step;
   return '<button class="offer-btn" type="button" data-action="bid-quick" data-amount="'+amount+
-  '" '+(context.canBid&&amount<=max?'':'disabled')+'><b>'+fullBerrys(amount)+'</b><small>'+
+  '" '+(mayAct&&context.canBid&&amount<=max?'':'disabled')+'><b>'+fullBerrys(amount)+'</b><small>'+
   (step===0?'Offre minimale':'+'+step+' palier(s)')+'</small></button>';
  }).join('')+'</div>'+
  '<div class="custom-bid"><label for="bid-value">Autre montant (฿)</label>'+
  '<div><input id="bid-value" type="text" inputmode="numeric" autocomplete="off" pattern="[0-9]*"'+
  ' aria-label="Montant personnalisé en Berrys" placeholder="'+(min*1000000)+'" value="'+(min*1000000)+'" '+
- (context.canBid?'':'disabled')+'>'+
- '<button type="button" class="btn-ghost" data-action="bid" '+(context.canBid?'':'disabled')+
+ (mayAct&&context.canBid?'':'disabled')+'>'+
+ '<button type="button" class="btn-ghost" data-action="bid" '+(mayAct&&context.canBid?'':'disabled')+
  '>Enchérir</button></div></div>'+
- '<button class="pass-btn" type="button" data-action="pass" '+(context.canPass?'':'disabled')+
+ '<button class="pass-btn" type="button" data-action="pass" '+(mayAct&&context.canPass?'':'disabled')+
  '>'+refusal+'</button>'+
  '<div class="auction-hakis"><button class="haki-btn" type="button" data-action="kings"'+
- (context.canKings?'':' disabled')+'>'+
+ (mayAct&&context.canKings?'':' disabled')+'>'+
  '👑 Haki des Rois<small>'+kingInfo+'</small></button>'+
  '<button class="extra-power" type="button" data-action="observation"'+
- (context.canObserve?'':' disabled')+'>👁 Observation<small>'+eyeInfo+'</small></button></div>'+
+ (mayAct&&context.canObserve?'':' disabled')+'>👁 Observation<small>'+eyeInfo+'</small></button></div>'+
  '<p class="notice">'+(freePass?
  'Une enchère a été placée : passer est gratuit pour les deux joueurs.':
  'Sans enchère sur ce personnage, passer consomme un de tes 5 refus.')+
@@ -386,7 +387,7 @@ function pitchMarkings(){
 function fieldHalf(team,top){
  const u=uiTeam(team),positions=top?['GAR','DEF','MIL','ATT']:['ATT','MIL','DEF','GAR'];
  const spectator=onlineOwnClubScope!==null?
-  (team.club!==onlineOwnClubScope||!['lineup','half-time'].includes(game.phase)):
+  (team.club!==onlineOwnClubScope||!['mercato','lineup','half-time'].includes(game.phase)):
   !['mercato','lineup','half-time'].includes(game.phase);
  const label='<div class="field-label '+team.club.toLowerCase()+'"><span>'+esc(visualAbbr(team.club))+' · '+u.formation+
  '</span><span>'+u.entente+'/10 entente</span></div>';
@@ -442,7 +443,7 @@ function pitch(){
 function teamPanel(team){
  const u=uiTeam(team),roster=uiRoster(team);
  const editable=(onlineOwnClubScope===null?['mercato','lineup','half-time'].includes(game.phase):
-  ['lineup','half-time'].includes(game.phase)&&team.club===onlineOwnClubScope)&&!team.ready&&
+  ['mercato','lineup','half-time'].includes(game.phase)&&team.club===onlineOwnClubScope)&&!team.ready&&
  (!placement||placement.club===team.club)&&!placement;
  const ranks={DIA:'Diamant',OR:'Or',ARG:'Argent',BRZ:'Bronze'};
  return '<section class="panel team-panel"><div class="team-heading"><h2>'+
