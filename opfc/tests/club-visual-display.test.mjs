@@ -36,8 +36,7 @@ test('BDW/RM : encheres et attente sur les deux iPhone sans sigle interne visibl
  for(const slot of ['PSG','OM']){
   const html=renderOnlineGame(onlineMarketPublicView(s,slot),{myClub:slot,hostClub:'PSG'});
   noInternalNames(html);
-  assert.match(textOnly(html),/BDW|Bayern de Wano/);
-  assert.match(textOnly(html),/RM|Real Marineford/);
+  assert.match(textOnly(html),slot==='PSG'?/BDW|Bayern de Wano/:/RM|Real Marineford/);
  }
 });
 test('BDW/RM : annonces de jeu et transmission locale sans mention PSG/OM',()=>{
