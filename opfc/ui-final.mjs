@@ -28,7 +28,7 @@ function shootoutReport(shootout){
  '<span class="final-kick-player">'+renderCharacterPortrait(t.shooterId,'kick-portrait')+h(player(t.shooterId))+'</span><strong class="'+(t.scored?'kick-goal':'kick-fail')+'">'+
  (t.scored?'✓ But':t.result==='save'?'✕ Arrêt':'✕ Raté')+'</strong></div>').join('');
  return '<section class="panel final-shootout"><h3 class="section-title">Tirs au but — départage</h3>'+
- '<div class="final-shootout-score">'+h(visualAbbr('PSG'))+' <strong>'+shootout.score.PSG+' – '+shootout.score.OM+'</strong> '+h(visualAbbr('OM'))</div>'+
+ '<div class="final-shootout-score">'+h(visualAbbr('PSG'))+' <strong>'+shootout.score.PSG+' – '+shootout.score.OM+'</strong> '+h(visualAbbr('OM'))+'</div>'+
  '<p class="caption">Scores et tentatives de séance séparés du temps réglementaire.</p>'+
  '<div class="final-kicks">'+rows+'</div></section>';
 }
