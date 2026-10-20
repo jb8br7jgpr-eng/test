@@ -124,14 +124,14 @@ export function applyOnlineOpenPlayCommand(state,club,command,{rng=cryptoRng,hos
   fail('Paramètre de match interdit');
  const type=command.type;
  let next;
- if(Object.hasOwn(ONLINE_ENDGAME_COMMANDS,type)){
-  next=applyOnlineEndgameTransition(state,club,command,{hostClub,rng});
- }else if(type==='ack'){
+ // Les anciennes commandes de continuation sont réinterprétées comme
+ // une confirmation INDIVIDUELLE. Aucun ancien iPhone ne peut passer
+ // une annonce sans la validation du second joueur.
+ if(['ack','continue-result','continue-duel','continue-setpiece-duel',
+  'shootout-continue'].includes(type)){
   next=acknowledgeScreen(state,club,rng);
- }else if(type==='continue-result'){
-  if(state.phase!=='moment-result'||state.match.lastResult?.attacker!==club)
-   fail('Seul le club attaquant peut continuer ce résultat');
-  next=continueMatch(state);
+ }else if(Object.hasOwn(ONLINE_ENDGAME_COMMANDS,type)){
+  next=applyOnlineEndgameTransition(state,club,command,{hostClub,rng});
  }else if(type==='begin-open'){
   const event=currentMatchMoment(state);
   if(state.phase!=='match'||state.match.action||
