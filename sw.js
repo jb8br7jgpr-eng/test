@@ -1,9 +1,9 @@
 // OPMercato: network-first app shell, offline fallback for classic local play.
 // Do not intercept Supabase's API, authentication or real-time WebSocket traffic.
-const CACHE = 'opmercato-shell-v57-home-textes';
+const CACHE = 'opmercato-shell-v58-classic-accueil';
 const ROOT=new URL("./",self.location.href);
 const ASSETS=[
-  "./","./index.html","./classique.html","./opfc.html","./opfc-logo.webp","./opmercato-logo-hd.PNG","./opfc-logo-hd.PNG","./manifest.webmanifest",
+  "./","./index.html","./classique-accueil.html","./classique.html","./opfc.html","./opfc-logo.webp","./opmercato-logo-hd.PNG","./opmercato-accueil-equipage.PNG","./opfc-logo-hd.PNG","./manifest.webmanifest",
   "./opmercato-logo.jpg","./apple-touch-icon.png","./icon-192.png",
   "./icon-512.png","./icon-512-maskable.png","./favicon-32.png",
   "./characters-data.js","./portrait-map.js","./opmercato-custom-portraits.js",
