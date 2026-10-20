@@ -25,7 +25,7 @@ function cryptoRng(){
 }
 function safeTeams(teams){
  return teams.map(t=>({
-  club:t.club,budget:t.budget,refusals:t.refusals,
+  club:t.club,identityId:t.identityId??t.club,budget:t.budget,refusals:t.refusals,
   roster:[...t.roster],formation:t.formation,slots:[...t.slots],
   ready:t.ready,
   hakis:{observation:!!t.hakis?.observation,kings:!!t.hakis?.kings}
