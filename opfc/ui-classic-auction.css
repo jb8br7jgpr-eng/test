@@ -1,0 +1,149 @@
+/*
+ * OPFC — Transposition visuelle des enchères OPMercato classique.
+ *
+ * Sources exactes dans ce dépôt, branche opfc-development :
+ * - classique.html (CSS .card/.auction/.bid-title/.turn-banner/.offers/.pass-btn/.primary/.btn-ghost)
+ * - mercato-upgrade.js (.custom-bid ET surcharge responsive .bid-amount/.offer-btn b)
+ * - mercato-rules.js (.haki-btn doré 👑 et compteur refus)
+ * - mercato-features.js (.extra-powers/.extra-power 👁)
+ *
+ * Les classes et propriétés originales sont préservées, uniquement préfixées
+ * .opfc-auction pour isoler OPFC. Aucune règle du moteur n'est importée.
+ */
+
+/* Police, palette et fond de la CARTE d'enchères d'origine */
+.opfc-auction{
+  --bg:#081823;
+  --panel:#112a38;
+  --panel2:#173342;
+  --outline:rgba(191,219,227,.13);
+  --text:#f5f7f3;
+  --muted:#a6bcc6;
+  --gold:#f7ca72;
+  --goldDark:#dfaa4d;
+  --aqua:#7de3d3;
+  --red:#fc938e;
+  --shadow:0 14px 38px rgba(0,0,0,.19);
+  box-sizing:border-box;
+  font-family:ui-rounded,-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  color:var(--text);
+  background:linear-gradient(160deg,rgba(26,58,72,.98),rgba(16,40,53,.97));
+  border:1px solid var(--outline);
+  border-radius:22px;
+  box-shadow:var(--shadow);
+  padding:18px;
+  margin:14px 0;
+}
+.opfc-auction *{box-sizing:border-box}
+.opfc-auction button,.opfc-auction input{font:inherit;-webkit-tap-highlight-color:transparent}
+.opfc-auction button{cursor:pointer}
+.opfc-auction button:disabled{cursor:not-allowed;opacity:.33;transform:none!important}
+.opfc-auction button:focus-visible,.opfc-auction input:focus-visible{outline:3px solid var(--aqua);outline-offset:3px}
+.opfc-auction p{color:var(--muted);line-height:1.55}
+
+/* Copiés de classique.html : même espacement, couleurs, bordures, poids */
+.opfc-auction .bid-title{display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:1px solid var(--outline);padding:0 0 14px;margin:0}
+.opfc-auction .bid-title .kicker{color:var(--muted);font-size:11px;font-weight:900;letter-spacing:.07em;text-transform:uppercase}
+.opfc-auction .bid-amount{display:block;font-size:clamp(18px,6vw,30px);color:var(--gold);font-weight:950;letter-spacing:-.055em;margin-top:2px;line-height:normal}
+.opfc-auction .bid-leader{text-align:right;max-width:48%;font-size:13px;color:var(--muted)}
+.opfc-auction .bid-leader strong{display:block;color:var(--text);font-size:15px;white-space:normal;overflow-wrap:anywhere}
+.opfc-auction .turn-banner{display:flex;gap:11px;align-items:center;justify-content:space-between;margin:16px 0 13px;padding:13px;background:#0b2230;border:1px solid rgba(125,227,211,.24);border-radius:14px}
+.opfc-auction .turn-banner span{font-size:11px;color:var(--muted);display:block;margin-bottom:3px}
+.opfc-auction .turn-banner strong{font-size:19px;letter-spacing:-.02em;overflow-wrap:anywhere;line-height:normal;color:var(--text)}
+.opfc-auction .turn-budget{text-align:right;white-space:nowrap;font-size:13px;color:var(--gold);font-weight:900;flex:0 0 auto}
+.opfc-auction .turn-budget span{margin:0;color:var(--muted);font-size:10px}
+
+/* Même cases de mise qu'OPMercato, y compris la police de mercato-upgrade.js */
+.opfc-auction .offers{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:0}
+.opfc-auction .offer-btn{display:block;text-align:left;border:1px solid rgba(247,202,114,.32);background:rgba(247,202,114,.12);color:var(--text);border-radius:13px;padding:12px;min-height:69px;line-height:normal}
+.opfc-auction .offer-btn b{display:block;font-size:clamp(13px,3.9vw,20px);overflow-wrap:anywhere;color:var(--gold);font-weight:700;line-height:normal}
+.opfc-auction .offer-btn small{display:block;color:#ccdae0;font-size:10px;margin-top:4px;font-weight:700;line-height:normal}
+.opfc-auction .offer-btn:active:not(:disabled){background:rgba(247,202,114,.27);transform:none}
+
+/* Saisie d'offre personnalisée reprise de mercato-upgrade.js */
+.opfc-auction .custom-bid{margin-top:12px;display:block;padding:0;border:none;background:transparent}
+.opfc-auction .custom-bid label{font-size:11px;color:var(--muted);font-weight:800}
+.opfc-auction .custom-bid>div{display:flex;gap:8px;margin-top:5px}
+.opfc-auction .custom-bid input{min-width:0;flex:1;width:100%;background:rgba(5,21,30,.54);border:1px solid rgba(198,220,228,.17);color:var(--text);border-radius:12px;padding:12px 11px;min-height:46px;font-size:15px}
+.opfc-auction .custom-bid input:focus{border-color:var(--gold);outline:none}
+.opfc-auction .custom-bid button{white-space:nowrap;color:var(--gold)}
+.opfc-auction .btn-ghost{border:1px solid var(--outline);background:rgba(255,255,255,.05);color:var(--text);border-radius:13px;min-height:41px;padding:9px 12px;font-size:12px;font-weight:750}
+.opfc-auction .btn-ghost:hover{background:rgba(255,255,255,.12)}
+
+/* Haki des Rois : copie des styles de mercato-rules.js */
+.opfc-auction .haki-btn{display:block;width:100%;margin-top:12px;padding:13px 12px;
+ border:1px solid #f7cd78;border-radius:14px;
+ background:linear-gradient(130deg,#533c20,#76532b);
+ color:#fff5d5;font-size:14px;font-weight:950;
+ text-align:center;box-shadow:0 6px 18px rgba(0,0,0,.2)}
+.opfc-auction .haki-btn small{display:block;font-size:11px;font-weight:550;color:#f2d9a8;margin-top:5px}
+
+/* Haki de l'Observation : copie des styles de mercato-features.js.
+ * OPFC n'a pas de Haki de l'Armement : le seul bouton remplit sa rangée. */
+.opfc-auction .extra-powers{display:grid;grid-template-columns:1fr;gap:9px;margin-top:12px}
+.opfc-auction .extra-power{background:linear-gradient(125deg,#23445c,#1b3449);border:1px solid #5087aa;
+ color:#f4f9fa;border-radius:12px;padding:11px 7px;font-size:13px;font-weight:900;text-align:center}
+.opfc-auction .extra-power small{display:block;font-size:10px;font-weight:550;margin-top:5px;color:#bfd3df}
+.opfc-auction .extra-power:disabled{filter:grayscale(1);opacity:.38}
+
+/* Refus : copie du bouton original ; compteur OPFC non intrusif */
+.opfc-auction .pass-btn{background:rgba(255,255,255,.055);color:#f1f7f2;border:1px solid rgba(255,255,255,.17);border-radius:13px;min-height:47px;width:100%;font-weight:800;margin-top:10px;padding:10px;font-size:16px}
+.opfc-auction .pass-btn:disabled{opacity:.5}
+.opfc-auction .notice{text-align:center;color:var(--muted);font-size:12px;line-height:1.4;margin:12px 0 0;background:transparent;border:none;border-radius:0;padding:0;box-shadow:none}
+.opfc-auction .refusal-counter{font-size:11px;color:var(--muted);text-align:center;margin:7px 0 0}
+.opfc-auction .refusal-counter strong{color:var(--gold)}
+.opfc-auction .opfc-auction-limit{font-size:10px;text-align:center;color:var(--muted);margin:8px 0 0;line-height:1.4}
+.opfc-auction .primary{background:linear-gradient(135deg,#ffdc94,#eeb958);color:#18212b;border:0;border-radius:14px;padding:15px 20px;font-size:15px;font-weight:950;width:100%;min-height:51px;box-shadow:0 8px 22px #080f1370}
+.opfc-auction .solo-auction p{font-size:12px;text-align:center}
+
+/* Carte OPFC au-dessus de l'encart original : seulement sa taille change. */
+.opfc-auction-stage>.opfc-player-card{gap:7px;padding:10px 11px 11px;border-radius:15px}
+.opfc-auction-stage>.opfc-player-card .portrait-shell-photo{width:min(100%,174px);max-height:174px;aspect-ratio:1;margin:auto}
+.opfc-auction-stage>.opfc-player-card .player-name{font-size:clamp(18px,5vw,22px);margin-bottom:3px}
+.opfc-auction-stage>.opfc-player-card .player-meta{font-size:11px}
+.opfc-auction-stage>.opfc-player-card .player-rating-row{padding:5px 0}
+.opfc-auction-stage>.opfc-player-card .rating-value{font-size:clamp(34px,10vw,43px)}
+.opfc-auction-stage>.opfc-player-card .opfc-stat{padding:6px 4px;gap:3px}
+.opfc-auction-stage>.opfc-player-card .opfc-stat>span{font-size:9px}
+.opfc-auction-stage>.opfc-player-card .opfc-stat-value{font-size:17px;min-height:28px}
+.opfc-auction-stage>.opfc-player-card .stats-grid{gap:5px}
+.opfc-auction-stage>.opfc-player-card .player-position,.opfc-auction-stage>.opfc-player-card .player-tier{padding:6px 7px}
+@media(max-width:390px){.opfc-auction-stage>.opfc-player-card .portrait-shell-photo{width:min(100%,162px);max-height:162px}}
+@media(min-width:620px){.opfc-auction-stage>.opfc-player-card .portrait-shell-photo{width:min(100%,188px);max-height:188px}}
+@media(max-width:360px){.opfc-auction{padding:15px 13px}.opfc-auction .custom-bid input{min-width:0}}
+
+
+/* OPFC — Composition exacte validée du panneau d'enchères (référence utilisateur 19/10).
+   Montants en Berrys, refus pleine largeur, Rois à gauche et Observation à droite.
+   Les règles restent dans opfc/engine.mjs. */
+.opfc-auction .bid-title>div:first-child{min-width:0}
+.opfc-auction .bid-amount{font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.opfc-auction .bid-leader{flex:0 0 auto;max-width:47%}
+.opfc-auction .turn-budget{font-variant-numeric:tabular-nums;font-weight:900;font-size:clamp(11px,3.6vw,15px);line-height:1.28}
+.opfc-auction .turn-budget span{font-weight:800}
+.opfc-auction .offer-btn b{font-variant-numeric:tabular-nums;white-space:normal;line-height:1.3}
+.opfc-auction .custom-bid{margin-top:17px}
+.opfc-auction .custom-bid>div{gap:8px}
+.opfc-auction .custom-bid input{font-variant-numeric:tabular-nums}
+.opfc-auction .custom-bid button{flex:0 0 auto}
+.opfc-auction .pass-btn{display:block;width:100%;margin-top:12px;min-height:47px;padding:12px 9px;font-size:clamp(12px,3.6vw,15px);line-height:1.3;text-align:center;white-space:nowrap}
+.opfc-auction .auction-hakis{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px;align-items:stretch;margin-top:12px}
+.opfc-auction .auction-hakis .haki-btn,
+.opfc-auction .auction-hakis .extra-power{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;width:100%;min-width:0;min-height:82px;height:100%;margin:0;padding:10px 6px;font-size:clamp(11px,3.45vw,14px);line-height:1.3;overflow-wrap:anywhere}
+.opfc-auction .auction-hakis .haki-btn small,
+.opfc-auction .auction-hakis .extra-power small{display:block;margin:0;font-size:clamp(9px,2.6vw,11px);font-weight:550;line-height:1.3}
+.opfc-auction .auction-hakis .extra-power{font-size:13px;background:linear-gradient(125deg,#23445c,#1b3449);border:1px solid #5087aa;color:#f4f9fa;border-radius:12px;font-weight:900}
+.opfc-auction .auction-hakis .haki-btn{font-size:14px;background:linear-gradient(130deg,#533c20,#76532b);border:1px solid #f7cd78;color:#fff5d5;border-radius:14px;font-weight:950}
+.opfc-auction .auction-hakis .haki-btn:disabled,
+.opfc-auction .auction-hakis .extra-power:disabled{opacity:.4;filter:grayscale(.45);cursor:not-allowed}
+.opfc-auction .notice{margin:13px 0 0;font-size:11px;line-height:1.5}
+.opfc-auction .refusal-counter{display:block;margin:5px 0 0;font-size:10px;font-weight:700}
+@media(max-width:375px){
+ .opfc-auction{padding:15px 12px}
+ .opfc-auction .pass-btn{letter-spacing:-.02em}
+ .opfc-auction .turn-banner{gap:7px;padding:11px 9px}
+ .opfc-auction .turn-banner strong{font-size:16px}
+ .opfc-auction .offer-btn{padding:10px}
+ .opfc-auction .auction-hakis{gap:7px}
+ .opfc-auction .custom-bid input{font-size:14px}
+}
