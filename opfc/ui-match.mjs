@@ -271,8 +271,8 @@ function onlineWaiting(club,description){
 const ONLINE_MATCH_COMMANDS=Object.freeze({
  'match-kickoff':'kickoff','match-resume':'resume',
  'match-begin-open':'begin-open','match-begin-setpiece':'begin-setpiece',
- 'match-reveal-duel':'reveal-duel','match-continue-duel':'continue-duel',
- 'match-reveal-shot':'reveal-shot','match-continue-result':'continue-result',
+ 'match-reveal-duel':'reveal-duel','match-continue-duel':'ack',
+ 'match-reveal-shot':'reveal-shot','match-continue-result':'ack',
  'match-taker':'select-taker','match-reveal-setpiece-duel':'reveal-setpiece-duel',
  'match-continue-setpiece-duel':'continue-setpiece-duel',
  'match-finish-corner':'finish-corner','match-reveal-penalty':'reveal-penalty'
@@ -283,6 +283,19 @@ function asOnlineActions(htmlView){
   const command=ONLINE_MATCH_COMMANDS[action];
   return command?'data-action="online-game" data-type="'+command+'"':entire;
  });
+}
+/** Même événement et même portrait sur les deux iPhone, avec confirmation
+ * indépendante. Le bouton local reste inchangé. */
+function onlineAcknowledgementPanel(content,state,club){
+ const acks=state.match?.resultAcks??{PSG:false,OM:false};
+ const mine=!!acks[club];
+ const status='<div class="online-ack-state" role="status">'+
+  ['PSG','OM'].map(id=>'<span class="'+(acks[id]?'is-confirmed':'is-pending')+'">'+
+   (acks[id]?'✓ ':'◷ ')+html(visualAbbr(id))+(acks[id]?' prêt':' en attente')+'</span>').join('')+
+  '</div>';
+ return content.replace(/data-action="match-(continue-duel|continue-result)"/g,
+   match=>match+(mine?' disabled aria-disabled="true"':''))+
+  status+(mine?'<p class="caption">En attente de la validation adverse…</p>':'');
 }
 function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null}={}){
  if(state?.teams)setDisplayedClubs(state.teams);
@@ -307,9 +320,7 @@ function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null}={}){
  if(state.phase==='moment-result'){
   const last=m.lastResult;
   const announced=out+attackBanner(last?.attacker,last?.details?.context,last?.type,last?.minute)+scoreStats(m)+resultView(m,state);
-  return onlineClub&&onlineClub!==last?.attacker?
-   announced.replace(/data-action="match-continue-result"/g,'data-action="match-continue-result" disabled aria-disabled="true"')+
-   onlineWaiting(last?.attacker,'Le club attaquant valide le résultat.'):announced;
+  return onlineClub?onlineAcknowledgementPanel(announced,state,onlineClub):announced;
  }
  const moment=m.currentMoment;
  if(!m.action){
@@ -337,10 +348,12 @@ function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null}={}){
   const action=m.action,owner=action.kind==='open'?
    (ACTOR[action.stage]?action[ACTOR[action.stage]]:action.attacker):
    action.stage==='defense-choice'?action.defender:action.attacker;
-  if(owner!==onlineClub)
+  if(owner!==onlineClub&&action.stage!=='duel-revealed')
    return out+scoreStats(m)+onlineWaiting(owner,'Le choix de l’adversaire reste secret.');
  }
- return out+scoreStats(m)+renderAction(state,view,onlineClub?true:uncovered);
+ const display=out+scoreStats(m)+renderAction(state,view,onlineClub?true:uncovered);
+ return onlineClub&&m.action?.stage==='duel-revealed'?
+  onlineAcknowledgementPanel(display,state,onlineClub):display;
 }
 
 /** Local : les mêmes événements, aucun changement des actions. */
