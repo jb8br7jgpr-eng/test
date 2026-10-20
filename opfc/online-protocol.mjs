@@ -4,6 +4,7 @@
  * Compatible Node.js (tests) et Supabase Edge/Deno (serveur futur).
  */
 import {createGame} from './engine.mjs';
+import {currentClubChoices} from './club-identities.mjs';
 
 export const ONLINE_PROTOCOL_VERSION=1;
 export const ROOM_ALPHABET='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -100,6 +101,7 @@ export function lobbyPublicView(row,role){
   role,
   myClub:role==='host'?hostClub:hostClub==='PSG'?'OM':'PSG',
   opponentConnected:row.guest_token_hash!==null,
+  ...(Array.isArray(row?.private_state?.teams)?{clubChoices:currentClubChoices(row.private_state.teams)}:{}),
   // Cette date est une limite de session technique, pas une règle de match.
   expiresAt:row.expires_at
  });
