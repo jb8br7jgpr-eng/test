@@ -38,6 +38,16 @@ test('Deux clubs et départ 250 M après dés',()=>{
  assert.equal(s.teams[0].budget,250);assert.equal(s.teams[1].budget,250);
  assert.equal(s.auction.priority,'PSG');assert.equal(maxBid(s.teams[0]),220);
 });
+test('Les dix clubs sont des identités visuelles sans effet sur les enchères',()=>{
+ let s=createGame({rng:random(12),dice:[4,2],clubChoices:{PSG:'BDW',OM:'BDR'}});
+ assert.deepEqual(s.teams.map(t=>[t.club,t.identityId]),[['PSG','BDW'],['OM','BDR']]);
+ s=bid(s,'PSG',5);s=pass(s,'OM');
+ assert.equal(s.teams.find(t=>t.club==='PSG').identityId,'BDW');
+ assert.equal(s.teams.find(t=>t.club==='OM').identityId,'BDR');
+ assert.equal(s.teams.find(t=>t.club==='PSG').budget,245);
+ assert.equal(s.teams.find(t=>t.club==='OM').refusals,0);
+ assert.throws(()=>createGame({clubChoices:{PSG:'LFC',OM:'LFC'}}),/différents/);
+});
 test('Paquet de 50 cartes exclu de la vue publique',()=>{
  const s=init();const view=publicView(s);
  assert.ok(!Object.hasOwn(view,'deck'));assert.ok(!Object.hasOwn(view,'cursor'));
