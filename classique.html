@@ -197,8 +197,11 @@
     /* Navigation dédiée, visuels officiels transparents, accueil + mode local. */
     .topbar.opmercato-local-head{
       display:flex;flex-direction:column;align-items:center;justify-content:center;
-      gap:7px;margin-bottom:12px;min-width:0
+      gap:3px;margin-bottom:3px;min-width:0
     }
+    /* Rapproche « Le jeu d'enchères des mers » du logo sans changer
+       les marges des autres écrans du jeu. */
+    .opmercato-local-head + .intro{padding-top:3px}
     .opmercato-local-head .opmercato-menu-return{
       align-self:flex-start;display:inline-flex;align-items:center;justify-content:center;
       min-height:38px;padding:8px 12px;border:1px solid rgba(247,202,114,.46);
@@ -209,7 +212,8 @@
       outline:3px solid var(--aqua);outline-offset:3px
     }
     .opmercato-local-head .opmercato-local-logo{
-      display:block;width:min(88vw,350px);height:clamp(78px,14vh,132px);
+      display:block;width:min(108vw,480px);max-width:none;
+      height:clamp(155px,25vh,220px);
       object-fit:contain;object-position:center;filter:drop-shadow(0 9px 15px #0009)
     }
     .op-game-footer{grid-template-columns:repeat(2,minmax(0,1fr))}
