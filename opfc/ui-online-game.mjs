@@ -9,6 +9,7 @@ import {matchTacticalChoices,renderShotFaceOff,renderShotResult,renderReceiverCa
 import {renderSetPieceAction,isSetPieceKind} from './ui-set-piece.mjs';
 import {renderShootoutTracker} from './ui-shootout.mjs';
 import {renderFinalResult} from './ui-final.mjs';
+import {setDisplayedClubs,visualAbbr} from './club-identities.mjs';
 
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const other=c=>c==='PSG'?'OM':'PSG';
@@ -235,10 +236,11 @@ function shootoutStage(g,club){
  return tracker+data+history;
 }
 export function renderOnlineGame(g,{myClub,hostClub}={}){
+ if(g?.teams)setDisplayedClubs(g.teams);
  if(!g||!['PSG','OM'].includes(myClub)||!['PSG','OM'].includes(hostClub))
   return '<section class="panel"><p>Synchronisation en cours…</p></section>';
  const top='<section class="online-game-heading"><span class="eyebrow">Grandline Cup · Mode en ligne</span>'+
-  '<strong>'+esc(clubName(myClub))+' · '+esc(myClub)+'</strong></section>';
+  '<strong>'+esc(clubName(myClub))+' · '+esc(visualAbbr(myClub))+'</strong></section>';
  if(g.phase==='mercato')return top+visualMarket(g,myClub);
  if(g.phase==='lineup')return top+stage('Prépare ta composition',
   '<p>Choisis tes sept titulaires et leur formation sur le terrain ci-dessous.</p>');
