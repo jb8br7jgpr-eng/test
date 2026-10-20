@@ -18,6 +18,21 @@ const entries=[
 export const DISPLAY_CLUBS=Object.freeze(entries.map(([id,name,primary,secondary,accent])=>
  Object.freeze({id,name,primary,secondary,accent})));
 export const DISPLAY_BY_ID=new Map(DISPLAY_CLUBS.map(x=>[x.id,x]));
+/** Fichiers des écussons validés : identités affichées, pas les slots du moteur. */
+const CLUB_LOGO_NAMES=Object.freeze({
+ PSG:'pirates_saint_grandline.webp',
+ OM:'olympique_de_marygeoise.webp',
+ BDW:'bayern_wano.webp',
+ SPJ:'sporting_jaya.webp',
+ WSC:'water_seven_city.webp',
+ AWC:'ac_whole_cake.webp',
+ SU:'sabaody_united.webp',
+ RM:'real_marineford.webp',
+ LFC:'loguetown_fc.webp',
+ BDR:'borussia_dressrosa.webp'
+});
+export const clubLogoFile=id=>CLUB_LOGO_NAMES[id]?
+ './opfc/club-logos/'+CLUB_LOGO_NAMES[id]:null;
 export const SLOT_IDS=Object.freeze(['PSG','OM']);
 export const DEFAULT_IDENTITIES=Object.freeze({PSG:'PSG',OM:'OM'});
 export const isDisplayClub=id=>typeof id==='string'&&DISPLAY_BY_ID.has(id);
