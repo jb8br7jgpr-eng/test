@@ -1,0 +1,60 @@
+/* OPFC — pages de découverte, sans impact sur le moteur ou les écrans de match. */
+:root{color-scheme:dark;font-family:ui-rounded,-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;background:#071320;color:#f7f6f1}
+*{box-sizing:border-box}
+html{min-width:320px}
+body{margin:0;min-height:100vh;min-height:100dvh;background:radial-gradient(ellipse at 50% -15%,#22506a 0%,#10263b 31%,#071320 82%)}
+button,input,select{font:inherit}
+a{color:inherit;text-decoration:none}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #8becdb;outline-offset:3px}
+.discovery{width:min(100%,760px);margin:0 auto;padding:calc(env(safe-area-inset-top) + 16px) clamp(12px,4vw,22px) calc(env(safe-area-inset-bottom) + 45px)}
+.discovery-nav{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.discovery-back{display:inline-flex;align-items:center;justify-content:center;min-height:41px;padding:9px 12px;border:1px solid #b6c5d068;border-radius:11px;background:#102c3ead;color:#ecf5f4;font-weight:800;font-size:12px}
+.discovery-mini-brand{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:900;letter-spacing:.08em;color:#f5d39d}
+.discovery-mini-brand img{width:40px;height:40px;object-fit:contain}
+.discovery-heading{text-align:center;margin:15px auto 20px}
+.discovery-kicker{display:block;font-weight:900;letter-spacing:.15em;color:#e2c28a;font-size:10px;text-transform:uppercase}
+.discovery-heading h1{font-size:clamp(28px,7vw,40px);line-height:1.12;color:#ffe4ae;margin:7px 0 9px}
+.discovery-heading p{font-size:13px;line-height:1.55;color:#c8d8df;max-width:540px;margin:0 auto}
+.discovery-panel{border:1px solid #dfc18d44;border-radius:18px;background:linear-gradient(148deg,#18394bbf,#0b2031e8);box-shadow:0 9px 25px #0003}
+.catalog-tools{padding:13px;display:grid;gap:10px;margin:0 auto 15px}
+.catalog-search-label{font-size:11px;font-weight:850;color:#e6d4ae;display:block;margin:0 0 5px}
+.catalog-search{width:100%;min-width:0;border:1px solid #9ab5bd80;border-radius:11px;min-height:44px;background:#071c2e;color:#fff;padding:10px 12px;font-size:14px}
+.catalog-search::placeholder{color:#9db4c2}
+.catalog-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.catalog-filter{min-width:0}
+.catalog-filter label{display:block;font-size:11px;font-weight:850;color:#e6d4ae;margin-bottom:5px}
+.catalog-filter select{width:100%;min-width:0;min-height:43px;padding:9px 7px;background:#0a2535;border:1px solid #9ab5bd80;color:#fff;border-radius:11px;font-size:13px}
+.catalog-count{font-size:12px;font-weight:800;color:#d7e8ec;margin:0}
+.catalog-count strong{color:#f9d9a1}
+.catalog-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px;align-items:start}
+.catalog-card{padding:11px;min-width:0}
+.catalog-card[hidden]{display:none!important}
+.catalog-card-top{display:grid;grid-template-columns:96px minmax(0,1fr);gap:11px;align-items:start}
+.catalog-portrait{width:96px;height:123px;display:flex;align-items:center;justify-content:center;border-radius:12px;overflow:hidden;border:1px solid #d8c39c66;background:linear-gradient(155deg,#37607a,#0b1f32);font-weight:950;font-size:25px;color:#e2c894}
+.catalog-portrait img{width:100%;height:100%;object-fit:cover;display:block}
+.catalog-card-info{min-width:0}
+.catalog-card-name{font-size:clamp(15px,4.1vw,19px);line-height:1.2;color:#fff2d5;margin:1px 0 8px;overflow-wrap:anywhere}
+.catalog-rating{display:inline-flex;align-items:center;gap:7px;font-variant-numeric:tabular-nums;font-size:28px;font-weight:1000;color:#ffe1a9;line-height:1}
+.catalog-rating small{font-size:9px;letter-spacing:.1em;color:#b8ced7}
+.catalog-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.catalog-tag{display:inline-flex;align-items:center;border-radius:99px;padding:5px 8px;background:#18394e;border:1px solid #ffffff35;font-size:10px;font-weight:850}
+.catalog-tag.rarity-DIA{color:#c2f1ff;border-color:#9ce6f9}
+.catalog-tag.rarity-OR{color:#ffe3a6;border-color:#e8c06f}
+.catalog-tag.rarity-ARG{color:#e4eaf3;border-color:#b5c5d3}
+.catalog-tag.rarity-BRZ{color:#f6c2a9;border-color:#d39d7e}
+.catalog-group{margin:8px 0 0;font-size:10px;line-height:1.4;color:#b7d0dc}
+.catalog-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:11px}
+.catalog-stat{display:flex;justify-content:space-between;align-items:center;gap:3px;border:1px solid #ffffff1e;border-radius:9px;background:#061c2ba8;padding:8px}
+.catalog-stat span{font-size:10px;font-weight:800;color:#bdd2da}
+.catalog-stat strong{font-size:13px;font-variant-numeric:tabular-nums;color:#fff0cd}
+.catalog-empty{padding:24px;text-align:center;color:#c9d9df;border:1px dashed #c2b78d6e;border-radius:14px}
+.discovery-notes{font-size:11px;color:#adc5d0;line-height:1.55;margin:17px auto 0;text-align:center;max-width:550px}
+.rules-stack{display:grid;gap:11px}
+.rule-card{display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;padding:16px}
+.rule-icon{display:flex;align-items:center;justify-content:center;width:43px;height:43px;border-radius:12px;background:#d4b36b24;font-size:23px}
+.rule-card h2{font-size:17px;color:#ffe0ae;margin:0 0 7px}
+.rule-card p{font-size:13px;color:#d3e2e8;line-height:1.6;margin:0}
+.rule-card strong{color:#f4e3c5}
+.rules-footer{margin:18px auto 0;text-align:center}
+.rules-footer a{display:inline-flex;justify-content:center;align-items:center;min-height:48px;padding:12px 24px;border-radius:13px;border:1px solid #ffe2a0;background:linear-gradient(125deg,#fbe1aa,#d8a65a);color:#102638;font-weight:900;font-size:14px}
+@media(max-width:380px){.catalog-card-top{grid-template-columns:82px minmax(0,1fr);gap:9px}.catalog-portrait{width:82px;height:108px}.catalog-card{padding:9px}.catalog-stat{padding:7px 5px}.catalog-stat span{font-size:9px}.rule-card{padding:13px;gap:10px}}
