@@ -19,7 +19,7 @@ const btn=(type,label,disabled=false,extra='',kind='primary full')=>
  '<button type="button" class="btn '+kind+'" data-action="online-game" data-type="'+esc(type)+'" '+
  extra+(disabled?' disabled aria-disabled="true"':'')+'>'+esc(label)+'</button>';
 const waiting=(club,text='')=>'<section class="panel online-turn-wait" role="status">'+
- '<span class="eyebrow">Synchronisation à deux téléphones</span><h2>⏳ Au tour de '+esc(club)+'</h2>'+
+ '<span class="eyebrow">Synchronisation à deux téléphones</span><h2>⏳ Au tour de '+esc(visualAbbr(club))+'</h2>'+
  '<p>'+esc(text||"L'autre téléphone choisit sa prochaine action.")+'</p>'+
  '<p class="caption">Le jeu s’actualise automatiquement.</p></section>';
 const stage=(title,inner)=>'<section class="panel match-stage online-match-stage"><h2>'+
