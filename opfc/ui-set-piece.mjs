@@ -5,6 +5,7 @@
  */
 import {CARD_BY_ID} from './catalog.mjs';
 import {renderCharacterPortrait} from './ui-portraits.mjs';
+import {visualAbbr} from './club-identities.mjs';
 import {matchTacticalChoices,renderShotFaceOff,renderReceiverCard} from './ui-match-widgets.mjs';
 import {beginSetPieceAction,selectSetPieceTaker,lockSetPieceChoice,
  revealSetPieceDuel,continueSetPieceDuel,finishSetPieceCorner,revealSetPiecePenalty} from './set-piece-actions.mjs';
@@ -38,8 +39,8 @@ const receiverCard=(state,a)=>a.kind==='penalty'?'':renderReceiverCard(state,{
  possible:a.kind==='free-kick'
 });
 const handover=club=>'<section class="match-handover" aria-label="Transmission confidentielle"><div class="match-handover-icon">🔒</div>'+
- '<h2>À toi de jouer, '+club+'</h2><p>Passe le téléphone au joueur '+club+'. La décision adverse reste secrète.</p>'+
- button('match-uncover','Je suis '+club+' · afficher mon choix')+'</section>';
+ '<h2>À toi de jouer, '+escape(visualAbbr(club))+'</h2><p>Passe le téléphone au joueur '+escape(visualAbbr(club))+'. La décision adverse reste secrète.</p>'+
+ button('match-uncover','Je suis '+escape(visualAbbr(club))+' · afficher mon choix')+'</section>';
 export const isSetPieceKind=kind=>['corner','free-kick','penalty'].includes(kind);
 export function setPieceTurnOwner(state){
  if(state?.phase!=='match')return null;
