@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {createGame} from '../engine.mjs';
 import {lineupDetails} from '../rules.mjs';
 import {renderShotResult,renderShotFaceOff,renderReceiverCard,matchTacticalChoices} from '../ui-match-widgets.mjs';
+import {setDisplayedClubs,visualAbbr} from '../club-identities.mjs';
 
 const fixture=()=>{
  const s=createGame({dice:[5,2],rng:()=>.3});
@@ -125,4 +126,28 @@ test('Séance de tirs au but : ne pas inventer une minute, conserver les scores 
  assert.doesNotMatch(h,/undefinede|NaNe/);
  assert.match(h,/Droite \/ gauche/);
  assert.equal(renderShotResult(s,{outcome:'stopped',attacker:'PSG'}),'');
+});
+
+test('BDW contre BDR : les réceptions, duels et tirs montrent les nouveaux sigles',()=>{
+ const s=fixture();
+ s.teams.find(t=>t.club==='PSG').identityId='BDW';
+ s.teams.find(t=>t.club==='OM').identityId='BDR';
+ setDisplayedClubs(s.teams);
+ try{
+  assert.equal(visualAbbr('PSG'),'BDW');
+  const reception=renderReceiverCard(s,{receiverId:'luffy',club:'PSG'});
+  assert.match(reception,/receiver-card-club">BDW/);
+  assert.doesNotMatch(reception,/receiver-card-club">PSG/);
+  const duel=renderShotFaceOff(s,{
+   shooterId:'luffy',keeperId:'loki',attacker:'PSG',defender:'OM'
+  });
+  assert.match(duel,/match-duelist-team">BDW · Tireur/);
+  assert.match(duel,/match-duelist-team">BDR · Gardien/);
+  const shot=renderShotResult(s,{
+   outcome:'goal',attacker:'PSG',shooterId:'luffy',keeperId:'loki',
+   score:{PSG:2,OM:1}
+  });
+  assert.match(shot,/BDW/);assert.match(shot,/BDR/);
+  assert.doesNotMatch(shot,/<span>PSG<\/span>|<span>OM<\/span>/);
+ }finally{setDisplayedClubs(null);}
 });
