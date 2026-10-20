@@ -231,16 +231,18 @@ const shell=()=>'<header class="topbar"><a class="brand-mini" href="./"><img src
 const options=(values,current)=>values.map(v=>'<option value="'+esc(v)+'" '+(v===current?'selected':'')+'>'+esc(v)+'</option>').join('');
 const btn=(action,title,klass='ghost',disabled=false,extra='')=>'<button type="button" class="btn '+klass+'" data-action="'+action+'" '+extra+' '+(disabled?'disabled':'')+'>'+title+'</button>';
 const sep=()=>'<span class="eyebrow">Le tournoi de Grand Line</span>';
-/** Illustration à créer plus tard dans l'emplacement opfc-mode-cover. */
+/** Accueil OPFC : logo en haut, illustration officielle au centre, deux modes en bas. */
 function modeChooser(){
- return shell()+'<main class="opfc-mode-entry">'+
- '<section class="opfc-mode-cover" aria-labelledby="opfc-mode-title">'+
+ return '<main class="opfc-mode-entry">'+
+ '<header class="opfc-mode-brand">'+
+ '<a class="opfc-mode-return" href="./" aria-label="Retour à l\'accueil général">← Accueil</a>'+
+ '<h1 class="opfc-visually-hidden">OPMercato FC — Choisir un mode de jeu</h1>'+
+ '<img class="opfc-mode-main-logo" src="./opfc-logo-hd.PNG" width="180" height="180" alt="Logo OPMercato FC">'+
+ '</header>'+
  '<div class="opfc-mode-art-slot" data-art-slot="opfc-mode-cover">'+
- '<img src="./opfc-logo-hd.PNG" width="220" height="220" alt="Emblème OPMercato FC"></div>'+
- '<span class="eyebrow">Grandline Cup · One Piece Football</span>'+
- '<h1 id="opfc-mode-title" class="opfc-mode-title">Choisis ton terrain.</h1>'+
- '<p class="opfc-mode-intro">Dix clubs légendaires. Un trophée. À toi de jouer.</p>'+
- '</section>'+
+ '<img class="opfc-mode-hero-image" src="./opfc/illustrations/opfc_accueil_luffy_zoro.PNG" '+
+ 'width="1024" height="1536" alt="Luffy et Zoro en tenue de football soulèvent le trophée de la Grandline Cup dans un stade" '+
+ 'decoding="async" fetchpriority="high"></div>'+
  '<div class="opfc-mode-options" aria-label="Choix du mode de jeu">'+
  btn('open-local','<span class="opfc-mode-action-icon" aria-hidden="true">⚽</span><span><strong>Jouer en local</strong><small>À deux sur le même appareil</small></span><span class="opfc-mode-chevron" aria-hidden="true">›</span>','primary opfc-mode-action')+
  btn('online','<span class="opfc-mode-action-icon" aria-hidden="true">🌐</span><span><strong>Jouer en ligne</strong><small>Deux iPhone · Un salon privé</small></span><span class="opfc-mode-chevron" aria-hidden="true">›</span>','ghost opfc-mode-action')+
