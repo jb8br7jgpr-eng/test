@@ -23,7 +23,15 @@ let entryView='modes'; // écran de choix au lancement d'OPFC.
 let onlineVisible=false,onlineStage='choose',onlineJoinCode='',onlineBusy=false,onlineError='';
 let onlineSelection=null,onlineOwnClubScope=null,onlinePitchClub=null,onlineTeamsVisible=false,onlineRoomDetails=false;
 let onlineModal=null,onlineSeenRoom=null,onlineSeenAuctionCard=null;
-let onlineTimer=null;
+let onlineTimer=null,onlineRefreshInFlight=false;
+const scrollMatchToTop=()=>{try{window.scrollTo({top:0,behavior:'instant'});}catch{window.scrollTo(0,0);}};
+function onlineMatchDisplayKey(snapshot){
+ if(!snapshot||!['match','moment-result','shootout','finished','shootout-ready'].includes(snapshot.phase))
+  return null;
+ const m=snapshot.match??{},a=m.action,s=m.shootout;
+ return [snapshot.phase,m.index,a?.stage??'',m.lastResult?.outcome??'',
+  s?.active?.shotNumber??'',s?.lastResult?.shotNumber??''].join(':');
+}
 function stopOnlinePoll(){
  if(onlineTimer!==null){clearInterval(onlineTimer);onlineTimer=null;}
 }
@@ -33,7 +41,7 @@ function syncOnlinePoll(){
  }
  if(onlineTimer!==null)return;
  onlineTimer=setInterval(()=>{
-  if(onlineBusy||document.hidden)return;
+  if(onlineBusy||onlineRefreshInFlight||document.hidden)return;
   void refreshOnlineRoom(true);
  },1800);
  onlineTimer?.unref?.(); // uniquement utile sous Node lors des tests.
@@ -44,6 +52,8 @@ async function onlineMutation(fn){
  try{
   await fn();
   onlineError='';
+  if(['match','moment-result','shootout','finished','shootout-ready'].includes(onlineClient.game?.phase))
+   scrollMatchToTop();
  }catch(err){
   onlineError=err?.message||'Impossible de contacter le salon.';
  }finally{
@@ -52,7 +62,9 @@ async function onlineMutation(fn){
 }
 async function refreshOnlineRoom(silent=false){
  if(silent){
-  if(onlineBusy)return;
+  if(onlineBusy||onlineRefreshInFlight)return;
+  onlineRefreshInFlight=true;
+  const beforeScreen=onlineMatchDisplayKey(onlineClient.game);
   try{
    const version=onlineClient.room?.version;
    const before=onlineClient.room?.status;
@@ -60,11 +72,13 @@ async function refreshOnlineRoom(silent=false){
    if(onlineStage!=='room'||onlineClient.room?.version!==version||
       onlineClient.room?.status!==before){
     onlineStage='room';onlineError='';render();
+    if(beforeScreen!==onlineMatchDisplayKey(onlineClient.game)&&
+       onlineMatchDisplayKey(onlineClient.game)!==null)scrollMatchToTop();
    }
   }catch(err){
    const message=err?.message??'Actualisation impossible';
    if(onlineError!==message){onlineError=message;render();}
-  }
+  }finally{onlineRefreshInFlight=false;}
   return;
  }
  await onlineMutation(async()=>{
@@ -89,7 +103,7 @@ async function onlineGameClicked(action,button){
  if(['amount-min','amount-max','amount-plus'].includes(action)){
   const input=document.getElementById('bid-value'),context=uiAuction(snapshot);
   if(!input||!context)return;
-  const raw=Number(String(input.value).replace(/[\\s\\u00a0\\u202f]/g,''))/1000000;
+  const raw=Number(String(input.value).replace(/[\s\u00a0\u202f]/g,''))/1000000;
   const selected=action==='amount-min'?context.minimum:action==='amount-max'?context.maximum:
    Math.min(context.maximum,Math.max(context.minimum,(Number.isFinite(raw)?raw:context.minimum)+5));
   input.value=String(Math.round(selected)*1000000);return;
@@ -98,8 +112,8 @@ async function onlineGameClicked(action,button){
   if(snapshot.phase!=='mercato'||snapshot.auction?.turn!==club)throw Error('Ce n’est pas ton tour');
   let amount=Number(button.dataset.amount);
   if(action==='bid'){
-   const raw=String(document.getElementById('bid-value')?.value??'').replace(/[\\s\\u00a0\\u202f]/g,'');
-   if(!/^\\d+$/.test(raw)||Number(raw)%1000000!==0)
+   const raw=String(document.getElementById('bid-value')?.value??'').replace(/[\s\u00a0\u202f]/g,'');
+   if(!/^\d+$/.test(raw)||Number(raw)%1000000!==0)
     throw Error('Offre invalide : montant entier en millions de Berrys');
    amount=Number(raw)/1000000;
   }
@@ -119,7 +133,9 @@ async function onlineGameClicked(action,button){
    throw Error('Carte absente de ton équipe');
   const pending=onlinePending(snapshot);
   if(pending?.club===club&&pending.id!==cardId)throw Error('Place d’abord ta nouvelle recrue');
-  onlineSelection=onlineSelection?.id===cardId?null:{club,id:cardId};
+  if(onlineSelection?.club===club&&onlineSelection.id===cardId){
+   modal={type:'card',id:cardId};onlineSelection=null;
+  }else onlineSelection={club,id:cardId};
   render();return;
  }
  if(action==='inspect-player'){
@@ -136,6 +152,10 @@ async function onlineGameClicked(action,button){
   const pending=onlinePending(snapshot);
   // Un nouveau joueur non placé doit toujours passer avant une ancienne sélection.
   const selected=pending?.club===club?{club,id:pending.id}:onlineSelection;
+  const touched=snapshot.teams.find(t=>t.club===club)?.slots[slot];
+  if(!pending&&selected?.club===club&&selected.id===touched){
+   modal={type:'card',id:touched};onlineSelection=null;render();return;
+  }
   if(!selected||selected.club!==club){
    const chosen=snapshot.teams.find(t=>t.club===club).slots[slot];
    if(chosen){onlineSelection={club,id:chosen};render();}
@@ -190,8 +210,8 @@ async function onlineGameClicked(action,button){
     await onlineClient.lineupAction(command);
    else await onlineClient.matchAction(command);
   });
-  if(type==='kickoff'&&onlineClient.game?.phase==='match')
-   window.scrollTo({top:0,behavior:'instant'});
+  if(['match','moment-result','shootout','finished'].includes(onlineClient.game?.phase))
+   scrollMatchToTop();
   return;
  }
  throw Error('Cette action n’est pas disponible en ligne');
@@ -247,6 +267,13 @@ async function onlineClicked(action,button){
    onlineStage='room';
    try{await onlineClient.refreshRoom();}catch{ /* reprise par actualisation automatique */ }
   });return;
+ }
+ if(action==='online-exit-finished'){
+  if(onlineClient.game?.phase!=='finished'||onlineClient.game?.match?.shootout?.lastResult)
+   throw Error('Attends la fin de la partie avant de quitter');
+  stopOnlinePoll();onlineClient.leaveDevice();onlineVisible=false;onlineStage='choose';
+  entryView='modes';onlineModal=null;modal=null;onlineSeenRoom=null;onlineSeenAuctionCard=null;
+  onlineSelection=null;onlineError='';render();return;
  }
  if(action==='online-modal-continue'){onlineModal=null;render();return;}
  if(action==='online-room-details'){onlineRoomDetails=!onlineRoomDetails;render();return;}
@@ -573,8 +600,9 @@ function matchPage(){
  '<div class="match-team-overview-heading"><span>⚽ TERRAIN ET COMPOSITIONS</span>'+
  '<small>'+ (game.phase==='half-time'?'Modifications autorisées à la mi-temps':'Effectifs des deux équipes')+'</small></div>'+
  teams()+'</section>';
- return shell()+'<main class="ready-layout">'+middle+overview+
- '<div class="gameplay-nav"><span class="caption">Grandline Cup · Mode local</span>'+btn('confirm-reset','Nouvelle partie','ghost small')+'</div></main>';
+ return shell()+'<main class="ready-layout">'+middle+
+ (game.phase==='finished'?btn('exit-finished-local','← Quitter la partie et revenir au menu','ghost full'):'')+
+ overview+'<div class="gameplay-nav"><span class="caption">Grandline Cup · Mode local</span>'+btn('confirm-reset','Nouvelle partie','ghost small')+'</div></main>';
 }
 function popup(){
  if(!modal)return '';
@@ -753,6 +781,8 @@ function render(){
   (showingGame?(['mercato','lineup','kickoff-ready'].includes(snapshot.phase)?onlineSharedMarket(snapshot):
    '<main class="online-game-content opfc-online-playing">'+
    renderOnlineGame(snapshot,{myClub:room.myClub,hostClub:room.hostClub})+
+   (snapshot.phase==='finished'&&!snapshot.match?.shootout?.lastResult?
+     btn('online-exit-finished','← Quitter la partie et revenir au menu','ghost full'):'')+
    (['match','moment-result','half-time','resume-ready','shootout-ready','shootout','finished'].includes(snapshot.phase)?
     onlineTeams():'')+'</main>'):'');
  app.innerHTML=(onlineVisible?onlineDisplay:entryView==='modes'?modeChooser():entryView==='local'?welcome():game?
@@ -785,6 +815,10 @@ function start(){
 function clicked(button){
  const action=button.dataset.action,club=button.dataset.club;
  if(action==='open-local'){entryView='local';error='';render();return;}
+ if(action==='exit-finished-local'){
+  if(game?.phase!=='finished')throw Error('La partie n’est pas terminée');
+  entryView='modes';modal=null;selection=null;error='';render();return;
+ }
  if(action==='back-modes'){entryView='modes';error='';render();return;}
  if(action==='online'){
   entryView='modes';onlineVisible=true;onlineStage=onlineClient.hasSession?(onlineClient.room?'room':'restore'):'choose';
@@ -825,7 +859,7 @@ function clicked(button){
   const choice=button.dataset.choice,takerId=button.dataset.card;
   matchUncovered=false; // masque immédiatement toute décision précédente
   change(s=>dispatchOpenMatch(s,command,{choice,takerId}));
-  if(command==='kickoff'&&game?.phase==='match')window.scrollTo({top:0,behavior:'instant'});
+  if(['match','moment-result','shootout','finished'].includes(game?.phase))scrollMatchToTop();
   return;
  }
  if(action==='club'){firstClub=club;render();return;}
@@ -905,8 +939,9 @@ function clicked(button){
   const id=button.dataset.card;
   if(placement&&(club!==placement.club||id!==placement.cardId))
    throw Error('Place d’abord la nouvelle recrue avant de modifier un autre joueur.');
-  selection=placement?{club:placement.club,id:placement.cardId}:
-   (selection?.club===club&&selection.id===id?null:{club,id});
+  if(!placement&&selection?.club===club&&selection.id===id){
+   modal={type:'card',id};selection=null;
+  }else selection=placement?{club:placement.club,id:placement.cardId}:{club,id};
   pitchClub=club;render();return;
  }
  if(action==='slot'){
@@ -915,7 +950,10 @@ function clicked(button){
   pitchClub=club;
   if(selection){
    if(selection.club!==club)throw Error('Tu ne peux déplacer que tes propres joueurs.');
-   const id=selection.id;change(s=>place(s,club,id,slot));
+   const id=selection.id;
+   if(!placement&&team?.slots[slot]===id){
+    modal={type:'card',id};selection=null;render();
+   }else change(s=>place(s,club,id,slot));
   }else if(team?.slots[slot]){selection={club,id:team.slots[slot]};render();}
   return;
  }
@@ -972,3 +1010,11 @@ if(onlineClient.loadSession()){
 }
 render();
 if(onlineVisible&&onlineClient.configured)void refreshOnlineRoom();
+// Reconnexion iOS : rattrapage immédiat après retour au premier plan.
+document.addEventListener('visibilitychange',()=>{
+ if(onlineVisible&&!document.hidden&&onlineClient.hasSession)void refreshOnlineRoom(true);
+});
+window.addEventListener('focus',()=>{
+ if(onlineVisible&&onlineClient.hasSession&&!onlineRefreshInFlight)
+  void refreshOnlineRoom(true);
+});

@@ -11,6 +11,7 @@ import {
 } from './match-actions.mjs';
 import {secureRandomBytes} from './online-protocol.mjs';
 import {SET_PIECE_TYPES,handlesOnlineSetPiece,applyOnlineSetPieceTransition} from './online-set-piece.mjs';
+import {continueSetPieceDuel} from './set-piece-actions.mjs';
 import {ONLINE_ENDGAME_COMMANDS,applyOnlineEndgameTransition,onlineShootoutView} from './online-endgame.mjs';
 
 const fail=message=>{throw Error(message);};
@@ -18,6 +19,39 @@ const other=c=>c==='PSG'?'OM':'PSG';
 const CLUBS=['PSG','OM'];
 const PHASES=['match','moment-result','half-time','resume-ready',
  'shootout-ready','shootout','finished'];
+/** Identifiant immuable de chaque annonce affichée sur les deux téléphones. */
+function acknowledgementKey(state){
+ const match=state.match;
+ if(state.phase==='moment-result'&&match?.lastResult)
+  return 'result:'+match.index;
+ if(state.phase==='match'&&match?.action?.stage==='duel-revealed')
+  return 'duel:'+match.index+':'+match.action.kind;
+ if(['shootout','finished'].includes(state.phase)&&match?.shootoutLastResult){
+  const a=match.shootoutLastResult;
+  return 'shootout:'+a.club+':'+a.shotNumber;
+ }
+ return null;
+}
+function acknowledgeScreen(state,club,rng){
+ const key=acknowledgementKey(state);
+ if(!key)fail('Aucun écran de résultat à valider');
+ const next=structuredClone(state);
+ const old=next.match.resultAcks;
+ const ack=old?.key===key?old:{key,PSG:false,OM:false};
+ if(ack[club])return next; // Requête idempotente d'un téléphone déjà prêt.
+ ack[club]=true;
+ next.match.resultAcks=ack;
+ if(!ack.PSG||!ack.OM)return next;
+ delete next.match.resultAcks;
+ if(state.phase==='moment-result')return continueMatch(next);
+ if(state.match.action?.stage==='duel-revealed'){
+  if(state.match.action.kind==='open')return continueOpenPlayDuel(next);
+  return continueSetPieceDuel(next,rng());
+ }
+ // Résultat d'un tir au but : passage uniquement quand les deux sont prêts.
+ next.match.shootoutLastResult=null;
+ return next;
+}
 function clubValid(club){if(!CLUBS.includes(club))fail('Club authentifié invalide');}
 function cryptoRng(){
  const b=secureRandomBytes(4);
@@ -48,6 +82,9 @@ export function onlineMatchView(state,club){
    goals:structuredClone(m.goals),
    history:structuredClone(m.history),
    lastResult:m.lastResult?structuredClone(m.lastResult):null,
+   resultAcks:acknowledgementKey(state)&&state.match.resultAcks?.key===acknowledgementKey(state)?
+    {PSG:!!state.match.resultAcks.PSG,OM:!!state.match.resultAcks.OM}:
+    {PSG:false,OM:false},
    winner:m.winner??null,victory:m.victory??null,
    currentMoment:m.currentMoment??null,
    action:m.action?structuredClone(m.action):null,
@@ -70,6 +107,7 @@ const TYPES={
  'continue-duel':['type'],
  'reveal-shot':['type'],
  'continue-result':['type'],
+ 'ack':['type'],
  ...SET_PIECE_TYPES,
  ...ONLINE_ENDGAME_COMMANDS
 };
@@ -86,12 +124,14 @@ export function applyOnlineOpenPlayCommand(state,club,command,{rng=cryptoRng,hos
   fail('Paramètre de match interdit');
  const type=command.type;
  let next;
- if(Object.hasOwn(ONLINE_ENDGAME_COMMANDS,type)){
+ // Les anciennes commandes de continuation sont réinterprétées comme
+ // une confirmation INDIVIDUELLE. Aucun ancien iPhone ne peut passer
+ // une annonce sans la validation du second joueur.
+ if(['ack','continue-result','continue-duel','continue-setpiece-duel',
+  'shootout-continue'].includes(type)){
+  next=acknowledgeScreen(state,club,rng);
+ }else if(Object.hasOwn(ONLINE_ENDGAME_COMMANDS,type)){
   next=applyOnlineEndgameTransition(state,club,command,{hostClub,rng});
- }else if(type==='continue-result'){
-  if(state.phase!=='moment-result'||state.match.lastResult?.attacker!==club)
-   fail('Seul le club attaquant peut continuer ce résultat');
-  next=continueMatch(state);
  }else if(type==='begin-open'){
   const event=currentMatchMoment(state);
   if(state.phase!=='match'||state.match.action||
@@ -113,6 +153,11 @@ export function applyOnlineOpenPlayCommand(state,club,command,{rng=cryptoRng,hos
     if(typeof command.choice!=='string'||command.choice.length>32)
      fail('Choix de match invalide');
     next=lockOpenPlayChoice(state,club,command.choice);
+    // Deuxième choix validé : résultat calculé automatiquement côté serveur.
+    if(next.match.action?.stage==='duel-ready')
+     next=revealOpenPlayDuel(next,rng());
+    else if(next.match.action?.stage==='shot-ready')
+     next=revealOpenPlayShot(next,rng());
    }else if(type==='reveal-duel'){
     next=revealOpenPlayDuel(state,rng());
    }else if(type==='continue-duel'){

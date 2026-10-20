@@ -126,7 +126,22 @@ export function applyOnlineEndgameTransition(state,club,command,{hostClub,rng}={
     club:shooter.club,shooterId:shooter.cardId,
     shotDirection:command.choice,keeperDirection:null
    };
-   else next.match.shootoutPending.keeperDirection=command.choice;
+   else{
+    next.match.shootoutPending.keeperDirection=command.choice;
+    // Le gardien vient de confirmer le deuxième choix : résoudre le tir
+    // immédiatement, sans révélation supplémentaire à déclencher.
+    const directions=next.match.shootoutPending;
+    const resolved=advanceShootout(next,{
+     club:shooter.club,shooterId:shooter.cardId,
+     shotDirection:directions.shotDirection,
+     keeperDirection:directions.keeperDirection,draw:rng()
+    });
+    resolved.match.shootoutPending=null;
+    resolved.match.shootoutLastResult=structuredClone(
+     resolved.match.shootout.timeline.at(-1)
+    );
+    next=resolved;
+   }
   }else if(type==='shootout-reveal'){
    if(club!==shooter.club)fail('Seul le tireur révèle le tir');
    if(!pending?.shotDirection||!pending?.keeperDirection)

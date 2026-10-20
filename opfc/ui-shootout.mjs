@@ -55,7 +55,21 @@ export function dispatchShootout(state,command,{choice,rng=Math.random}={}){
   if(!pending)next.match.shootoutPending={
    club:p.club,shooterId:p.cardId,shotDirection:choice,keeperDirection:null
   };
-  else next.match.shootoutPending.keeperDirection=choice;
+  else{
+   next.match.shootoutPending.keeperDirection=choice;
+   // Même fonctionnement local et en ligne : résolution automatique
+   // après le dernier choix secret, sans bouton « Révéler et tirer ».
+   const pending=next.match.shootoutPending;
+   const resolved=advanceShootout(next,{
+    club:p.club,shooterId:p.cardId,
+    shotDirection:pending.shotDirection,keeperDirection:pending.keeperDirection,
+    draw:rng()
+   });
+   const latest=resolved.match.shootout.timeline.at(-1);
+   resolved.match.shootoutPending=null;
+   resolved.match.shootoutLastResult=structuredClone(latest);
+   return resolved;
+  }
   return next;
  }
  if(command==='shootout-reveal'){
@@ -209,10 +223,15 @@ export function renderOnlineShootoutScreen(state,{myClub,hostClub}={}){
    action:'online-game',
    continueLabel:state.phase==='finished'?'Voir le résultat final':'Continuer'
   });
+  const acks=state.match?.resultAcks??{PSG:false,OM:false};
   out+=result.replace('data-action="online-game"',
-   'data-action="online-game" data-type="shootout-continue"'+
-   (myClub===last.club?'':' disabled aria-disabled="true"'));
-  if(myClub!==last.club)out+=guestWaiting(last.club,'Le tireur valide le résultat.');
+   'data-action="online-game" data-type="ack"'+
+   (acks[myClub]?' disabled aria-disabled="true"':''));
+  out+='<div class="online-ack-state" role="status">'+
+   ['PSG','OM'].map(id=>'<span class="'+(acks[id]?'is-confirmed':'is-pending')+'">'+
+    (acks[id]?'✓ ':'◷ ')+escape(visualAbbr(id))+
+    (acks[id]?' prêt':' en attente')+'</span>').join('')+'</div>';
+  if(acks[myClub])out+='<p class="caption">En attente de la validation adverse…</p>';
  }else if(state.phase==='shootout'){
   const p=s.active;
   if(!p)out+=guestWaiting(s.nextClub??myClub,'Le prochain tireur est désigné.');
