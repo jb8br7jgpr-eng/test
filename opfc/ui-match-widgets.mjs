@@ -6,6 +6,7 @@
 import {CARD_BY_ID} from './catalog.mjs';
 import {lineupDetails} from './rules.mjs';
 import {renderCharacterPortrait} from './ui-portraits.mjs';
+import {visualAbbr} from './club-identities.mjs';
 
 const h=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
 const opposite=c=>c==='PSG'?'OM':'PSG';
@@ -105,11 +106,11 @@ export function renderShotResult(state,{outcome,attacker,minute,shooterId,keeper
  const portrait=actorId?'<div class="shot-result-player">'+
   renderCharacterPortrait(actorId,'shot-result-portrait')+
   '<strong>'+h(natural?.name??actorId)+'</strong>'+
-  '<div class="shot-result-player-meta">'+h(club)+' · '+role+
+  '<div class="shot-result-player-meta">'+h(visualAbbr(club))+' · '+role+
   (actual?' · '+h(actual.position)+' · Note '+actual.rating:'')+
   (actual?.outOfPosition?' · Hors poste':'')+'</div></div>':'';
  const scoreboard=score?'<div class="shot-result-score" aria-label="Score après la frappe">'+
-  '<span>PSG</span><strong>'+h(score.PSG)+' – '+h(score.OM)+'</strong><span>OM</span></div>':'';
+  '<span>'+h(visualAbbr('PSG'))+'</span><strong>'+h(score.PSG)+' – '+h(score.OM)+'</strong><span>'+h(visualAbbr('OM'))+'</span></div>':'';
  return '<section class="panel match-stage shot-result-panel shot-result-'+cfg.tone+'" aria-label="'+cfg.title+'">'+
   '<span class="eyebrow">'+h(context)+(Number.isInteger(minute)?' · '+minute+'e':'')+'</span>'+
   '<span class="shot-result-icon" aria-hidden="true">'+cfg.tag+'</span>'+
