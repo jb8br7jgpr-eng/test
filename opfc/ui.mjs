@@ -21,7 +21,7 @@ let placement=null,teamsVisible=false,pitchClub=null;
 const onlineClient=createOnlineClient();
 let entryView='modes'; // écran de choix au lancement d'OPFC.
 let onlineVisible=false,onlineStage='choose',onlineJoinCode='',onlineBusy=false,onlineError='';
-let onlineSelection=null,onlineOwnClubScope=null,onlinePitchClub=null,onlineTeamsVisible=false;
+let onlineSelection=null,onlineOwnClubScope=null,onlinePitchClub=null,onlineTeamsVisible=false,onlineRoomDetails=false;
 let onlineTimer=null;
 function stopOnlinePoll(){
  if(onlineTimer!==null){clearInterval(onlineTimer);onlineTimer=null;}
@@ -81,6 +81,7 @@ async function onlineGameClicked(action,button){
   onlinePitchClub=button.dataset.club;onlineSelection=null;render();return;
  }
  if(action==='toggle-teams'){onlineTeamsVisible=!onlineTeamsVisible;render();return;}
+ if(action==='online-room-details'){onlineRoomDetails=!onlineRoomDetails;render();return;}
  if(action==='inspect'){const id=snapshot.auction?.cardId;if(id){modal={type:'card',id};render();}return;}
  if(action==='close'){modal=null;render();return;}
  if(action==='continue-placement'){render();return;}
@@ -240,6 +241,7 @@ async function onlineClicked(action,button){
    await onlineClient.refreshRoom();onlineStage='room';
   });return;
  }
+ if(action==='online-room-details'){onlineRoomDetails=!onlineRoomDetails;render();return;}
  if(action==='online-refresh'){await refreshOnlineRoom();return;}
  await onlineGameClicked(action,button);
 }
@@ -600,25 +602,76 @@ function popup(){
  btn('reset','Effacer la partie','negative full')+btn('close','Annuler','ghost full');
  return '<div class="modal-backdrop"><section class="modal" role="dialog" aria-modal="true">'+body+'</section></div>';
 }
-function onlineTeams(){
+/** Le serveur détient les compositions ; aucune recrue n'est placée localement. */
+function onlinePending(snapshot){
+ if(!['mercato','lineup'].includes(snapshot?.phase))return null;
+ // Priorité au premier placement en attente, quel que soit l'appareil.
+ for(const team of snapshot.teams??[]){
+  const id=team.roster?.find(cardId=>!team.slots.includes(cardId));
+  if(id)return {club:team.club,id};
+ }
+ return null;
+}
+function onlineScoped(renderFn,{pending=null}={}){
  const snapshot=onlineClient.game;
  if(!snapshot)return '';
  const prior={game,selection,pitchClub,placement,own:onlineOwnClubScope};
  try{
-  game=snapshot;
-  selection=onlineSelection;
-  pitchClub=onlinePitchClub??onlineClient.room?.myClub??'PSG';
-  placement=null;
-  onlineOwnClubScope=onlineClient.room?.myClub??null;
-  return '<section class="match-team-overview online-team-overview" aria-label="Terrain et effectifs du match">'+
-   '<div class="match-team-overview-heading"><span>⚽ TERRAIN ET COMPOSITIONS</span>'+
-   '<small>'+(['lineup','half-time'].includes(snapshot.phase)?
-    'Déplace uniquement les joueurs de ton équipe':'Effectifs des deux équipes')+'</small></div>'+
-   teams()+'</section>';
+  const ownClub=onlineClient.room?.myClub??'PSG';
+  game=snapshot;onlineOwnClubScope=ownClub;
+  placement=pending?.club===ownClub?{club:ownClub,cardId:pending.id}:null;
+  selection=placement?{club:ownClub,id:pending.id}:onlineSelection;
+  pitchClub=onlinePitchClub??ownClub;
+  return renderFn();
  }finally{
   game=prior.game;selection=prior.selection;pitchClub=prior.pitchClub;
   placement=prior.placement;onlineOwnClubScope=prior.own;
  }
+}
+function onlineTeams(pending=null){
+ return onlineScoped(()=>'<section class="match-team-overview online-team-overview" aria-label="Terrain et effectifs du match">'+
+   '<div class="match-team-overview-heading"><span>⚽ TERRAIN ET COMPOSITIONS</span>'+
+   '<small>'+(['mercato','lineup','half-time'].includes(game.phase)?
+    'Ton club est modifiable · touche un joueur puis sa nouvelle case':'Effectifs des deux équipes')+'</small></div>'+
+   teams()+'</section>',{pending});
+}
+function onlineSharedMarket(snapshot){
+ const ownClub=onlineClient.room.myClub;
+ const pending=onlinePending(snapshot);
+ const hud=onlineScoped(()=>wallets());
+ if(pending){
+  if(pending.club!==ownClub)
+   return '<main class="online-game-content opfc-online-playing">'+hud+
+    '<section class="panel online-turn-wait"><h2>⏳ Recrue en cours de placement</h2>'+
+    '<p>'+esc(clubName(pending.club))+' place son personnage avant la reprise du mercato.</p></section>'+
+    '</main>';
+  const recruit=card(pending.id);
+  return '<main class="online-game-content opfc-online-playing">'+hud+
+    '<section class="panel placement-intro"><span class="eyebrow">Recrutement confirmé</span>'+
+    '<div class="placement-summary">'+renderCharacterPortrait(pending.id,'placement-portrait')+
+    '<div class="placement-summary-body"><h2>'+esc(recruit.name)+' rejoint '+esc(clubName(ownClub))+'</h2>'+
+    '<div class="placement-metadata"><span class="roster-position">Préf. '+esc(recruit.position)+'</span>'+
+    '<span class="roster-rating">Note '+recruit.rating+'</span></div></div></div>'+
+    '<p><strong>Touche une case sur ton terrain pour placer la recrue.</strong> Puis les enchères reprendront automatiquement.</p>'+
+    '</section>'+onlineTeams(pending)+'</main>';
+ }
+ if(snapshot.phase==='mercato'){
+  const auction=onlineScoped(()=>sale({ownClub}));
+  const mine=snapshot.auction?.turn===ownClub;
+  const ownTeam=snapshot.teams.find(t=>t.club===ownClub);
+  return '<main class="online-game-content opfc-online-playing">'+hud+
+   (mine?'':'<p class="online-turn-note">⏳ Au tour de '+esc(visualAbbr(snapshot.auction.turn))+
+   '. Tu peux consulter tes joueurs et ton Haki d’Observation.</p>')+
+   auction+
+   (!mine&&!ownTeam?.hakis?.observation?
+    '<button class="btn ghost full" data-action="observation">👁 Utiliser ton Observation</button>':'')+
+   '<div class="view-teams-actions"><button class="btn ghost full" data-action="toggle-teams" aria-expanded="'+onlineTeamsVisible+'">'+
+   (onlineTeamsVisible?'Masquer les équipes':'Voir les équipes')+'</button></div>'+
+   (onlineTeamsVisible?onlineTeams():'')+'</main>';
+ }
+ return '<main class="online-game-content opfc-online-playing">'+hud+
+  renderOnlineGame(snapshot,{myClub:ownClub,hostClub:onlineClient.room.hostClub})+
+  onlineTeams()+'</main>';
 }
 function render(){
  const showingGame=onlineVisible&&onlineStage==='room'&&
@@ -630,15 +683,24 @@ function render(){
   else setDisplayedClubs(null);
  }else if(game)setDisplayedClubs(game.teams);
  else setDisplayedChoices(localClubChoices);
- const onlineDisplay=shell()+renderOnlineLobby({
+ const room=onlineClient.room;
+ const compactRoom=showingGame?'<div class="online-session-bar" role="status">'+
+  '<span>🌐 Partie en ligne · '+esc(visualAbbr(room.myClub))+' vs '+
+  esc(visualAbbr(room.myClub==='PSG'?'OM':'PSG'))+'</span>'+
+  '<button type="button" data-action="online-room-details">'+
+  (onlineRoomDetails?'Masquer le salon':'Infos du salon')+'</button></div>':'';
+ const lobby=(!showingGame||onlineRoomDetails)?renderOnlineLobby({
   stage:onlineStage,firstClub,room:onlineClient.room,
   hostIdentity:onlineHostIdentity,guestIdentity:onlineGuestIdentity,
   configured:onlineClient.configured,joinCode:onlineJoinCode,
   busy:onlineBusy,error:onlineError,gameActive:showingGame
- })+(showingGame?'<main class="online-game-content">'+
-  renderOnlineGame(snapshot,{myClub:onlineClient.room.myClub,hostClub:onlineClient.room.hostClub})+
-  (['lineup','match','moment-result','half-time','resume-ready','shootout-ready',
-    'shootout','finished'].includes(snapshot.phase)?onlineTeams():'')+'</main>':'');
+ }):'';
+ const onlineDisplay=shell()+compactRoom+lobby+
+  (showingGame?(['mercato','lineup'].includes(snapshot.phase)?onlineSharedMarket(snapshot):
+   '<main class="online-game-content opfc-online-playing">'+
+   renderOnlineGame(snapshot,{myClub:room.myClub,hostClub:room.hostClub})+
+   (['match','moment-result','half-time','resume-ready','shootout-ready','shootout','finished'].includes(snapshot.phase)?
+    onlineTeams():'')+'</main>'):'');
  app.innerHTML=(onlineVisible?onlineDisplay:entryView==='modes'?modeChooser():entryView==='local'?welcome():game?
   (game.phase==='kickoff-ready'?endMercato():['mercato','lineup'].includes(game.phase)?playing():matchPage()):welcome())+
  (error?'<div class="alert" role="alert">'+esc(error)+'</div>':'')+popup();
