@@ -9,6 +9,7 @@ import {matchTacticalChoices,renderShotFaceOff,renderShotResult,renderReceiverCa
 import {renderSetPieceAction,isSetPieceKind} from './ui-set-piece.mjs';
 import {renderShootoutTracker} from './ui-shootout.mjs';
 import {renderFinalResult} from './ui-final.mjs';
+import {renderOnlineMatchScreen} from './ui-match.mjs';
 import {setDisplayedClubs,visualAbbr} from './club-identities.mjs';
 
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -103,6 +104,8 @@ function visualMarket(g,club){
  return html+'</div>';
 }
 function matchStage(g,club,hostClub){
+ if(['match','moment-result','half-time','resume-ready'].includes(g.phase))
+  return renderOnlineMatchScreen(g,{myClub:club,hostClub});
  const m=g.match,a=m?.action;
  if(g.phase==='finished'){
   // Le dernier tir est révélé avant le bilan final, même si le moteur
@@ -270,8 +273,6 @@ export function renderOnlineGame(g,{myClub,hostClub}={}){
  if(g.phase==='mercato')return top+visualMarket(g,myClub);
  if(g.phase==='lineup')return top+stage('Prépare ta composition',
   '<p>Choisis tes sept titulaires et leur formation sur le terrain ci-dessous.</p>');
- if(g.phase==='kickoff-ready')return top+(myClub===hostClub?
-  stage('Les équipes sont prêtes !',btn('kickoff','⚽ Donner le coup d’envoi')):
-  waiting(hostClub,'Le club hôte lance le match.'));
- return top+matchStage(g,myClub,hostClub);
+ if(g.phase==='kickoff-ready')return renderOnlineMatchScreen(g,{myClub,hostClub});
+ return matchStage(g,myClub,hostClub);
 }
