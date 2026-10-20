@@ -60,7 +60,14 @@ export function dispatchSetPieceMatch(state,command,{choice,takerId,rng=Math.ran
  if(command==='choose'){
   const club=setPieceTurnOwner(state);
   if(!club)throw Error('Aucun choix de phase arrêtée attendu');
-  return lockSetPieceChoice(state,club,choice);
+  let next=lockSetPieceChoice(state,club,choice);
+  if(next.match.action?.stage==='duel-ready')
+   next=revealSetPieceDuel(next,rng(),rng);
+  else if(next.match.action?.stage==='penalty-ready')
+   next=revealSetPiecePenalty(next,rng());
+  else if(next.match.action?.stage==='corner-finish-ready')
+   next=finishSetPieceCorner(next,rng());
+  return next;
  }
  if(command==='reveal-setpiece-duel')return revealSetPieceDuel(state,rng(),rng);
  if(command==='continue-setpiece-duel')return continueSetPieceDuel(state,rng());
