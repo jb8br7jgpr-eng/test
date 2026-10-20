@@ -334,8 +334,8 @@ function modeChooser(){
  '<img class="opfc-mode-main-logo" src="./opfc-logo-hd.PNG" width="180" height="180" alt="Logo OPMercato FC">'+
  '</header>'+
  '<div class="opfc-mode-art-slot" data-art-slot="opfc-mode-cover">'+
- '<img class="opfc-mode-hero-image" src="./opfc/illustrations/opfc_accueil_luffy_zoro.PNG" '+
- 'width="1024" height="1536" alt="Luffy et Zoro en tenue de football soulèvent le trophée de la Grandline Cup dans un stade" '+
+ '<img class="opfc-mode-hero-image" src="./opfc/illustrations/opfc_accueil_carre.PNG" '+
+ 'width="1024" height="1024" alt="Illustration d’accueil d’OPMercato FC" '+
  'decoding="async" fetchpriority="high"></div>'+
  '<div class="opfc-mode-options" aria-label="Choix du mode de jeu">'+
  btn('open-local','<span class="opfc-mode-action-icon" aria-hidden="true">⚽</span><span><strong>Jouer en local</strong><small>À deux sur le même appareil</small></span><span class="opfc-mode-chevron" aria-hidden="true">›</span>','primary opfc-mode-action')+
