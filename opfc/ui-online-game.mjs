@@ -108,7 +108,7 @@ function matchStage(g,club,hostClub){
  }
  if(g.phase==='half-time'||g.phase==='resume-ready'){
   const status=g.teams.map(t=>'<span class="halftime-team-status '+(t.ready?'is-ready':'is-pending')+'">'+
-   (t.ready?'✓':'◷')+' '+esc(t.club)+' : '+(t.ready?'prêt':'en préparation')+'</span>').join('');
+   (t.ready?'✓':'◷')+' '+esc(visualAbbr(t.club))+' : '+(t.ready?'prêt':'en préparation')+'</span>').join('');
   const stats=['shots','onTarget','saves'].map((k,i)=>'<div class="halftime-stat-row">'+
    '<strong>'+m.statistics.PSG[k]+'</strong><span>'+['Tirs','Tirs cadrés','Arrêts'][i]+
    '</span><strong>'+m.statistics.OM[k]+'</strong></div>').join('');
@@ -206,7 +206,7 @@ function shootoutStage(g,club){
  const tracker=renderShootoutTracker({...s,attempts});
  const history='<section class="panel shootout-log"><h3 class="section-title">Historique des tentatives</h3>'+
   (s.timeline.length?s.timeline.map(t=>
-   '<div class="shootout-attempt"><span class="shootout-attempt-club">'+esc(t.club)+'</span>'+
+   '<div class="shootout-attempt"><span class="shootout-attempt-club">'+esc(visualAbbr(t.club))+'</span>'+
    '<span class="shootout-kick-player">'+renderCharacterPortrait(t.shooterId,'kick-portrait')+
    esc(name(t.shooterId))+'</span><strong class="'+(t.scored?'kick-goal':'kick-fail')+'">'+
    (t.scored?'✓ But':t.result==='save'?'✕ Arrêt':'✕ Raté')+'</strong></div>').join(''):
