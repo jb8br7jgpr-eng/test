@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main, opmercato-v3-work-20261016, opmercato-v3-polish-20261016, opmercato-v3-visual-fixes-20261016]
-    paths: ['mercato-v3-local.js', 'mercato-online.js', 'index.html', 'classique.html', '.github/workflows/opmercato-v3-browser.yml', 'opmercato-ships-sprite.webp', 'mercato-v3-dice.js']
+    paths: ['mercato-v3-local.js', 'mercato-online.js', 'index.html', 'classique-accueil.html', 'opmercato-accueil-equipage.PNG', 'classique.html', '.github/workflows/opmercato-v3-browser.yml', 'opmercato-ships-sprite.webp', 'mercato-v3-dice.js']
 jobs:
   v3-browser:
     runs-on: ubuntu-latest
