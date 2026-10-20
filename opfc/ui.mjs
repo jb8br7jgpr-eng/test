@@ -132,14 +132,16 @@ async function onlineGameClicked(action,button){
   if(button.dataset.club!==club||!['mercato','lineup','half-time'].includes(snapshot.phase))
    throw Error('Tu ne peux placer que tes propres joueurs');
   const slot=Number(button.dataset.slot);
-  if(!onlineSelection||onlineSelection.club!==club){
+  const pending=onlinePending(snapshot);
+  const selected=onlineSelection??(pending?.club===club?{club,id:pending.id}:null);
+  if(!selected||selected.club!==club){
    const chosen=snapshot.teams.find(t=>t.club===club).slots[slot];
    if(chosen){onlineSelection={club,id:chosen};render();}
    return;
   }
   await onlineMutation(async()=>{
    const command={type:snapshot.phase==='half-time'?'half-place':'place',
-    cardId:onlineSelection.id,slot};
+    cardId:selected.id,slot};
    if(snapshot.phase==='half-time')await onlineClient.matchAction(command);
    else if(snapshot.phase==='mercato')await onlineClient.marketAction(command);
    else await onlineClient.lineupAction(command);
@@ -230,7 +232,8 @@ async function onlineClicked(action,button){
  if(action==='online-create'){
   await onlineMutation(async()=>{
    await onlineClient.createRoom('PSG',onlineHostIdentity);
-   await onlineClient.refreshRoom();onlineStage='room';
+   onlineStage='room';
+   try{await onlineClient.refreshRoom();}catch{ /* reprise par actualisation automatique */ }
   });return;
  }
  if(action==='online-join'){
@@ -238,7 +241,8 @@ async function onlineClicked(action,button){
   onlineJoinCode=normalizeJoinCodeInput(typed);
   await onlineMutation(async()=>{
    await onlineClient.joinRoom(onlineJoinCode,onlineGuestIdentity);
-   await onlineClient.refreshRoom();onlineStage='room';
+   onlineStage='room';
+   try{await onlineClient.refreshRoom();}catch{ /* reprise par actualisation automatique */ }
   });return;
  }
  if(action==='online-room-details'){onlineRoomDetails=!onlineRoomDetails;render();return;}
@@ -733,7 +737,9 @@ function clicked(button){
  if(action==='back-modes'){entryView='modes';error='';render();return;}
  if(action==='online'){
   entryView='modes';onlineVisible=true;onlineStage=onlineClient.hasSession?(onlineClient.room?'room':'restore'):'choose';
-  onlineError='';render();syncOnlinePoll();return;
+  onlineError='';render();syncOnlinePoll();
+  if(onlineClient.hasSession)void refreshOnlineRoom(true);
+  return;
  }
  if(onlineVisible){
   void onlineClicked(action,button).catch(e=>{onlineError=e?.message||'Action réseau impossible';render();});
