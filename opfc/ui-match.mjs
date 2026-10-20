@@ -95,7 +95,7 @@ function attackBanner(attacker,context,kind,minute){
  if(!['PSG','OM'].includes(attacker))return '';
  const defense=attacker==='PSG'?'OM':'PSG';
  const quality=QUALITY[context];
- return '<section class="match-attack-banner '+attacker.toLowerCase()+'" aria-label="Équipe attaquante : '+attacker+'">'+
+ return '<section class="match-attack-banner '+attacker.toLowerCase()+'" aria-label="Équipe attaquante : '+html(visualAbbr(attacker))+'">'+
  '<div class="match-attack-teams"><div class="match-attacking-team"><span>⚽ À L’ATTAQUE</span><strong>'+html(visualAbbr(attacker))+'</strong></div>'+
  '<div class="match-attack-arrow" aria-hidden="true">→</div>'+
  '<div class="match-defending-team"><span>EN DÉFENSE</span><strong>'+html(visualAbbr(defense))+'</strong></div></div>'+
@@ -250,6 +250,7 @@ function halftimeView(state,m){
   '</section></div>';
 }
 export function renderMatchScreen(state,{uncovered=false}={}){
+ if(state?.teams)setDisplayedClubs(state.teams);
  if(state?.phase==='kickoff-ready')return '<section class="panel match-stage">'+
   '<span class="eyebrow">Grandline Cup · Avant-match</span><h2>Les équipes sont prêtes !</h2>'+
   '<p>Sept joueurs de chaque côté. Les compositions se verrouillent au coup d’envoi.</p>'+
