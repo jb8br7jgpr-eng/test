@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createGame,ready} from '../engine.mjs';
+import {createGame,bid,ready} from '../engine.mjs';
 import {kickoffMatch,resolveMatchMoment,continueMatch,resumeMatch,beginShootout,advanceShootout} from '../match.mjs';
 import {beginOpenPlayAction,lockOpenPlayChoice} from '../match-actions.mjs';
 import {beginSetPieceAction,selectSetPieceTaker,lockSetPieceChoice} from '../set-piece-actions.mjs';
@@ -56,6 +56,15 @@ test('L’interface de mercato en ligne montre le catalogue sans jamais le paque
  assert.doesNotMatch(own,/deck|cursor|onlinePrivate|sessionToken/);
  assert.doesNotMatch(opponent,/deck|cursor|onlinePrivate|sessionToken/);
  assert.equal(master.auction.cardId,view(master,current).auction.cardId);
+});
+test('Passer après une enchère adverse est affiché comme gratuit en ligne',()=>{
+ let s=createGame({dice:[5,2],rng:rng(3)});
+ const actor=s.auction.turn,opponent=actor==='PSG'?'OM':'PSG';
+ s=bid(s,actor,5);
+ const html=ui(s,opponent);
+ assert.match(html,/Passer gratuitement · enchère adverse/);
+ assert.match(html,/data-type="pass"/);
+ assert.doesNotMatch(html,/data-type="pass" disabled/);
 });
 test('Compositions synchronisées : chaque équipe attend la validation de ses joueurs',()=>{
  const master=prepared();master.phase='lineup';
