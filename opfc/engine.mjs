@@ -79,14 +79,15 @@ export function bid(state,club,amount){
 export function pass(state,club){
   const s=clone(state),a=requireTurn(s,club),team=s.teams[checkClub(s,club)];
   if(a.king?.holder===club&&a.king.phase==='open')fail('L’ouverture avec le Haki des Rois est obligatoire');
-  const madeOffer=a.offered.includes(club);
+  // Dès qu'une enchère existe, tout joueur peut passer sans consommer de refus.
   const minimum=Math.max(MIN_BID,a.highestBid+1);
-  if(!madeOffer && maxBid(team)>=minimum){
+  const charged=a.highestBid===0&&maxBid(team)>=minimum;
+  if(charged){
     if(team.refusals>=MAX_REFUSALS)fail('Les cinq refus sans enchère sont épuisés');
     team.refusals++;
   }
   if(!a.passed.includes(club))a.passed.push(club);
-  record(s,{kind:'pass',club,cost:madeOffer?0:(maxBid(team)>=minimum?1:0)});
+  record(s,{kind:'pass',club,cost:charged?1:0});
   if(a.king && a.king.phase==='last' && a.king.holder===club){closeCard(s,'king-no-final-bid');return s;}
   if(a.highestClub){closeCard(s,'withdrawn');return s;}
   advanceAfterAction(s,club);
