@@ -47,12 +47,13 @@ jobs:
             const page=await context.newPage();
             page.on("pageerror",e=>errors.push(e.stack||e.message));
             await page.route(live,r=>r.continue({url:staging}));
-            await page.goto("http://127.0.0.1:8765/classique.html",{waitUntil:"domcontentloaded"});
+            await page.goto("http://127.0.0.1:8765/classique.html?launch=online",{waitUntil:"domcontentloaded"});
+            await page.locator('#opmercato-online .online-menu-return').waitFor({state:'visible',timeout:20000});
             pages.push(page);return page;
           }
           try {
             const host=await device(),guest=await device();
-            await host.locator('[data-online="open"]').click();
+            // Le mode en ligne est ouvert par le nouveau menu (launch=online).
             await host.locator('[data-online="create-form"]').click();
             if(await host.locator('#online-team').inputValue()!=="10")
               throw Error("Online game must default to 10 recruits");
@@ -61,7 +62,7 @@ jobs:
             await host.locator('[data-online="create-go"]').click();
             await host.locator('.online-code').waitFor({timeout:25000});
             const code=(await host.locator('.online-code').innerText()).trim();
-            await guest.locator('[data-online="open"]').click();
+            // L'invité rejoint le même écran d'accueil en ligne.
             await guest.locator('[data-online="join-form"]').click();
             await guest.locator('#online-code').fill(code);
             await guest.locator('#online-name').fill("V3 Invite");
