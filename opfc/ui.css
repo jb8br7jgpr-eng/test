@@ -1458,3 +1458,99 @@ a{color:inherit}p{line-height:1.45}.app{width:min(100%,760px);margin:0 auto;padd
  .online-session-actions{gap:4px}
  .online-session-bar .online-session-actions button{padding:6px;font-size:9px}
 }
+
+
+/* OPFC — sélection des clubs locale et en ligne : écusson au centre,
+   abréviation puis nom complet. Ne modifie pas les écussons du match. */
+.opfc-local-setup .opfc-club-picker,
+.online-lobby-card .opfc-club-picker{
+ align-items:stretch;
+}
+.opfc-local-setup .opfc-club-picker>label,
+.online-lobby-card .opfc-club-picker>label{
+ text-align:center;
+}
+.opfc-local-setup .opfc-club-picker>select,
+.online-lobby-card .opfc-club-picker>select{
+ text-align:center;
+ text-align-last:center;
+}
+.opfc-local-setup .opfc-club-picked,
+.online-lobby-card .opfc-club-picked{
+ display:flex;
+ flex-direction:column;
+ justify-content:center;
+ align-items:center;
+ text-align:center;
+ width:100%;
+ min-height:294px;
+ padding:16px 12px 19px;
+ gap:9px;
+ border-top:1px solid #a8cad148;
+ border-right:1px solid #a8cad148;
+ border-bottom:1px solid #a8cad148;
+ border-radius:17px;
+ background:radial-gradient(circle at 50% 32%,#315369 0%,#19394c 46%,#102b3c 100%);
+ box-shadow:inset 0 1px 0 #ffffff15,0 8px 22px #0003;
+}
+.opfc-local-setup .opfc-club-picked .club-crest.club-crest-photo.select-crest,
+.online-lobby-card .opfc-club-picked .club-crest.club-crest-photo.select-crest{
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ width:clamp(166px,47vw,205px);
+ height:clamp(183px,51vw,221px);
+ min-width:0;
+ min-height:0;
+ flex:0 0 auto;
+ margin:0 auto;
+ padding:0;
+ filter:drop-shadow(0 7px 12px #0009);
+}
+.opfc-local-setup .opfc-club-picked .club-crest-photo.select-crest .club-crest-image,
+.online-lobby-card .opfc-club-picked .club-crest-photo.select-crest .club-crest-image{
+ width:100%;
+ height:100%;
+ object-fit:contain;
+ object-position:center;
+}
+.opfc-local-setup .opfc-club-picked .opfc-picked-name,
+.online-lobby-card .opfc-club-picked .opfc-picked-name{
+ display:flex;
+ flex-direction:column;
+ align-items:center;
+ justify-content:center;
+ text-align:center;
+ gap:4px;
+ width:100%;
+ min-width:0;
+ margin:0;
+ line-height:1.26;
+}
+.opfc-local-setup .opfc-club-picked .opfc-picked-name strong,
+.online-lobby-card .opfc-club-picked .opfc-picked-name strong{
+ display:block;
+ width:100%;
+ margin:0;
+ color:#ffe2a3;
+ font-size:clamp(20px,5.2vw,25px);
+ font-weight:950;
+ line-height:1.1;
+ letter-spacing:.07em;
+ text-align:center;
+}
+.opfc-local-setup .opfc-club-picked .opfc-picked-name small,
+.online-lobby-card .opfc-club-picked .opfc-picked-name small{
+ display:block;
+ width:100%;
+ color:#e7f3f8;
+ font-size:clamp(13px,3.65vw,15px);
+ font-weight:650;
+ line-height:1.4;
+ text-align:center;
+ overflow-wrap:anywhere;
+}
+@media(max-width:360px){
+ .opfc-local-setup .opfc-club-picked,
+ .online-lobby-card .opfc-club-picked{padding:14px 10px 16px;min-height:280px}
+}
