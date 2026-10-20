@@ -8,6 +8,7 @@ import {OPFC_ONLINE_API_URL,OPFC_ONLINE_PUBLISHABLE_KEY} from './online-config.m
 import {chooseClubPair,validateDisplayClub,isDisplayClub} from './club-identities.mjs';
 
 export const ONLINE_SESSION_KEY='opfc-v1-online-session';
+export const ONLINE_PENDING_KEY='opfc-v1-online-pending-action';
 const FORBIDDEN_PROJECTS=['nezqupnhcqwuewfilioa','lrmgtnbxujdvswaykyxi'];
 const ROOM_STATUSES=['waiting','ready','finished'];
 const fail=msg=>{throw new Error(msg);};
@@ -63,7 +64,7 @@ export function createOnlineClient({
  if(!Number.isInteger(timeoutMs)||timeoutMs<100||timeoutMs>120000)fail('Délai réseau invalide');
  if(publishableKey && (typeof publishableKey!=='string'||publishableKey.length>2048))
   fail('Clé publique du salon invalide');
- let session=null,room=null,marketGame=null;
+ let session=null,room=null,marketGame=null,pending=null,inFlight=false,lastRecoveryAt=0;
  const validSnapshot=(payload)=>{
   if(payload===null||payload===undefined)return null;
   if(!payload||typeof payload!=='object'||Array.isArray(payload)||
@@ -144,7 +145,11 @@ export function createOnlineClient({
     body:JSON.stringify(body),signal:controller.signal,cache:'no-store'});
    let data;
    try{data=await reply.json();}catch{fail('Réponse serveur illisible');}
-   if(!reply.ok||data?.error)fail(typeof data?.error==='string'?data.error:'Serveur OPFC indisponible');
+   if(!reply.ok||data?.error){
+     const issue=new Error(typeof data?.error==='string'?data.error:'Serveur OPFC indisponible');
+     issue.status=reply.status;
+     throw issue;
+    }
    if(!data||typeof data!=='object')fail('Réponse serveur invalide');
    return data;
   }catch(error){
@@ -163,23 +168,103 @@ export function createOnlineClient({
   if(persistSession)persist();
   return room;
  };
- const refreshAfterVersionConflict=async()=>{
-  const data=await request({action:'get',roomId:session.roomId,token:session.token});
-  const next=validRoom(data.room,session),snapshot=validSnapshot(data.game);
-  if(!room||next.version>=room.version){room=next;marketGame=snapshot;}
+ const rememberPending=()=>{
+  try{
+   if(pending)storage?.setItem(ONLINE_PENDING_KEY,JSON.stringify(pending));
+   else storage?.removeItem(ONLINE_PENDING_KEY);
+  }catch{/* Le navigateur peut refuser le stockage : conserver en mémoire. */}
  };
- const isTransient=e=>!!e?.opfcTransient||
-  /Salon modifié|actualise la partie|Serveur OPFC temporairement indisponible/i.test(e?.message??'');
- /** Aucun tireur n'est renvoyé tant que le serveur n'a pas confirmé
-  * qu'il n'a pas déjà pris la première sélection en compte. */
- const checkTakerSelection=(beforeGame,command)=>{
-  const old=beforeGame?.match,now=marketGame?.match,a=now?.action;
-  if(marketGame?.phase!=='match'||!a||old?.index!==now?.index||
-     old.action?.kind!==a.kind)
-   fail('Le match a avancé. Consulte le nouvel écran avant de refaire ton choix.');
-  if(a.stage==='taker-choice')return 'retry';
-  if(a.actors?.taker?.cardId===command.takerId)return 'applied';
-  fail('Un autre tireur est déjà sélectionné. La partie a été resynchronisée.');
+ const loadPending=()=>{
+  try{
+   const saved=JSON.parse(storage?.getItem(ONLINE_PENDING_KEY)??'null');
+   if(saved&&saved.roomId===session?.roomId&&
+    ['market','lineup','match'].includes(saved.action)&&
+    /^[a-f0-9-]{36}$/.test(saved.requestId)&&
+    saved.command&&typeof saved.command.type==='string')
+    pending=saved;
+   else{pending=null;rememberPending();}
+  }catch{pending=null;rememberPending();}
+ };
+ // Un identifiant unique et persistant par intention, même après redémarrage.
+ const actionId=()=>{
+  if(globalThis.crypto?.randomUUID)return globalThis.crypto.randomUUID();
+  if(globalThis.crypto?.getRandomValues){
+   const bytes=new Uint8Array(16);globalThis.crypto.getRandomValues(bytes);
+   bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;
+   const h=[...bytes].map(b=>b.toString(16).padStart(2,'0')).join('');
+   return h.slice(0,8)+'-'+h.slice(8,12)+'-'+h.slice(12,16)+'-'+h.slice(16,20)+'-'+h.slice(20);
+  }
+  fail('Identifiant de sécurité indisponible sur cet appareil');
+ };
+ // Précondition métier : un ancien choix ne doit pas s'appliquer sur un autre
+ // personnage, une autre enchère ou une autre séquence après synchronisation.
+ const contextFor=(state,command)=>{
+  const ctx={phase:state?.phase};
+  if(state?.phase==='mercato'){
+   if(!['place','formation'].includes(command.type)){
+    ctx.auctionCard=state?.auction?.cardId??null;
+    if(command.type!=='observation')ctx.auctionTurn=state?.auction?.turn??null;
+   }
+  }else if(['match','moment-result','half-time','resume-ready',
+   'shootout-ready','shootout','finished'].includes(state?.phase)){
+   const m=state.match;
+   ctx.index=m?.index??null;
+   ctx.stage=m?.action?.stage??null;
+   ctx.actionKind=m?.action?.kind??null;
+   ctx.shootoutCount=m?.shootout?.timeline?.length??0;
+  }
+  return ctx;
+ };
+ const adopt=(data,expected=null)=>{
+  const newRoom=validRoom(data.room,session);
+  if(!data.duplicate&&expected!==null&&newRoom.version!==expected+1)
+   fail('Version de confirmation de la partie invalide');
+  const nextGame=validSnapshot(data.game);
+  if(!nextGame)fail('Réponse de partie incomplète');
+  if(!room||newRoom.version>=room.version){room=newRoom;marketGame=nextGame;}
+  return marketGame;
+ };
+ const getLatest=async()=>{
+  const data=await request({action:'get',roomId:session.roomId,token:session.token});
+  const latestRoom=validRoom(data.room,session);
+  const snapshot=validSnapshot(data.game);
+  if(!room||latestRoom.version>=room.version){room=latestRoom;marketGame=snapshot;}
+ };
+ const retryable=e=>!!e?.opfcTransient||e?.status>=500||
+  (e?.status===409&&/Salon modifié|actualise la partie/i.test(e?.message??''));
+ const sendPending=async()=>{
+  if(!pending)return marketGame;
+  if(inFlight)fail('Une action est déjà en cours de synchronisation');
+  inFlight=true;
+  try{
+   // L'identifiant ne change jamais, y compris si le serveur a appliqué
+   // une action dont la réponse a été perdue.
+   for(let attempt=0;attempt<2;attempt++){
+    const current=pending;
+    if(!Number.isSafeInteger(room?.version)||room.version<1)await getLatest();
+    const version=room.version;
+    try{
+     const data=await request({
+      action:current.action,roomId:session.roomId,token:session.token,
+      expectedVersion:version,command:current.command,
+      requestId:current.requestId,context:current.context
+     });
+     const answer=adopt(data,version);
+     pending=null;rememberPending();lastRecoveryAt=0;
+     return answer;
+    }catch(e){
+     if(!retryable(e)){
+      pending=null;rememberPending();throw e;
+     }
+     try{await getLatest();}
+     catch{
+      throw new Error('Connexion interrompue : ton action et ta partie sont sauvegardées. La reprise sera tentée automatiquement.');
+     }
+     if(attempt===1)
+      throw new Error('Synchronisation encore instable. Ton action est conservée et sera vérifiée automatiquement.');
+    }
+   }
+  }finally{inFlight=false;}
  };
  const sendCommand=async(action,command)=>{
   ensureOnline();
@@ -187,54 +272,22 @@ export function createOnlineClient({
    fail('Actualise d’abord un salon avec deux joueurs');
   if(!command||typeof command!=='object'||Array.isArray(command))
    fail('Commande de jeu invalide');
-  let before=room.version, data;
-  const originalGame=marketGame;
-  const payload=()=>({action,roomId:session.roomId,token:session.token,
-   expectedVersion:before,command});
-  try{
-   data=await request(payload());
-  }catch(error){
-   // Seuls les ACK et le tireur bénéficient d'un retry conservateur.
-   // Ne jamais rejouer un achat, une enchère ou une tactique à l'aveugle.
-   const taker=action==='match'&&command.type==='select-taker';
-   const acknowledgement=command.type==='ack';
-   if(!isTransient(error)||(!taker&&!acknowledgement))throw error;
-   try{await refreshAfterVersionConflict();}
-   catch{
-    throw new Error('La réponse est incertaine, mais ton salon est sauvegardé. Actualise dès que le réseau revient.');
-   }
-   if(taker&&checkTakerSelection(originalGame,command)==='applied')
-    return marketGame;
-   if(acknowledgement){
-    const flags=marketGame?.match?.resultAcks;
-    const club=session.club;
-    if(flags?.[club])return marketGame;
-    const old=originalGame?.match,newer=marketGame?.match;
-    if(marketGame?.phase!==originalGame?.phase||old?.index!==newer?.index||
-      (old?.action?.stage&&old.action.stage!==newer?.action?.stage))
-     return marketGame;
-   }
-   before=room.version;
-   try{data=await request(payload());}
-   catch(retryError){
-    if(taker&&isTransient(retryError)){
-     try{
-      await refreshAfterVersionConflict();
-      if(checkTakerSelection(originalGame,command)==='applied')return marketGame;
-     }catch{ /* message prudent ci-dessous */ }
-    }
-    throw new Error('Action non confirmée. Ton salon est sauvegardé ; actualise, puis réessaie si le tireur est encore à choisir.');
-   }
+  if(pending){
+   if(inFlight)fail('Une action est déjà en cours de synchronisation');
+   await sendPending();
+   fail('Action précédente synchronisée. Vérifie le nouvel écran avant de recommencer.');
   }
-  const nextRoom=validRoom(data.room,session);
-  if(nextRoom.version!==before+1)
-   fail('Version de confirmation de la partie invalide');
-  const nextGame=validSnapshot(data.game);
-  if(!nextGame)fail('Réponse de partie incomplète');
-  // Une actualisation plus récente ne doit jamais être remplacée par
-  // une réponse réseau plus ancienne terminée en retard.
-  if(room.version<=nextRoom.version){room=nextRoom;marketGame=nextGame;}
-  return marketGame;
+  pending={roomId:session.roomId,action,command:structuredClone(command),
+   requestId:actionId(),context:contextFor(marketGame,command),
+   createdAt:Date.now()};
+  rememberPending();
+  return sendPending();
+ };
+ const recoverPending=async()=>{
+  if(!pending||inFlight||!room||room.status!=='ready')return;
+  if(Date.now()-lastRecoveryAt<5000)return;
+  lastRecoveryAt=Date.now();
+  await sendPending();
  };
  return Object.freeze({
   get configured(){return !!url;},
@@ -242,12 +295,13 @@ export function createOnlineClient({
   get marketGame(){return marketGame;},
   get game(){return marketGame;},
   get hasSession(){return session!==null;},
+  get hasPendingAction(){return pending!==null;},
   get sessionRole(){return session?.role??null;},
   loadSession(){
    let raw;try{raw=storage?.getItem(ONLINE_SESSION_KEY);}catch{return false;}
    if(!raw)return false;
-   try{session=validSession(JSON.parse(raw));room=null;marketGame=null;return true;}
-   catch{session=null;room=null;marketGame=null;persist();return false;}
+   try{session=validSession(JSON.parse(raw));room=null;marketGame=null;loadPending();return true;}
+   catch{session=null;room=null;marketGame=null;pending=null;persist();rememberPending();return false;}
   },
   async createRoom(firstClub='PSG',identityId=firstClub){
    ensureOnline();if(session)fail('Quitte d’abord le salon en cours');
@@ -255,7 +309,7 @@ export function createOnlineClient({
    const command={action:'create',firstClub:validateClub(firstClub)};
    if(identityId!==firstClub)command.identityId=identityId;
    const data=await request(command);
-   return accept(data,true);
+   pending=null;rememberPending();return accept(data,true);
   },
   async joinRoom(code,identityId='OM'){
    ensureOnline();if(session)fail('Quitte d’abord le salon en cours');
@@ -263,7 +317,7 @@ export function createOnlineClient({
    const command={action:'join',code:normalizeRoomCode(code)};
    if(identityId!=='OM')command.identityId=identityId;
    const data=await request(command);
-   return accept(data,true);
+   pending=null;rememberPending();return accept(data,true);
   },
   async refreshRoom(){
    ensureOnline();if(!session)fail('Aucune session de salon à actualiser');
@@ -273,6 +327,7 @@ export function createOnlineClient({
    // Réponses réseau en retard : une ancienne version ne remplace jamais
    // une version plus récente déjà connue de ce client.
    if(!room||next.version>=room.version){room=next;marketGame=snapshot;}
+   await recoverPending();
    return room;
   },
   async marketAction(command){
@@ -290,7 +345,7 @@ export function createOnlineClient({
    return sendCommand('match',command);
   },
   leaveDevice(){
-   session=null;room=null;marketGame=null;persist(); // Ne ferme pas le salon distant.
+   session=null;room=null;marketGame=null;pending=null;persist();rememberPending(); // Ne ferme pas le salon distant.
   }
  });
 }
