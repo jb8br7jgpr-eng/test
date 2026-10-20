@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['.github/workflows/opmercato-v3-production-smoke.yml','index.html','supabase/functions/opmercato-online/index.ts']
+    paths: ['.github/workflows/opmercato-v3-production-smoke.yml','index.html','classique-accueil.html','supabase/functions/opmercato-online/index.ts']
 jobs:
   production:
     runs-on: ubuntu-latest
@@ -17,8 +17,16 @@ jobs:
           let published=false;
           for(let attempt=0;attempt<16;attempt++){
             try{
-              const html=await (await fetch(page+"?v=3-prod-"+Date.now(),{cache:"no-store"})).text();
-              if(html.includes("mercato-v3-local.js")&&html.includes("20261016-v3-1")){published=true;break;}
+              const [launcher,menu,classic]=await Promise.all([
+                fetch(page+"?v=3-prod-"+Date.now(),{cache:"no-store"}).then(r=>r.text()),
+                fetch(page+"classique-accueil.html?v=3-prod-"+Date.now(),{cache:"no-store"}).then(r=>r.text()),
+                fetch(page+"classique.html?v=3-prod-"+Date.now(),{cache:"no-store"}).then(r=>r.text())
+              ]);
+              if(launcher.includes('href="./classique-accueil.html"')&&
+                menu.includes("opmercato-accueil-equipage.PNG")&&
+                classic.includes("mercato-v3-local.js")&&classic.includes("20261016-v3-1")){
+                published=true;break;
+              }
             }catch(e){console.log("Waiting for Pages",e.message);}
             await new Promise(r=>setTimeout(r,10000));
           }

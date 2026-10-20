@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main, opmercato-v3-work-20261016, opmercato-v3-polish-20261016, opmercato-v3-visual-fixes-20261016]
-    paths: ['mercato-v3-local.js', 'mercato-online.js', 'index.html', 'classique.html', '.github/workflows/opmercato-v3-browser.yml', 'opmercato-ships-sprite.webp', 'mercato-v3-dice.js']
+    paths: ['mercato-v3-local.js', 'mercato-online.js', 'index.html', 'classique-accueil.html', 'opmercato-accueil-equipage.PNG', 'classique.html', '.github/workflows/opmercato-v3-browser.yml', 'opmercato-ships-sprite.webp', 'mercato-v3-dice.js']
 jobs:
   v3-browser:
     runs-on: ubuntu-latest
@@ -34,8 +34,17 @@ jobs:
           try{
             await page.goto("http://127.0.0.1:8765/",{waitUntil:"domcontentloaded"});
             if(await page.locator('.choice-play').count()!==2)throw Error("Le sélecteur OPMercato/OPFC est absent");
-            await page.locator('a[href="./classique.html"]').click();
-            await page.waitForURL("**/classique.html");
+            await page.locator('a[href="./classique-accueil.html"]').click();
+            await page.waitForURL("**/classique-accueil.html");
+            const newMenu=await page.evaluate(()=>({
+              illustration:document.querySelector('img[src="./opmercato-accueil-equipage.PNG"]')?.getAttribute('src'),
+              links:[...document.querySelectorAll('.home-actions a')].map(x=>x.getAttribute('href')),
+              shortcuts:document.querySelector('.home-shortcuts')
+            }));
+            if(!newMenu.illustration||newMenu.links.length!==4||!newMenu.shortcuts)
+              throw Error("Intermediate OPMercato welcome menu missing: "+JSON.stringify(newMenu.links));
+            await page.locator('a[href="./classique.html?launch=local"]').click();
+            await page.waitForURL("**/classique.html?launch=local");
             await page.evaluate(()=>localStorage.clear());
             await page.reload({waitUntil:"domcontentloaded"});
             const home=await page.evaluate(()=>({team:document.querySelector("#team-size")?.value,
