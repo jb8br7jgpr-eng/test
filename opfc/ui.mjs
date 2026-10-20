@@ -1,7 +1,7 @@
 /** OPFC — Bloc 9A : accueil, mercato et stade local iPhone. */
 import {createGame,bid,pass,useKings,useObservation,acceptSolo,chooseFormation,place,ready} from './engine.mjs';
 import {CARD_BY_ID} from './catalog.mjs';
-import {DISPLAY_CLUBS,currentClubChoices,setDisplayedClubs,setDisplayedChoices,visualAbbr} from './club-identities.mjs';
+import {DISPLAY_CLUBS,currentClubChoices,setDisplayedClubs,setDisplayedChoices,visualAbbr,displayAbbr} from './club-identities.mjs';
 import {renderCharacterPortrait,renderClubCrest,renderIdentityCrest} from './ui-portraits.mjs';
 import {effectiveRating,lineupDetails} from './rules.mjs';
 import {FORMATION_NAMES,uiAuction,uiTeam,uiRoster,cardStats,currentAuctionEnding,clubName} from './ui-model.mjs';
@@ -19,6 +19,7 @@ let matchUncovered=false;
 let placement=null,teamsVisible=false,pitchClub=null;
 // L'état du salon et sa session sont séparés de la sauvegarde du mode local.
 const onlineClient=createOnlineClient();
+let entryView='modes'; // écran de choix au lancement d'OPFC.
 let onlineVisible=false,onlineStage='choose',onlineJoinCode='',onlineBusy=false,onlineError='';
 let onlineSelection=null,onlineOwnClubScope=null,onlinePitchClub=null;
 let onlineTimer=null;
@@ -230,27 +231,43 @@ const shell=()=>'<header class="topbar"><a class="brand-mini" href="./"><img src
 const options=(values,current)=>values.map(v=>'<option value="'+esc(v)+'" '+(v===current?'selected':'')+'>'+esc(v)+'</option>').join('');
 const btn=(action,title,klass='ghost',disabled=false,extra='')=>'<button type="button" class="btn '+klass+'" data-action="'+action+'" '+extra+' '+(disabled?'disabled':'')+'>'+title+'</button>';
 const sep=()=>'<span class="eyebrow">Le tournoi de Grand Line</span>';
+/** Illustration à créer plus tard dans l'emplacement opfc-mode-cover. */
+function modeChooser(){
+ return shell()+'<main class="opfc-mode-entry">'+
+ '<section class="opfc-mode-cover" aria-labelledby="opfc-mode-title">'+
+ '<div class="opfc-mode-art-slot" data-art-slot="opfc-mode-cover">'+
+ '<img src="./opfc-logo-hd.PNG" width="220" height="220" alt="Emblème OPMercato FC"></div>'+
+ '<span class="eyebrow">Grandline Cup · One Piece Football</span>'+
+ '<h1 id="opfc-mode-title" class="opfc-mode-title">Choisis ton terrain.</h1>'+
+ '<p class="opfc-mode-intro">Dix clubs légendaires. Un trophée. À toi de jouer.</p>'+
+ '</section>'+
+ '<div class="opfc-mode-options" aria-label="Choix du mode de jeu">'+
+ btn('open-local','<span class="opfc-mode-action-icon" aria-hidden="true">⚽</span><span><strong>Jouer en local</strong><small>À deux sur le même appareil</small></span><span class="opfc-mode-chevron" aria-hidden="true">›</span>','primary opfc-mode-action')+
+ btn('online','<span class="opfc-mode-action-icon" aria-hidden="true">🌐</span><span><strong>Jouer en ligne</strong><small>Deux iPhone · Un salon privé</small></span><span class="opfc-mode-chevron" aria-hidden="true">›</span>','ghost opfc-mode-action')+
+ '</div></main>';
+}
 function welcome(){
- return shell()+'<main class="intro">'+
- '<img class="intro-logo" src="./opfc-logo-hd.PNG" alt="Logo OPMercato FC" width="180" height="180">'+sep()+
- '<h1 class="intro-title">La Grandline Cup<br>se gagne ici.</h1><p>Sept recrues. Deux clubs. Un seul vainqueur.</p>'+
+ return shell()+'<main class="intro opfc-local-setup">'+
+ '<div class="opfc-local-nav">'+btn('back-modes','← Choix du mode','ghost small')+'</div>'+
+ '<img class="intro-logo" src="./opfc-logo-hd.PNG" alt="Logo OPMercato FC" width="120" height="120">'+sep()+
+ '<h1 class="intro-title">Prépare ton match.</h1><p>Sept recrues. Deux clubs. Un seul vainqueur.</p>'+
  '<section class="panel intro-panel"><h2 class="section-title">Choisis les deux clubs</h2>'+
  '<p class="caption">Dix clubs One Piece au choix, sans doublon. Chaque équipe garde les mêmes règles.</p>'+
  '<div class="opfc-club-pickers">'+['PSG','OM'].map((slot,i)=>{
- const chosen=DISPLAY_CLUBS.find(c=>c.id===localClubChoices[slot]);
- return '<div class="opfc-club-picker"><label for="club-identity-'+slot+'">Joueur '+(i+1)+'</label>'+
- '<select id="club-identity-'+slot+'" data-action="club-identity" data-club="'+slot+'">'+
- DISPLAY_CLUBS.map(c=>'<option value="'+c.id+'"'+(localClubChoices[slot]===c.id?' selected':'')+'>'+esc(c.name)+' ('+c.id+')</option>').join('')+
- '</select><span class="opfc-club-picked" style="border-left-color:'+chosen.primary+'">'+
- renderIdentityCrest(chosen.id,'select-crest')+
- '<span class="opfc-picked-name"><strong>'+esc(chosen.id)+'</strong><small>'+esc(chosen.name)+'</small></span></span></div>';
+  const chosen=DISPLAY_CLUBS.find(c=>c.id===localClubChoices[slot]);
+  return '<div class="opfc-club-picker"><label for="club-identity-'+slot+'">Joueur '+(i+1)+'</label>'+
+  '<select id="club-identity-'+slot+'" data-action="club-identity" data-club="'+slot+'">'+
+  DISPLAY_CLUBS.map(c=>'<option value="'+c.id+'"'+(localClubChoices[slot]===c.id?' selected':'')+'>'+esc(c.name)+' ('+esc(displayAbbr(c.id))+')</option>').join('')+
+  '</select><span class="opfc-club-picked" style="border-left-color:'+chosen.primary+'">'+
+  renderIdentityCrest(chosen.id,'select-crest')+
+  '<span class="opfc-picked-name"><strong>'+esc(displayAbbr(chosen.id))+'</strong><small>'+esc(chosen.name)+'</small></span></span></div>';
  }).join('')+'</div></section>'+
  '<section class="panel intro-panel"><h2 class="section-title">Formations de départ</h2><div class="formation-picker">'+
- ['PSG','OM'].map((id,i)=>'<div class="form-box"><label for="initial-'+id+'">Joueur '+(i+1)+' · '+esc(localClubChoices[id])+'</label><select id="initial-'+id+'" data-action="initial-formation" data-club="'+id+'">'+options(FORMATION_NAMES,beforeForm[id])+'</select></div>').join('')+
+ ['PSG','OM'].map((id,i)=>'<div class="form-box"><label for="initial-'+id+'">Joueur '+(i+1)+' · '+esc(displayAbbr(localClubChoices[id]))+'</label><select id="initial-'+id+'" data-action="initial-formation" data-club="'+id+'">'+options(FORMATION_NAMES,beforeForm[id])+'</select></div>').join('')+
  '</div><p class="caption">Modifiables pendant le mercato puis à la mi-temps.</p></section>'+
- '<div class="intro-actions">'+btn('start','Jouer en local · 2 joueurs','primary full')+
- btn('online','Mode en ligne · salons privés','ghost full')+
- '<p class="online-note">En ligne : crée un salon privé et affronte un autre joueur sur deux iPhone.</p></div></main>';
+ '<div class="intro-actions">'+
+ (game?'<section class="panel opfc-resume-card"><p>Une partie locale est sauvegardée sur cet appareil.</p>'+btn('resume-local','▶ Reprendre ma partie','ghost full')+'</section>':'')+
+ btn('start',game?'Créer une nouvelle partie':'Lancer le match · 2 joueurs','primary full')+'</div></main>';
 }
 function wallets(){
  return '<div class="huds">'+game.teams.map(team=>{
@@ -521,6 +538,8 @@ function popup(){
   '</div><p>Notes effectives selon le poste. Les six stats de la carte sont naturelles.</p>'+
   btn('close','Retour','primary full');
  }
+ if(modal.type==='overwrite-local')body='<h2>Remplacer la partie ?</h2><p>Une partie locale est sauvegardée. En créer une nouvelle effacera cette progression.</p>'+
+ btn('accept-overwrite','Créer une nouvelle partie','negative full')+btn('close','Annuler','ghost full');
  if(modal.type==='reset')body='<h2>Nouvelle partie ?</h2><p>La progression locale actuelle sera effacée.</p>'+
  btn('reset','Effacer la partie','negative full')+btn('close','Annuler','ghost full');
  return '<div class="modal-backdrop"><section class="modal" role="dialog" aria-modal="true">'+body+'</section></div>';
@@ -564,7 +583,7 @@ function render(){
   renderOnlineGame(snapshot,{myClub:onlineClient.room.myClub,hostClub:onlineClient.room.hostClub})+
   (['lineup','match','moment-result','half-time','resume-ready','shootout-ready',
     'shootout','finished'].includes(snapshot.phase)?onlineTeams():'')+'</main>':'');
- app.innerHTML=(onlineVisible?onlineDisplay:game?
+ app.innerHTML=(onlineVisible?onlineDisplay:entryView==='modes'?modeChooser():entryView==='local'?welcome():game?
   (game.phase==='kickoff-ready'?endMercato():['mercato','lineup'].includes(game.phase)?playing():matchPage()):welcome())+
  (error?'<div class="alert" role="alert">'+esc(error)+'</div>':'')+popup();
 }
@@ -583,19 +602,21 @@ function change(fn){
 function start(){
  const s=createGame({firstClub:'PSG',clubChoices:localClubChoices});
  for(const id of ['PSG','OM'])if(beforeForm[id]!=='2-2-2')Object.assign(s,chooseFormation(s,id,beforeForm[id]));
- game=s;selection=null;placement=null;teamsVisible=false;pitchClub=null;modal={type:'dice'};error='';save();render();
+ game=s;entryView='playing';selection=null;placement=null;teamsVisible=false;pitchClub=null;modal={type:'dice'};error='';save();render();
 }
 function clicked(button){
  const action=button.dataset.action,club=button.dataset.club;
+ if(action==='open-local'){entryView='local';error='';render();return;}
+ if(action==='back-modes'){entryView='modes';error='';render();return;}
  if(action==='online'){
-  onlineVisible=true;onlineStage=onlineClient.hasSession?(onlineClient.room?'room':'restore'):'choose';
+  entryView='modes';onlineVisible=true;onlineStage=onlineClient.hasSession?(onlineClient.room?'room':'restore'):'choose';
   onlineError='';render();syncOnlinePoll();return;
  }
  if(onlineVisible){
   void onlineClicked(action,button).catch(e=>{onlineError=e?.message||'Action réseau impossible';render();});
   return;
  }
- if(modal&&!['close','observation-show','reset'].includes(action))return;
+ if(modal&&!['close','observation-show','reset','accept-overwrite'].includes(action))return;
  if(action==='match-uncover'){
   if(!game||!matchRequiresPrivacy(game))throw Error('Aucun choix privé à révéler');
   matchUncovered=true;render();return;
@@ -626,7 +647,9 @@ function clicked(button){
   change(s=>dispatchOpenMatch(s,command,{choice,takerId}));return;
  }
  if(action==='club'){firstClub=club;render();return;}
- if(action==='start'){start();return;}
+ if(action==='resume-local'){if(game){entryView='playing';modal=null;error='';render();}return;}
+ if(action==='start'){if(game){modal={type:'overwrite-local'};render();}else start();return;}
+ if(action==='accept-overwrite'){if(modal?.type==='overwrite-local'){modal=null;start();}return;}
  if(action==='close'){
   if(modal?.type==='sale'&&placement){
    selection={club:placement.club,id:placement.cardId};
@@ -635,7 +658,7 @@ function clicked(button){
   modal=null;save();render();return;
  }
  if(action==='confirm-reset'){modal={type:'reset'};render();return;}
- if(action==='reset'){game=null;selection=null;placement=null;teamsVisible=false;pitchClub=null;modal=null;error='';matchUncovered=false;try{localStorage.removeItem(STORAGE);}catch{}render();return;}
+ if(action==='reset'){entryView='local';game=null;selection=null;placement=null;teamsVisible=false;pitchClub=null;modal=null;error='';matchUncovered=false;try{localStorage.removeItem(STORAGE);}catch{}render();return;}
  if(action==='observation-show'){if(modal?.type==='observation-pass'){modal.type='observation-show';render();}return;}
  if(!game)return;
  if(action==='toggle-teams'){
@@ -757,7 +780,8 @@ app.addEventListener('change',event=>{
 });
 restore();
 if(onlineClient.loadSession()){
- onlineVisible=true;onlineStage='restore';
+ // Garder la session mais passer d'abord par le choix du mode.
+ onlineStage='restore';
 }
 render();
 if(onlineVisible&&onlineClient.configured)void refreshOnlineRoom();
