@@ -1309,3 +1309,52 @@ a{color:inherit}p{line-height:1.45}.app{width:min(100%,760px);margin:0 auto;padd
  .opfc-mode-return{font-size:10px;padding:7px}
  .opfc-mode-entry .opfc-mode-options .opfc-mode-action{min-height:68px}
 }
+
+/* OPFC — corrections après essai : refus solo, postes favoris et résultats. */
+.solo-auction{display:grid;gap:10px}
+.solo-auction .btn{width:100%;min-height:48px}
+.solo-auction .caption{margin:0;text-align:center;line-height:1.4}
+.team-panel .roster-natural{
+ display:inline-flex;align-items:center;justify-content:center;border:1px solid #79d0b3;
+ background:#163f37;color:#d7fff0;border-radius:7px;padding:3px 6px;
+ font-size:10px;font-weight:950;white-space:nowrap;line-height:1.1;
+}
+.slot-field .pitch-player-natural{
+ display:block;color:#ecfff4;background:#173c3299;
+ border-radius:5px;line-height:1.1;font-size:9px;
+ font-weight:900;padding:2px 3px;margin-top:3px;
+}
+.slot-field .pitch-player{min-height:60px;padding:4px 2px}
+.slot-field .pitch-player.selected{
+ border-color:#ffdf80;box-shadow:0 0 0 3px #f8be57c0,0 0 17px #ffd46a70;
+}
+.slot-field .pitch-player.selected .pitch-player-natural{background:#614b2e;color:#ffeab7}
+.shot-result-panel.shot-result-stopped{
+ --outcome-edge:#bbafff;
+ --outcome-bg1:#39305c;
+ --outcome-bg2:#1b294a;
+ --outcome-highlight:#efe8ff;
+}
+.shot-result-panel.shot-result-save,.shot-result-panel.shot-result-miss,
+.shot-result-panel.shot-result-stopped{
+ box-shadow:0 0 0 2px color-mix(in srgb,var(--outcome-edge) 30%,transparent),
+   0 15px 35px #0008,inset 0 0 32px #0003;
+}
+.shot-result-panel .shot-result-icon{
+ font-size:clamp(56px,18vw,82px);
+ filter:drop-shadow(0 5px 16px #0008);
+}
+.shot-result-panel .shot-result-headline{
+ font-size:clamp(30px,10vw,45px);
+ text-transform:uppercase;letter-spacing:-.025em;
+}
+.shot-result-panel .shot-result-description{font-size:clamp(14px,3.7vw,17px)}
+.shot-result-defense{
+ border:1px solid var(--outcome-edge);border-radius:13px;
+ background:#081c34aa;padding:14px 10px;margin:14px 0;
+ font-size:clamp(15px,4.6vw,19px);font-weight:950;color:#f6ebff;
+}
+@media(max-width:380px){
+ .team-panel .roster-natural{padding:3px 4px;font-size:9px}
+ .slot-field .pitch-player-natural{font-size:8px}
+}
