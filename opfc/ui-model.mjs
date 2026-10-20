@@ -15,7 +15,8 @@ export function uiAuction(state){
  const everOffered=a.offered.includes(team.club);
  const canBid=!a.solo&&maximum>=minimum&&!a.passed.includes(team.club);
  // Dès la première offre (même adverse), passer est gratuit, même à 5/5 refus.
- const canPass=!a.solo&&(!a.king||a.king.holder!==team.club||a.king.phase!=='open')&&
+ const canPass=a.solo?team.refusals<5:
+   (!a.king||a.king.holder!==team.club||a.king.phase!=='open')&&
    (a.highestBid>0||team.refusals<5||maximum<minimum);
  const canKings=!a.solo&&!team.hakis.kings&&a.priority===team.club&&
    a.highestBid===0&&a.offered.length===0&&a.passed.length===0&&!a.king;

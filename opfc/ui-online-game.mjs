@@ -69,7 +69,11 @@ function visualMarket(g,club){
   '<div class="turn-banner"><div><span>AU TOUR DE</span><strong>'+esc(visualAbbr(a.turn))+'</strong></div>'+
   '<div class="turn-budget">'+number(budget)+'<br><span>ton budget</span></div></div>';
  if(mine)html+=(a.solo?
-  btn('solo','Recruter pour '+number(5),false,'','primary full'):
+  '<div class="solo-auction"><p>Recrutement solo · prix fixe '+number(5)+'</p>'+
+  btn('solo','Recruter pour '+number(5),false,'','primary full')+
+  btn('pass',context.canPass?'Refuser ce personnage · '+(5-team.refusals)+'/5 restants':
+   'Refus épuisés · recrutement obligatoire',!context.canPass,'','ghost full')+
+  '<p class="caption">Refus utilisés : '+team.refusals+'/5 · le refus passe au personnage suivant.</p></div>':
   '<div class="offers">'+[0,1,5,10].map(step=>{
    const value=amount+step;
    return '<button type="button" class="offer-btn" data-action="online-bid" data-amount="'+value+'"'+
@@ -133,7 +137,7 @@ function matchStage(g,club,hostClub){
   if(!result)return board(m)+stage('Résultat à venir','');
   const allowed=club===result.attacker;
   const detail=result.details??{};
-  const content=['goal','save','miss'].includes(result.outcome)?
+  const content=['goal','save','miss','stopped'].includes(result.outcome)?
    renderShotResult(g,{outcome:result.outcome,attacker:result.attacker,
     minute:result.minute,score:m.score,
     shooterId:result.scorerId??detail.finisherId??detail.takerId??null,
@@ -143,7 +147,7 @@ function matchStage(g,club,hostClub){
      (allowed?'':' disabled aria-disabled="true"'))
    :stage('Séquence terminée','<p>'+esc(result.outcome)+'</p>');
   return board(m)+content+(allowed?
-   (['goal','save','miss'].includes(result.outcome)?'':btn('continue-result','Continuer')):
+   (['goal','save','miss','stopped'].includes(result.outcome)?'':btn('continue-result','Continuer')):
    waiting(result.attacker,'Le club attaquant valide la séquence.'));
  }
  if(g.phase!=='match')return stage('Partie en cours','');

@@ -194,7 +194,7 @@ function resultView(m,state){
  // Au sein d'une action officielle, les IDs des finisseurs sont fournis par
  // le moteur (jeu ouvert, corner, coup franc, penalty). Pour un ancien
  // résultat sans détails, ne jamais inventer l'identité d'un tireur.
- if(['goal','save','miss'].includes(r?.outcome)){
+ if(['goal','save','miss','stopped'].includes(r?.outcome)){
   const detail=r.details??{};
   return renderShotResult(state,{
    outcome:r.outcome,attacker:r.attacker,minute:r.minute,score:m.score,
