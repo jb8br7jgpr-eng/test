@@ -950,6 +950,9 @@
   `;
   document.head.appendChild(css);
   render();
+  const entryMode=new URLSearchParams(location.search).get("launch");
   if(new URLSearchParams(location.search).has("room")&&!session){mode="join";show();}
-  else if(session){show();refresh();}
+  // Explicit Local / Catalogue / Règles from the new menu override the
+  // automatic online-session resume, without deleting the saved token.
+  else if(session&&!["local","catalog","rules"].includes(entryMode)){show();refresh();}
 })();
