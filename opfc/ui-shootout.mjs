@@ -7,6 +7,7 @@
 import {beginShootout,advanceShootout} from './match.mjs';
 import {nextShootoutShooter} from './shootout.mjs';
 import {CARD_BY_ID} from './catalog.mjs';
+import {visualAbbr} from './club-identities.mjs';
 import {renderCharacterPortrait} from './ui-portraits.mjs';
 import {matchTacticalChoices,renderShotFaceOff,renderShotResult} from './ui-match-widgets.mjs';
 
@@ -116,12 +117,12 @@ export function renderShootoutTracker(s){
     (active?'À venir':'Non tiré');
    return (i===5?'<span class="shootout-marks-divider" aria-hidden="true"></span>':'')+
     '<span class="shootout-mark shootout-mark--'+outcome+'" title="'+escape(title)+
-    '" aria-label="'+escape(club+', tir '+(i+1)+' : '+title)+'">'+mark+'</span>';
+    '" aria-label="'+escape(visualAbbr(club)+', tir '+(i+1)+' : '+title)+'">'+mark+'</span>';
   }).join('');
   return '<div class="shootout-tracker-team '+club.toLowerCase()+'">'+
-   '<div class="shootout-tracker-identity"><strong>'+club+'</strong>'+
+   '<div class="shootout-tracker-identity"><strong>'+escape(visualAbbr(club))+'</strong>'+
    '<span class="shootout-tracker-goals">'+score+'</span></div>'+
-   '<div class="shootout-marks" role="group" aria-label="Tentatives de '+club+'">'+boxes+'</div>'+
+   '<div class="shootout-marks" role="group" aria-label="Tentatives de '+escape(visualAbbr(club))+'">'+boxes+'</div>'+
    '</div>';
  }).join('');
  return '<section class="panel shootout-tracker" aria-label="Suivi des tirs au but">'+
@@ -129,7 +130,7 @@ export function renderShootoutTracker(s){
   '<h3 class="'+(sudden?'shootout-stage-sudden':'shootout-stage-normal')+
    '"'+(sudden?' aria-label="Mort subite"':'')+'>'+stageLabel+'</h3>'+
   '<p class="shootout-tracker-progress">'+(sudden?'Mort subite':'Cinq tirs initiaux')+
-   ' · '+countP+' tir(s) PSG / '+countO+' tir(s) OM</p>'+
+   ' · '+countP+' tir(s) '+escape(visualAbbr('PSG'))+' / '+countO+' tir(s) '+escape(visualAbbr('OM'))+'</p>'+
   '<div class="shootout-tracker-teams">'+rows+'</div>'+
   '<p class="shootout-tracker-legend">✓ But · ✕ Arrêt ou tir manqué · · '+
   (active?'À venir':'Non tiré')+'</p></section>';
