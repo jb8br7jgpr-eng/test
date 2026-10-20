@@ -73,7 +73,13 @@ export function dispatchOpenMatch(state,command,{choice,takerId,rng=Math.random}
  if(command==='choose'){
   const owner=matchTurnOwner(state);
   if(!owner)throw Error('Aucun joueur ne doit choisir maintenant');
-  return lockOpenPlayChoice(state,owner,choice);
+  let next=lockOpenPlayChoice(state,owner,choice);
+  // Local et en ligne : après le deuxième choix, résolution automatique.
+  if(next.match.action?.stage==='duel-ready')
+   next=revealOpenPlayDuel(next,rng());
+  else if(next.match.action?.stage==='shot-ready')
+   next=revealOpenPlayShot(next,rng());
+  return next;
  }
  if(!a||a.kind!=='open')throw Error('Action de jeu ouvert absente');
  if(command==='reveal-duel')return revealOpenPlayDuel(state,rng());
