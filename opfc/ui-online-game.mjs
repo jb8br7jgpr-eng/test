@@ -240,7 +240,8 @@ export function renderOnlineGame(g,{myClub,hostClub}={}){
  if(!g||!['PSG','OM'].includes(myClub)||!['PSG','OM'].includes(hostClub))
   return '<section class="panel"><p>Synchronisation en cours…</p></section>';
  const top='<section class="online-game-heading"><span class="eyebrow">Grandline Cup · Mode en ligne</span>'+
-  '<strong>'+esc(clubName(myClub))+' · '+esc(visualAbbr(myClub))+'</strong></section>';
+  '<span class="online-game-club">'+renderClubCrest(myClub,'online-heading-crest')+
+  '<strong>'+esc(clubName(myClub))+' · '+esc(visualAbbr(myClub))+'</strong></span></section>';
  if(g.phase==='mercato')return top+visualMarket(g,myClub);
  if(g.phase==='lineup')return top+stage('Prépare ta composition',
   '<p>Choisis tes sept titulaires et leur formation sur le terrain ci-dessous.</p>');

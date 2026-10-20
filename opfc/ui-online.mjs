@@ -1,6 +1,7 @@
 /** OPFC — salons privés : sélection indépendante des dix clubs sur chaque iPhone. */
 import {normalizeRoomCode} from './online-protocol.mjs';
 import {DISPLAY_CLUBS,DISPLAY_BY_ID} from './club-identities.mjs';
+import {renderIdentityCrest} from './ui-portraits.mjs';
 const h=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const button=(act,label,style='ghost',disabled=false)=>'<button type="button" class="btn '+style+
  '" data-action="online-'+act+'" '+(disabled?'disabled aria-disabled="true"':'')+'>'+h(label)+'</button>';
@@ -10,7 +11,10 @@ function clubSelect(action,chosen){
  return '<div class="opfc-club-picker"><label for="'+h(action)+'">Ton club pour cette partie</label>'+
  '<select id="'+h(action)+'" data-action="'+h(action)+'">'+
  DISPLAY_CLUBS.map(c=>'<option value="'+c.id+'"'+(c.id===chosen?' selected':'')+'>'+
- h(c.name)+' ('+c.id+')</option>').join('')+'</select></div>';
+ h(c.name)+' ('+c.id+')</option>').join('')+'</select>'+
+ '<span class="opfc-club-picked" style="border-left-color:'+h(DISPLAY_BY_ID.get(chosen)?.primary??'#c6b073')+'">'+
+ renderIdentityCrest(chosen,'select-crest')+
+ '<span class="opfc-picked-name"><strong>'+h(chosen)+'</strong><small>'+h(pretty(chosen))+'</small></span></span></div>';
 }
 export function renderOnlineLobby({stage='choose',firstClub='PSG',hostIdentity='PSG',guestIdentity='OM',room=null,configured=false,
  joinCode='',busy=false,error='',gameActive=false}={}){
@@ -47,8 +51,8 @@ export function renderOnlineLobby({stage='choose',firstClub='PSG',hostIdentity='
    '<p class="online-room-code" aria-label="Code du salon">'+h(room.code)+'</p>'+
    '<div class="online-room-actions">'+button('copy-code','Copier le code','ghost small')+
    button('refresh','Actualiser','ghost small',busy||!configured)+'</div>'+
-   '<div class="online-members"><div><strong>Ton club</strong><span>'+h(mine)+' · '+h(pretty(mine))+'</span></div>'+
-   '<div><strong>Adversaire</strong><span>'+h(linked?(h(theirs)+' · '+pretty(theirs)):'Pas encore connecté')+'</span></div></div>'+
+   '<div class="online-members"><div><strong>Ton club</strong><span class="online-member-identity">'+renderIdentityCrest(mine,'lobby-crest')+'<span>'+h(mine)+' · '+h(pretty(mine))+'</span></span></div>'+
+   '<div><strong>Adversaire</strong>'+(linked?'<span class="online-member-identity">'+renderIdentityCrest(theirs,'lobby-crest')+'<span>'+h(theirs)+' · '+h(pretty(theirs))+'</span></span>':'<span>Pas encore connecté</span>')+'</div></div>'+
    '<p class="caption">'+(linked?(gameActive?'✅ Salon synchronisé. La partie continue juste en dessous.':
    'Les deux joueurs sont connectés. Chargement de la partie…'):
    'Partage uniquement le code à six caractères. Ne partage jamais ton jeton de session.')+'</p>'+

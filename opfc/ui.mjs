@@ -2,7 +2,7 @@
 import {createGame,bid,pass,useKings,useObservation,acceptSolo,chooseFormation,place,ready} from './engine.mjs';
 import {CARD_BY_ID} from './catalog.mjs';
 import {DISPLAY_CLUBS,currentClubChoices,setDisplayedClubs,setDisplayedChoices,visualAbbr} from './club-identities.mjs';
-import {renderCharacterPortrait,renderClubCrest} from './ui-portraits.mjs';
+import {renderCharacterPortrait,renderClubCrest,renderIdentityCrest} from './ui-portraits.mjs';
 import {effectiveRating,lineupDetails} from './rules.mjs';
 import {FORMATION_NAMES,uiAuction,uiTeam,uiRoster,cardStats,currentAuctionEnding,clubName} from './ui-model.mjs';
 import {renderMatchScreen,matchRequiresPrivacy,dispatchOpenMatch} from './ui-match.mjs';
@@ -241,8 +241,9 @@ function welcome(){
  return '<div class="opfc-club-picker"><label for="club-identity-'+slot+'">Joueur '+(i+1)+'</label>'+
  '<select id="club-identity-'+slot+'" data-action="club-identity" data-club="'+slot+'">'+
  DISPLAY_CLUBS.map(c=>'<option value="'+c.id+'"'+(localClubChoices[slot]===c.id?' selected':'')+'>'+esc(c.name)+' ('+c.id+')</option>').join('')+
- '</select><span class="opfc-club-picked" style="border-left-color:'+chosen.primary+'"><strong>'+
- esc(chosen.id)+'</strong> · '+esc(chosen.name)+'</span></div>';
+ '</select><span class="opfc-club-picked" style="border-left-color:'+chosen.primary+'">'+
+ renderIdentityCrest(chosen.id,'select-crest')+
+ '<span class="opfc-picked-name"><strong>'+esc(chosen.id)+'</strong><small>'+esc(chosen.name)+'</small></span></span></div>';
  }).join('')+'</div></section>'+
  '<section class="panel intro-panel"><h2 class="section-title">Formations de départ</h2><div class="formation-picker">'+
  ['PSG','OM'].map((id,i)=>'<div class="form-box"><label for="initial-'+id+'">Joueur '+(i+1)+' · '+esc(localClubChoices[id])+'</label><select id="initial-'+id+'" data-action="initial-formation" data-club="'+id+'">'+options(FORMATION_NAMES,beforeForm[id])+'</select></div>').join('')+
@@ -254,7 +255,7 @@ function welcome(){
 function wallets(){
  return '<div class="huds">'+game.teams.map(team=>{
   const u=uiTeam(team);
-  return '<div class="hud '+team.club.toLowerCase()+'"><div class="hud-top"><span>'+esc(clubName(team.club))+'</span><strong>'+esc(visualAbbr(team.club))+
+  return '<div class="hud '+team.club.toLowerCase()+'"><div class="hud-top"><span class="hud-club-name">'+renderClubCrest(team.club,'hud-crest')+esc(clubName(team.club))+'</span><strong>'+esc(visualAbbr(team.club))+
    '</strong></div><div class="hud-budget"><strong>'+team.budget+' M</strong><span>Berrys</span></div>'+
    '<div class="hud-bottom"><span>'+u.rosterCount+'/7 recrues</span><span>'+u.refusals+'/5 refus</span></div></div>';
  }).join('')+'</div>';
