@@ -6,7 +6,7 @@
 import {CARD_BY_ID} from './catalog.mjs';
 import {renderCharacterPortrait,renderClubCrest} from './ui-portraits.mjs';
 import {setDisplayedClubs,visualName,visualAbbr} from './club-identities.mjs';
-import {competitionName} from './club-honours.mjs';
+import {competitionName} from './club-honours.mjs?v=opfc-comp-v1-20261022';
 const h=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const player=id=>CARD_BY_ID.get(id)?.name??id??'—';
 
