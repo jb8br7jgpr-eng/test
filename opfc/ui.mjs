@@ -744,7 +744,7 @@ function onlineSharedMarket(snapshot){
    (onlineTeamsVisible?onlineTeams():'')+'</main>';
  }
  return '<main class="online-game-content opfc-online-playing">'+hud+
-  renderOnlineGame(snapshot,{myClub:ownClub,hostClub:onlineClient.room.hostClub})+
+  renderOnlineGame(snapshot,{myClub:ownClub,hostClub:onlineClient.room.hostClub,competition:onlineClient.room?.competition})+
   onlineTeams()+'</main>';
 }
 /**
@@ -819,7 +819,7 @@ function render(){
  const onlineDisplay=shell()+compactRoom+lobby+liveStatus+
   (showingGame?(['mercato','lineup','kickoff-ready'].includes(snapshot.phase)?onlineSharedMarket(snapshot):
    '<main class="online-game-content opfc-online-playing">'+
-   renderOnlineGame(snapshot,{myClub:room.myClub,hostClub:room.hostClub})+
+   renderOnlineGame(snapshot,{myClub:room.myClub,hostClub:room.hostClub,competition:onlineClient.room?.competition})+
    (snapshot.phase==='finished'&&!snapshot.match?.shootout?.lastResult?
      btn('online-exit-finished','← Quitter la partie et revenir au menu','ghost full'):'')+
    (['match','moment-result','half-time','resume-ready','shootout-ready','shootout','finished'].includes(snapshot.phase)?
