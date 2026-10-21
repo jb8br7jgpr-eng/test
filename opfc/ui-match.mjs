@@ -12,7 +12,7 @@ import {isSetPieceKind,setPieceTurnOwner,dispatchSetPieceMatch,renderSetPieceAct
 import {shootoutTurnOwner,dispatchShootout,renderShootoutScreen} from './ui-shootout.mjs';
 import {renderFinalResult} from './ui-final.mjs';
 import {setDisplayedClubs,visualName,visualAbbr} from './club-identities.mjs';
-import {competitionName} from './club-honours.mjs';
+import {competitionName} from './club-honours.mjs?v=opfc-comp-v1-20261022';
 import {matchTacticalChoices,renderShotFaceOff,renderShotResult,renderReceiverCard,matchKeeperId} from './ui-match-widgets.mjs';
 
 const html=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
