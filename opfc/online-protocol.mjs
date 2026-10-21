@@ -101,6 +101,7 @@ export function lobbyPublicView(row,role){
   role,
   myClub:role==='host'?hostClub:hostClub==='PSG'?'OM':'PSG',
   opponentConnected:row.guest_token_hash!==null,
+  competition:row.private_state?.competition??null,
   ...(Array.isArray(row?.private_state?.teams)?{clubChoices:currentClubChoices(row.private_state.teams)}:{}),
   // Cette date est une limite de session technique, pas une règle de match.
   expiresAt:row.expires_at
