@@ -2,6 +2,7 @@
 import {normalizeRoomCode} from './online-protocol.mjs';
 import {DISPLAY_CLUBS,DISPLAY_BY_ID,displayAbbr} from './club-identities.mjs';
 import {renderIdentityCrest} from './ui-portraits.mjs';
+import {CLUB_TROPHIES,competitionName} from './club-honours.mjs';
 const h=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const button=(act,label,style='ghost',disabled=false)=>'<button type="button" class="btn '+style+
  '" data-action="online-'+act+'" '+(disabled?'disabled aria-disabled="true"':'')+'>'+h(label)+'</button>';
@@ -17,7 +18,7 @@ function clubSelect(action,chosen){
  '<span class="opfc-picked-name"><strong>'+h(displayAbbr(chosen))+'</strong><small>'+h(pretty(chosen))+'</small></span></span></div>';
 }
 export function renderOnlineLobby({stage='choose',firstClub='PSG',hostIdentity='PSG',guestIdentity='OM',room=null,configured=false,
- joinCode='',busy=false,error='',gameActive=false}={}){
+ joinCode='',busy=false,error='',gameActive=false,competition='grandline'}={}){
  const nav='<div class="online-nav">'+button('back','← Retour','ghost small')+'</div>';
  let out='<section class="online-wrapper"><span class="eyebrow">OPMercato FC · Deux iPhone</span>'+
  '<h1 class="page-title">Mode en ligne</h1>'+
@@ -31,6 +32,7 @@ export function renderOnlineLobby({stage='choose',firstClub='PSG',hostIdentity='
  }else if(stage==='create'){
   out+='<section class="panel online-lobby-card"><h2 class="section-title">Créer un salon privé</h2>'+
    clubSelect('online-host-identity',hostIdentity)+
+   '<div class="opfc-club-picker"><label for="opfc-online-competition">🏆 Compétition</label><select id="opfc-online-competition" data-action="online-competition">'+CLUB_TROPHIES.map(t=>'<option value="'+t.key+'"'+(competition===t.key?' selected':'')+'>'+t.icon+' '+h(t.name)+'</option>').join('')+'</select></div>'+ 
    '<p>Tu joueras avec <strong>'+h(pretty(hostIdentity))+'</strong>.</p>'+
    '<p class="caption">Un code privé à six caractères sera généré pour ton adversaire.</p>'+
    button('create','Générer le code du salon','primary full',busy||!configured)+'</section>';
@@ -47,7 +49,7 @@ export function renderOnlineLobby({stage='choose',firstClub='PSG',hostIdentity='
   const mine=room.clubChoices?.[room.myClub]??room.myClub;
   const theirs=room.clubChoices?.[room.myClub==='PSG'?'OM':'PSG'];
   out+='<section class="panel online-lobby-card"><span class="eyebrow">'+(linked?'Adversaire connecté':'En attente de l’adversaire')+'</span>'+
-   '<h2>Salon '+h(room.role==='host'?'créé':'rejoint')+'</h2>'+
+   '<h2>Salon '+h(room.role==='host'?'créé':'rejoint')+'</h2>'+ '<p class="caption">🏆 '+h(competitionName(room.competition))+'</p>'+ 
    '<p class="online-room-code" aria-label="Code du salon">'+h(room.code)+'</p>'+
    '<div class="online-room-actions">'+button('copy-code','Copier le code','ghost small')+
    button('refresh','Actualiser','ghost small',busy||!configured)+'</div>'+
