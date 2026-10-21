@@ -352,7 +352,7 @@ function welcome(){
  '<img class="intro-logo" src="./opfc-logo-hd.PNG" alt="Logo OPMercato FC" width="120" height="120">'+sep()+
  '<h1 class="intro-title">Prépare ton match.</h1><p>Sept recrues. Deux clubs. Un seul vainqueur.</p>'+
  '<section class="panel intro-panel"><h2 class="section-title">Choisis les deux clubs</h2>'+
- '<p class="caption">Dix clubs One Piece au choix, sans doublon. Chaque équipe garde les mêmes règles.</p>'+
+ '<p class="caption">'+DISPLAY_CLUBS.length+' clubs One Piece au choix, sans doublon. Chaque équipe garde les mêmes règles.</p>'+
  '<div class="opfc-club-pickers">'+['PSG','OM'].map((slot,i)=>{
   const chosen=DISPLAY_CLUBS.find(c=>c.id===localClubChoices[slot]);
   return '<div class="opfc-club-picker"><label for="club-identity-'+slot+'">Joueur '+(i+1)+'</label>'+
