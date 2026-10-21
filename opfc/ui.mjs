@@ -9,14 +9,14 @@ import {renderMatchScreen,matchRequiresPrivacy,dispatchOpenMatch} from './ui-mat
 import {createOnlineClient} from './online-client.mjs';
 import {renderOnlineLobby,normalizeJoinCodeInput} from './ui-online.mjs';
 import {renderOnlineGame} from './ui-online-game.mjs';
-import {CLUB_TROPHIES,isCompetition,competitionName} from './club-honours.mjs';
+import {CLUB_TROPHIES,isCompetition,competitionName,renderCompetitionPicker} from './club-honours.mjs';
 import {queueFinishedLocalGame,syncQueuedLocalResults,pendingLocalResultsCount} from './trophy-service.mjs';
 
 const app=document.getElementById('opfc-app');
 const STORAGE='opfc-v08-local-dev';
 let game=null,firstClub='PSG',selection=null,modal=null,error='',beforeForm={PSG:'2-2-2',OM:'2-2-2'};
 let localClubChoices={PSG:'PSG',OM:'OM'},onlineHostIdentity='PSG',onlineGuestIdentity='OM';
-let localCompetition='grandline',onlineCompetition='grandline';
+let localCompetition='league',onlineCompetition='league';
 let matchUncovered=false;
 // Affichage purement local : aucun changement de règles ou de calcul moteur.
 let placement=null,teamsVisible=false,pitchClub=null;
@@ -252,6 +252,11 @@ async function onlineClicked(action,button){
   }else onlineStage='choose';
   onlineError='';render();return;
  }
+ if(action==='online-select-competition'){
+  if(onlineStage!=='create'||onlineClient.hasSession)throw Error('Compétition non modifiable');
+  if(!isCompetition(button.dataset.competition))throw Error('Compétition invalide');
+  onlineCompetition=button.dataset.competition;render();return;
+ }
  if(action==='online-create-screen'){onlineStage='create';onlineError='';render();return;}
  if(action==='online-join-screen'){onlineStage='join';onlineError='';render();return;}
  if(action==='online-cancel-forget'){onlineStage=onlineClient.room?'room':'restore';render();return;}
@@ -358,6 +363,9 @@ function welcome(){
  '<div class="opfc-local-nav">'+btn('back-modes','← Choix du mode','ghost small')+'</div>'+
  '<img class="intro-logo" src="./opfc-logo-hd.PNG" alt="Logo OPMercato FC" width="120" height="120">'+sep()+
  '<h1 class="intro-title">Prépare ton match.</h1><p>Sept recrues. Deux clubs. Un seul vainqueur.</p>'+
+ '<section class="panel intro-panel opfc-competition-panel"><h2 class="section-title">🏆 Choisis ta compétition</h2>'+
+ '<p class="caption">Sélectionne le trophée à disputer avant de choisir les clubs.</p>'+
+ renderCompetitionPicker(localCompetition,'local-select-competition')+'</section>'+
  '<section class="panel intro-panel"><h2 class="section-title">Choisis les deux clubs</h2>'+
  '<p class="caption">'+DISPLAY_CLUBS.length+' clubs One Piece au choix, sans doublon. Chaque équipe garde les mêmes règles.</p>'+
  '<div class="opfc-club-pickers">'+['PSG','OM'].map((slot,i)=>{
@@ -369,11 +377,6 @@ function welcome(){
   renderIdentityCrest(chosen.id,'select-crest')+
   '<span class="opfc-picked-name"><strong>'+esc(displayAbbr(chosen.id))+'</strong><small>'+esc(chosen.name)+'</small></span></span></div>';
  }).join('')+'</div></section>'+
- '<section class="panel intro-panel"><h2 class="section-title">🏆 Compétition disputée</h2>'+
- '<p class="caption">Ce match est la finale : le vainqueur remportera un trophée.</p>'+
- '<select id="opfc-local-competition" class="opfc-competition-select" data-action="local-competition">'+
- CLUB_TROPHIES.map(t=>'<option value="'+t.key+'"'+(localCompetition===t.key?' selected':'')+'>'+t.icon+' '+esc(t.name)+'</option>').join('')+
- '</select></section>'+
  '<section class="panel intro-panel"><h2 class="section-title">Formations de départ</h2><div class="formation-picker">'+
  ['PSG','OM'].map((id,i)=>'<div class="form-box"><label for="initial-'+id+'">Joueur '+(i+1)+' · '+esc(displayAbbr(localClubChoices[id]))+'</label><select id="initial-'+id+'" data-action="initial-formation" data-club="'+id+'">'+options(FORMATION_NAMES,beforeForm[id])+'</select></div>').join('')+
  '</div><p class="caption">Modifiables pendant le mercato puis à la mi-temps.</p></section>'+
@@ -867,6 +870,11 @@ function clicked(button){
  if(onlineVisible){
   void onlineClicked(action,button).catch(e=>{onlineError=e?.message||'Action réseau impossible';render();});
   return;
+ }
+ if(action==='local-select-competition'){
+  if(!isCompetition(button.dataset.competition))throw Error('Compétition invalide');
+  if(entryView!=='local')throw Error('Sélection indisponible');
+  localCompetition=button.dataset.competition;render();return;
  }
  if(modal&&!['close','observation-show','reset','accept-overwrite'].includes(action))return;
  if(action==='match-uncover'){
