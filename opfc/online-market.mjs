@@ -7,6 +7,7 @@
  */
 import {bid,pass,useKings,useObservation,acceptSolo,place,chooseFormation} from './engine.mjs';
 import {formationPositions} from './rules.mjs';
+import {CARDS} from './catalog.mjs';
 
 const FAIL=message=>{throw Error(message);};
 const CLUBS=['PSG','OM'],ACTIONS=['bid','pass','kings','observation','solo','place','formation'];
@@ -18,7 +19,7 @@ function validateClub(club){
 function ensureMercato(state){
  if(!state||state.version!==1||state.phase!=='mercato'||!state.auction||
   !Array.isArray(state.teams)||state.teams.length!==2||
-  !Array.isArray(state.deck)||state.deck.length!==50||
+  !Array.isArray(state.deck)||![50,CARDS.length].includes(state.deck.length)||
   !Number.isInteger(state.cursor)||!Array.isArray(state.history))
   FAIL('Le mercato n’est pas actif');
 }
