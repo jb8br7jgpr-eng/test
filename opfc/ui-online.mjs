@@ -1,4 +1,4 @@
-/** OPFC — salons privés : sélection indépendante des dix clubs sur chaque iPhone. */
+/** OPFC — salons privés : sélection indépendante des clubs sur chaque iPhone. */
 import {normalizeRoomCode} from './online-protocol.mjs';
 import {DISPLAY_CLUBS,DISPLAY_BY_ID,displayAbbr} from './club-identities.mjs';
 import {renderIdentityCrest} from './ui-portraits.mjs';
@@ -27,7 +27,7 @@ export function renderOnlineLobby({stage='choose',firstClub='PSG',hostIdentity='
   out+='<section class="panel online-lobby-card"><h2 class="section-title">Choisis comment jouer</h2>'+
   '<div class="online-choices">'+button('create-screen','Créer une partie','primary full')+
   button('join-screen','Rejoindre une partie','ghost full')+'</div>'+
-  '<p class="caption">Chaque joueur choisit l’un des dix clubs. Deux clubs identiques ne sont pas autorisés.</p></section>';
+  '<p class="caption">Chaque joueur choisit l’un des '+DISPLAY_CLUBS.length+' clubs. Deux clubs identiques ne sont pas autorisés.</p></section>';
  }else if(stage==='create'){
   out+='<section class="panel online-lobby-card"><h2 class="section-title">Créer un salon privé</h2>'+
    clubSelect('online-host-identity',hostIdentity)+
