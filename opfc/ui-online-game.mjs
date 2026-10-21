@@ -8,6 +8,7 @@ import {renderOnlineShootoutScreen} from './ui-shootout.mjs';
 import {renderFinalResult} from './ui-final.mjs';
 import {renderClubCrest} from './ui-portraits.mjs';
 import {visualAbbr,setDisplayedClubs} from './club-identities.mjs';
+import {competitionName} from './club-honours.mjs';
 
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function scoreBoard(m){
@@ -21,13 +22,13 @@ function scoreBoard(m){
  * Les écrans de gameplay sont produits par les mêmes fonctions visuelles
  * que le local ; chaque commande est exécutée par la fonction Edge.
  */
-export function renderOnlineGame(g,{myClub,hostClub}={}){
+export function renderOnlineGame(g,{myClub,hostClub,competition}={}){
  if(g?.teams)setDisplayedClubs(g.teams);
  if(!g||!['PSG','OM'].includes(myClub)||!['PSG','OM'].includes(hostClub))
   return '<section class="panel"><p>Synchronisation en cours…</p></section>';
  if(g.phase==='mercato')return ''; // sale() + terrain communs, via ui.mjs.
  if(g.phase==='lineup')
-  return '<section class="panel match-stage"><span class="eyebrow">Grandline Cup · Compositions</span>'+
+  return '<section class="panel match-stage"><span class="eyebrow">'+esc(competitionName(g.match?.competition??competition))+' · Compositions</span>'+ 
    '<h2>Prépare ton équipe</h2><p>Choisis la formation et la place de tes sept recrues sur le terrain ci-dessous. '+
    'Tu contrôles uniquement ton club.</p></section>';
  if(['kickoff-ready','match','moment-result','half-time','resume-ready'].includes(g.phase))
