@@ -3,6 +3,7 @@ import {CARDS} from './catalog.mjs';
 import {portraitFile} from './ui-portraits.mjs';
 import {DISPLAY_CLUBS,displayAbbr,clubLogoFile} from './club-identities.mjs';
 import {CLUB_HONOURS,CLUB_TROPHIES} from './club-honours.mjs';
+import {loadTrophyHistory,syncQueuedLocalResults} from './trophy-service.mjs';
 
 const root=document.getElementById('catalog-grid');
 const search=document.getElementById('catalog-search');
@@ -59,9 +60,12 @@ const clubRoot=document.getElementById('club-grid');
 const clubSearch=document.getElementById('club-search');
 const clubCount=document.getElementById('club-count');
 const clubEmpty=document.getElementById('club-empty');
+const clubStatus=document.getElementById('club-sync-status');
+const historyRoot=document.getElementById('opfc-results-history');
+let liveHonours=null;
 
 function clubHtml(club){
- const honours=CLUB_HONOURS[club.id];
+ const honours=liveHonours?.[club.id]??CLUB_HONOURS[club.id];
  const logo=clubLogoFile(club.id);
  const abbr=displayAbbr(club.id);
  if(!honours||!logo)throw new Error('Fiche de club incomplète : '+club.id);
@@ -74,13 +78,13 @@ function clubHtml(club){
   '<div class="club-catalog-banner"><img src="'+esc(logo)+'" alt="Écusson de '+esc(club.name)+'" loading="lazy" decoding="async"></div>'+
   '<div class="club-catalog-identity"><h2 class="club-catalog-name">'+esc(club.name)+'</h2>'+
   '<div class="club-catalog-identifier"><strong>'+esc(abbr)+'</strong><span>CLUB OPFC</span></div></div>'+
-  '<div class="club-catalog-honours"><div class="club-catalog-honours-head"><h3>Palmarès fictif</h3>'+
+  '<div class="club-catalog-honours"><div class="club-catalog-honours-head"><h3>Palmarès officiel</h3>'+ 
   '<span class="club-catalog-total">'+esc(total)+' titre'+(total===1?'':'s')+'</span></div>'+
   '<ul class="club-catalog-awards">'+trophies+'</ul></div></article>';
 }
 
 clubRoot.innerHTML=DISPLAY_CLUBS.map(clubHtml).join('');
-const clubElements=[...clubRoot.querySelectorAll('.club-catalog-card')];
+let clubElements=[...clubRoot.querySelectorAll('.club-catalog-card')];
 function updateClubs(){
  const q=compact(clubSearch.value);
  let visible=0;
@@ -136,3 +140,59 @@ for(const [button,tabName] of [[characterTab,'characters'],[clubTab,'clubs']]){
 }
 window.addEventListener('hashchange',syncCatalogTab);
 syncCatalogTab();
+
+const clubById=new Map(DISPLAY_CLUBS.map(club=>[club.id,club]));
+const compById=new Map(CLUB_TROPHIES.map(c=>[c.key,c]));
+const formatDate=value=>{
+ try{return new Intl.DateTimeFormat('fr-FR',{dateStyle:'medium',timeStyle:'short'}).format(new Date(value));}
+ catch{return 'Date inconnue';}
+};
+function renderHistory(history){
+ if(!history.length){
+  historyRoot.innerHTML='<p class="caption">Aucune finale disputée pour le moment. Les 20 clubs débutent sans trophée.</p>';
+  return;
+ }
+ historyRoot.innerHTML=history.slice(0,100).map(g=>{
+  const home=clubById.get(g.home_club),away=clubById.get(g.away_club);
+  const comp=compById.get(g.competition);
+  if(!home||!away||!comp)return '';
+  const score=String(g.home_score)+' – '+String(g.away_score);
+  const tab=g.shootout?' · TAB '+esc(g.shootout.home)+' – '+esc(g.shootout.away):'';
+  const logo=id=>'<img src="'+esc(clubLogoFile(id))+'" alt="" width="32" height="32" loading="lazy">';
+  const winner=clubById.get(g.winner);
+  return '<article class="opfc-history-match">'+
+   '<div class="opfc-history-meta"><span>'+esc(comp.icon)+' '+esc(comp.name)+'</span><span>'+esc(formatDate(g.played_at))+' · '+(g.mode==='online'?'En ligne':'Local')+'</span></div>'+
+   '<div class="opfc-history-teams"><span>'+logo(home.id)+'<strong>'+esc(displayAbbr(home.id))+'</strong></span>'+
+   '<div class="opfc-history-score"><strong>'+esc(score)+'</strong>'+(tab?'<small>'+tab+'</small>':'')+'</div>'+
+   '<span>'+logo(away.id)+'<strong>'+esc(displayAbbr(away.id))+'</strong></span></div>'+
+   '<p class="opfc-history-champion">🏆 '+esc(winner?.name??'Club vainqueur')+'</p>'+
+   '</article>';
+ }).join('');
+}
+async function refreshPalmares(){
+ try{
+  const data=await loadTrophyHistory();
+  const fresh=Object.fromEntries(DISPLAY_CLUBS.map(club=>[club.id,{grandline:0,league:0,cup:0}]));
+  for(const item of data.summary){
+   if(fresh[item.club]&&compById.has(item.competition))
+    fresh[item.club][item.competition]=Math.max(0,Number(item.titles)||0);
+  }
+  liveHonours=fresh;
+  clubRoot.innerHTML=DISPLAY_CLUBS.map(clubHtml).join('');
+  clubElements=[...clubRoot.querySelectorAll('.club-catalog-card')];
+  updateClubs();
+  renderHistory(data.history);
+  clubStatus.textContent='✅ Palmarès synchronisés · '+data.history.length+' finale'+(data.history.length===1?'':'s')+' dans l’historique récent.';
+ }catch{
+  clubStatus.textContent='Connexion au palmarès indisponible. Les chiffres affichés ne sont pas à jour.';
+  historyRoot.innerHTML='<p class="caption">Impossible de charger les finales. Réessaie avec une connexion Internet.</p>';
+  // Ne pas afficher un total fictif à zéro comme si la donnée était fiable.
+  if(!liveHonours){
+   for(const value of clubRoot.querySelectorAll('.club-catalog-award-value,.club-catalog-total'))
+    value.textContent='—';
+  }
+ }
+}
+void syncQueuedLocalResults().then(refreshPalmares);
+setInterval(()=>{if(!document.hidden)void refreshPalmares();},20000);
+window.addEventListener('focus',()=>void syncQueuedLocalResults().then(refreshPalmares));
