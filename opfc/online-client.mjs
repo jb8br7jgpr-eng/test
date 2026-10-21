@@ -6,6 +6,7 @@
 import {normalizeRoomCode,validateClub,validateSessionToken,validateRoomId,ONLINE_PROTOCOL_VERSION} from './online-protocol.mjs';
 import {OPFC_ONLINE_API_URL,OPFC_ONLINE_PUBLISHABLE_KEY} from './online-config.mjs';
 import {chooseClubPair,validateDisplayClub,isDisplayClub} from './club-identities.mjs';
+import {isCompetition} from './club-honours.mjs';
 
 export const ONLINE_SESSION_KEY='opfc-v1-online-session';
 export const ONLINE_PENDING_KEY='opfc-v1-online-pending-action';
@@ -25,6 +26,7 @@ function validRoom(room,session=null){
  normalizeRoomCode(room.code);
  validateClub(room.hostClub);validateClub(room.guestClub);validateClub(room.myClub);
  if(room.clubChoices)chooseClubPair(room.clubChoices.PSG,room.clubChoices.OM);
+ if(room.competition!==undefined&&room.competition!==null&&!isCompetition(room.competition))fail('Compétition du salon invalide');
  if(room.hostClub===room.guestClub||room.guestClub!==(room.hostClub==='PSG'?'OM':'PSG'))
   fail('Attribution des clubs incohérente');
  if(!ROOM_STATUSES.includes(room.status))fail('Statut du salon invalide');
@@ -87,7 +89,7 @@ export function createOnlineClient({
   if(withMatch){
    const m=payload.match;
    const matchFields=['index','minute','score','statistics','goals',
-    'history','lastResult','winner','victory','currentMoment','action','shootout','resultAcks'];
+    'history','lastResult','winner','victory','currentMoment','action','shootout','resultAcks','competition'];
    if(!m||typeof m!=='object'||Array.isArray(m)||
     Object.keys(m).some(k=>!matchFields.includes(k))||
     !Number.isInteger(m.index)||m.index<0||
@@ -303,10 +305,11 @@ export function createOnlineClient({
    try{session=validSession(JSON.parse(raw));room=null;marketGame=null;loadPending();return true;}
    catch{session=null;room=null;marketGame=null;pending=null;persist();rememberPending();return false;}
   },
-  async createRoom(firstClub='PSG',identityId=firstClub){
+  async createRoom(firstClub='PSG',identityId=firstClub,competition='grandline'){
    ensureOnline();if(session)fail('Quitte d’abord le salon en cours');
    validateDisplayClub(identityId);
-   const command={action:'create',firstClub:validateClub(firstClub)};
+   if(!isCompetition(competition))fail('Compétition inconnue');
+   const command={action:'create',firstClub:validateClub(firstClub),competition};
    if(identityId!==firstClub)command.identityId=identityId;
    const data=await request(command);
    pending=null;rememberPending();return accept(data,true);
