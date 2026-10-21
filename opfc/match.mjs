@@ -44,7 +44,7 @@ export function kickoffMatch(state,rng=Math.random){
   version:1,index:0,minute:schedule[0].minute,schedule,score:{PSG:0,OM:0},
   statistics:{PSG:blankStats(),OM:blankStats()},
   goals:[],history:[],lastResult:null,winner:null,victory:null,
-  shootout:null
+  shootout:null,competition:state.competition??null
  };
  return s;
 }
