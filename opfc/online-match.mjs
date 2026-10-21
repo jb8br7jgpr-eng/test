@@ -76,7 +76,7 @@ export function onlineMatchView(state,club){
   version:state.version,phase:state.phase,
   teams:safeTeams(state.teams),dice:[...state.dice],
   match:{
-   index:m.index,minute:m.minute,
+   index:m.index,minute:m.minute,competition:state.competition??null,
    score:structuredClone(m.score),
    statistics:structuredClone(m.statistics),
    goals:structuredClone(m.goals),
