@@ -54,7 +54,7 @@ export function createGame({firstClub='PSG',rng=Math.random,deck=null,dice=null,
   const rolls=dice||(()=>{let r;do{r=[1+Math.floor(drawRng(rng)*6),1+Math.floor(drawRng(rng)*6)];}while(r[0]===r[1]);return r;})();
   if(rolls.length!==2||rolls.some(x=>!Number.isInteger(x)||x<1||x>6)||rolls[0]===rolls[1])fail('Dés de départ invalides');
   const pool=deck?[...deck]:shuffle(CARDS.map(c=>c.id),rng);
-  if(pool.length!==50 || new Set(pool).size!==50||pool.some(id=>!CARD_BY_ID.has(id)))fail('Paquet invalide');
+  if((pool.length!==CARDS.length && !(deck && pool.length===50)) || new Set(pool).size!==pool.length||pool.some(id=>!CARD_BY_ID.has(id)))fail('Paquet invalide');
   const s={version:1,phase:'mercato',teams:[firstClub,other].map(club=>({club,identityId:identities[club],budget:START_BUDGET,refusals:0,roster:[],formation:'2-2-2',slots:Array(7).fill(null),ready:false,hakis:{observation:false,kings:false}})),dice:rolls,nextPriority:rolls[0]>rolls[1]?0:1,deck:pool,cursor:0,auction:null,lastResult:null,history:[]};
   nextCard(s);
   return s;
