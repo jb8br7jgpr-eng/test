@@ -308,6 +308,7 @@ function restore(){try{
  if(data?.game?.version===1&&['mercato','lineup','kickoff-ready','match','moment-result','half-time','resume-ready','shootout-ready','shootout','finished'].includes(data.game.phase)&&
  data.game.teams?.length===2){
    game=data.game;firstClub=data.firstClub==='OM'?'OM':'PSG';beforeForm=data.beforeForm||beforeForm;
+   if(isCompetition(game.competition))localCompetition=game.competition;
     localClubChoices=currentClubChoices(data.game.teams);
    teamsVisible=data.teamsVisible===true;
    pitchClub=['PSG','OM'].includes(data.pitchClub)?data.pitchClub:null;
@@ -628,6 +629,7 @@ function matchPage(){
  '<small>'+ (game.phase==='half-time'?'Modifications autorisées à la mi-temps':'Effectifs des deux équipes')+'</small></div>'+
  teams()+'</section>';
  return shell()+'<main class="ready-layout">'+middle+
+ (game.phase==='finished'&&pendingLocalResultsCount()>0?'<p class="caption" role="status">🏆 Résultat en cours de synchronisation. Il sera envoyé automatiquement dès que la connexion sera disponible.</p>':'')+
  (game.phase==='finished'?btn('exit-finished-local','← Quitter la partie et revenir au menu','ghost full'):'')+
  overview+'<div class="gameplay-nav"><span class="caption">'+esc(competitionName(game.competition))+' · Mode local</span>'+btn('confirm-reset','Nouvelle partie','ghost small')+'</div></main>';
 }
@@ -801,7 +803,7 @@ function render(){
   '<button type="button" data-action="online-menu">← Menu</button></div></div>':'';
  const lobby=(!showingGame||onlineRoomDetails)?renderOnlineLobby({
   stage:onlineStage,firstClub,room:onlineClient.room,
-  hostIdentity:onlineHostIdentity,guestIdentity:onlineGuestIdentity,
+  hostIdentity:onlineHostIdentity,guestIdentity:onlineGuestIdentity,competition:onlineCompetition,
   configured:onlineClient.configured,joinCode:onlineJoinCode,
   busy:onlineBusy,error:onlineError,gameActive:showingGame
  }):'';
@@ -1009,7 +1011,10 @@ app.addEventListener('change',event=>{
  const target=event.target;
  try{
   if(onlineVisible){
-   if(target.dataset.action==='online-host-identity'&&DISPLAY_CLUBS.some(c=>c.id===target.value)){
+   if(target.dataset.action==='online-competition'&&isCompetition(target.value)){
+     onlineCompetition=target.value;render();return;
+    }
+    if(target.dataset.action==='online-host-identity'&&DISPLAY_CLUBS.some(c=>c.id===target.value)){
     onlineHostIdentity=target.value;render();return;
    }
    if(target.dataset.action==='online-guest-identity'&&DISPLAY_CLUBS.some(c=>c.id===target.value)){
@@ -1020,7 +1025,10 @@ app.addEventListener('change',event=>{
     void onlineFormationChanged(target).catch(e=>{onlineError=e?.message||'Formation réseau impossible';render();});
    return;
   }
-  if(target.dataset.action==='club-identity'&&DISPLAY_CLUBS.some(c=>c.id===target.value)&&!game){
+  if(target.dataset.action==='local-competition'&&isCompetition(target.value)&&!game){
+    localCompetition=target.value;render();return;
+   }
+   if(target.dataset.action==='club-identity'&&DISPLAY_CLUBS.some(c=>c.id===target.value)&&!game){
    const slot=target.dataset.club,other=slot==='PSG'?'OM':'PSG';
    if(!['PSG','OM'].includes(slot))throw Error('Joueur invalide');
    const previous=localClubChoices[slot];localClubChoices[slot]=target.value;
@@ -1045,6 +1053,8 @@ if(onlineClient.loadSession()){
  onlineStage='restore';
 }
 render();
+void syncQueuedLocalResults();
+window.addEventListener('online',()=>{void syncQueuedLocalResults();});
 if(onlineVisible&&onlineClient.configured)void refreshOnlineRoom();
 // Reconnexion iOS : rattrapage immédiat après retour au premier plan.
 document.addEventListener('visibilitychange',()=>{
