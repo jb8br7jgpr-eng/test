@@ -6,6 +6,7 @@
 import {CARD_BY_ID} from './catalog.mjs';
 import {renderCharacterPortrait,renderClubCrest} from './ui-portraits.mjs';
 import {setDisplayedClubs,visualName,visualAbbr} from './club-identities.mjs';
+import {competitionName} from './club-honours.mjs';
 const h=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const player=id=>CARD_BY_ID.get(id)?.name??id??'—';
 
@@ -37,12 +38,12 @@ export function renderFinalResult(state){
  setDisplayedClubs(state.teams);
  const m=state.match,st=m.statistics;
  return '<div class="final-screen">'+
- '<section class="panel final-score"><span class="eyebrow">Grandline Cup · Coup de sifflet final</span>'+
- '<div class="final-celebration" aria-label="Trophée Grandline Cup">'+
- '<img class="final-trophy-image" src="./opfc/illustrations/grandline_cup_trophee.PNG" '+
- 'alt="Trophée officiel de la Grandline Cup" width="1254" height="1254" decoding="async" loading="lazy"></div>'+
+ '<section class="panel final-score"><span class="eyebrow">'+h(competitionName(m.competition))+' · Coup de sifflet final</span>'+ 
+ '<div class="final-celebration" aria-label="Trophée de la compétition">'+ 
+ (m.competition==='grandline'||!m.competition?'<img class="final-trophy-image" src="./opfc/illustrations/grandline_cup_trophee.PNG" '+ 
+ 'alt="Trophée officiel de la Grandline Cup" width="1254" height="1254" decoding="async" loading="lazy">':'<span class="final-trophy-image" role="img" aria-label="Trophée">🏆</span>')+'</div>'+ 
  '<h2 class="final-victory-title">VICTOIRE !</h2>'+
- '<p class="final-winner-name">Victoire de '+h(visualName(m.winner))+'</p>'+
+ '<p class="final-winner-name">Victoire de '+h(visualName(m.winner))+'</p>'+ '<p class="caption">🏆 Champion · '+h(competitionName(m.competition))+'</p>'+ 
  '<div class="final-scoreline"><div class="'+(m.winner==='PSG'?'final-winner-club':'')+'">'+
  renderClubCrest('PSG','final-club-emblem')+'<strong>'+h(visualAbbr('PSG'))+'</strong></div>'+
  '<div class="final-score-numbers"><strong>'+m.score.PSG+' – '+m.score.OM+'</strong>'+
