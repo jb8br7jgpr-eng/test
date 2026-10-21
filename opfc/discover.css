@@ -58,3 +58,32 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 .rules-footer{margin:18px auto 0;text-align:center}
 .rules-footer a{display:inline-flex;justify-content:center;align-items:center;min-height:48px;padding:12px 24px;border-radius:13px;border:1px solid #ffe2a0;background:linear-gradient(125deg,#fbe1aa,#d8a65a);color:#102638;font-weight:900;font-size:14px}
 @media(max-width:380px){.catalog-card-top{grid-template-columns:82px minmax(0,1fr);gap:9px}.catalog-portrait{width:82px;height:108px}.catalog-card{padding:9px}.catalog-stat{padding:7px 5px}.catalog-stat span{font-size:9px}.rule-card{padding:13px;gap:10px}}
+
+
+/* OPFC — onglets du catalogue et galerie des 20 écussons, uniquement présentation. */
+.catalog-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:0 0 16px}
+.catalog-tab{appearance:none;display:flex;align-items:center;justify-content:center;gap:7px;min-height:50px;padding:10px 8px;border:1px solid #91b7c15c;border-radius:13px;background:#112d3f;color:#c6dae2;font-size:13px;font-weight:900;cursor:pointer;transition:background .15s,border-color .15s}
+.catalog-tab.is-active{background:linear-gradient(132deg,#f7dcaa,#d9ad70);border-color:#ffe4ae;color:#152b39;box-shadow:0 5px 17px #0004}
+.catalog-tab-count{font-variant-numeric:tabular-nums;padding:3px 7px;font-size:11px;border-radius:9px;background:#ffffff24}
+.catalog-tab.is-active .catalog-tab-count{background:#37230e22}
+#catalog-characters[hidden],#catalog-clubs[hidden]{display:none!important}
+.club-catalog-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:14px}
+.club-catalog-card{min-width:0;overflow:hidden;padding:15px 15px 17px;border-top:3px solid var(--club-color,#f3c98c);display:flex;flex-direction:column}
+.club-catalog-card[hidden]{display:none!important}
+.club-catalog-banner{position:relative;display:flex;align-items:center;justify-content:center;min-height:218px;padding:8px 10px 15px;border-radius:14px;background:radial-gradient(circle at 50% 46%,color-mix(in srgb,var(--club-color,#f3c98c) 23%,transparent),transparent 66%),linear-gradient(150deg,#132d40,#091b2b);border:1px solid #ffffff18}
+.club-catalog-banner img{width:min(100%,206px);height:206px;object-fit:contain;display:block;filter:drop-shadow(0 10px 12px #0008)}
+.club-catalog-identity{text-align:center;padding:13px 2px 14px}
+.club-catalog-name{font-size:clamp(17px,4.6vw,22px);line-height:1.18;letter-spacing:-.01em;color:#fff2d7;margin:0 0 9px;overflow-wrap:anywhere}
+.club-catalog-identifier{display:inline-flex;align-items:center;gap:7px;justify-content:center;font-size:11px;color:#bcd2db}
+.club-catalog-identifier strong{font-size:12px;font-weight:950;letter-spacing:.12em;padding:5px 10px;border:1px solid #e5ce9b72;border-radius:8px;color:#ffe4b1;background:#f6d49812}
+.club-catalog-honours{margin-top:auto;border-top:1px solid #f5d39d4f;padding-top:12px}
+.club-catalog-honours-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 9px}
+.club-catalog-honours-head h3{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#f4ddb3;margin:0}
+.club-catalog-total{font-size:10px;font-weight:900;color:#f8e5bd;border:1px solid #f3d59a4d;background:#e6ae4920;padding:5px 8px;border-radius:99px;font-variant-numeric:tabular-nums}
+.club-catalog-awards{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.club-catalog-awards li{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;border-radius:10px;border:1px solid #ffffff19;background:#061b2aa8}
+.club-catalog-award-name{display:inline-flex;align-items:center;gap:8px;font-size:11px;color:#d8e5e8;line-height:1.35;min-width:0}
+.club-catalog-award-icon{font-size:15px;flex:none}
+.club-catalog-award-value{flex:none;display:inline-flex;align-items:center;justify-content:center;min-width:31px;padding:5px 7px;border-radius:8px;background:#f3d49b1d;color:#ffe2a5;font-size:13px;font-weight:950;font-variant-numeric:tabular-nums}
+@media(max-width:590px){.club-catalog-grid{grid-template-columns:minmax(0,1fr)}.club-catalog-banner{min-height:232px}.club-catalog-banner img{width:min(100%,220px);height:220px}}
+@media(max-width:380px){.catalog-tab{font-size:12px;padding:8px 5px;gap:5px}.club-catalog-card{padding:12px}.club-catalog-banner{min-height:211px}.club-catalog-banner img{height:200px;width:min(100%,200px)}}
