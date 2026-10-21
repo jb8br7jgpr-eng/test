@@ -41,7 +41,7 @@ export function renderFinalResult(state){
  '<section class="panel final-score"><span class="eyebrow">'+h(competitionName(m.competition))+' · Coup de sifflet final</span>'+ 
  '<div class="final-celebration" aria-label="Trophée de la compétition">'+ 
  (m.competition==='grandline'||!m.competition?'<img class="final-trophy-image" src="./opfc/illustrations/grandline_cup_trophee.PNG" '+ 
- 'alt="Trophée officiel de la Grandline Cup" width="1254" height="1254" decoding="async" loading="lazy">':'<span class="final-trophy-image" role="img" aria-label="Trophée">🏆</span>')+'</div>'+ 
+ 'alt="Trophée de la Grandline Champions Cup" width="1254" height="1254" decoding="async" loading="lazy">':'<span class="final-trophy-image" role="img" aria-label="Trophée">🏆</span>')+'</div>'+ 
  '<h2 class="final-victory-title">VICTOIRE !</h2>'+
  '<p class="final-winner-name">Victoire de '+h(visualName(m.winner))+'</p>'+ '<p class="caption">🏆 Champion · '+h(competitionName(m.competition))+'</p>'+ 
  '<div class="final-scoreline"><div class="'+(m.winner==='PSG'?'final-winner-club':'')+'">'+
