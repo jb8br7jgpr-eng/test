@@ -9,11 +9,14 @@ import {renderMatchScreen,matchRequiresPrivacy,dispatchOpenMatch} from './ui-mat
 import {createOnlineClient} from './online-client.mjs';
 import {renderOnlineLobby,normalizeJoinCodeInput} from './ui-online.mjs';
 import {renderOnlineGame} from './ui-online-game.mjs';
+import {CLUB_TROPHIES,isCompetition,competitionName} from './club-honours.mjs';
+import {queueFinishedLocalGame,syncQueuedLocalResults,pendingLocalResultsCount} from './trophy-service.mjs';
 
 const app=document.getElementById('opfc-app');
 const STORAGE='opfc-v08-local-dev';
 let game=null,firstClub='PSG',selection=null,modal=null,error='',beforeForm={PSG:'2-2-2',OM:'2-2-2'};
 let localClubChoices={PSG:'PSG',OM:'OM'},onlineHostIdentity='PSG',onlineGuestIdentity='OM';
+let localCompetition='grandline',onlineCompetition='grandline';
 let matchUncovered=false;
 // Affichage purement local : aucun changement de règles ou de calcul moteur.
 let placement=null,teamsVisible=false,pitchClub=null;
@@ -266,7 +269,7 @@ async function onlineClicked(action,button){
  }
  if(action==='online-create'){
   await onlineMutation(async()=>{
-   await onlineClient.createRoom('PSG',onlineHostIdentity);
+   await onlineClient.createRoom('PSG',onlineHostIdentity,onlineCompetition);
    onlineStage='room';
    try{await onlineClient.refreshRoom();}catch{ /* reprise par actualisation automatique */ }
   });return;
@@ -296,7 +299,10 @@ const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;
 const card=id=>CARD_BY_ID.get(id);
 const others=id=>id==='PSG'?'OM':'PSG';
 const short=id=>esc(id);
-function save(){try{if(game)localStorage.setItem(STORAGE,JSON.stringify({game,firstClub,beforeForm,placement,teamsVisible,pitchClub}));}catch{}}
+function save(){
+ try{if(game)localStorage.setItem(STORAGE,JSON.stringify({game,firstClub,beforeForm,placement,teamsVisible,pitchClub}));}catch{}
+ if(game?.phase==='finished')queueFinishedLocalGame(game);
+}
 function restore(){try{
  const data=JSON.parse(localStorage.getItem(STORAGE)||'null');
  if(data?.game?.version===1&&['mercato','lineup','kickoff-ready','match','moment-result','half-time','resume-ready','shootout-ready','shootout','finished'].includes(data.game.phase)&&
@@ -362,6 +368,11 @@ function welcome(){
   renderIdentityCrest(chosen.id,'select-crest')+
   '<span class="opfc-picked-name"><strong>'+esc(displayAbbr(chosen.id))+'</strong><small>'+esc(chosen.name)+'</small></span></span></div>';
  }).join('')+'</div></section>'+
+ '<section class="panel intro-panel"><h2 class="section-title">🏆 Compétition disputée</h2>'+
+ '<p class="caption">Ce match est la finale : le vainqueur remportera un trophée.</p>'+
+ '<select id="opfc-local-competition" class="opfc-competition-select" data-action="local-competition">'+
+ CLUB_TROPHIES.map(t=>'<option value="'+t.key+'"'+(localCompetition===t.key?' selected':'')+'>'+t.icon+' '+esc(t.name)+'</option>').join('')+
+ '</select></section>'+
  '<section class="panel intro-panel"><h2 class="section-title">Formations de départ</h2><div class="formation-picker">'+
  ['PSG','OM'].map((id,i)=>'<div class="form-box"><label for="initial-'+id+'">Joueur '+(i+1)+' · '+esc(displayAbbr(localClubChoices[id]))+'</label><select id="initial-'+id+'" data-action="initial-formation" data-club="'+id+'">'+options(FORMATION_NAMES,beforeForm[id])+'</select></div>').join('')+
  '</div><p class="caption">Modifiables pendant le mercato puis à la mi-temps.</p></section>'+
@@ -618,7 +629,7 @@ function matchPage(){
  teams()+'</section>';
  return shell()+'<main class="ready-layout">'+middle+
  (game.phase==='finished'?btn('exit-finished-local','← Quitter la partie et revenir au menu','ghost full'):'')+
- overview+'<div class="gameplay-nav"><span class="caption">Grandline Cup · Mode local</span>'+btn('confirm-reset','Nouvelle partie','ghost small')+'</div></main>';
+ overview+'<div class="gameplay-nav"><span class="caption">'+esc(competitionName(game.competition))+' · Mode local</span>'+btn('confirm-reset','Nouvelle partie','ghost small')+'</div></main>';
 }
 function popup(){
  if(!modal)return '';
@@ -832,6 +843,8 @@ function change(fn){
 }
 function start(){
  const s=createGame({firstClub:'PSG',clubChoices:localClubChoices});
+  s.competition=localCompetition;
+  s.matchRecordId=crypto.randomUUID();
  for(const id of ['PSG','OM'])if(beforeForm[id]!=='2-2-2')Object.assign(s,chooseFormation(s,id,beforeForm[id]));
  game=s;entryView='playing';selection=null;placement=null;teamsVisible=false;pitchClub=null;modal={type:'dice'};error='';save();render();
 }
