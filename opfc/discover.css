@@ -87,3 +87,18 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 .club-catalog-award-value{flex:none;display:inline-flex;align-items:center;justify-content:center;min-width:31px;padding:5px 7px;border-radius:8px;background:#f3d49b1d;color:#ffe2a5;font-size:13px;font-weight:950;font-variant-numeric:tabular-nums}
 @media(max-width:590px){.club-catalog-grid{grid-template-columns:minmax(0,1fr)}.club-catalog-banner{min-height:232px}.club-catalog-banner img{width:min(100%,220px);height:220px}}
 @media(max-width:380px){.catalog-tab{font-size:12px;padding:8px 5px;gap:5px}.club-catalog-card{padding:12px}.club-catalog-banner{min-height:211px}.club-catalog-banner img{height:200px;width:min(100%,200px)}}
+
+
+/* Résultats persistants — calendrier des finales et décompte officiel. */
+.opfc-history-panel{padding:15px;margin:18px 0 4px}
+.opfc-history-panel h2{color:#f5dba4;font-size:19px;margin:0 0 6px}
+.opfc-results-history{display:grid;gap:10px;margin-top:14px}
+.opfc-history-match{padding:12px;border-radius:13px;background:#092030;border:1px solid #ffffff25}
+.opfc-history-meta{display:flex;justify-content:space-between;flex-wrap:wrap;gap:7px;color:#a9bdcc;font-size:10px;font-weight:750}
+.opfc-history-teams{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:center;margin-top:8px}
+.opfc-history-teams>span{display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px;min-width:0;color:#e9f4f6}
+.opfc-history-teams img{width:34px;height:34px;object-fit:contain}
+.opfc-history-score{text-align:center;display:grid;gap:2px;font-variant-numeric:tabular-nums}
+.opfc-history-score strong{font-size:20px;color:#fce2b1;white-space:nowrap}
+.opfc-history-score small{font-size:10px;color:#afc4cd}
+.opfc-history-champion{text-align:center;color:#ebd69e;font-size:11px;margin:8px 0 0}
