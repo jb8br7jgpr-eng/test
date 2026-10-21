@@ -34,7 +34,7 @@ export function onlineKickoffView(state){
   version:state.version,phase:'match',
   teams:state.teams.map(copyTeam),dice:[...state.dice],
   match:{
-   index:m.index,minute:m.minute,score:{...m.score},
+   index:m.index,minute:m.minute,competition:state.competition??null,score:{...m.score},
    statistics:structuredClone(m.statistics),
    goals:[],currentMoment:currentMatchMoment(state)
   }
