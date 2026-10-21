@@ -5,11 +5,11 @@ import {DISPLAY_CLUBS,currentClubChoices,setDisplayedClubs,setDisplayedChoices,v
 import {renderCharacterPortrait,renderClubCrest,renderIdentityCrest} from './ui-portraits.mjs';
 import {effectiveRating,lineupDetails} from './rules.mjs';
 import {FORMATION_NAMES,uiAuction,uiTeam,uiRoster,cardStats,currentAuctionEnding,clubName} from './ui-model.mjs';
-import {renderMatchScreen,matchRequiresPrivacy,dispatchOpenMatch} from './ui-match.mjs';
+import {renderMatchScreen,matchRequiresPrivacy,dispatchOpenMatch} from './ui-match.mjs?v=opfc-comp-v1-20261022';
 import {createOnlineClient} from './online-client.mjs';
-import {renderOnlineLobby,normalizeJoinCodeInput} from './ui-online.mjs';
-import {renderOnlineGame} from './ui-online-game.mjs';
-import {CLUB_TROPHIES,isCompetition,competitionName,renderCompetitionPicker} from './club-honours.mjs';
+import {renderOnlineLobby,normalizeJoinCodeInput} from './ui-online.mjs?v=opfc-comp-v1-20261022';
+import {renderOnlineGame} from './ui-online-game.mjs?v=opfc-comp-v1-20261022';
+import {CLUB_TROPHIES,isCompetition,competitionName,renderCompetitionPicker} from './club-honours.mjs?v=opfc-comp-v1-20261022';
 import {queueFinishedLocalGame,syncQueuedLocalResults,pendingLocalResultsCount} from './trophy-service.mjs';
 
 const app=document.getElementById('opfc-app');
