@@ -1,6 +1,8 @@
-/** Catalogue OPFC : lecture seule des 50 fiches officielles, sans dépendance au jeu. */
+/** Catalogue OPFC : personnages et clubs. Affichage en lecture seule, sans incidence sur le jeu. */
 import {CARDS} from './catalog.mjs';
 import {portraitFile} from './ui-portraits.mjs';
+import {DISPLAY_CLUBS,displayAbbr,clubLogoFile} from './club-identities.mjs';
+import {CLUB_HONOURS,CLUB_TROPHIES} from './club-honours.mjs';
 
 const root=document.getElementById('catalog-grid');
 const search=document.getElementById('catalog-search');
@@ -50,3 +52,87 @@ search.addEventListener('input',update);
 position.addEventListener('change',update);
 rarity.addEventListener('change',update);
 update();
+
+
+/* Section clubs : mêmes identités et mêmes logos que dans les menus du jeu. */
+const clubRoot=document.getElementById('club-grid');
+const clubSearch=document.getElementById('club-search');
+const clubCount=document.getElementById('club-count');
+const clubEmpty=document.getElementById('club-empty');
+
+function clubHtml(club){
+ const honours=CLUB_HONOURS[club.id];
+ const logo=clubLogoFile(club.id);
+ const abbr=displayAbbr(club.id);
+ if(!honours||!logo)throw new Error('Fiche de club incomplète : '+club.id);
+ const trophies=CLUB_TROPHIES.map(t=>'<li>'+
+  '<span class="club-catalog-award-name"><span class="club-catalog-award-icon" aria-hidden="true">'+esc(t.icon)+'</span>'+esc(t.name)+'</span>'+
+  '<strong class="club-catalog-award-value" aria-label="'+esc(honours[t.key])+' titres">'+esc(honours[t.key])+'</strong>'+
+  '</li>').join('');
+ const total=CLUB_TROPHIES.reduce((sum,t)=>sum+honours[t.key],0);
+ return '<article class="discovery-panel club-catalog-card" data-search="'+esc(compact(club.name+' '+abbr))+'" style="--club-color:'+esc(club.secondary)+'">'+
+  '<div class="club-catalog-banner"><img src="'+esc(logo)+'" alt="Écusson de '+esc(club.name)+'" loading="lazy" decoding="async"></div>'+
+  '<div class="club-catalog-identity"><h2 class="club-catalog-name">'+esc(club.name)+'</h2>'+
+  '<div class="club-catalog-identifier"><strong>'+esc(abbr)+'</strong><span>CLUB OPFC</span></div></div>'+
+  '<div class="club-catalog-honours"><div class="club-catalog-honours-head"><h3>Palmarès fictif</h3>'+
+  '<span class="club-catalog-total">'+esc(total)+' titre'+(total===1?'':'s')+'</span></div>'+
+  '<ul class="club-catalog-awards">'+trophies+'</ul></div></article>';
+}
+
+clubRoot.innerHTML=DISPLAY_CLUBS.map(clubHtml).join('');
+const clubElements=[...clubRoot.querySelectorAll('.club-catalog-card')];
+function updateClubs(){
+ const q=compact(clubSearch.value);
+ let visible=0;
+ for(const item of clubElements){
+  const show=!q||item.dataset.search.includes(q);
+  item.hidden=!show;
+  if(show)visible++;
+ }
+ clubCount.innerHTML='<strong>'+visible+'</strong> club'+(visible===1?'':'s')+' sur '+DISPLAY_CLUBS.length;
+ clubEmpty.hidden=visible!==0;
+}
+clubSearch.addEventListener('input',updateClubs);
+updateClubs();
+
+/* Onglets accessibles ; un lien direct #clubs ouvre aussi la galerie. */
+const characterPanel=document.getElementById('catalog-characters');
+const clubPanel=document.getElementById('catalog-clubs');
+const characterTab=document.getElementById('catalog-tab-characters');
+const clubTab=document.getElementById('catalog-tab-clubs');
+characterTab.querySelector('.catalog-tab-count').textContent=CARDS.length;
+clubTab.querySelector('.catalog-tab-count').textContent=DISPLAY_CLUBS.length;
+function selectCatalogTab(tab){
+ const isClub=tab==='clubs';
+ characterPanel.hidden=isClub;
+ clubPanel.hidden=!isClub;
+ for(const [button,active] of [[characterTab,!isClub],[clubTab,isClub]]){
+  button.classList.toggle('is-active',active);
+  button.setAttribute('aria-selected',String(active));
+  button.tabIndex=active?0:-1;
+ }
+}
+function syncCatalogTab(){
+ selectCatalogTab(window.location.hash==='#clubs'?'clubs':'characters');
+}
+characterTab.addEventListener('click',()=>{
+ selectCatalogTab('characters');
+ window.location.hash='#personnages';
+});
+clubTab.addEventListener('click',()=>{
+ selectCatalogTab('clubs');
+ window.location.hash='#clubs';
+});
+for(const [button,tabName] of [[characterTab,'characters'],[clubTab,'clubs']]){
+ button.addEventListener('keydown',event=>{
+  if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+  event.preventDefault();
+  const next=tabName==='characters'?'clubs':'characters';
+  const chosen=event.key==='Home'?'characters':event.key==='End'?'clubs':next;
+  const target=chosen==='clubs'?clubTab:characterTab;
+  target.click();
+  target.focus();
+ });
+}
+window.addEventListener('hashchange',syncCatalogTab);
+syncCatalogTab();
