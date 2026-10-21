@@ -7,11 +7,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Catalogue — OPMercato FC</title>
 <link rel="icon" type="image/png" href="./apple-touch-icon.png">
-<link rel="stylesheet" href="./opfc/discover.css?v=20261021">
-<script type="module" src="./opfc/catalog-view.mjs?v=20261021"></script>
+<link rel="stylesheet" href="./opfc/discover.css?v=20261022-clubs">
+<script type="module" src="./opfc/catalog-view.mjs?v=20261022-clubs"></script>
 </head>
 <body>
-<main class="discovery" aria-label="Catalogue des personnages OPFC">
+<main class="discovery" aria-label="Catalogue OPFC : personnages et clubs">
  <nav class="discovery-nav" aria-label="Navigation">
   <a class="discovery-back" href="./opfc.html">← Accueil OPFC</a>
   <span class="discovery-mini-brand"><img src="./opfc-logo-transparent.png" alt=""> OPFC</span>
@@ -19,8 +19,13 @@
  <header class="discovery-heading">
   <span class="discovery-kicker">Grandline Cup · Le mercato des légendes</span>
   <h1>📚 Catalogue</h1>
-  <p>Retrouve tous les personnages disponibles dans OPMercato FC, leurs portraits, leurs postes et leurs statistiques officielles.</p>
+  <p>Explore les 65 personnages, découvre les 20 clubs et leurs écussons, et consulte les palmarès imaginaires de Grand Line.</p>
  </header>
+ <div class="catalog-tabs" role="tablist" aria-label="Sections du catalogue">
+  <button type="button" id="catalog-tab-characters" class="catalog-tab is-active" role="tab" aria-selected="true" aria-controls="catalog-characters">⚔️ Personnages <span class="catalog-tab-count">65</span></button>
+  <button type="button" id="catalog-tab-clubs" class="catalog-tab" role="tab" aria-selected="false" aria-controls="catalog-clubs" tabindex="-1">🛡️ Clubs <span class="catalog-tab-count">20</span></button>
+ </div>
+ <section id="catalog-characters" role="tabpanel" aria-labelledby="catalog-tab-characters">
  <section class="discovery-panel catalog-tools" aria-label="Rechercher et filtrer">
   <div><label class="catalog-search-label" for="catalog-search">Rechercher un personnage</label>
    <input class="catalog-search" id="catalog-search" type="search" placeholder="Nom ou affiliation…" autocomplete="off" spellcheck="false"></div>
@@ -41,6 +46,17 @@
  <section id="catalog-grid" class="catalog-grid" aria-label="Fiches des personnages"></section>
  <p id="catalog-empty" class="catalog-empty" hidden>Aucun personnage ne correspond à ces critères.</p>
  <p class="discovery-notes">PUI : puissance · TEC : technique · PAS : passe · VIT : vitesse · DEF : défense · GAR : gardien. Les notes effectives peuvent varier selon le poste occupé pendant le match.</p>
+ </section>
+ <section id="catalog-clubs" role="tabpanel" aria-labelledby="catalog-tab-clubs" hidden>
+  <section class="discovery-panel catalog-tools" aria-label="Rechercher un club">
+   <div><label class="catalog-search-label" for="club-search">Rechercher un club</label>
+    <input class="catalog-search" id="club-search" type="search" placeholder="Nom ou abréviation…" autocomplete="off" spellcheck="false"></div>
+   <p id="club-count" class="catalog-count" aria-live="polite">Chargement des clubs…</p>
+  </section>
+  <div id="club-grid" class="club-catalog-grid" aria-label="Fiches des vingt clubs"></div>
+  <p id="club-empty" class="catalog-empty" hidden>Aucun club ne correspond à ta recherche.</p>
+  <p class="discovery-notes">🏆 Les palmarès sont entièrement fictifs, inventés pour l'univers d'OPMercato FC. Ils ne donnent aucun avantage pendant les matchs.</p>
+ </section>
  <footer class="rules-footer"><a href="./opfc.html">← Retour au menu OPFC</a></footer>
 </main>
 </body>
