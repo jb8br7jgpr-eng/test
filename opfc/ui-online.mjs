@@ -2,7 +2,7 @@
 import {normalizeRoomCode} from './online-protocol.mjs';
 import {DISPLAY_CLUBS,DISPLAY_BY_ID,displayAbbr} from './club-identities.mjs';
 import {renderIdentityCrest} from './ui-portraits.mjs';
-import {CLUB_TROPHIES,competitionName} from './club-honours.mjs';
+import {competitionName,renderCompetitionPicker} from './club-honours.mjs';
 const h=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const button=(act,label,style='ghost',disabled=false)=>'<button type="button" class="btn '+style+
  '" data-action="online-'+act+'" '+(disabled?'disabled aria-disabled="true"':'')+'>'+h(label)+'</button>';
@@ -18,7 +18,7 @@ function clubSelect(action,chosen){
  '<span class="opfc-picked-name"><strong>'+h(displayAbbr(chosen))+'</strong><small>'+h(pretty(chosen))+'</small></span></span></div>';
 }
 export function renderOnlineLobby({stage='choose',firstClub='PSG',hostIdentity='PSG',guestIdentity='OM',room=null,configured=false,
- joinCode='',busy=false,error='',gameActive=false,competition='grandline'}={}){
+ joinCode='',busy=false,error='',gameActive=false,competition='league'}={}){
  const nav='<div class="online-nav">'+button('back','← Retour','ghost small')+'</div>';
  let out='<section class="online-wrapper"><span class="eyebrow">OPMercato FC · Deux iPhone</span>'+
  '<h1 class="page-title">Mode en ligne</h1>'+
@@ -31,8 +31,10 @@ export function renderOnlineLobby({stage='choose',firstClub='PSG',hostIdentity='
   '<p class="caption">Chaque joueur choisit l’un des '+DISPLAY_CLUBS.length+' clubs. Deux clubs identiques ne sont pas autorisés.</p></section>';
  }else if(stage==='create'){
   out+='<section class="panel online-lobby-card"><h2 class="section-title">Créer un salon privé</h2>'+
+   '<div class="opfc-competition-panel opfc-online-competition"><h2 class="section-title">🏆 Choisis ta compétition</h2>'+
+   '<p class="caption">Le créateur sélectionne le trophée disputé pendant cette finale.</p>'+
+   renderCompetitionPicker(competition,'online-select-competition')+'</div>'+
    clubSelect('online-host-identity',hostIdentity)+
-   '<div class="opfc-club-picker"><label for="opfc-online-competition">🏆 Compétition</label><select id="opfc-online-competition" data-action="online-competition">'+CLUB_TROPHIES.map(t=>'<option value="'+t.key+'"'+(competition===t.key?' selected':'')+'>'+t.icon+' '+h(t.name)+'</option>').join('')+'</select></div>'+ 
    '<p>Tu joueras avec <strong>'+h(pretty(hostIdentity))+'</strong>.</p>'+
    '<p class="caption">Un code privé à six caractères sera généré pour ton adversaire.</p>'+
    button('create','Générer le code du salon','primary full',busy||!configured)+'</section>';
