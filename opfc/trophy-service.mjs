@@ -4,6 +4,7 @@ import {isCompetition} from './club-honours.mjs';
 import {isDisplayClub} from './club-identities.mjs';
 
 const QUEUE_KEY='opfc-local-trophy-results-v1';
+const CONFIRMED_KEY='opfc-local-confirmed-trophy-results-v1';
 const API=OPFC_ONLINE_API_URL;
 let syncing=null;
 async function request(payload){
@@ -21,6 +22,12 @@ export async function loadTrophyHistory(){
 function pending(){
  try{const v=JSON.parse(localStorage.getItem(QUEUE_KEY)||'[]');return Array.isArray(v)?v:[];}
  catch{return [];}
+}
+function confirmed(){
+ try{const data=JSON.parse(localStorage.getItem(CONFIRMED_KEY)||'[]');return Array.isArray(data)?data:[];}catch{return []}
+}
+function markConfirmed(id){
+ try{localStorage.setItem(CONFIRMED_KEY,JSON.stringify([...confirmed().filter(x=>x!==id),id].slice(-2000)));}catch{}
 }
 function setPending(items){
  try{localStorage.setItem(QUEUE_KEY,JSON.stringify(items));return true;}
@@ -41,6 +48,7 @@ function localResult(game){
 export function queueFinishedLocalGame(game){
  const result=localResult(game);
  if(!result)return false;
+ if(confirmed().includes(result.id))return true;
  const items=pending();
  if(!items.some(x=>x.id===result.id)){
   if(!setPending([...items,result]))return false;
@@ -58,6 +66,7 @@ export function syncQueuedLocalResults(){
    const result=items[0];
    try{
     await request({action:'record-local',result});
+    markConfirmed(result.id);
     setPending(pending().filter(x=>x.id!==result.id));
    }catch{break;}
   }
