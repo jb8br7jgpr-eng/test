@@ -1579,3 +1579,8 @@ a{color:inherit}p{line-height:1.45}.app{width:min(100%,760px);margin:0 auto;padd
 @media(max-height:700px){
  .opfc-mode-entry .opfc-mode-shortcut{min-height:45px}
 }
+
+
+/* Compétition avant le mercato, identique sur les deux parcours. */
+.opfc-competition-select{width:100%;min-height:47px;padding:11px 12px;border-radius:11px;background:#092739;color:#fff0d1;border:1px solid #f4d08d77;font-size:14px;font-weight:800}
+.opfc-competition-select:focus-visible{outline:3px solid #8becdb;outline-offset:3px}
