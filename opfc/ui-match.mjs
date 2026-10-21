@@ -12,6 +12,7 @@ import {isSetPieceKind,setPieceTurnOwner,dispatchSetPieceMatch,renderSetPieceAct
 import {shootoutTurnOwner,dispatchShootout,renderShootoutScreen} from './ui-shootout.mjs';
 import {renderFinalResult} from './ui-final.mjs';
 import {setDisplayedClubs,visualName,visualAbbr} from './club-identities.mjs';
+import {competitionName} from './club-honours.mjs';
 import {matchTacticalChoices,renderShotFaceOff,renderShotResult,renderReceiverCard,matchKeeperId} from './ui-match-widgets.mjs';
 
 const html=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -249,7 +250,7 @@ function halftimeView(state,m){
  ).join('');
  return '<div class="halftime-screen">'+
   '<header class="halftime-header">'+
-   '<span class="eyebrow">Grandline Cup · Pause tactique</span>'+
+   '<span class="eyebrow">'+html(competitionName(state.match?.competition??state.competition))+' · Pause tactique</span>'+ 
    '<h2>⏸️ MI-TEMPS</h2><p>Mi-temps · 45e minute</p>'+
   '</header>'+scoreBoard(m)+
   '<section class="panel halftime-stats" aria-label="Bilan de la première période">'+
@@ -306,7 +307,7 @@ function onlineAcknowledgementPanel(content,state,club){
 function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null}={}){
  if(state?.teams)setDisplayedClubs(state.teams);
  if(state?.phase==='kickoff-ready')return '<section class="panel match-stage">'+
-  '<span class="eyebrow">Grandline Cup · Avant-match</span><h2>Les équipes sont prêtes !</h2>'+
+  '<span class="eyebrow">'+html(competitionName(state.match?.competition??state.competition))+' · Avant-match</span><h2>Les équipes sont prêtes !</h2>'+ 
   '<p>Sept joueurs de chaque côté. Les compositions se verrouillent au coup d’envoi.</p>'+
   button('match-kickoff','Donner le coup d’envoi')+'</section>';
  const view=onlineClub?state:matchPublicView(state),m=view.match;
