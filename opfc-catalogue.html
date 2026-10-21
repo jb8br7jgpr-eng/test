@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Catalogue — OPMercato FC</title>
 <link rel="icon" type="image/png" href="./apple-touch-icon.png">
-<link rel="stylesheet" href="./opfc/discover.css?v=20261022-clubs">
-<script type="module" src="./opfc/catalog-view.mjs?v=20261022-clubs"></script>
+<link rel="stylesheet" href="./opfc/discover.css?v=20261022-palmares">
+<script type="module" src="./opfc/catalog-view.mjs?v=20261022-palmares"></script>
 </head>
 <body>
 <main class="discovery" aria-label="Catalogue OPFC : personnages et clubs">
@@ -53,9 +53,15 @@
     <input class="catalog-search" id="club-search" type="search" placeholder="Nom ou abréviation…" autocomplete="off" spellcheck="false"></div>
    <p id="club-count" class="catalog-count" aria-live="polite">Chargement des clubs…</p>
   </section>
+  <p id="club-sync-status" class="discovery-notes" role="status" aria-live="polite">Synchronisation des palmarès…</p>
   <div id="club-grid" class="club-catalog-grid" aria-label="Fiches des vingt clubs"></div>
+  <section class="discovery-panel opfc-history-panel" aria-labelledby="opfc-history-title">
+   <h2 id="opfc-history-title">📜 Historique des finales</h2>
+   <p class="caption">Les dernières rencontres enregistrées, en local et en ligne.</p>
+   <div id="opfc-results-history" class="opfc-results-history"><p class="caption">Chargement des matchs…</p></div>
+  </section>
   <p id="club-empty" class="catalog-empty" hidden>Aucun club ne correspond à ta recherche.</p>
-  <p class="discovery-notes">🏆 Les palmarès sont entièrement fictifs, inventés pour l'univers d'OPMercato FC. Ils ne donnent aucun avantage pendant les matchs.</p>
+  <p class="discovery-notes">🏆 Les trophées sont remportés pendant vos matchs et sauvegardés de manière durable. Ils ne donnent aucun avantage sportif.</p>
  </section>
  <footer class="rules-footer"><a href="./opfc.html">← Retour au menu OPFC</a></footer>
 </main>
