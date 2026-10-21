@@ -1584,3 +1584,33 @@ a{color:inherit}p{line-height:1.45}.app{width:min(100%,760px);margin:0 auto;padd
 /* Compétition avant le mercato, identique sur les deux parcours. */
 .opfc-competition-select{width:100%;min-height:47px;padding:11px 12px;border-radius:11px;background:#092739;color:#fff0d1;border:1px solid #f4d08d77;font-size:14px;font-weight:800}
 .opfc-competition-select:focus-visible{outline:3px solid #8becdb;outline-offset:3px}
+
+
+/* OPFC — Sélection visuelle des trois compétitions avant les clubs. */
+.opfc-competition-panel{margin-bottom:12px;text-align:left}
+.opfc-competition-panel>.caption{margin:0 0 12px;line-height:1.5}
+.opfc-competition-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;align-items:stretch;width:100%}
+.opfc-competition-choice{min-width:0;min-height:178px;padding:9px 6px 10px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:7px;border-radius:14px;border:1px solid #adc6d257;background:linear-gradient(155deg,#19354b,#0b2030);color:#e9f5f4;cursor:pointer;text-align:center;box-shadow:0 5px 16px #0003;transition:border-color .15s,background .15s,box-shadow .15s,transform .15s}
+.opfc-competition-choice:focus-visible{outline:3px solid #8becdb;outline-offset:2px}
+.opfc-competition-choice:active{transform:translateY(1px)}
+.opfc-competition-choice.is-selected{border:2px solid #f8d28b;background:linear-gradient(160deg,#3b4850,#112b3b);box-shadow:0 0 0 1px #f8d28b55,0 8px 22px #0007}
+.opfc-competition-visual{width:100%;height:106px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:radial-gradient(circle at 50% 45%,#d6b06a18,#07172638 75%);overflow:hidden}
+.opfc-competition-art{display:block;object-fit:contain;max-width:100%;max-height:105px;width:100%;height:100%;filter:drop-shadow(0 5px 5px #0008)}
+.opfc-competition-placeholder{display:flex;flex-direction:column;gap:4px;justify-content:center;align-items:center;background:radial-gradient(circle,#304862,#102b42 70%);border:1px dashed #e0be818a;border-radius:10px;filter:none}
+.opfc-competition-placeholder>span{font-size:37px;filter:drop-shadow(0 3px 4px #0006)}
+.opfc-competition-placeholder>small{font-size:9px;line-height:1.15;color:#bdd2db;font-weight:800}
+.opfc-competition-name{font-size:11px;font-weight:950;line-height:1.25;overflow-wrap:break-word;hyphens:auto;min-height:42px;display:flex;align-items:center;justify-content:center;color:#ffeaca}
+.opfc-competition-check{margin-top:auto;font-size:9px;font-weight:900;color:#afc4d0}
+.opfc-competition-choice.is-selected .opfc-competition-check{color:#ffdc95}
+.opfc-online-competition{margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #ffffff2b}
+.opfc-online-competition .section-title{margin-bottom:5px}
+@media(max-width:380px){
+ .opfc-competition-grid{gap:6px}
+ .opfc-competition-choice{padding:7px 4px;gap:5px;min-height:163px;border-radius:11px}
+ .opfc-competition-visual{height:83px}
+ .opfc-competition-art{max-height:82px}
+ .opfc-competition-placeholder>span{font-size:29px}
+ .opfc-competition-placeholder>small{font-size:8px}
+ .opfc-competition-name{font-size:9px;min-height:40px}
+ .opfc-competition-check{font-size:8px}
+}
