@@ -54,6 +54,21 @@ aokiji|Aokiji|6|GAR|88|OR|84|78|73|65|87|89
 kizaru|Kizaru|6|ATT|79|ARG|72|73|67|100|48|18
 koby|Koby|6|DEF|68|BRZ|54|55|57|83|72|25
 rob-lucci|Rob Lucci|6|DEF|74|BRZ|78|75|40|90|74|25
+ivankov|Ivankov|4|MIL|82|ARG|82|85|89|72|64|29
+kinemon|Kinemon|5|MIL|79|ARG|79|76|82|75|84|22
+bon-clay|Bon Clay|2|ATT|73|BRZ|54|87|57|86|30|12
+vegapunk|Vegapunk|6|MIL|65|BRZ|22|76|92|27|35|14
+kalgara|Kalgara|4|DEF|92|DIA|97|77|65|88|99|19
+imu|Imu|6|MIL|98|DIA|98|99|98|98|96|55
+dorry|Dorry|4|DEF|87|OR|97|54|52|66|99|21
+brogy|Brogy|4|DEF|86|OR|99|58|50|55|100|18
+vivi|Vivi|5|MIL|66|BRZ|25|75|80|65|35|17
+ener|Ener|4|ATT|83|ARG|84|90|60|93|25|15
+dadan|Dadan|5|GAR|70|BRZ|75|39|38|45|63|73
+cesar-clown|César Clown|6|ATT|75|ARG|65|90|65|79|25|18
+inuarashi|Inuarashi|5|ATT|85|OR|89|83|75|88|75|23
+nekomamushi|Nekomamushi|5|ATT|88|OR|96|88|64|92|66|22
+momonosuke|Momonosuké|5|GAR|77|ARG|62|51|58|70|67|80
 `.trim();
 const KEYS=['PUI','TEC','PAS','VIT','DEF','GAR'];
 export const CARDS=Object.freeze(RAW.split('\n').map(line=>{
