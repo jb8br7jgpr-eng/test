@@ -1614,3 +1614,9 @@ a{color:inherit}p{line-height:1.45}.app{width:min(100%,760px);margin:0 auto;padd
  .opfc-competition-name{font-size:9px;min-height:40px}
  .opfc-competition-check{font-size:8px}
 }
+
+
+/* Coupe du nom Grandline Champions Cup sur deux lignes, sans troncature mobile. */
+.opfc-competition-name-split{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:1px;font-size:10px;line-height:1.2}
+.opfc-competition-title-line{display:block;max-width:100%;white-space:nowrap;letter-spacing:-.15px}
+@media(max-width:380px){.opfc-competition-name-split{font-size:9px;letter-spacing:-.25px}}
