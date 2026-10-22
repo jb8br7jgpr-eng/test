@@ -122,3 +122,9 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
  .club-catalog-award-image{height:62px;max-width:67px}
  .club-catalog-awards .club-catalog-award-value{font-size:20px}
 }
+
+
+/* OPFC — Grandline Champions Cup sur deux lignes dans tous les palmarès. */
+.club-catalog-award .club-catalog-award-name-split{flex-direction:column;gap:1px;hyphens:none;overflow-wrap:normal;font-size:9px;line-height:1.2;letter-spacing:-.15px}
+.club-catalog-award-name-split span{display:block;max-width:100%;white-space:nowrap}
+@media(max-width:380px){.club-catalog-award .club-catalog-award-name-split{font-size:8.5px;letter-spacing:-.2px}}
