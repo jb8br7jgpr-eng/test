@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Catalogue — OPMercato FC</title>
 <link rel="icon" type="image/png" href="./apple-touch-icon.png">
-<link rel="stylesheet" href="./opfc/discover.css?v=opfc-finals-tab-20261022">
-<script type="module" src="./opfc/catalog-view.mjs?v=opfc-finals-tab-20261022"></script>
+<link rel="stylesheet" href="./opfc/discover.css?v=opfc-scorer-counters-20261022">
+<script type="module" src="./opfc/catalog-view.mjs?v=opfc-scorer-counters-20261022"></script>
 </head>
 <body>
 <main class="discovery" aria-label="Catalogue OPFC : personnages, clubs et finales">
@@ -42,8 +42,15 @@
      <option value="OR">Or</option><option value="ARG">Argent</option><option value="BRZ">Bronze</option>
     </select></div>
   </div>
+  <div class="catalog-filter"><label for="catalog-sort">Classer les personnages par</label>
+   <select id="catalog-sort">
+    <option value="rating">Note · décroissante</option>
+    <option value="goals">⚽ Meilleurs buteurs</option>
+    <option value="alpha">A → Z · Ordre alphabétique</option>
+   </select></div>
   <p id="catalog-count" class="catalog-count" aria-live="polite">Chargement du catalogue…</p>
  </section>
+ <p id="catalog-scorers-status" class="discovery-notes" role="status" aria-live="polite">Synchronisation des buts…</p>
  <section id="catalog-grid" class="catalog-grid" aria-label="Fiches des personnages"></section>
  <p id="catalog-empty" class="catalog-empty" hidden>Aucun personnage ne correspond à ces critères.</p>
  <p class="discovery-notes">PUI : puissance · TEC : technique · PAS : passe · VIT : vitesse · DEF : défense · GAR : gardien. Les notes effectives peuvent varier selon le poste occupé pendant le match.</p>
