@@ -43,10 +43,11 @@ export function renderOnlineLobby({stage='choose',firstClub='PSG',hostIdentity='
    '<div class="opfc-recruit-buttons">'+
    '<button type="button" class="btn '+(recruitmentMode==='auction'?'primary':'ghost')+'" data-action="online-select-recruitment" data-mode="auction" aria-pressed="'+(recruitmentMode==='auction')+'">⚖️ Mercato classique</button>'+
    '<button type="button" class="btn '+(recruitmentMode==='random'?'primary':'ghost')+'" data-action="online-select-recruitment" data-mode="random" aria-pressed="'+(recruitmentMode==='random')+'">🎲 Équipes aléatoires</button></div>'+
-   (recruitmentMode==='random'?formationPicker('online-host-formation',hostFormation,'Ta formation tactique')+
-    '<p class="caption">30 % Bronze · 30 % Argent · 30 % Or · 10 % Diamant. Toujours au bon poste.</p>':
-    '<p class="caption">Le mercato traditionnel reste inchangé.</p>')+'</section>'+
+   '<p class="caption">'+(recruitmentMode==='random'?
+    '30 % Bronze · 30 % Argent · 30 % Or · 10 % Diamant. Toujours au bon poste.':
+    'Le mercato traditionnel reste inchangé.')+'</p></section>'+
    clubSelect('online-host-identity',hostIdentity)+
+   formationPicker('online-host-formation',hostFormation,'Formation de départ')+
    '<p>Tu joueras avec <strong>'+h(pretty(hostIdentity))+'</strong>.</p>'+
    '<p class="caption">Un code privé à six caractères sera généré pour ton adversaire.</p>'+
    button('create','Générer le code du salon','primary full',busy||!configured)+'</section>';
@@ -55,9 +56,9 @@ export function renderOnlineLobby({stage='choose',firstClub='PSG',hostIdentity='
    '<label class="online-label" for="opfc-room-code">Code à 6 caractères</label>'+
    '<input id="opfc-room-code" class="online-code-input" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="10" placeholder="ABC234" value="'+h(joinCode)+'">'+
    clubSelect('online-guest-identity',guestIdentity)+
-   '<section class="opfc-recruit-choice"><h2 class="section-title">🎲 Formation si le salon joue en équipes aléatoires</h2>'+
+   '<section class="opfc-recruit-choice"><h2 class="section-title">⚽ Formation de départ</h2>'+
    formationPicker('online-guest-formation',guestFormation,'Ton schéma tactique')+
-   '<p class="caption">Cette formation sera utilisée uniquement si le créateur du salon a choisi le tirage aléatoire.</p></section>'+
+   '<p class="caption">Ta formation sera appliquée dès le départ, en Mercato classique comme en Équipes aléatoires.</p></section>'+
    '<p class="caption">Choisis un club différent de celui du créateur. Le serveur vérifiera ton choix.</p>'+
    button('join','Rejoindre le salon','primary full',busy||!configured)+'</section>';
  }else if(stage==='room'){
