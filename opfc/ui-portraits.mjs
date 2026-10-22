@@ -1,5 +1,5 @@
-/** Portraits OFFICIELS OPFC : les 50 fichiers WebP originaux du dossier
- * portraits_opfc/, copiés sans modification depuis main vers opfc-development.
+/** Portraits OFFICIELS OPFC : les portraits WebP du dossier
+ * portraits_opfc/, (50 originaux et 15 nouveaux, fichiers conservés sans modification).
  * Mapping explicite 1:1 entre les IDs officiels et les noms de fichiers.
  * Le monogramme n'est qu'un secours si une image ne charge pas.
  */
@@ -56,7 +56,22 @@ const PORTRAIT_NAMES=Object.freeze({
  'aokiji':'aokiji',
  'kizaru':'kizaru',
  'koby':'koby',
- 'rob-lucci':'lucci'
+ 'rob-lucci':'lucci',
+ 'ivankov':'ivankov',
+ 'kinemon':'kinemon',
+ 'bon-clay':'bonclay',
+ 'vegapunk':'vegapunk',
+ 'kalgara':'kalgara',
+ 'imu':'imu',
+ 'dorry':'dorry',
+ 'brogy':'brogy',
+ 'vivi':'vivi',
+ 'ener':'ener',
+ 'dadan':'dadan',
+ 'cesar-clown':'cesarclown',
+ 'inuarashi':'inuarashi',
+ 'nekomamushi':'nekomamushi',
+ 'momonosuke':'momonosuke'
 });
 const h=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export const portraitFile=id=>PORTRAIT_NAMES[id]?
