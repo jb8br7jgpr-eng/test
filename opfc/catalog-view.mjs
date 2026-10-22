@@ -71,7 +71,8 @@ function clubHtml(club){
  if(!honours||!logo)throw new Error('Fiche de club incomplète : '+club.id);
  const trophies=CLUB_TROPHIES.map(t=>
   '<li class="club-catalog-award" aria-label="'+esc(t.name)+' : '+esc(honours[t.key])+' titre(s)">'+
-  '<span class="club-catalog-award-name">'+esc(t.name)+'</span>'+
+  '<span class="club-catalog-award-name'+(t.key==='grandline'?' club-catalog-award-name-split':'')+'">'+
+  (t.key==='grandline'?'<span>Grandline</span><span>Champions Cup</span>':esc(t.name))+'</span>'+
   '<img class="club-catalog-award-image" src="'+esc(t.image)+'" alt="Trophée de '+esc(t.name)+'" loading="lazy" decoding="async">'+
   '<strong class="club-catalog-award-value">'+esc(honours[t.key])+'</strong>'+
   '</li>').join('');
