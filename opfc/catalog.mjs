@@ -69,6 +69,16 @@ cesar-clown|César Clown|6|ATT|75|ARG|65|90|65|79|25|18
 inuarashi|Inuarashi|5|ATT|85|OR|89|83|75|88|75|23
 nekomamushi|Nekomamushi|5|ATT|88|OR|96|88|64|92|66|22
 momonosuke|Momonosuké|5|GAR|77|ARG|62|51|58|70|67|80
+magellan|Magellan|6|GAR|85|OR|95|48|58|42|85|86
+pedro|Pedro|5|DEF|76|ARG|77|72|62|91|74|19
+bartolomeo|Bartolomeo|3|DEF|78|ARG|69|66|67|52|93|18
+fujitora|Fujitora|6|DEF|79|ARG|86|86|76|50|85|30
+shiryu|Shiryu|1|MIL|83|ARG|90|86|78|87|77|24
+reiju|Reiju|5|MIL|74|BRZ|72|76|73|84|59|18
+carrot|Carrot|5|MIL|69|BRZ|50|68|70|95|45|12
+smoker|Smoker|6|ATT|76|ARG|90|77|55|72|65|22
+bepo|Bepo|3|ATT|71|BRZ|79|66|48|80|52|18
+corazon|Corazon|6|ATT|74|BRZ|63|78|72|85|43|18
 `.trim();
 const KEYS=['PUI','TEC','PAS','VIT','DEF','GAR'];
 export const CARDS=Object.freeze(RAW.split('\n').map(line=>{
