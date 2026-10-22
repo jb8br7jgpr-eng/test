@@ -3,9 +3,13 @@ import {normalizeRoomCode} from './online-protocol.mjs';
 import {DISPLAY_CLUBS,DISPLAY_BY_ID,displayAbbr} from './club-identities.mjs';
 import {renderIdentityCrest} from './ui-portraits.mjs';
 import {competitionName,renderCompetitionPicker} from './club-honours.mjs?v=opfc-trophees-20261022';
+import {FORMATIONS} from './rules.mjs';
 const h=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const button=(act,label,style='ghost',disabled=false)=>'<button type="button" class="btn '+style+
  '" data-action="online-'+act+'" '+(disabled?'disabled aria-disabled="true"':'')+'>'+h(label)+'</button>';
+const formationPicker=(id,current,label)=>'<div class="form-box opfc-random-formation"><label for="'+id+'">'+label+'</label>'+
+ '<select id="'+id+'" data-action="'+id+'">'+Object.keys(FORMATIONS).map(v=>
+ '<option value="'+v+'"'+(current===v?' selected':'')+'>'+v+'</option>').join('')+'</select></div>';
 const note=()=>'<p class="online-status-note" role="status">La connexion aux salons est indisponible. Réessaie plus tard.</p>';
 const pretty=id=>DISPLAY_BY_ID.get(id)?.name??'Club inconnu';
 function clubSelect(action,chosen){
@@ -18,7 +22,7 @@ function clubSelect(action,chosen){
  '<span class="opfc-picked-name"><strong>'+h(displayAbbr(chosen))+'</strong><small>'+h(pretty(chosen))+'</small></span></span></div>';
 }
 export function renderOnlineLobby({stage='choose',firstClub='PSG',hostIdentity='PSG',guestIdentity='OM',room=null,configured=false,
- joinCode='',busy=false,error='',gameActive=false,competition='league'}={}){
+ joinCode='',busy=false,error='',gameActive=false,competition='league',recruitmentMode='auction',hostFormation='2-2-2',guestFormation='2-2-2'}={}){
  const nav='<div class="online-nav">'+button('back','← Retour','ghost small')+'</div>';
  let out='<section class="online-wrapper"><span class="eyebrow">OPMercato FC · Deux iPhone</span>'+
  '<h1 class="page-title">Mode en ligne</h1>'+
@@ -34,6 +38,13 @@ export function renderOnlineLobby({stage='choose',firstClub='PSG',hostIdentity='
    '<div class="opfc-competition-panel opfc-online-competition"><h2 class="section-title">🏆 Choisis ta compétition</h2>'+
    '<p class="caption">Le créateur sélectionne le trophée disputé pendant cette finale.</p>'+
    renderCompetitionPicker(competition,'online-select-competition')+'</div>'+
+   '<section class="opfc-recruit-choice" aria-label="Type de recrutement"><h2 class="section-title">⚽ Choisis comment composer les équipes</h2>'+
+   '<div class="opfc-recruit-buttons">'+
+   '<button type="button" class="btn '+(recruitmentMode==='auction'?'primary':'ghost')+'" data-action="online-select-recruitment" data-mode="auction" aria-pressed="'+(recruitmentMode==='auction')+'">⚖️ Mercato classique</button>'+
+   '<button type="button" class="btn '+(recruitmentMode==='random'?'primary':'ghost')+'" data-action="online-select-recruitment" data-mode="random" aria-pressed="'+(recruitmentMode==='random')+'">🎲 Équipes aléatoires</button></div>'+
+   (recruitmentMode==='random'?formationPicker('online-host-formation',hostFormation,'Ta formation tactique')+
+    '<p class="caption">30 % Bronze · 30 % Argent · 30 % Or · 10 % Diamant. Toujours au bon poste.</p>':
+    '<p class="caption">Le mercato traditionnel reste inchangé.</p>')+'</section>'+
    clubSelect('online-host-identity',hostIdentity)+
    '<p>Tu joueras avec <strong>'+h(pretty(hostIdentity))+'</strong>.</p>'+
    '<p class="caption">Un code privé à six caractères sera généré pour ton adversaire.</p>'+
@@ -43,6 +54,9 @@ export function renderOnlineLobby({stage='choose',firstClub='PSG',hostIdentity='
    '<label class="online-label" for="opfc-room-code">Code à 6 caractères</label>'+
    '<input id="opfc-room-code" class="online-code-input" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="10" placeholder="ABC234" value="'+h(joinCode)+'">'+
    clubSelect('online-guest-identity',guestIdentity)+
+   '<section class="opfc-recruit-choice"><h2 class="section-title">🎲 Formation si le salon joue en équipes aléatoires</h2>'+
+   formationPicker('online-guest-formation',guestFormation,'Ton schéma tactique')+
+   '<p class="caption">Cette formation sera utilisée uniquement si le créateur du salon a choisi le tirage aléatoire.</p></section>'+
    '<p class="caption">Choisis un club différent de celui du créateur. Le serveur vérifiera ton choix.</p>'+
    button('join','Rejoindre le salon','primary full',busy||!configured)+'</section>';
  }else if(stage==='room'){
@@ -51,7 +65,8 @@ export function renderOnlineLobby({stage='choose',firstClub='PSG',hostIdentity='
   const mine=room.clubChoices?.[room.myClub]??room.myClub;
   const theirs=room.clubChoices?.[room.myClub==='PSG'?'OM':'PSG'];
   out+='<section class="panel online-lobby-card"><span class="eyebrow">'+(linked?'Adversaire connecté':'En attente de l’adversaire')+'</span>'+
-   '<h2>Salon '+h(room.role==='host'?'créé':'rejoint')+'</h2>'+ '<p class="caption">🏆 '+h(competitionName(room.competition))+'</p>'+ 
+   '<h2>Salon '+h(room.role==='host'?'créé':'rejoint')+'</h2>'+ '<p class="caption">🏆 '+h(competitionName(room.competition))+'</p>'+
+   '<p class="caption">'+(room.recruitmentMode==='random'?'🎲 Équipes aléatoires':'⚖️ Mercato classique')+'</p>'+ 
    '<p class="online-room-code" aria-label="Code du salon">'+h(room.code)+'</p>'+
    '<div class="online-room-actions">'+button('copy-code','Copier le code','ghost small')+
    button('refresh','Actualiser','ghost small',busy||!configured)+'</div>'+
