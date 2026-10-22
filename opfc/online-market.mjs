@@ -50,6 +50,8 @@ export function onlineMarketPublicView(state,club){
   version:state.version,phase:state.phase,
   teams:state.teams.map(safeTeam),
   dice:[...state.dice],
+  ...(state.recruitmentMode==='random'&&state.randomReveal?
+   {reveal:{step:state.randomReveal.step,ready:{PSG:!!state.randomReveal.ready.PSG,OM:!!state.randomReveal.ready.OM}}}:{}),
   auction:currentAuction?{
    cardId:currentAuction.cardId,
    priority:currentAuction.priority,turn:currentAuction.turn,
