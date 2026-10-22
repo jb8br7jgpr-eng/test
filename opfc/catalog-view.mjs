@@ -164,28 +164,81 @@ const formatDate=value=>{
  try{return new Intl.DateTimeFormat('fr-FR',{dateStyle:'medium',timeStyle:'short'}).format(new Date(value));}
  catch{return 'Date inconnue';}
 };
-function renderHistory(history){
- if(!history.length){
-  historyRoot.innerHTML='<p class="caption">Aucune finale disputée pour le moment. Les 20 clubs débutent sans trophée.</p>';
-  return;
- }
- historyRoot.innerHTML=history.slice(0,100).map(g=>{
-  const home=clubById.get(g.home_club),away=clubById.get(g.away_club);
-  const comp=compById.get(g.competition);
-  if(!home||!away||!comp)return '';
-  const score=String(g.home_score)+' – '+String(g.away_score);
-  const tab=g.shootout?' · TAB '+esc(g.shootout.home)+' – '+esc(g.shootout.away):'';
-  const logo=id=>'<img src="'+esc(clubLogoFile(id))+'" alt="" width="32" height="32" loading="lazy">';
-  const winner=clubById.get(g.winner);
-  return '<article class="opfc-history-match">'+
-   '<div class="opfc-history-meta"><span>'+esc(comp.icon)+' '+esc(comp.name)+'</span><span>'+esc(formatDate(g.played_at))+' · '+(g.mode==='online'?'En ligne':'Local')+'</span></div>'+
-   '<div class="opfc-history-teams"><span>'+logo(home.id)+'<strong>'+esc(displayAbbr(home.id))+'</strong></span>'+
-   '<div class="opfc-history-score"><strong>'+esc(score)+'</strong>'+(tab?'<small>'+tab+'</small>':'')+'</div>'+
-   '<span>'+logo(away.id)+'<strong>'+esc(displayAbbr(away.id))+'</strong></span></div>'+
-   '<p class="opfc-history-champion">🏆 '+esc(winner?.name??'Club vainqueur')+'</p>'+
-   '</article>';
- }).join('');
+
+/* Les 100 finales officielles les plus récentes, fournies par l'API OPFC existante. */
+const historyRoot=document.getElementById('opfc-results-history');
+const finalsSearch=document.getElementById('finals-search');
+const finalsCompetition=document.getElementById('finals-competition');
+const finalsMode=document.getElementById('finals-mode');
+const finalsCount=document.getElementById('finals-count');
+const finalsStatus=document.getElementById('finals-sync-status');
+const finalsPrevious=document.getElementById('finals-prev');
+const finalsNext=document.getElementById('finals-next');
+const finalsPageLabel=document.getElementById('finals-page-label');
+const PAGE_SIZE=20;
+let historyItems=[],historyPage=0,historySignature='';
+
+function renderGoals(goals,slot){
+ const own=goals.filter(g=>g.club===slot);
+ if(!own.length)return '<p class="caption">Aucun but inscrit</p>';
+ return own.map(g=>'<div class="finals-goal">⚽ '+esc(CARD_BY_ID.get(g.cardId)?.name??g.cardId)+
+  ' <span>'+esc(g.minute)+'e</span></div>').join('');
 }
+function renderHistoryCard(g){
+ const home=clubById.get(g.home_club),away=clubById.get(g.away_club);
+ const comp=compById.get(g.competition);
+ if(!home||!away||!comp)return '';
+ const logo=id=>'<img src="'+esc(clubLogoFile(id))+'" alt="" width="52" height="52" loading="lazy" decoding="async">';
+ const winner=clubById.get(g.winner);
+ const tab=g.shootout?' · TAB '+esc(g.shootout.home)+' – '+esc(g.shootout.away):'';
+ const goals=Array.isArray(g.goals)?g.goals:[];
+ return '<article class="opfc-history-match">'+
+  '<div class="opfc-history-meta"><span>'+esc(comp.icon)+' '+esc(comp.name)+'</span>'+
+  '<span>'+esc(formatDate(g.played_at))+'</span></div>'+
+  '<div class="opfc-history-mode">'+(g.mode==='online'?'🌐 En ligne':'🏠 Local')+'</div>'+
+  '<div class="opfc-history-teams">'+
+  '<span>'+logo(home.id)+'<strong>'+esc(displayAbbr(home.id))+'</strong><small>'+esc(home.name)+'</small></span>'+
+  '<div class="opfc-history-score"><strong>'+esc(g.home_score)+' – '+esc(g.away_score)+'</strong>'+
+  '<small>Score final'+tab+'</small></div>'+
+  '<span>'+logo(away.id)+'<strong>'+esc(displayAbbr(away.id))+'</strong><small>'+esc(away.name)+'</small></span></div>'+
+  '<p class="opfc-history-champion">🏆 Champion : '+esc(winner?.name??'Club vainqueur')+'</p>'+
+  '<details class="opfc-history-details" data-result-id="'+esc(g.source_key)+'">'+
+  '<summary>Voir les buteurs <span>⌄</span></summary>'+
+  '<div class="opfc-history-goals"><div><h4>'+esc(home.name)+'</h4>'+renderGoals(goals,'PSG')+'</div>'+
+  '<div><h4>'+esc(away.name)+'</h4>'+renderGoals(goals,'OM')+'</div></div></details></article>';
+}
+function filteredHistory(){
+ const q=compact(finalsSearch.value),competition=finalsCompetition.value,mode=finalsMode.value;
+ return historyItems.filter(g=>{
+  const home=clubById.get(g.home_club),away=clubById.get(g.away_club);
+  return (!competition||g.competition===competition)&&(!mode||g.mode===mode)&&
+   (!q||compact([home?.name,away?.name,displayAbbr(g.home_club),displayAbbr(g.away_club)].join(' ')).includes(q));
+ });
+}
+function renderHistory(){
+ const data=filteredHistory(),pages=Math.max(1,Math.ceil(data.length/PAGE_SIZE));
+ historyPage=Math.min(historyPage,pages-1);
+ const first=historyPage*PAGE_SIZE;
+ const expanded=new Set([...historyRoot.querySelectorAll('details[open]')].map(el=>el.dataset.resultId));
+ historyRoot.innerHTML=data.length?data.slice(first,first+PAGE_SIZE).map(renderHistoryCard).join(''):
+  '<p class="catalog-empty">'+(historyItems.length?'Aucune finale ne correspond aux filtres.':'Aucune finale enregistrée pour le moment.')+'</p>';
+ for(const el of historyRoot.querySelectorAll('details'))if(expanded.has(el.dataset.resultId))el.open=true;
+ finalsCount.innerHTML='<strong>'+data.length+'</strong> finale'+(data.length===1?'':'s')+' dans les archives récentes';
+ finalsPrevious.disabled=historyPage===0;
+ finalsNext.disabled=historyPage>=pages-1;
+ finalsPageLabel.textContent='Page '+(historyPage+1)+' / '+pages;
+}
+for(const el of [finalsSearch,finalsCompetition,finalsMode]){
+ el.addEventListener(el===finalsSearch?'input':'change',()=>{historyPage=0;renderHistory();});
+}
+finalsPrevious.addEventListener('click',()=>{
+ if(historyPage>0){historyPage--;renderHistory();finalPanel.scrollIntoView({block:'start'});}
+});
+finalsNext.addEventListener('click',()=>{
+ if(historyPage<Math.ceil(filteredHistory().length/PAGE_SIZE)-1){
+  historyPage++;renderHistory();finalPanel.scrollIntoView({block:'start'});
+ }
+});
 async function refreshPalmares(){
  try{
   const data=await loadTrophyHistory();
@@ -195,17 +248,24 @@ async function refreshPalmares(){
     fresh[item.club][item.competition]=Math.max(0,Number(item.titles)||0);
   }
   liveHonours=fresh;
-  clubRoot.innerHTML=DISPLAY_CLUBS.map(clubHtml).join('');
-  clubElements=[...clubRoot.querySelectorAll('.club-catalog-card')];
-  updateClubs();
-  renderHistory(data.history);
-  clubStatus.textContent='✅ Palmarès synchronisés · '+data.history.length+' finale'+(data.history.length===1?'':'s')+' dans l’historique récent.';
+  paintClubs();
+  const signature=JSON.stringify(data.history);
+  if(signature!==historySignature){
+   historySignature=signature;
+   historyItems=[...data.history].sort((a,b)=>
+    new Date(b.played_at)-new Date(a.played_at)||
+    String(b.source_key).localeCompare(String(a.source_key)));
+   renderHistory();
+  }
+  clubStatus.textContent='✅ Palmarès synchronisés';
+  finalsStatus.textContent=data.history.length>=100?
+   '✅ Résultats synchronisés · 100 finales les plus récentes affichables.':
+   '✅ Historique synchronisé · '+data.history.length+' finale'+(data.history.length===1?'':'s')+' enregistrée'+(data.history.length===1?'':'s')+'.';
  }catch{
   clubStatus.textContent='Connexion au palmarès indisponible. Les chiffres affichés ne sont pas à jour.';
-  historyRoot.innerHTML='<p class="caption">Impossible de charger les finales. Réessaie avec une connexion Internet.</p>';
-  // Ne pas afficher un total fictif à zéro comme si la donnée était fiable.
+  finalsStatus.textContent='Connexion à l’historique indisponible. Réessaie avec Internet.';
   if(!liveHonours){
-   for(const value of clubRoot.querySelectorAll('.club-catalog-award-value,.club-catalog-total'))
+   for(const value of clubRoot.querySelectorAll('.club-catalog-award-value,.club-catalog-total strong'))
     value.textContent='—';
   }
  }
