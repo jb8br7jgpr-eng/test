@@ -1,7 +1,7 @@
 /** OPFC — Bloc 9A : accueil, mercato et stade local iPhone. */
 import {createGame,bid,pass,useKings,useObservation,acceptSolo,chooseFormation,place,ready} from './engine.mjs';
 import {generateRandomTeams} from './random-rosters.mjs?v=opfc-duo-20261022';
-import {renderFormationPreview} from './formation-preview.mjs';
+import {renderFormationPreview} from './formation-preview.mjs?v=opfc-setup-classic-20261022';
 import {pitchMarkings} from './pitch-markings.mjs';
 import {CARD_BY_ID} from './catalog.mjs';
 import {DISPLAY_CLUBS,currentClubChoices,setDisplayedClubs,setDisplayedChoices,visualAbbr,displayAbbr} from './club-identities.mjs';
@@ -9,8 +9,8 @@ import {renderCharacterPortrait,renderClubCrest,renderIdentityCrest} from './ui-
 import {effectiveRating,lineupDetails} from './rules.mjs';
 import {FORMATION_NAMES,uiAuction,uiTeam,uiRoster,cardStats,currentAuctionEnding,clubName} from './ui-model.mjs';
 import {renderMatchScreen,matchRequiresPrivacy,dispatchOpenMatch} from './ui-match.mjs?v=opfc-trophees-20261022';
-import {createOnlineClient} from './online-client.mjs?v=opfc-duo-20261022';
-import {renderOnlineLobby,normalizeJoinCodeInput} from './ui-online.mjs?v=opfc-duo-20261022';
+import {createOnlineClient} from './online-client.mjs?v=opfc-setup-classic-20261022';
+import {renderOnlineLobby,normalizeJoinCodeInput} from './ui-online.mjs?v=opfc-setup-classic-20261022';
 import {renderOnlineGame} from './ui-online-game.mjs?v=opfc-trophees-20261022';
 import {CLUB_TROPHIES,isCompetition,competitionName,renderCompetitionPicker} from './club-honours.mjs?v=opfc-trophees-20261022';
 import {queueFinishedLocalGame,syncQueuedLocalResults,pendingLocalResultsCount} from './trophy-service.mjs';
