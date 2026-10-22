@@ -2,6 +2,7 @@
 import {createGame,bid,pass,useKings,useObservation,acceptSolo,chooseFormation,place,ready} from './engine.mjs';
 import {generateRandomTeams} from './random-rosters.mjs?v=opfc-duo-20261022';
 import {renderFormationPreview} from './formation-preview.mjs';
+import {pitchMarkings} from './pitch-markings.mjs';
 import {CARD_BY_ID} from './catalog.mjs';
 import {DISPLAY_CLUBS,currentClubChoices,setDisplayedClubs,setDisplayedChoices,visualAbbr,displayAbbr} from './club-identities.mjs';
 import {renderCharacterPortrait,renderClubCrest,renderIdentityCrest} from './ui-portraits.mjs';
@@ -385,31 +386,29 @@ function welcome(){
  '<section class="panel intro-panel opfc-competition-panel"><h2 class="section-title">🏆 Choisis ta compétition</h2>'+
  '<p class="caption">Sélectionne le trophée à disputer avant de choisir les clubs.</p>'+
  renderCompetitionPicker(localCompetition,'local-select-competition')+'</section>'+
- '<section class="panel intro-panel"><h2 class="section-title">Choisis les deux clubs</h2>'+
- '<p class="caption">'+DISPLAY_CLUBS.length+' clubs One Piece au choix, sans doublon. Chaque équipe garde les mêmes règles.</p>'+
- '<div class="opfc-club-pickers">'+['PSG','OM'].map((slot,i)=>{
-  const chosen=DISPLAY_CLUBS.find(c=>c.id===localClubChoices[slot]);
-  return '<div class="opfc-club-picker"><label for="club-identity-'+slot+'">Joueur '+(i+1)+'</label>'+
-  '<select id="club-identity-'+slot+'" data-action="club-identity" data-club="'+slot+'">'+
-  DISPLAY_CLUBS.map(c=>'<option value="'+c.id+'"'+(localClubChoices[slot]===c.id?' selected':'')+'>'+esc(c.name)+' ('+esc(displayAbbr(c.id))+')</option>').join('')+
-  '</select><span class="opfc-club-picked" style="border-left-color:'+chosen.primary+'">'+
-  renderIdentityCrest(chosen.id,'select-crest')+
-  '<span class="opfc-picked-name"><strong>'+esc(displayAbbr(chosen.id))+'</strong><small>'+esc(chosen.name)+'</small></span></span></div>';
- }).join('')+'</div></section>'+
- '<section class="panel intro-panel opfc-recruit-choice"><h2 class="section-title">⚽ Comment composer les équipes ?</h2>'+
- '<div class="opfc-recruit-buttons">'+
+ '<section class="panel intro-panel opfc-setup-mode" aria-label="Comment composer les équipes ?">'+
+ '<div class="opfc-recruit-buttons opfc-recruit-buttons-local">'+
  btn('local-recruit-auction','⚖️ Mercato classique',(localRecruitmentMode==='auction'?'primary':'ghost')+' full',false,'aria-pressed="'+(localRecruitmentMode==='auction')+'"')+
- btn('local-recruit-random','🎲 Équipes aléatoires',(localRecruitmentMode==='random'?'primary':'ghost')+' full',false,'aria-pressed="'+(localRecruitmentMode==='random')+'"')+'</div>'+
- '<p class="caption">'+(localRecruitmentMode==='random'?
-  'Chaque joueur reçoit sept personnages à leur poste naturel · Bronze 30 %, Argent 30 %, Or 30 %, Diamant 10 %.':
-  'Les enchères, budgets et mécaniques du mercato restent inchangés.')+'</p></section>'+
- '<section class="panel intro-panel"><h2 class="section-title">'+
- (localRecruitmentMode==='random'?'Choisis les formations avant le tirage':'Formations de départ')+
- '</h2><div class="formation-picker">'+
- ['PSG','OM'].map((id,i)=>'<div class="form-box"><label for="initial-'+id+'">Joueur '+(i+1)+' · '+esc(displayAbbr(localClubChoices[id]))+'</label><select id="initial-'+id+'" data-action="initial-formation" data-club="'+id+'">'+options(FORMATION_NAMES,beforeForm[id])+'</select>'+(localRecruitmentMode==='random'?renderFormationPreview(beforeForm[id]):'')+'</div>').join('')+
- '</div><p class="caption">'+(localRecruitmentMode==='random'?
- 'Les personnages seront tirés selon ces postes, sans aucun doublon.':
- 'Modifiables pendant le mercato puis à la mi-temps.')+'</p></section>'+
+ btn('local-recruit-random','🎲 Équipes aléatoires',(localRecruitmentMode==='random'?'primary':'ghost')+' full',false,'aria-pressed="'+(localRecruitmentMode==='random')+'"')+
+ '</div></section>'+
+ '<section class="opfc-local-player-grid" aria-label="Préparation des deux joueurs">'+
+ ['PSG','OM'].map((id,index)=>{
+  const chosen=DISPLAY_CLUBS.find(c=>c.id===localClubChoices[id]);
+  return '<article class="panel opfc-setup-player">'+
+  '<h2>Joueur '+(index+1)+'</h2>'+
+  '<div class="opfc-club-picker"><label for="club-identity-'+id+'">Choix du club</label>'+
+  '<select id="club-identity-'+id+'" data-action="club-identity" data-club="'+id+'">'+
+  DISPLAY_CLUBS.map(c=>'<option value="'+c.id+'"'+(localClubChoices[id]===c.id?' selected':'')+'>'+esc(c.name)+' ('+esc(displayAbbr(c.id))+')</option>').join('')+
+  '</select>'+
+  '<div class="opfc-club-picked" style="border-left-color:'+chosen.primary+'">'+
+  renderIdentityCrest(chosen.id,'select-crest')+
+  '<div class="opfc-picked-name"><strong>'+esc(displayAbbr(chosen.id))+'</strong><small>'+esc(chosen.name)+'</small></div></div></div>'+
+  '<div class="opfc-setup-formation"><label for="initial-'+id+'">Formation de départ</label>'+
+  '<select id="initial-'+id+'" data-action="initial-formation" data-club="'+id+'">'+
+  options(FORMATION_NAMES,beforeForm[id])+'</select></div>'+
+  renderFormationPreview(beforeForm[id])+
+  '</article>';
+ }).join('')+'</section>'+
  '<div class="intro-actions">'+
  (game?'<section class="panel opfc-resume-card"><p>Une partie locale est sauvegardée sur cet appareil.</p>'+btn('resume-local','▶ Reprendre ma partie','ghost full')+'</section>':'')+
  btn('start',game?'Créer une nouvelle partie':localRecruitmentMode==='random'?'🎲 Tirer les deux équipes':'Lancer le match · 2 joueurs','primary full')+'</div></main>';
@@ -505,18 +504,6 @@ function sale({ownClub=null}={}){
  '</section></div>';
 }
 // Dessin partagé par tous les écrans (placement, compositions et match).
-function pitchMarkings(){
- return '<div class="pitch-markings" aria-hidden="true">'+
- '<span class="pitch-outline"></span>'+
- '<span class="pitch-center-line"></span><span class="pitch-center-circle"></span><span class="pitch-center-spot"></span>'+
- '<span class="pitch-penalty-area pitch-penalty-top"></span><span class="pitch-penalty-area pitch-penalty-bottom"></span>'+
- '<span class="pitch-goal-area pitch-goal-area-top"></span><span class="pitch-goal-area pitch-goal-area-bottom"></span>'+
- '<span class="pitch-penalty-spot pitch-penalty-spot-top"></span><span class="pitch-penalty-spot pitch-penalty-spot-bottom"></span>'+
- '<span class="pitch-goal pitch-goal-top"></span><span class="pitch-goal pitch-goal-bottom"></span>'+
- '<span class="pitch-corner pitch-corner-tl"></span><span class="pitch-corner pitch-corner-tr"></span>'+
- '<span class="pitch-corner pitch-corner-bl"></span><span class="pitch-corner pitch-corner-br"></span>'+
- '</div>';
-}
 function fieldHalf(team,top){
  const u=uiTeam(team),positions=top?['GAR','DEF','MIL','ATT']:['ATT','MIL','DEF','GAR'];
  const spectator=onlineOwnClubScope!==null?
