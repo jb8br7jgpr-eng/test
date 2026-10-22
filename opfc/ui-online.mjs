@@ -4,7 +4,7 @@ import {DISPLAY_CLUBS,DISPLAY_BY_ID,displayAbbr} from './club-identities.mjs';
 import {renderIdentityCrest} from './ui-portraits.mjs';
 import {competitionName,renderCompetitionPicker} from './club-honours.mjs?v=opfc-trophees-20261022';
 import {FORMATIONS} from './rules.mjs';
-import {renderFormationPreview} from './formation-preview.mjs';
+import {renderFormationPreview} from './formation-preview.mjs?v=opfc-setup-classic-20261022';
 const h=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const button=(act,label,style='ghost',disabled=false)=>'<button type="button" class="btn '+style+
  '" data-action="online-'+act+'" '+(disabled?'disabled aria-disabled="true"':'')+'>'+h(label)+'</button>';
