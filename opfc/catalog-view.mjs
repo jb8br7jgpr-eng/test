@@ -1,5 +1,5 @@
 /** Catalogue OPFC : personnages et clubs. Affichage en lecture seule, sans incidence sur le jeu. */
-import {CARDS} from './catalog.mjs';
+import {CARDS,CARD_BY_ID} from './catalog.mjs';
 import {portraitFile} from './ui-portraits.mjs';
 import {DISPLAY_CLUBS,displayAbbr,clubLogoFile} from './club-identities.mjs';
 import {CLUB_HONOURS,CLUB_TROPHIES} from './club-honours.mjs?v=opfc-trophees-20261022';
@@ -58,13 +58,22 @@ update();
 /* Section clubs : mêmes identités et mêmes logos que dans les menus du jeu. */
 const clubRoot=document.getElementById('club-grid');
 const clubSearch=document.getElementById('club-search');
+const clubSort=document.getElementById('club-sort');
 const clubCount=document.getElementById('club-count');
 const clubEmpty=document.getElementById('club-empty');
 const clubStatus=document.getElementById('club-sync-status');
-const historyRoot=document.getElementById('opfc-results-history');
 let liveHonours=null;
 
-function clubHtml(club){
+const clubTotal=club=>CLUB_TROPHIES.reduce((sum,t)=>sum+(liveHonours?.[club.id]?.[t.key]??0),0);
+function sortedClubs(){
+ const mode=clubSort.value;
+ const names=(a,b)=>a.name.localeCompare(b.name,'fr');
+ return [...DISPLAY_CLUBS].sort((a,b)=>mode==='alpha'?names(a,b):
+  mode==='total'?clubTotal(b)-clubTotal(a)||names(a,b):
+  (liveHonours?.[b.id]?.[mode]??0)-(liveHonours?.[a.id]?.[mode]??0)||
+  clubTotal(b)-clubTotal(a)||names(a,b));
+}
+function clubHtml(club,rank){
  const honours=liveHonours?.[club.id]??CLUB_HONOURS[club.id];
  const logo=clubLogoFile(club.id);
  const abbr=displayAbbr(club.id);
@@ -78,7 +87,7 @@ function clubHtml(club){
   '</li>').join('');
  const total=CLUB_TROPHIES.reduce((sum,t)=>sum+honours[t.key],0);
  return '<article class="discovery-panel club-catalog-card" data-search="'+esc(compact(club.name+' '+abbr))+'" style="--club-color:'+esc(club.secondary)+'">'+
-  '<div class="club-catalog-banner"><img src="'+esc(logo)+'" alt="Écusson de '+esc(club.name)+'" loading="lazy" decoding="async"></div>'+
+  '<div class="club-catalog-banner"><span class="club-catalog-rank" aria-label="Position '+rank+'">#'+rank+'</span><img src="'+esc(logo)+'" alt="Écusson de '+esc(club.name)+'" loading="lazy" decoding="async"></div>'+
   '<div class="club-catalog-identity"><h2 class="club-catalog-name">'+esc(club.name)+'</h2>'+
   '<div class="club-catalog-identifier"><strong>'+esc(abbr)+'</strong><span>CLUB OPFC</span></div></div>'+
   '<div class="club-catalog-honours"><div class="club-catalog-honours-head"><h3>Palmarès officiel</h3>'+
@@ -86,7 +95,12 @@ function clubHtml(club){
   '<ul class="club-catalog-awards">'+trophies+'</ul></div></article>';
 }
 
-clubRoot.innerHTML=DISPLAY_CLUBS.map(clubHtml).join('');
+function paintClubs(){
+ clubRoot.innerHTML=sortedClubs().map((club,i)=>clubHtml(club,i+1)).join('');
+ clubElements=[...clubRoot.querySelectorAll('.club-catalog-card')];
+ updateClubs();
+}
+clubRoot.innerHTML=sortedClubs().map((club,i)=>clubHtml(club,i+1)).join('');
 let clubElements=[...clubRoot.querySelectorAll('.club-catalog-card')];
 function updateClubs(){
  const q=compact(clubSearch.value);
@@ -100,45 +114,45 @@ function updateClubs(){
  clubEmpty.hidden=visible!==0;
 }
 clubSearch.addEventListener('input',updateClubs);
+clubSort.addEventListener('change',paintClubs);
 updateClubs();
 
-/* Onglets accessibles ; un lien direct #clubs ouvre aussi la galerie. */
+/* Trois onglets accessibles, liens directs #clubs et #finales. */
 const characterPanel=document.getElementById('catalog-characters');
 const clubPanel=document.getElementById('catalog-clubs');
+const finalPanel=document.getElementById('catalog-finals');
 const characterTab=document.getElementById('catalog-tab-characters');
 const clubTab=document.getElementById('catalog-tab-clubs');
+const finalTab=document.getElementById('catalog-tab-finals');
+const panels={characters:characterPanel,clubs:clubPanel,finals:finalPanel};
+const tabs={characters:characterTab,clubs:clubTab,finals:finalTab};
+const hashes={characters:'#personnages',clubs:'#clubs',finals:'#finales'};
 characterTab.querySelector('.catalog-tab-count').textContent=CARDS.length;
 clubTab.querySelector('.catalog-tab-count').textContent=DISPLAY_CLUBS.length;
 function selectCatalogTab(tab){
- const isClub=tab==='clubs';
- characterPanel.hidden=isClub;
- clubPanel.hidden=!isClub;
- for(const [button,active] of [[characterTab,!isClub],[clubTab,isClub]]){
+ const chosen=Object.hasOwn(panels,tab)?tab:'characters';
+ for(const [id,panel] of Object.entries(panels))panel.hidden=id!==chosen;
+ for(const [id,button] of Object.entries(tabs)){
+  const active=id===chosen;
   button.classList.toggle('is-active',active);
   button.setAttribute('aria-selected',String(active));
   button.tabIndex=active?0:-1;
  }
 }
 function syncCatalogTab(){
- selectCatalogTab(window.location.hash==='#clubs'?'clubs':'characters');
+ const hash=window.location.hash;
+ selectCatalogTab(hash==='#clubs'?'clubs':hash==='#finales'?'finals':'characters');
 }
-characterTab.addEventListener('click',()=>{
- selectCatalogTab('characters');
- window.location.hash='#personnages';
-});
-clubTab.addEventListener('click',()=>{
- selectCatalogTab('clubs');
- window.location.hash='#clubs';
-});
-for(const [button,tabName] of [[characterTab,'characters'],[clubTab,'clubs']]){
+for(const [id,button] of Object.entries(tabs)){
+ button.addEventListener('click',()=>{selectCatalogTab(id);window.location.hash=hashes[id];});
  button.addEventListener('keydown',event=>{
+  const order=['characters','clubs','finals'];
   if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
   event.preventDefault();
-  const next=tabName==='characters'?'clubs':'characters';
-  const chosen=event.key==='Home'?'characters':event.key==='End'?'clubs':next;
-  const target=chosen==='clubs'?clubTab:characterTab;
-  target.click();
-  target.focus();
+  const i=order.indexOf(id);
+  const next=event.key==='Home'?0:event.key==='End'?2:
+    (i+(event.key==='ArrowLeft'?-1:1)+order.length)%order.length;
+  tabs[order[next]].click();tabs[order[next]].focus();
  });
 }
 window.addEventListener('hashchange',syncCatalogTab);
