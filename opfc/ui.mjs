@@ -1,7 +1,7 @@
 /** OPFC — Bloc 9A : accueil, mercato et stade local iPhone. */
 import {createGame,bid,pass,useKings,useObservation,acceptSolo,chooseFormation,place,ready} from './engine.mjs';
 import {generateRandomTeams} from './random-rosters.mjs?v=opfc-duo-20261022';
-import {renderFormationPreview} from './formation-preview.mjs?v=opfc-setup-classic-20261022';
+import {renderFormationPreview} from './formation-preview.mjs?v=opfc-local-pitch-full-20261022';
 import {pitchMarkings} from './pitch-markings.mjs';
 import {CARD_BY_ID} from './catalog.mjs';
 import {DISPLAY_CLUBS,currentClubChoices,setDisplayedClubs,setDisplayedChoices,visualAbbr,displayAbbr} from './club-identities.mjs';
@@ -406,7 +406,7 @@ function welcome(){
   '<div class="opfc-setup-formation"><label for="initial-'+id+'">Formation de départ</label>'+
   '<select id="initial-'+id+'" data-action="initial-formation" data-club="'+id+'">'+
   options(FORMATION_NAMES,beforeForm[id])+'</select></div>'+
-  renderFormationPreview(beforeForm[id])+
+  renderFormationPreview(beforeForm[id],{compact:true})+
   '</article>';
  }).join('')+'</section>'+
  '<div class="intro-actions">'+
