@@ -4,12 +4,13 @@ import {DISPLAY_CLUBS,DISPLAY_BY_ID,displayAbbr} from './club-identities.mjs';
 import {renderIdentityCrest} from './ui-portraits.mjs';
 import {competitionName,renderCompetitionPicker} from './club-honours.mjs?v=opfc-trophees-20261022';
 import {FORMATIONS} from './rules.mjs';
+import {renderFormationPreview} from './formation-preview.mjs';
 const h=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const button=(act,label,style='ghost',disabled=false)=>'<button type="button" class="btn '+style+
  '" data-action="online-'+act+'" '+(disabled?'disabled aria-disabled="true"':'')+'>'+h(label)+'</button>';
 const formationPicker=(id,current,label)=>'<div class="form-box opfc-random-formation"><label for="'+id+'">'+label+'</label>'+
  '<select id="'+id+'" data-action="'+id+'">'+Object.keys(FORMATIONS).map(v=>
- '<option value="'+v+'"'+(current===v?' selected':'')+'>'+v+'</option>').join('')+'</select></div>';
+ '<option value="'+v+'"'+(current===v?' selected':'')+'>'+v+'</option>').join('')+'</select>'+renderFormationPreview(current)+'</div>';
 const note=()=>'<p class="online-status-note" role="status">La connexion aux salons est indisponible. Réessaie plus tard.</p>';
 const pretty=id=>DISPLAY_BY_ID.get(id)?.name??'Club inconnu';
 function clubSelect(action,chosen){
