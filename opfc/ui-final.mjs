@@ -6,7 +6,7 @@
 import {CARD_BY_ID} from './catalog.mjs';
 import {renderCharacterPortrait,renderClubCrest} from './ui-portraits.mjs';
 import {setDisplayedClubs,visualName,visualAbbr} from './club-identities.mjs';
-import {competitionName} from './club-honours.mjs?v=opfc-comp-v1-20261022';
+import {CLUB_TROPHIES,competitionName} from './club-honours.mjs?v=opfc-trophies-20261022';
 const h=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const player=id=>CARD_BY_ID.get(id)?.name??id??'—';
 
@@ -37,11 +37,11 @@ export function renderFinalResult(state){
  if(state?.phase!=='finished'||!state.match?.winner)throw Error('Résultat final indisponible');
  setDisplayedClubs(state.teams);
  const m=state.match,st=m.statistics;
+ const trophy=CLUB_TROPHIES.find(t=>t.key===(m.competition??state.competition))??CLUB_TROPHIES.find(t=>t.key==='grandline');
  return '<div class="final-screen">'+
- '<section class="panel final-score"><span class="eyebrow">'+h(competitionName(m.competition))+' · Coup de sifflet final</span>'+ 
+ '<section class="panel final-score"><span class="eyebrow">'+h(competitionName(m.competition??state.competition))+' · Coup de sifflet final</span>'+ 
  '<div class="final-celebration" aria-label="Trophée de la compétition">'+ 
- (m.competition==='grandline'||!m.competition?'<img class="final-trophy-image" src="./opfc/illustrations/grandline_cup_trophee.PNG" '+ 
- 'alt="Trophée de la Grandline Champions Cup" width="1254" height="1254" decoding="async" loading="lazy">':'<span class="final-trophy-image" role="img" aria-label="Trophée">🏆</span>')+'</div>'+ 
+ '<img class="final-trophy-image" src="'+h(trophy.image)+'" alt="Trophée de '+h(trophy.name)+'" width="1254" height="1254" decoding="async" loading="lazy"></div>'+ 
  '<h2 class="final-victory-title">VICTOIRE !</h2>'+
  '<p class="final-winner-name">Victoire de '+h(visualName(m.winner))+'</p>'+ '<p class="caption">🏆 Champion · '+h(competitionName(m.competition))+'</p>'+ 
  '<div class="final-scoreline"><div class="'+(m.winner==='PSG'?'final-winner-club':'')+'">'+
