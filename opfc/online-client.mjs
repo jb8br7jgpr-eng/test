@@ -81,7 +81,7 @@ export function createOnlineClient({
   const withMatch=['match','moment-result','half-time','resume-ready',
    'shootout-ready','shootout','finished'].includes(payload.phase);
   const allowed=withMatch?['version','phase','teams','dice','match']:
-   ['version','phase','teams','dice','auction','lastResult','myObservation'];
+   ['version','phase','teams','dice','auction','lastResult','myObservation','reveal'];
   if(Object.keys(payload).some(k=>!allowed.includes(k)))fail('Vue de mercato contenant des secrets');
   if(!Array.isArray(payload.dice)||payload.dice.length!==2||
    payload.teams.some(t=>!t||!['PSG','OM'].includes(t.club)))
@@ -89,6 +89,15 @@ export function createOnlineClient({
   const identities=payload.teams.map(t=>t.identityId??t.club);
   if(identities.some(id=>!isDisplayClub(id))||identities[0]===identities[1])
    fail('Identités de clubs reçues incohérentes');
+  if(payload.reveal!==undefined){
+   const reveal=payload.reveal;
+   if(payload.phase!=='lineup'||!reveal||typeof reveal!=='object'||Array.isArray(reveal)||
+    Object.keys(reveal).sort().join(',')!=='ready,step'||!Number.isInteger(reveal.step)||
+    reveal.step<0||reveal.step>7||!reveal.ready||typeof reveal.ready!=='object'||
+    Object.keys(reveal.ready).sort().join(',')!=='OM,PSG'||
+    typeof reveal.ready.PSG!=='boolean'||typeof reveal.ready.OM!=='boolean')
+    fail('Synchronisation de révélation invalide');
+  }
   if(withMatch){
    const m=payload.match;
    const matchFields=['index','minute','score','statistics','goals',
