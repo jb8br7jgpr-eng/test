@@ -7,6 +7,7 @@ import {normalizeRoomCode,validateClub,validateSessionToken,validateRoomId,ONLIN
 import {OPFC_ONLINE_API_URL,OPFC_ONLINE_PUBLISHABLE_KEY} from './online-config.mjs';
 import {chooseClubPair,validateDisplayClub,isDisplayClub} from './club-identities.mjs';
 import {isCompetition} from './club-honours.mjs';
+import {formationPositions} from './rules.mjs';
 
 export const ONLINE_SESSION_KEY='opfc-v1-online-session';
 export const ONLINE_PENDING_KEY='opfc-v1-online-pending-action';
@@ -27,6 +28,8 @@ function validRoom(room,session=null){
  validateClub(room.hostClub);validateClub(room.guestClub);validateClub(room.myClub);
  if(room.clubChoices)chooseClubPair(room.clubChoices.PSG,room.clubChoices.OM);
  if(room.competition!==undefined&&room.competition!==null&&!isCompetition(room.competition))fail('Compétition du salon invalide');
+ if(room.recruitmentMode!==undefined&&!['auction','random'].includes(room.recruitmentMode))
+  fail('Mode de recrutement du salon invalide');
  if(room.hostClub===room.guestClub||room.guestClub!==(room.hostClub==='PSG'?'OM':'PSG'))
   fail('Attribution des clubs incohérente');
  if(!ROOM_STATUSES.includes(room.status))fail('Statut du salon invalide');
@@ -305,19 +308,25 @@ export function createOnlineClient({
    try{session=validSession(JSON.parse(raw));room=null;marketGame=null;loadPending();return true;}
    catch{session=null;room=null;marketGame=null;pending=null;persist();rememberPending();return false;}
   },
-  async createRoom(firstClub='PSG',identityId=firstClub,competition='grandline'){
+  async createRoom(firstClub='PSG',identityId=firstClub,competition='grandline',mode='auction',formation='2-2-2'){
    ensureOnline();if(session)fail('Quitte d’abord le salon en cours');
    validateDisplayClub(identityId);
    if(!isCompetition(competition))fail('Compétition inconnue');
+   if(!['auction','random'].includes(mode))fail('Mode de recrutement inconnu');
    const command={action:'create',firstClub:validateClub(firstClub),competition};
    if(identityId!==firstClub)command.identityId=identityId;
+   if(mode==='random'){
+    formationPositions(formation);
+    command.recruitmentMode='random';command.formation=formation;
+   }
    const data=await request(command);
    pending=null;rememberPending();return accept(data,true);
   },
-  async joinRoom(code,identityId='OM'){
+  async joinRoom(code,identityId='OM',formation='2-2-2'){
    ensureOnline();if(session)fail('Quitte d’abord le salon en cours');
    validateDisplayClub(identityId);
-   const command={action:'join',code:normalizeRoomCode(code)};
+   formationPositions(formation);
+   const command={action:'join',code:normalizeRoomCode(code),formation};
    if(identityId!=='OM')command.identityId=identityId;
    const data=await request(command);
    pending=null;rememberPending();return accept(data,true);
