@@ -631,9 +631,11 @@ function matchPage(){
  '<div class="match-team-overview-heading"><span>⚽ TERRAIN ET COMPOSITIONS</span>'+
  '<small>'+ (game.phase==='half-time'?'Modifications autorisées à la mi-temps':'Effectifs des deux équipes')+'</small></div>'+
  teams()+'</section>';
- return shell()+'<main class="ready-layout">'+middle+
+ return shell()+'<main class="ready-layout">'+
+ (game.phase==='finished'?'<div class="opfc-final-exit-wrap">'+
+   btn('exit-finished-local','← Quitter la partie et revenir au menu','opfc-exit-gold full')+'</div>':'')+
+ middle+
  (game.phase==='finished'&&pendingLocalResultsCount()>0?'<p class="caption" role="status">🏆 Résultat en cours de synchronisation. Il sera envoyé automatiquement dès que la connexion sera disponible.</p>':'')+
- (game.phase==='finished'?btn('exit-finished-local','← Quitter la partie et revenir au menu','ghost full'):'')+
  overview+'<div class="gameplay-nav"><span class="caption">'+esc(competitionName(game.competition))+' · Mode local</span>'+btn('confirm-reset','Nouvelle partie','ghost small')+'</div></main>';
 }
 function popup(){
@@ -816,12 +818,14 @@ function render(){
   (onlinePendingTaker?'<section class="online-choice-pending" role="status">⏳ Sélection de <strong>'+
    esc(card(onlinePendingTaker)?.name??onlinePendingTaker)+
    '</strong> en cours… La connexion est vérifiée avant de continuer.</section>':''):'';
- const onlineDisplay=shell()+compactRoom+lobby+liveStatus+
+ const completedOnlineFinal=showingGame&&snapshot.phase==='finished'&&!snapshot.match?.shootout?.lastResult;
+ const onlineDisplay=shell()+
+  (completedOnlineFinal?'<div class="opfc-final-exit-wrap">'+
+    btn('online-exit-finished','← Quitter la partie et revenir au menu','opfc-exit-gold full')+'</div>':'')+
+  compactRoom+lobby+liveStatus+
   (showingGame?(['mercato','lineup','kickoff-ready'].includes(snapshot.phase)?onlineSharedMarket(snapshot):
    '<main class="online-game-content opfc-online-playing">'+
    renderOnlineGame(snapshot,{myClub:room.myClub,hostClub:room.hostClub,competition:onlineClient.room?.competition})+
-   (snapshot.phase==='finished'&&!snapshot.match?.shootout?.lastResult?
-     btn('online-exit-finished','← Quitter la partie et revenir au menu','ghost full'):'')+
    (['match','moment-result','half-time','resume-ready','shootout-ready','shootout','finished'].includes(snapshot.phase)?
     onlineTeams():'')+'</main>'):'');
  app.innerHTML=(onlineVisible?onlineDisplay:entryView==='modes'?modeChooser():entryView==='local'?welcome():game?
