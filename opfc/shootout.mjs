@@ -4,8 +4,8 @@
  * les DEUX directions avant d'appeler applyShootoutKick.
  * Score et statistiques de séance sont séparés du temps réglementaire.
  */
-import {CARDS} from './catalog.mjs';
-import {lineupDetails} from './rules.mjs';
+import {CARDS} from './catalog.mjs?v=opfc-75-roster-20261022';
+import {lineupDetails} from './rules.mjs?v=opfc-75-roster-20261022';
 import {calculatePenalty,resolvePenalty,averagePenaltyGoal} from './penalty.mjs';
 
 const CLUBS=Object.freeze(['PSG','OM']);

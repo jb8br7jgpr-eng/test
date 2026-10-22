@@ -1,7 +1,7 @@
 /** OPFC v0.8 — modèles d'affichage sans mutation des règles officielles. */
-import {CARD_BY_ID} from './catalog.mjs';
-import {formationPositions,effectiveRating,chemistry,lineupDetails} from './rules.mjs';
-import {maxBid} from './engine.mjs';
+import {CARD_BY_ID} from './catalog.mjs?v=opfc-75-roster-20261022';
+import {formationPositions,effectiveRating,chemistry,lineupDetails} from './rules.mjs?v=opfc-75-roster-20261022';
+import {maxBid} from './engine.mjs?v=opfc-75-roster-20261022';
 import {visualName} from './club-identities.mjs';
 
 const other=id=>id==='PSG'?'OM':'PSG';

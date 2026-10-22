@@ -3,7 +3,7 @@
  * La séance de tirs au but n'entre pas dans les tirs/buts du 90 minutes.
  * Portraits circulaires temporaires remplaçables par les visuels HD.
  */
-import {CARD_BY_ID} from './catalog.mjs';
+import {CARD_BY_ID} from './catalog.mjs?v=opfc-75-roster-20261022';
 import {renderCharacterPortrait,renderClubCrest} from './ui-portraits.mjs';
 import {setDisplayedClubs,visualName,visualAbbr} from './club-identities.mjs';
 import {CLUB_TROPHIES,competitionName} from './club-honours.mjs?v=opfc-trophies-20261022';

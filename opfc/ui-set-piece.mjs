@@ -3,7 +3,7 @@
  * Uniquement l'état public pour le rendu, état privé pour les transitions.
  * Les choix sont verrouillés et jamais affichés avant la double confirmation.
  */
-import {CARD_BY_ID} from './catalog.mjs';
+import {CARD_BY_ID} from './catalog.mjs?v=opfc-75-roster-20261022';
 import {renderCharacterPortrait} from './ui-portraits.mjs';
 import {visualAbbr} from './club-identities.mjs';
 import {matchTacticalChoices,renderShotFaceOff,renderReceiverCard,renderShotResult} from './ui-match-widgets.mjs';

@@ -1,5 +1,5 @@
 /** Règles arithmétiques officielles OPMercato FC v0.8 (§03–05, §15–18). */
-import { CARD_BY_ID } from './catalog.mjs';
+import { CARD_BY_ID } from './catalog.mjs?v=opfc-75-roster-20261022';
 
 export const POSITIONS = Object.freeze(['GAR','DEF','MIL','ATT']);
 export const FORMATIONS = Object.freeze({

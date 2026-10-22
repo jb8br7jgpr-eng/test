@@ -1,7 +1,7 @@
 /** OPFC — salons privés : sélection indépendante des clubs sur chaque iPhone. */
 import {normalizeRoomCode} from './online-protocol.mjs';
 import {DISPLAY_CLUBS,DISPLAY_BY_ID,displayAbbr} from './club-identities.mjs';
-import {renderIdentityCrest} from './ui-portraits.mjs';
+import {renderIdentityCrest} from './ui-portraits.mjs?v=opfc-75-roster-20261022';
 import {competitionName,renderCompetitionPicker} from './club-honours.mjs?v=opfc-trophees-20261022';
 import {FORMATIONS} from './rules.mjs';
 import {renderFormationPreview} from './formation-preview.mjs?v=opfc-setup-classic-20261022';

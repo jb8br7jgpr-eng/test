@@ -6,7 +6,7 @@
 import {renderOnlineMatchScreen} from './ui-match.mjs?v=opfc-trophees-20261022';
 import {renderOnlineShootoutScreen} from './ui-shootout.mjs';
 import {renderFinalResult} from './ui-final.mjs?v=opfc-trophees-20261022';
-import {renderClubCrest} from './ui-portraits.mjs';
+import {renderClubCrest} from './ui-portraits.mjs?v=opfc-75-roster-20261022';
 import {visualAbbr,setDisplayedClubs} from './club-identities.mjs';
 import {competitionName} from './club-honours.mjs?v=opfc-trophees-20261022';
 

@@ -1,9 +1,9 @@
 /** Portraits OFFICIELS OPFC : les portraits WebP du dossier
- * portraits_opfc/, (50 originaux et 15 nouveaux, fichiers conservés sans modification).
+ * portraits_opfc/, 65 portraits existants ; les nouvelles recrues s'affichent par initiales.
  * Mapping explicite 1:1 entre les IDs officiels et les noms de fichiers.
  * Le monogramme n'est qu'un secours si une image ne charge pas.
  */
-import {CARD_BY_ID} from './catalog.mjs';
+import {CARD_BY_ID} from './catalog.mjs?v=opfc-75-roster-20261022';
 import {visualClub,displayClub,clubLogoFile} from './club-identities.mjs';
 
 const PORTRAIT_NAMES=Object.freeze({

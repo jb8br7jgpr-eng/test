@@ -3,17 +3,17 @@
  * ni tactique confirmée cachée ne sont exposés dans l'interface.
  * Les actions appellent les fonctions officielles de match-actions.mjs.
  */
-import {CARD_BY_ID} from './catalog.mjs';
-import {lineupDetails} from './rules.mjs';
-import {renderCharacterPortrait,renderClubCrest} from './ui-portraits.mjs';
-import {matchPublicView,kickoffMatch,continueMatch,resumeMatch} from './match.mjs';
+import {CARD_BY_ID} from './catalog.mjs?v=opfc-75-roster-20261022';
+import {lineupDetails} from './rules.mjs?v=opfc-75-roster-20261022';
+import {renderCharacterPortrait,renderClubCrest} from './ui-portraits.mjs?v=opfc-75-roster-20261022';
+import {matchPublicView,kickoffMatch,continueMatch,resumeMatch} from './match.mjs?v=opfc-75-roster-20261022';
 import {beginOpenPlayAction,lockOpenPlayChoice,revealOpenPlayDuel,continueOpenPlayDuel,revealOpenPlayShot} from './match-actions.mjs';
-import {isSetPieceKind,setPieceTurnOwner,dispatchSetPieceMatch,renderSetPieceAction} from './ui-set-piece.mjs';
-import {shootoutTurnOwner,dispatchShootout,renderShootoutScreen} from './ui-shootout.mjs';
-import {renderFinalResult} from './ui-final.mjs?v=opfc-trophees-20261022';
+import {isSetPieceKind,setPieceTurnOwner,dispatchSetPieceMatch,renderSetPieceAction} from './ui-set-piece.mjs?v=opfc-75-roster-20261022';
+import {shootoutTurnOwner,dispatchShootout,renderShootoutScreen} from './ui-shootout.mjs?v=opfc-75-roster-20261022';
+import {renderFinalResult} from './ui-final.mjs?v=opfc-75-roster-20261022';
 import {setDisplayedClubs,visualName,visualAbbr} from './club-identities.mjs';
 import {competitionName} from './club-honours.mjs?v=opfc-trophees-20261022';
-import {matchTacticalChoices,renderShotFaceOff,renderShotResult,renderReceiverCard,matchKeeperId} from './ui-match-widgets.mjs';
+import {matchTacticalChoices,renderShotFaceOff,renderShotResult,renderReceiverCard,matchKeeperId} from './ui-match-widgets.mjs?v=opfc-75-roster-20261022';
 
 const html=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const name=id=>CARD_BY_ID.get(id)?.name??id??'—';

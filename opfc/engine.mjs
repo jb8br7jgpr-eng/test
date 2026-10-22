@@ -1,6 +1,6 @@
 /** Moteur d'enchères et de compositions OPMercato FC v0.8 — commun local/serveur. */
-import { CARDS,CLUBS,CARD_BY_ID } from './catalog.mjs';
-import { formationPositions } from './rules.mjs';
+import { CARDS,CLUBS,CARD_BY_ID } from './catalog.mjs?v=opfc-75-roster-20261022';
+import { formationPositions } from './rules.mjs?v=opfc-75-roster-20261022';
 import {chooseClubPair} from './club-identities.mjs';
 const START_BUDGET=250,MIN_BID=5,MAX_REFUSALS=5,ROSTER_SIZE=7;
 const fail=message=>{throw new Error(message);};

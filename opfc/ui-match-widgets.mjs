@@ -3,7 +3,7 @@
  * l'habillage des cases d'enchères OPMercato classique. Moteur inchangé.
  * Confrontation et annonce de tir affichent exclusivement des données connues.
  */
-import {CARD_BY_ID} from './catalog.mjs';
+import {CARD_BY_ID} from './catalog.mjs?v=opfc-75-roster-20261022';
 import {lineupDetails} from './rules.mjs';
 import {renderCharacterPortrait} from './ui-portraits.mjs';
 import {visualAbbr} from './club-identities.mjs';

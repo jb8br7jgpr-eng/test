@@ -1,6 +1,6 @@
 /** Catalogue OPFC : personnages et clubs. Affichage en lecture seule, sans incidence sur le jeu. */
-import {CARDS,CARD_BY_ID} from './catalog.mjs';
-import {portraitFile} from './ui-portraits.mjs';
+import {CARDS,CARD_BY_ID} from './catalog.mjs?v=opfc-75-roster-20261022';
+import {portraitFile} from './ui-portraits.mjs?v=opfc-75-roster-20261022';
 import {DISPLAY_CLUBS,displayAbbr,clubLogoFile} from './club-identities.mjs';
 import {CLUB_HONOURS,CLUB_TROPHIES} from './club-honours.mjs?v=opfc-trophees-20261022';
 import {loadTrophyHistory,syncQueuedLocalResults} from './trophy-service.mjs';

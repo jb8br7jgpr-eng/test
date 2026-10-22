@@ -6,7 +6,7 @@
  */
 import {beginShootout,advanceShootout} from './match.mjs';
 import {nextShootoutShooter} from './shootout.mjs';
-import {CARD_BY_ID} from './catalog.mjs';
+import {CARD_BY_ID} from './catalog.mjs?v=opfc-75-roster-20261022';
 import {visualAbbr} from './club-identities.mjs';
 import {renderCharacterPortrait} from './ui-portraits.mjs';
 import {matchTacticalChoices,renderShotFaceOff,renderShotResult} from './ui-match-widgets.mjs';
