@@ -62,11 +62,28 @@ export function applyOnlineLineupCommand(state,actorClub,command,{hostClub,rng=s
   formation:['type','formation'],
   place:['type','cardId','slot'],
   ready:['type'],
+  'reveal-next':['type'],
   kickoff:['type']
  }[type];
  if(!expected||Object.keys(command).some(key=>!expected.includes(key))||
   expected.some(key=>!Object.hasOwn(command,key)))
   fail('Paramètres de composition interdits');
+ if(state.phase==='lineup'&&state.recruitmentMode==='random'&&state.randomReveal?.step<7){
+  if(type!=='reveal-next')fail('Termine la révélation des sept duos avant les compositions');
+  const previous=state.randomReveal;
+  if(!Number.isInteger(previous.step)||previous.step<0||previous.step>6||
+   !previous.ready||typeof previous.ready.PSG!=='boolean'||typeof previous.ready.OM!=='boolean')
+   fail('Progression du tirage invalide');
+  if(previous.ready[actorClub])fail('Tu as déjà validé ce duo : attends ton adversaire');
+  const next=structuredClone(state);
+  next.randomReveal.ready[actorClub]=true;
+  if(next.randomReveal.ready.PSG&&next.randomReveal.ready.OM){
+   next.randomReveal.step++;
+   next.randomReveal.ready={PSG:false,OM:false};
+  }
+  return {state:next,publicForActor:onlineMarketPublicView(next,actorClub)};
+ }
+ if(type==='reveal-next')fail('Révélation terminée');
  if(type==='kickoff'){
   if(state.phase!=='kickoff-ready')fail('Les deux équipes doivent être prêtes');
   if(actorClub!==hostClub)fail('Seul l’hôte lance le coup d’envoi');
