@@ -128,3 +128,26 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 .club-catalog-award .club-catalog-award-name-split{flex-direction:column;gap:1px;hyphens:none;overflow-wrap:normal;font-size:9px;line-height:1.2;letter-spacing:-.15px}
 .club-catalog-award-name-split span{display:block;max-width:100%;white-space:nowrap}
 @media(max-width:380px){.club-catalog-award .club-catalog-award-name-split{font-size:8.5px;letter-spacing:-.2px}}
+
+
+/* OPFC — correction iPhone résiliente au cache : troisième trophée en deux lignes fixes. */
+.club-catalog-awards li.club-catalog-award:nth-child(3) > .club-catalog-award-name{
+ display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;
+ gap:2px!important;font-size:0!important;line-height:1!important;letter-spacing:0!important;
+ hyphens:none!important;overflow-wrap:normal!important;word-break:normal!important
+}
+.club-catalog-awards li.club-catalog-award:nth-child(3) > .club-catalog-award-name > span{display:none!important}
+.club-catalog-awards li.club-catalog-award:nth-child(3) > .club-catalog-award-name::before,
+.club-catalog-awards li.club-catalog-award:nth-child(3) > .club-catalog-award-name::after{
+ display:block;flex:none;max-width:100%;white-space:nowrap!important;
+ font-size:9px;font-weight:900;line-height:1.24;letter-spacing:-.2px;
+ overflow-wrap:normal!important;word-break:keep-all!important;hyphens:none!important
+}
+.club-catalog-awards li.club-catalog-award:nth-child(3) > .club-catalog-award-name::before{content:"Grandline"}
+.club-catalog-awards li.club-catalog-award:nth-child(3) > .club-catalog-award-name::after{content:"Champions Cup"}
+@media(max-width:380px){
+ .club-catalog-awards li.club-catalog-award:nth-child(3) > .club-catalog-award-name::before,
+ .club-catalog-awards li.club-catalog-award:nth-child(3) > .club-catalog-award-name::after{
+  font-size:8px;letter-spacing:-.2px
+ }
+}
