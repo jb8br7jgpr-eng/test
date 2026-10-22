@@ -304,13 +304,12 @@ async function onlineClicked(action,button){
   entryView='modes';onlineModal=null;modal=null;onlineSeenRoom=null;onlineSeenAuctionCard=null;
   onlineSelection=null;onlineError='';render();return;
  }
- if(action==='online-modal-reveal-next'){
-  if(onlineModal?.type!=='random-reveal'||onlineModal.step>=14)throw Error('Tirage indisponible');
-  onlineModal.step++;render();return;
- }
- if(action==='online-modal-reveal-finish'){
-  if(onlineModal?.type!=='random-reveal'||onlineModal.step!==14)throw Error('Termine le tirage');
-  onlineModal=null;render();return;
+ if(action==='online-reveal-confirm'){
+  const snapshot=onlineClient.game,own=onlineClient.room?.myClub;
+  if(!snapshot||snapshot.phase!=='lineup'||snapshot.reveal?.step>=7||
+   !snapshot.reveal||snapshot.reveal.ready?.[own])throw Error('Validation déjà effectuée');
+  await onlineMutation(()=>onlineClient.lineupAction({type:'reveal-next'}));
+  return;
  }
  if(action==='online-modal-continue'){onlineModal=null;render();return;}
  if(action==='online-room-details'){onlineRoomDetails=!onlineRoomDetails;render();return;}
@@ -334,6 +333,9 @@ function restore(){try{
     localClubChoices=currentClubChoices(data.game.teams);
    teamsVisible=data.teamsVisible===true;
    pitchClub=['PSG','OM'].includes(data.pitchClub)?data.pitchClub:null;
+   if(game.recruitmentMode==='random'&&game.phase==='lineup'&&
+    Number.isInteger(game.randomReveal?.step)&&game.randomReveal.step<7)
+    modal={type:'random-reveal',step:game.randomReveal.step};
    const p=data.placement;
    if(p&&['mercato','lineup'].includes(game.phase)&&
      game.teams.some(t=>t.club===p.club&&t.roster.includes(p.cardId))){
@@ -672,7 +674,7 @@ function matchPage(){
 function popup(){
  if(!modal)return '';
  if(modal.type==='random-reveal')
-  return randomRevealPanel(modal.order,modal.step,'random-reveal-');
+  return randomRevealPanel(game,modal.step);
  let body='';
  if(modal.type==='dice')body='<div class="big-symbol">🎲</div><h2>Départ du mercato</h2><p>'+game.dice.join(' contre ')+
  '</p><p>Premier club prioritaire : <strong>'+esc(clubName(game.auction.priority))+'</strong></p>'+
@@ -740,8 +742,13 @@ function onlineTeams(pending=null){
 }
 function onlineSharedMarket(snapshot){
  const ownClub=onlineClient.room.myClub;
+ if(snapshot.phase==='lineup'&&snapshot.reveal?.step<7)
+  return '<main class="online-game-content opfc-online-playing">'+
+   randomRevealPanel(snapshot,snapshot.reveal.step,{
+    online:true,myClub:ownClub,readyFlags:snapshot.reveal.ready,busy:onlineBusy
+   })+'</main>';
  const pending=onlinePending(snapshot);
- const hud=snapshot.phase==='lineup'&&onlineClient.room?.recruitmentMode==='random'?'':onlineScoped(()=>wallets());
+ const hud=snapshot.phase='lineup'&&onlineClient.room?.recruitmentMode==='random'?'':onlineScoped(()=>wallets());
  if(pending){
   if(pending.club!==ownClub)
    return '<main class="online-game-content opfc-online-playing">'+hud+
@@ -790,34 +797,48 @@ function onlineSharedMarket(snapshot){
  * Révélation progressive des 14 recrues, commune aux parcours local et en ligne.
  * Les personnages et les formations sont fixés avant la révélation.
  */
-function randomRevealPanel(order,step,actionPrefix){
- if(!Array.isArray(order)||order.length!==14||!Number.isInteger(step)||step<0||step>14)
-  throw Error('Tirage aléatoire invalide');
- const result=step>0?order[step-1]:null;
- const info=result?card(result.cardId):null;
- if(result&&!info)throw Error('Personnage de tirage inconnu');
+function randomRevealPanel(snapshot,step,{online=false,myClub=null,readyFlags=null,busy=false}={}){
+ if(!snapshot||!Number.isInteger(step)||step<0||step>6)throw Error('Progression du tirage invalide');
  const ranks={BRZ:'BRONZE',ARG:'ARGENT',OR:'OR',DIA:'DIAMANT'};
- const diamond=info?.rarity==='DIA';
- const reveal=result?'<div class="opfc-random-reveal-card '+(diamond?'opfc-random-diamond':'')+'">'+
-   '<div class="opfc-random-reveal-portrait">'+renderCharacterPortrait(info.id,'sale-result-portrait')+'</div>'+
-   '<div class="opfc-random-reveal-name">'+esc(info.name)+'</div>'+
-   '<div class="opfc-random-reveal-info"><span>'+esc(visualAbbr(result.club))+'</span>'+
-   '<span>'+esc(info.position)+'</span><span>NOTE '+esc(info.rating)+'</span></div>'+
-   '<div class="opfc-random-reveal-tier rarity-'+info.rarity+'">'+
-   (diamond?'💎 ':'')+ranks[info.rarity]+'</div>'+
-   '</div>':
-   '<div class="opfc-random-reveal-start">🎲<p>Les 14 personnages sont prêts à être révélés. Chaque équipe a sept joueurs à leur poste naturel.</p></div>';
- const atEnd=step===14;
- return '<div class="modal-backdrop opfc-random-overlay"><section class="modal opfc-random-modal" role="dialog" aria-modal="true">'+
- '<span class="eyebrow">🎲 ÉQUIPES ALÉATOIRES</span>'+
- '<h2>'+(step===0?'Le destin choisit vos équipes !':diamond?'💎 JOUEUR DIAMANT !':'Nouvelle recrue !')+'</h2>'+
- '<p class="caption">Révélation '+step+' / 14</p>'+
- '<div class="opfc-random-progress"><span style="width:'+(step/14*100)+'%"></span></div>'+
- reveal+
- '<p class="caption">30 % Bronze · 30 % Argent · 30 % Or · 10 % Diamant</p>'+
- '<button type="button" class="btn primary full" data-action="'+actionPrefix+(atEnd?'finish':'next')+'">'+
- (atEnd?'⚽ Découvrir les deux compositions':step===0?'Lancer la révélation 🎲':'Révéler le personnage suivant →')+
- '</button></section></div>';
+ const duo=['PSG','OM'].map(club=>{
+  const team=snapshot.teams.find(t=>t.club===club);
+  const info=card(team?.slots?.[step]);
+  if(!team||!info)throw Error('Tirage du joueur manquant');
+  const diamond=info.rarity==='DIA';
+  const status=online&&readyFlags?.[club]===true?
+   '<span class="opfc-duo-ready">✓ Prêt</span>':'';
+  return '<article class="opfc-duo-half '+club.toLowerCase()+(diamond?' opfc-duo-diamond':'')+'">'+
+   '<header class="opfc-duo-club">'+renderClubCrest(club,'opfc-duo-crest')+
+    '<div class="opfc-duo-club-name"><strong>'+esc(visualAbbr(club))+'</strong>'+
+    '<small>'+esc(clubName(club))+'</small></div></header>'+
+   '<div class="opfc-duo-portrait">'+renderCharacterPortrait(info.id,'opfc-duo-player-portrait')+'</div>'+
+   '<div class="opfc-duo-player-name">'+esc(info.name)+'</div>'+
+   '<div class="opfc-duo-stats"><span>'+esc(info.position)+'</span>'+
+    '<span>NOTE <b>'+esc(info.rating)+'</b></span></div>'+
+   '<div class="opfc-duo-rarity rarity-'+info.rarity+'">'+(diamond?'💎 ':'')+ranks[info.rarity]+'</div>'+
+   status+'</article>';
+ }).join('');
+ const mineReady=online&&readyFlags?.[myClub]===true;
+ const theirsReady=online&&readyFlags?.[myClub==='PSG'?'OM':'PSG']===true;
+ const buttonText=step===6?'⚽ Découvrir les compositions':'Joueurs suivants →';
+ const footer=online?
+  '<p class="opfc-duo-sync" role="status">'+
+  (mineReady?(theirsReady?'✓ Synchronisation des deux joueurs…':'✓ Tu as validé · En attente de l’adversaire'):
+   'Appuie pour valider ce duo. Le suivant apparaît quand vous avez tous les deux confirmé.')+
+  '</p>'+
+  '<button type="button" class="btn primary full" data-action="online-reveal-confirm"'+
+   (mineReady||busy?' disabled':'')+'>'+
+   (mineReady?'✓ Validation envoyée · Patiente…':buttonText)+'</button>':
+  '<button type="button" class="btn primary full" data-action="random-reveal-next">'+buttonText+'</button>';
+ const layout='<section class="opfc-duo-stage" aria-label="Révélation simultanée des deux équipes">'+
+  '<div class="opfc-duo-heading"><span class="eyebrow">🎲 ÉQUIPES ALÉATOIRES</span>'+
+  '<h2>Face-à-face · Duo '+(step+1)+' / 7</h2>'+
+  '<p>'+(['Gardiens','Défenseurs et milieux','Défenseurs et milieux','Milieux et attaquants','Milieux et attaquants','Attaquants','Attaquants'][step])+'</p></div>'+
+  '<div class="opfc-duo-vs">'+duo+'</div>'+
+  '<div class="opfc-duo-progress"><span style="width:'+((step+1)/7*100).toFixed(2)+'%"></span></div>'+
+  '<p class="caption">30 % Bronze · 30 % Argent · 30 % Or · 10 % Diamant</p>'+
+  footer+'</section>';
+ return online?layout:'<div class="modal-backdrop opfc-duo-overlay" role="presentation"><div class="opfc-duo-modal" role="dialog" aria-modal="true">'+layout+'</div></div>';
 }
 function trackOnlineAnnouncements(snapshot,room){
  if(!snapshot||!room)return;
@@ -825,17 +846,7 @@ function trackOnlineAnnouncements(snapshot,room){
  const currentCard=snapshot.lastResult?.cardId??null;
  if(onlineSeenRoom!==roomKey){
   onlineSeenRoom=roomKey;onlineSeenAuctionCard=currentCard;onlineModal=null;
-  if(room.recruitmentMode==='random'&&snapshot.phase==='lineup'){
-   const order=[];
-   for(let slot=0;slot<7;slot++){
-    for(const club of slot%2===0?['PSG','OM']:['OM','PSG']){
-     const team=snapshot.teams.find(t=>t.club===club);
-     order.push({club,slot,cardId:team.slots[slot]});
-    }
-   }
-   onlineModal={type:'random-reveal',order,step:0};
-  }else if(snapshot.phase==='mercato'&&
-     snapshot.teams.every(team=>team.roster.length===0))
+  if(snapshot.phase==='mercato'&&snapshot.teams.every(team=>team.roster.length===0))
    onlineModal={type:'dice',dice:[...snapshot.dice],priority:snapshot.auction?.priority};
   return;
  }
@@ -846,8 +857,6 @@ function trackOnlineAnnouncements(snapshot,room){
 }
 function onlineAnnouncementView(){
  if(!onlineModal)return '';
- if(onlineModal.type==='random-reveal')
-  return randomRevealPanel(onlineModal.order,onlineModal.step,'online-modal-reveal-');
  let body='';
  if(onlineModal.type==='dice')body='<div class="big-symbol">🎲</div>'+
   '<h2>Départ du mercato</h2><p>'+onlineModal.dice.join(' contre ')+
@@ -938,7 +947,7 @@ function start(){
   for(const id of ['PSG','OM'])if(beforeForm[id]!=='2-2-2')Object.assign(s,chooseFormation(s,id,beforeForm[id]));
  }
  game=s;entryView='playing';selection=null;placement=null;teamsVisible=false;pitchClub=null;
- modal=localRecruitmentMode==='random'?{type:'random-reveal',order:s.randomRevealOrder,step:0}:{type:'dice'};
+ modal=localRecruitmentMode==='random'?{type:'random-reveal',step:0}:{type:'dice'};
  error='';save();render();
 }
 function clicked(button){
@@ -969,12 +978,13 @@ function clicked(button){
   localCompetition=button.dataset.competition;render();return;
  }
  if(action==='random-reveal-next'){
-  if(modal?.type!=='random-reveal'||modal.step>=14)throw Error('Tirage non disponible');
-  modal.step++;render();return;
- }
- if(action==='random-reveal-finish'){
-  if(modal?.type!=='random-reveal'||modal.step!==14)throw Error('Termine le tirage');
-  modal=null;teamsVisible=true;render();return;
+  if(modal?.type!=='random-reveal'||game?.recruitmentMode!=='random'||
+   game.phase!=='lineup'||modal.step!==game.randomReveal?.step||modal.step>=7)
+    throw Error('Tirage non disponible');
+  game.randomReveal.step++;
+  if(game.randomReveal.step===7){modal=null;teamsVisible=true;}
+  else modal.step=game.randomReveal.step;
+  save();render();return;
  }
  if(modal&&!['close','observation-show','reset','accept-overwrite'].includes(action))return;
  if(action==='match-uncover'){
