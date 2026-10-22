@@ -155,3 +155,33 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 /* Catalogue OPFC : troisième onglet. */
 .catalog-tab-wide{grid-column:1/-1}
 #catalog-finals[hidden]{display:none!important}
+
+/* OPFC — classement, fiche historique et pagination (visuels uniquement). */
+.catalog-filter>select{width:100%;min-width:0;min-height:43px;padding:9px 8px;border-radius:11px;background:#0a2535;border:1px solid #9ab5bd80;color:#fff;font-size:13px}
+.club-catalog-banner{position:relative}
+.club-catalog-rank{position:absolute;left:10px;top:10px;z-index:1;border-radius:9px;background:#f5dba9;color:#10283a;font-size:14px;font-weight:950;padding:5px 9px}
+#catalog-finals .opfc-results-history{margin:0 0 15px}
+#catalog-finals .opfc-history-match{border:1px solid #f2d59b4d;background:linear-gradient(140deg,#153649,#091d2b);padding:15px;border-radius:17px}
+#catalog-finals .opfc-history-meta{font-size:11px;color:#f6ddb0;align-items:center}
+.opfc-history-mode{margin-top:7px;font-size:11px;color:#b4ccd7;text-align:right}
+#catalog-finals .opfc-history-teams{gap:7px;margin:13px 0 11px;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}
+#catalog-finals .opfc-history-teams>span{display:flex;flex-direction:column;gap:5px;align-items:center;text-align:center;font-size:14px}
+#catalog-finals .opfc-history-teams>span img{width:58px;height:58px;object-fit:contain}
+#catalog-finals .opfc-history-teams>span small{color:#bed3dc;font-size:10px;line-height:1.3;overflow-wrap:anywhere}
+#catalog-finals .opfc-history-score strong{font-size:clamp(20px,6vw,31px)}
+#catalog-finals .opfc-history-score small{max-width:120px;font-size:10px;line-height:1.35}
+#catalog-finals .opfc-history-champion{font-size:12px;margin:10px 0 12px;color:#ffe3a8;font-weight:850}
+.opfc-history-details{border-top:1px solid #ffffff27;padding-top:10px}
+.opfc-history-details summary{cursor:pointer;list-style:none;color:#f5dba4;font-weight:850;font-size:12px;text-align:center;min-height:32px;display:flex;justify-content:center;align-items:center;gap:8px}
+.opfc-history-details summary::-webkit-details-marker{display:none}
+.opfc-history-details[open] summary span{transform:rotate(180deg)}
+.opfc-history-goals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+.opfc-history-goals>div{padding:9px;border-radius:9px;background:#051827a0;min-width:0}
+.opfc-history-goals h4{font-size:12px;color:#ffdfad;margin:0 0 8px;overflow-wrap:anywhere}
+.finals-goal{font-size:11px;color:#d8e5e8;margin:5px 0;line-height:1.45}
+.finals-goal span{color:#e7c797;font-weight:850;white-space:nowrap}
+.finals-pages{display:flex;align-items:center;justify-content:space-between;gap:6px;margin:17px auto}
+.finals-pages>span{font-size:12px;color:#e1c894;white-space:nowrap;font-weight:850}
+.finals-page-button{cursor:pointer;background:#122e42;border:1px solid #d3b27878;border-radius:9px;color:#f8e4c2;min-height:43px;padding:8px 10px;font-size:12px;font-weight:850}
+.finals-page-button:disabled{opacity:.35;cursor:default}
+@media(max-width:380px){#catalog-finals .opfc-history-teams>span img{width:45px;height:45px}#catalog-finals .opfc-history-teams>span small{font-size:9px}#catalog-finals .opfc-history-score strong{font-size:20px}}
