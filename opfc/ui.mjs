@@ -735,7 +735,7 @@ function onlineSharedMarket(snapshot){
     online:true,myClub:ownClub,readyFlags:snapshot.reveal.ready,busy:onlineBusy
    })+'</main>';
  const pending=onlinePending(snapshot);
- const hud=snapshot.phase='lineup'&&onlineClient.room?.recruitmentMode==='random'?'':onlineScoped(()=>wallets());
+ const hud=snapshot.phase==='lineup'&&onlineClient.room?.recruitmentMode==='random'?'':onlineScoped(()=>wallets());
  if(pending){
   if(pending.club!==ownClub)
    return '<main class="online-game-content opfc-online-playing">'+hud+
@@ -1006,7 +1006,19 @@ function clicked(button){
   return;
  }
  if(action==='club'){firstClub=club;render();return;}
- if(action==='resume-local'){if(game){entryView='playing';modal=null;error='';render();}return;}
+ if(action==='resume-local'){
+  if(game){
+   entryView='playing';
+   // Après une reconnexion ou un passage par le menu, reprendre la révélation
+   // aléatoire exactement au duo sauvegardé (jamais sauter les duos restants).
+   modal=game.recruitmentMode==='random'&&game.phase==='lineup'&&
+    Number.isInteger(game.randomReveal?.step)&&game.randomReveal.step>=0&&
+    game.randomReveal.step<7?
+    {type:'random-reveal',step:game.randomReveal.step}:null;
+   error='';render();
+  }
+  return;
+ }
  if(action==='start'){if(game){modal={type:'overwrite-local'};render();}else start();return;}
  if(action==='accept-overwrite'){if(modal?.type==='overwrite-local'){modal=null;start();}return;}
  if(action==='close'){
