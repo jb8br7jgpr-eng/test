@@ -1765,3 +1765,49 @@ a{color:inherit}p{line-height:1.45}.app{width:min(100%,760px);margin:0 auto;padd
  .opfc-fp-position-badge{width:21px;height:21px;font-size:8px}
  .opfc-fp-figure figcaption{font-size:9px}
 }
+
+
+/* OPFC — correction des aperçus tactiques EN LOCAL uniquement.
+ * Dans les deux demi-colonnes, l'ancien aspect-ratio 1.12 raccourcissait
+ * la pelouse et cachait les milieux/attaquants ; garder les 4 lignes visibles.
+ * Le terrain de placement et les aperçus EN LIGNE restent inchangés. */
+.opfc-local-setup .opfc-setup-player .slot-field.slot-field-single.opfc-fp-pitch{
+ aspect-ratio:auto;
+ height:auto;
+}
+.opfc-local-setup .opfc-setup-player .opfc-fp-pitch .opfc-fp-lines{
+ height:188px;
+ padding:24px 0 9px;
+ justify-content:space-between;
+}
+.opfc-local-setup .opfc-setup-player .slot-field .pitch-row.opfc-fp-position-row{
+ height:27px;
+ min-height:27px;
+ margin:0 1px;
+ gap:1px;
+}
+.opfc-local-setup .opfc-setup-player .opfc-fp-position-badge{
+ width:19px;
+ height:19px;
+ border-width:1.4px;
+ font-size:7px;
+ letter-spacing:-.2px;
+ flex:0 0 19px;
+}
+@media(max-width:390px){
+ .opfc-local-setup .opfc-setup-player .opfc-fp-pitch .opfc-fp-lines{
+  height:176px;
+  padding:23px 0 7px;
+ }
+ .opfc-local-setup .opfc-setup-player .slot-field .pitch-row.opfc-fp-position-row{
+  height:25px;
+  min-height:25px;
+ }
+ .opfc-local-setup .opfc-setup-player .opfc-fp-position-badge{
+  width:18px;
+  height:18px;
+  flex-basis:18px;
+  font-size:6.8px;
+  border-width:1.2px;
+ }
+}
