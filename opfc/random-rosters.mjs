@@ -55,6 +55,7 @@ export function generateRandomTeams(base,formations,{rng=Math.random}={}){
  state.lastResult=null;
  state.recruitmentMode='random';
  state.randomRevealOrder=order;
+ state.randomReveal={step:0,ready:{PSG:false,OM:false}};
  for(const team of state.teams){
   team.formation=formations[team.club];
   team.ready=false;
