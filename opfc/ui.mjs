@@ -1,6 +1,7 @@
 /** OPFC — Bloc 9A : accueil, mercato et stade local iPhone. */
 import {createGame,bid,pass,useKings,useObservation,acceptSolo,chooseFormation,place,ready} from './engine.mjs';
 import {generateRandomTeams} from './random-rosters.mjs';
+import {renderFormationPreview} from './formation-preview.mjs';
 import {CARD_BY_ID} from './catalog.mjs';
 import {DISPLAY_CLUBS,currentClubChoices,setDisplayedClubs,setDisplayedChoices,visualAbbr,displayAbbr} from './club-identities.mjs';
 import {renderCharacterPortrait,renderClubCrest,renderIdentityCrest} from './ui-portraits.mjs';
@@ -403,7 +404,7 @@ function welcome(){
  '<section class="panel intro-panel"><h2 class="section-title">'+
  (localRecruitmentMode==='random'?'Choisis les formations avant le tirage':'Formations de départ')+
  '</h2><div class="formation-picker">'+
- ['PSG','OM'].map((id,i)=>'<div class="form-box"><label for="initial-'+id+'">Joueur '+(i+1)+' · '+esc(displayAbbr(localClubChoices[id]))+'</label><select id="initial-'+id+'" data-action="initial-formation" data-club="'+id+'">'+options(FORMATION_NAMES,beforeForm[id])+'</select></div>').join('')+
+ ['PSG','OM'].map((id,i)=>'<div class="form-box"><label for="initial-'+id+'">Joueur '+(i+1)+' · '+esc(displayAbbr(localClubChoices[id]))+'</label><select id="initial-'+id+'" data-action="initial-formation" data-club="'+id+'">'+options(FORMATION_NAMES,beforeForm[id])+'</select>'+(localRecruitmentMode==='random'?renderFormationPreview(beforeForm[id]):'')+'</div>').join('')+
  '</div><p class="caption">'+(localRecruitmentMode==='random'?
  'Les personnages seront tirés selon ces postes, sans aucun doublon.':
  'Modifiables pendant le mercato puis à la mi-temps.')+'</p></section>'+
