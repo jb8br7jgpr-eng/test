@@ -32,7 +32,7 @@ export const DISPLAY_BY_ID=new Map(DISPLAY_CLUBS.map(x=>[x.id,x]));
 export const displayAbbr=id=>id==='AWC'?'ACW':id;
 /** Fichiers des écussons validés : identités affichées, pas les slots du moteur. */
 const CLUB_LOGO_NAMES=Object.freeze({
- PSG:'pirates_saint_grandline.webp',
+ PSG:'Pirates_Saint_Grandline_logo_sans_fond.webp',
  OM:'olympique_de_marygeoise.webp',
  BDW:'bayern_wano.webp',
  SPJ:'sporting_jaya.webp',
