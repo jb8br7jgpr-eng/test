@@ -69,17 +69,19 @@ function clubHtml(club){
  const logo=clubLogoFile(club.id);
  const abbr=displayAbbr(club.id);
  if(!honours||!logo)throw new Error('Fiche de club incomplète : '+club.id);
- const trophies=CLUB_TROPHIES.map(t=>'<li>'+
-  '<span class="club-catalog-award-name"><span class="club-catalog-award-icon" aria-hidden="true">'+esc(t.icon)+'</span>'+esc(t.name)+'</span>'+
-  '<strong class="club-catalog-award-value" aria-label="'+esc(honours[t.key])+' titres">'+esc(honours[t.key])+'</strong>'+
+ const trophies=CLUB_TROPHIES.map(t=>
+  '<li class="club-catalog-award" aria-label="'+esc(t.name)+' : '+esc(honours[t.key])+' titre(s)">'+
+  '<span class="club-catalog-award-name">'+esc(t.name)+'</span>'+
+  '<img class="club-catalog-award-image" src="'+esc(t.image)+'" alt="Trophée de '+esc(t.name)+'" loading="lazy" decoding="async">'+
+  '<strong class="club-catalog-award-value">'+esc(honours[t.key])+'</strong>'+
   '</li>').join('');
  const total=CLUB_TROPHIES.reduce((sum,t)=>sum+honours[t.key],0);
  return '<article class="discovery-panel club-catalog-card" data-search="'+esc(compact(club.name+' '+abbr))+'" style="--club-color:'+esc(club.secondary)+'">'+
   '<div class="club-catalog-banner"><img src="'+esc(logo)+'" alt="Écusson de '+esc(club.name)+'" loading="lazy" decoding="async"></div>'+
   '<div class="club-catalog-identity"><h2 class="club-catalog-name">'+esc(club.name)+'</h2>'+
   '<div class="club-catalog-identifier"><strong>'+esc(abbr)+'</strong><span>CLUB OPFC</span></div></div>'+
-  '<div class="club-catalog-honours"><div class="club-catalog-honours-head"><h3>Palmarès officiel</h3>'+ 
-  '<span class="club-catalog-total">'+esc(total)+' titre'+(total===1?'':'s')+'</span></div>'+
+  '<div class="club-catalog-honours"><div class="club-catalog-honours-head"><h3>Palmarès officiel</h3>'+
+  '<span class="club-catalog-total"><strong>'+esc(total)+'</strong><span>titre'+(total===1?'':'s')+'</span></span></div>'+
   '<ul class="club-catalog-awards">'+trophies+'</ul></div></article>';
 }
 
