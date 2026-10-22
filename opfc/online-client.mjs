@@ -324,10 +324,10 @@ export function createOnlineClient({
    if(!['auction','random'].includes(mode))fail('Mode de recrutement inconnu');
    const command={action:'create',firstClub:validateClub(firstClub),competition};
    if(identityId!==firstClub)command.identityId=identityId;
-   if(mode==='random'){
-    formationPositions(formation);
-    command.recruitmentMode='random';command.formation=formation;
-   }
+   formationPositions(formation);
+   // La formation choisie s'applique AUSSI dès l'ouverture du Mercato classique.
+   command.formation=formation;
+   if(mode==='random')command.recruitmentMode='random';
    const data=await request(command);
    pending=null;rememberPending();return accept(data,true);
   },
