@@ -2,7 +2,7 @@
 import {CARDS} from './catalog.mjs';
 import {portraitFile} from './ui-portraits.mjs';
 import {DISPLAY_CLUBS,displayAbbr,clubLogoFile} from './club-identities.mjs';
-import {CLUB_HONOURS,CLUB_TROPHIES} from './club-honours.mjs?v=opfc-comp-v1-20261022';
+import {CLUB_HONOURS,CLUB_TROPHIES} from './club-honours.mjs?v=opfc-trophees-20261022';
 import {loadTrophyHistory,syncQueuedLocalResults} from './trophy-service.mjs';
 
 const root=document.getElementById('catalog-grid');
