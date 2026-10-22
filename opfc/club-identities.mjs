@@ -5,7 +5,7 @@
  */
 const entries=[
  ['PSG','Pirates Saint-Grandline','#112c59','#ba1738','#ffffff'],
- ['OM','Olympique de MaryGeoise','#ffffff','#60b9db','#c4a062'],
+ ['OM','Olympique Marimo','#ffffff','#60b9db','#c4a062'],
  ['BDW','Bayern de Wano','#c12d40','#ffffff','#192e73'],
  ['SPJ','Sporting Jaya','#177d58','#ffffff','#c8d4bf'],
  ['WSC','Water Seven City','#72c3e1','#ffffff','#173653'],
@@ -32,8 +32,8 @@ export const DISPLAY_BY_ID=new Map(DISPLAY_CLUBS.map(x=>[x.id,x]));
 export const displayAbbr=id=>id==='AWC'?'ACW':id;
 /** Fichiers des écussons validés : identités affichées, pas les slots du moteur. */
 const CLUB_LOGO_NAMES=Object.freeze({
- PSG:'Pirates_Saint_Grandline_logo_sans_fond.webp',
- OM:'olympique_de_marygeoise.webp',
+ PSG:'Pirates_Saint_Grandline_logo_2_etoiles.webp',
+ OM:'Olympique_Marimo_logo_sans_fond.webp',
  BDW:'bayern_wano.webp',
  SPJ:'sporting_jaya.webp',
  WSC:'water_seven_city.webp',
