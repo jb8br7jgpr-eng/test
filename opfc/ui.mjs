@@ -1,5 +1,6 @@
 /** OPFC — Bloc 9A : accueil, mercato et stade local iPhone. */
 import {createGame,bid,pass,useKings,useObservation,acceptSolo,chooseFormation,place,ready} from './engine.mjs';
+import {generateRandomTeams} from './random-rosters.mjs';
 import {CARD_BY_ID} from './catalog.mjs';
 import {DISPLAY_CLUBS,currentClubChoices,setDisplayedClubs,setDisplayedChoices,visualAbbr,displayAbbr} from './club-identities.mjs';
 import {renderCharacterPortrait,renderClubCrest,renderIdentityCrest} from './ui-portraits.mjs';
@@ -17,6 +18,8 @@ const STORAGE='opfc-v08-local-dev';
 let game=null,firstClub='PSG',selection=null,modal=null,error='',beforeForm={PSG:'2-2-2',OM:'2-2-2'};
 let localClubChoices={PSG:'PSG',OM:'OM'},onlineHostIdentity='PSG',onlineGuestIdentity='OM';
 let localCompetition='league',onlineCompetition='league';
+let localRecruitmentMode='auction',onlineRecruitmentMode='auction';
+let onlineHostFormation='2-2-2',onlineGuestFormation='2-2-2';
 let matchUncovered=false;
 // Affichage purement local : aucun changement de règles ou de calcul moteur.
 let placement=null,teamsVisible=false,pitchClub=null;
@@ -252,6 +255,11 @@ async function onlineClicked(action,button){
   }else onlineStage='choose';
   onlineError='';render();return;
  }
+ if(action==='online-select-recruitment'){
+  if(onlineStage!=='create'||onlineClient.hasSession)throw Error('Choix de mode indisponible');
+  if(!['auction','random'].includes(button.dataset.mode))throw Error('Mode de recrutement invalide');
+  onlineRecruitmentMode=button.dataset.mode;render();return;
+ }
  if(action==='online-select-competition'){
   if(onlineStage!=='create'||onlineClient.hasSession)throw Error('Compétition non modifiable');
   if(!isCompetition(button.dataset.competition))throw Error('Compétition invalide');
@@ -274,7 +282,7 @@ async function onlineClicked(action,button){
  }
  if(action==='online-create'){
   await onlineMutation(async()=>{
-   await onlineClient.createRoom('PSG',onlineHostIdentity,onlineCompetition);
+   await onlineClient.createRoom('PSG',onlineHostIdentity,onlineCompetition,onlineRecruitmentMode,onlineHostFormation);
    onlineStage='room';
    try{await onlineClient.refreshRoom();}catch{ /* reprise par actualisation automatique */ }
   });return;
@@ -283,7 +291,7 @@ async function onlineClicked(action,button){
   const typed=document.getElementById('opfc-room-code')?.value??onlineJoinCode;
   onlineJoinCode=normalizeJoinCodeInput(typed);
   await onlineMutation(async()=>{
-   await onlineClient.joinRoom(onlineJoinCode,onlineGuestIdentity);
+   await onlineClient.joinRoom(onlineJoinCode,onlineGuestIdentity,onlineGuestFormation);
    onlineStage='room';
    try{await onlineClient.refreshRoom();}catch{ /* reprise par actualisation automatique */ }
   });return;
@@ -294,6 +302,14 @@ async function onlineClicked(action,button){
   stopOnlinePoll();onlineClient.leaveDevice();onlineVisible=false;onlineStage='choose';
   entryView='modes';onlineModal=null;modal=null;onlineSeenRoom=null;onlineSeenAuctionCard=null;
   onlineSelection=null;onlineError='';render();return;
+ }
+ if(action==='online-modal-reveal-next'){
+  if(onlineModal?.type!=='random-reveal'||onlineModal.step>=14)throw Error('Tirage indisponible');
+  onlineModal.step++;render();return;
+ }
+ if(action==='online-modal-reveal-finish'){
+  if(onlineModal?.type!=='random-reveal'||onlineModal.step!==14)throw Error('Termine le tirage');
+  onlineModal=null;render();return;
  }
  if(action==='online-modal-continue'){onlineModal=null;render();return;}
  if(action==='online-room-details'){onlineRoomDetails=!onlineRoomDetails;render();return;}
@@ -377,12 +393,23 @@ function welcome(){
   renderIdentityCrest(chosen.id,'select-crest')+
   '<span class="opfc-picked-name"><strong>'+esc(displayAbbr(chosen.id))+'</strong><small>'+esc(chosen.name)+'</small></span></span></div>';
  }).join('')+'</div></section>'+
- '<section class="panel intro-panel"><h2 class="section-title">Formations de départ</h2><div class="formation-picker">'+
+ '<section class="panel intro-panel opfc-recruit-choice"><h2 class="section-title">⚽ Comment composer les équipes ?</h2>'+
+ '<div class="opfc-recruit-buttons">'+
+ btn('local-recruit-auction','⚖️ Mercato classique',(localRecruitmentMode==='auction'?'primary':'ghost')+' full',false,'aria-pressed="'+(localRecruitmentMode==='auction')+'"')+
+ btn('local-recruit-random','🎲 Équipes aléatoires',(localRecruitmentMode==='random'?'primary':'ghost')+' full',false,'aria-pressed="'+(localRecruitmentMode==='random')+'"')+'</div>'+
+ '<p class="caption">'+(localRecruitmentMode==='random'?
+  'Chaque joueur reçoit sept personnages à leur poste naturel · Bronze 30 %, Argent 30 %, Or 30 %, Diamant 10 %.':
+  'Les enchères, budgets et mécaniques du mercato restent inchangés.')+'</p></section>'+
+ '<section class="panel intro-panel"><h2 class="section-title">'+
+ (localRecruitmentMode==='random'?'Choisis les formations avant le tirage':'Formations de départ')+
+ '</h2><div class="formation-picker">'+
  ['PSG','OM'].map((id,i)=>'<div class="form-box"><label for="initial-'+id+'">Joueur '+(i+1)+' · '+esc(displayAbbr(localClubChoices[id]))+'</label><select id="initial-'+id+'" data-action="initial-formation" data-club="'+id+'">'+options(FORMATION_NAMES,beforeForm[id])+'</select></div>').join('')+
- '</div><p class="caption">Modifiables pendant le mercato puis à la mi-temps.</p></section>'+
+ '</div><p class="caption">'+(localRecruitmentMode==='random'?
+ 'Les personnages seront tirés selon ces postes, sans aucun doublon.':
+ 'Modifiables pendant le mercato puis à la mi-temps.')+'</p></section>'+
  '<div class="intro-actions">'+
  (game?'<section class="panel opfc-resume-card"><p>Une partie locale est sauvegardée sur cet appareil.</p>'+btn('resume-local','▶ Reprendre ma partie','ghost full')+'</section>':'')+
- btn('start',game?'Créer une nouvelle partie':'Lancer le match · 2 joueurs','primary full')+'</div></main>';
+ btn('start',game?'Créer une nouvelle partie':localRecruitmentMode==='random'?'🎲 Tirer les deux équipes':'Lancer le match · 2 joueurs','primary full')+'</div></main>';
 }
 function wallets(){
  return '<div class="huds">'+game.teams.map(team=>{
@@ -602,9 +629,12 @@ function placementPage(){
  '</div>';
 }
 function playing(){
+ const random=game.recruitmentMode==='random';
  const intro=shell()+'<div class="match-header">'+sep()+'<h1 class="page-title">'+
  (game.phase==='mercato'?'Mercato des légendes':'Prépare le match')+'</h1>'+
- '<div class="dice-note">Dés : '+game.dice.join(' · ')+'</div></div>'+wallets();
+ (random?'<div class="dice-note">🎲 Équipes aléatoires · 7 joueurs au bon poste</div>':
+ '<div class="dice-note">Dés : '+game.dice.join(' · ')+'</div>')+'</div>'+
+ (random?'':wallets());
  if(placement)return intro+placementPage()+
  '<div class="gameplay-nav"><span class="caption">Placement de recrue</span>'+
  '<button class="link-button" data-action="confirm-reset">Nouvelle partie</button></div>';
@@ -708,7 +738,7 @@ function onlineTeams(pending=null){
 function onlineSharedMarket(snapshot){
  const ownClub=onlineClient.room.myClub;
  const pending=onlinePending(snapshot);
- const hud=onlineScoped(()=>wallets());
+ const hud=snapshot.phase==='lineup'&&onlineClient.room?.recruitmentMode==='random'?'':onlineScoped(()=>wallets());
  if(pending){
   if(pending.club!==ownClub)
    return '<main class="online-game-content opfc-online-playing">'+hud+
@@ -809,6 +839,7 @@ function render(){
  const lobby=(!showingGame||onlineRoomDetails)?renderOnlineLobby({
   stage:onlineStage,firstClub,room:onlineClient.room,
   hostIdentity:onlineHostIdentity,guestIdentity:onlineGuestIdentity,competition:onlineCompetition,
+  recruitmentMode:onlineRecruitmentMode,hostFormation:onlineHostFormation,guestFormation:onlineGuestFormation,
   configured:onlineClient.configured,joinCode:onlineJoinCode,
   busy:onlineBusy,error:onlineError,gameActive:showingGame
  }):'';
@@ -851,11 +882,17 @@ function change(fn){
  save();render();
 }
 function start(){
- const s=createGame({firstClub:'PSG',clubChoices:localClubChoices});
-  s.competition=localCompetition;
-  s.matchRecordId=crypto.randomUUID();
- for(const id of ['PSG','OM'])if(beforeForm[id]!=='2-2-2')Object.assign(s,chooseFormation(s,id,beforeForm[id]));
- game=s;entryView='playing';selection=null;placement=null;teamsVisible=false;pitchClub=null;modal={type:'dice'};error='';save();render();
+ let s=createGame({firstClub:'PSG',clubChoices:localClubChoices});
+ s.competition=localCompetition;
+ s.matchRecordId=crypto.randomUUID();
+ if(localRecruitmentMode==='random'){
+  s=generateRandomTeams(s,beforeForm);
+ }else{
+  for(const id of ['PSG','OM'])if(beforeForm[id]!=='2-2-2')Object.assign(s,chooseFormation(s,id,beforeForm[id]));
+ }
+ game=s;entryView='playing';selection=null;placement=null;teamsVisible=false;pitchClub=null;
+ modal=localRecruitmentMode==='random'?{type:'random-reveal',order:s.randomRevealOrder,step:0}:{type:'dice'};
+ error='';save();render();
 }
 function clicked(button){
  const action=button.dataset.action,club=button.dataset.club;
@@ -874,6 +911,10 @@ function clicked(button){
  if(onlineVisible){
   void onlineClicked(action,button).catch(e=>{onlineError=e?.message||'Action réseau impossible';render();});
   return;
+ }
+ if(action==='local-recruit-auction'||action==='local-recruit-random'){
+  if(entryView!=='local')throw Error('Choix du recrutement indisponible');
+  localRecruitmentMode=action==='local-recruit-random'?'random':'auction';render();return;
  }
  if(action==='local-select-competition'){
   if(!isCompetition(button.dataset.competition))throw Error('Compétition invalide');
@@ -1025,6 +1066,13 @@ app.addEventListener('change',event=>{
   if(onlineVisible){
    if(target.dataset.action==='online-competition'&&isCompetition(target.value)){
      onlineCompetition=target.value;render();return;
+    }
+    if(target.dataset.action==='online-host-formation'&&FORMATION_NAMES.includes(target.value)){
+     onlineHostFormation=target.value;render();return;
+    }
+    if(target.dataset.action==='online-guest-formation'&&FORMATION_NAMES.includes(target.value)){
+     onlineJoinCode=document.getElementById('opfc-room-code')?.value??onlineJoinCode;
+     onlineGuestFormation=target.value;render();return;
     }
     if(target.dataset.action==='online-host-identity'&&DISPLAY_CLUBS.some(c=>c.id===target.value)){
     onlineHostIdentity=target.value;render();return;
