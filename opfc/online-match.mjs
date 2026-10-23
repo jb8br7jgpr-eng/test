@@ -73,7 +73,7 @@ export function onlineMatchView(state,club){
  const publicState=matchPublicView(state);
  const m=publicState.match;
  return {
-  version:state.version,phase:state.phase,
+  version:state.version,phase:state.phase,stadiumId:state.stadiumId??'mugiwara',
   teams:safeTeams(state.teams),dice:[...state.dice],
   match:{
    index:m.index,minute:m.minute,competition:state.competition??null,
