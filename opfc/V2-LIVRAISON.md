@@ -117,3 +117,13 @@ Branche : `feature/opfc-stades-stats-ancre-20261023`.
 - Le module de synchronisation existant écoute déjà l'événement `online` pour reprendre l'envoi des résultats.
 - Le workflow `.github/workflows/opfc-v2-tests.yml` déclenche désormais la nouvelle suite de tests même si ce fichier seul change.
 - Contrôles effectués via les fonctions réelles et un réseau simulé : file intacte pendant l'interruption, vidée après confirmation, ancien résultat compatible. **La totalité de la suite GitHub Actions n'est pas encore attestée** : accès aux journaux des workflows de `push` non disponible ici.
+
+## Audit final du bundle serveur et environnement de recette
+
+- Une suite dédiée `tests/opfc-v2-edge-bundle.test.mjs` analyse les imports relatifs du point d'entrée `index.ts` et des modules serveur ; elle refuse les dépendances manquantes, les imports de modules avec paramètres de cache et les références sortant du bundle.
+- Comparaison en lecture seule des cinq contrôleurs partagés : `online-market.mjs`, `online-lineup.mjs`, `online-match.mjs`, `match-actions.mjs`, `set-piece-actions.mjs`. Identité confirmée après neutralisation des seuls paramètres de cache navigateur.
+- La CI isolée `.github/workflows/opfc-v2-tests.yml` inclut ces vérifications et les relance en cas de modification des dépendances Edge.
+- Précontrôle SQL live **en lecture seule** : 2 finales archivées, 5 buts historiques dans l'archive et dans le catalogue, 3 salons non terminés au moment de la consultation. Le namespace `opfc_stats` et les déclencheurs actuels de buts/sauvegarde sont présents ; la table V2 n'existe pas encore.
+- Supabase ne présente actuellement **aucune branche de prévisualisation existante**. Ne créer aucun environnement de recette sans accord utilisateur explicite sur les coûts potentiels de calcul ; ne jamais tester de nouvelles écritures sur le projet de production.
+- En recette, inspecter aussi les hooks d'archivage externes avant d'insérer des finales synthétiques : un ROLLBACK SQL ne révoque pas les notifications réseau.
+- La migration, la fonction Edge V2 et la publication restent **non appliquées**. Les tests de graphe ajoutés au dépôt restent à exécuter dans une CI avec accès à tous les fichiers.
