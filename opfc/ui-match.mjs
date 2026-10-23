@@ -307,9 +307,30 @@ function onlineAcknowledgementPanel(content,state,club){
 }
 function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null,competition=null}={}){
  if(state?.teams)setDisplayedClubs(state.teams);
- if(state?.phase==='kickoff-ready')return renderPrematch(
-   state.competition?state:{...state,competition:competition??'grandline'},
-   {canKickoff:!onlineClub||onlineClub===hostClub});
+ if(state?.phase==='kickoff-ready'){
+  const v2=state.playerStatsVersion===2||!!state.stadiumId;
+  const myAcknowledged=onlineClub?
+    state.prematchReady?.[onlineClub]===true:state.prematchSeen===true;
+  if(v2&&myAcknowledged){
+   const everyoneReady=!onlineClub||
+    (state.prematchReady?.PSG===true&&state.prematchReady?.OM===true);
+   return renderPrematch(
+    state.competition?state:{...state,competition:competition??'grandline'},
+    {canKickoff:!onlineClub||onlineClub===hostClub&&everyoneReady,
+     waitingMessage:onlineClub&&!everyoneReady?
+      '⏳ En attente de la confirmation de l’autre joueur.':
+      'Le créateur du salon donne le coup d’envoi.'});
+  }
+  const action=v2?'match-prematch-next':'match-kickoff';
+  const caption= v2?'Continuer vers la présentation du stade':'Donner le coup d’envoi';
+  return '<section class="panel match-stage">'+
+   '<span class="eyebrow">'+html(competitionName(state.match?.competition??state.competition??competition??'grandline'))+
+   ' · Avant-match</span><h2>Les équipes sont prêtes !</h2>'+
+   '<p>Sept joueurs de chaque côté. Les compositions se verrouillent au coup d’envoi.</p>'+
+   (onlineClub&&!v2&&onlineClub!==hostClub?
+    '<p class="caption">Le créateur du salon donne le coup d’envoi.</p>':
+    button(action,caption))+'</section>';
+ }
  const view=onlineClub?state:matchPublicView(state),m=view.match;
  if(!m)return '<section class="panel match-stage"><h2>Aucun match en cours</h2></section>';
  let out=scoreBoard(m);
