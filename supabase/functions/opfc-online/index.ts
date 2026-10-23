@@ -85,7 +85,10 @@ async function create(body){
  initial.competition=selectedCompetition;
  if(body.stadiumId!==undefined&&!isStadium(body.stadiumId))return error('Stade invalide',400);
  // Les anciens clients ne passent pas stadiumId : ne rien ajouter à leurs salons.
- if(body.stadiumId!==undefined)initial.stadiumId=body.stadiumId;
+ if(body.stadiumId!==undefined){
+  initial.stadiumId=body.stadiumId;
+  initial.playerStatsVersion=2; // seules les nouvelles parties ont le suivi complet
+ }
  const chosen=validateDisplayClub(body.identityId??hostClub);
  const other=hostClub==='PSG'?'OM':'PSG';
  initial.teams.find(t=>t.club===hostClub).identityId=chosen;
@@ -240,7 +243,8 @@ async function mutate(body,kind){
   return error(e instanceof Error?e.message:'Action illégale',400);
  }
  // Statistiques calculées exclusivement sur l'état validé par le serveur, une seule fois.
- if(transition.state.phase==='finished'&&row.private_state.phase!=='finished'){
+ if(transition.state.playerStatsVersion===2&&transition.state.phase==='finished'&&
+    row.private_state.phase!=='finished'){
   const stats=matchPerformances(transition.state);
   transition.state.match.playerStats=stats.players;
   transition.state.match.anchorId=stats.winner;
