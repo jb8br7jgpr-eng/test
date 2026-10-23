@@ -21,6 +21,9 @@ DROP POLICY IF EXISTS opfc_player_totals_public_read ON public.opfc_player_total
 CREATE POLICY opfc_player_totals_public_read ON public.opfc_player_totals
  FOR SELECT TO anon, authenticated USING (true);
 REVOKE ALL ON public.opfc_player_totals FROM PUBLIC;
+-- Supabase peut appliquer ses default privileges à la création : retirer
+-- les droits explicites (INSERT/UPDATE/DELETE/TRUNCATE) des rôles navigateur.
+REVOKE ALL ON TABLE public.opfc_player_totals FROM anon, authenticated;
 GRANT SELECT ON public.opfc_player_totals TO anon, authenticated;
 -- Le backend Edge écrit avec service_role ; jamais les navigateurs.
 GRANT SELECT, INSERT, UPDATE ON public.opfc_player_totals TO service_role;
