@@ -22,6 +22,8 @@ CREATE POLICY opfc_player_totals_public_read ON public.opfc_player_totals
  FOR SELECT TO anon, authenticated USING (true);
 REVOKE ALL ON public.opfc_player_totals FROM PUBLIC;
 GRANT SELECT ON public.opfc_player_totals TO anon, authenticated;
+-- Le backend Edge écrit avec service_role ; jamais les navigateurs.
+GRANT SELECT, INSERT, UPDATE ON public.opfc_player_totals TO service_role;
 
 -- Conservation des buts historiques sans reconstituer artificiellement les autres stats.
 INSERT INTO public.opfc_player_totals(card_id,goals)
