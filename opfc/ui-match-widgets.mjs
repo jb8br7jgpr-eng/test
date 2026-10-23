@@ -19,8 +19,8 @@ const keeperOf=(state,club)=>state?.teams?.find(t=>t.club===club)
 // désigner un centre offensif ou la direction centrale d'un tir au but.
 // Les identifiants de choix envoyés au moteur restent strictement inchangés.
 const TACTICAL_EMOJIS=Object.freeze({
- 'Combiner':'🔗','Lancer':'🚀','Percer':'⚡',
- 'Presser':'🏃','Intercepter':'🛡️','Contenir':'🧱',
+ 'Passe courte':'🔗','Passe en profondeur':'🚀','Dribbler':'⚡',
+ 'Tacler':'🦵','Intercepter':'🛡️','Pressing':'🏃',
  'Frappe placée':'🎯','Frappe puissante':'💥','Ballon piqué':'🎈',
  'Rester sur la ligne':'🧤','Sortir':'🚀','Anticiper le plongeon':'👀',
  'Premier poteau':'🥅','Point de penalty':'🎯','Second poteau':'🥅',
