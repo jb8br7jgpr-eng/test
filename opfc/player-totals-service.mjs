@@ -2,7 +2,14 @@
 import {loadScorerTotals} from './scorer-service.mjs';
 const endpoint='https://cihzwaxernachchpjktj.supabase.co/rest/v1/opfc_player_totals?select=card_id,matches,goals,assists,anchors';
 const publicKey='sb_publishable_YHtE82cuI72CARv9rScVqw_g3sxbaHG';
-const n=v=>Number.isSafeInteger(Number(v))&&Number(v)>=0?Number(v):null;
+const n=v=>{
+ // Ne jamais assimiler un champ absent, null, vide ou booléen à zéro :
+ // il doit s'agir d'un compteur entier réellement transmis par Supabase.
+ if(typeof v!=='number'&&!(typeof v==='string'&&/^(0|[1-9][0-9]*)$/.test(v)))
+  return null;
+ const value=Number(v);
+ return Number.isSafeInteger(value)&&value>=0?value:null;
+};
 export async function loadPlayerTotals(){
  const res=await fetch(endpoint,{cache:'no-store',headers:{'apikey':publicKey,'Accept':'application/json'}});
  if(res.ok){
