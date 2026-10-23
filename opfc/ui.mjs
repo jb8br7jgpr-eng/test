@@ -644,10 +644,11 @@ function playing(){
  '<button class="link-button" data-action="confirm-reset">Nouvelle partie</button></div>';
 }
 function endMercato(){
- return shell()+'<main class="ready-layout">'+sep()+
- '<h1 class="page-title">Les équipes sont prêtes !</h1><p>Les sept recrues de chaque club sont alignées.</p>'+
- renderMatchScreen(game)+wallets()+teams()+
- btn('confirm-reset','Nouvelle partie locale','ghost full')+'</main>';
+ // Avant-match V2 : les 14 titulaires sont déjà présentés avec leurs portraits.
+ // Pas de deuxième terrain ni de bandeau budgets après verrouillage des équipes.
+ return shell()+'<main class="ready-layout">'+renderMatchScreen(game)+
+ '<div class="gameplay-nav"><span class="caption">Mode local · Avant-match</span>'+
+ btn('confirm-reset','Nouvelle partie locale','ghost small')+'</div></main>';
 }
 function matchPage(){
  const middle=renderMatchScreen(game,{uncovered:matchUncovered});
@@ -735,6 +736,10 @@ function onlineTeams(pending=null){
 }
 function onlineSharedMarket(snapshot){
  const ownClub=onlineClient.room.myClub;
+ if(snapshot.phase==='kickoff-ready')
+  return '<main class="online-game-content opfc-online-playing">'+
+   renderOnlineGame(snapshot,{myClub:ownClub,hostClub:onlineClient.room.hostClub,
+    competition:onlineClient.room.competition})+'</main>';
  if(snapshot.phase==='lineup'&&snapshot.reveal?.step<7)
   return '<main class="online-game-content opfc-online-playing">'+
    randomRevealPanel(snapshot,snapshot.reveal.step,{
