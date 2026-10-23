@@ -9,7 +9,7 @@ const h=s=>String(s??'').replace(/[&<>"']/g,k=>({'&':'&amp;','<':'&lt;','>':'&gt
 const teamBlock=t=>'<div class="opfc-prematch-team"><h3>'+h(visualName(t.club))+'</h3>'+
  lineupDetails(t).filter(Boolean).map(p=>'<div class="opfc-prematch-player">'+
  renderCharacterPortrait(p.cardId,'opfc-prematch-portrait')+
- '<span>'+h(CARD_BY_ID.get(p.cardId)?.name??p.cardId)+'</span>'+
+ '<span class="opfc-prematch-player-name">'+h(CARD_BY_ID.get(p.cardId)?.name??p.cardId)+'</span>'+
  '<small>'+h(p.position)+(p.outOfPosition?' ⚠️':'')+'</small><b>'+p.rating+'</b></div>').join('')+'</div>';
 export function renderPrematch(state,{canKickoff=true}={}){
  if(state?.phase!=='kickoff-ready'||state.teams?.length!==2)throw Error('Avant-match indisponible');
