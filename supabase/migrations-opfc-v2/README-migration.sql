@@ -32,6 +32,20 @@ CREATE OR REPLACE FUNCTION opfc_stats.capture_player_totals()
 RETURNS trigger LANGUAGE plpgsql SET search_path TO '' AS $$
 DECLARE item record; stat jsonb;
 BEGIN
+ -- Anciennes parties en ligne terminées pendant la transition :
+ -- préserver les buts même si elles ne portaient pas de journal individuel.
+ IF NEW.player_stats='{}'::jsonb THEN
+  FOR item IN
+   SELECT g->>'cardId' AS key,count(*)::bigint AS tally
+   FROM pg_catalog.jsonb_array_elements(NEW.goals) AS g
+   WHERE g->>'cardId' IS NOT NULL GROUP BY g->>'cardId'
+  LOOP
+   INSERT INTO public.opfc_player_totals(card_id,goals)
+   VALUES(item.key,item.tally)
+   ON CONFLICT(card_id) DO UPDATE SET goals=public.opfc_player_totals.goals+EXCLUDED.goals;
+  END LOOP;
+  RETURN NEW;
+ END IF;
  FOR item IN SELECT key,value FROM pg_catalog.jsonb_each(NEW.player_stats) LOOP
   stat:=item.value;
   IF pg_catalog.jsonb_typeof(stat)<>'object' OR
