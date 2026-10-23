@@ -4,6 +4,7 @@ import {DISPLAY_CLUBS,DISPLAY_BY_ID,displayAbbr} from './club-identities.mjs';
 import {renderIdentityCrest} from './ui-portraits.mjs?v=opfc-75-roster-20261022';
 import {competitionName,renderCompetitionPicker} from './club-honours.mjs?v=opfc-trophees-20261022';
 import {FORMATIONS} from './rules.mjs';
+import {stadiumPicker} from './stadiums.mjs';
 import {renderFormationPreview} from './formation-preview.mjs?v=opfc-setup-classic-20261022';
 const h=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const button=(act,label,style='ghost',disabled=false)=>'<button type="button" class="btn '+style+
@@ -23,7 +24,7 @@ function clubSelect(action,chosen){
  '<span class="opfc-picked-name"><strong>'+h(displayAbbr(chosen))+'</strong><small>'+h(pretty(chosen))+'</small></span></span></div>';
 }
 export function renderOnlineLobby({stage='choose',firstClub='PSG',hostIdentity='PSG',guestIdentity='OM',room=null,configured=false,
- joinCode='',busy=false,error='',gameActive=false,competition='league',recruitmentMode='auction',hostFormation='2-2-2',guestFormation='2-2-2'}={}){
+ joinCode='',busy=false,error='',gameActive=false,competition='league',recruitmentMode='auction',hostFormation='2-2-2',guestFormation='2-2-2',stadiumId='mugiwara'}={}){
  const nav='<div class="online-nav">'+button('back','← Retour','ghost small')+'</div>';
  let out='<section class="online-wrapper"><span class="eyebrow">OPMercato FC · Deux iPhone</span>'+
  '<h1 class="page-title">Mode en ligne</h1>'+
@@ -38,7 +39,7 @@ export function renderOnlineLobby({stage='choose',firstClub='PSG',hostIdentity='
   out+='<section class="panel online-lobby-card"><h2 class="section-title">Créer un salon privé</h2>'+
    '<div class="opfc-competition-panel opfc-online-competition"><h2 class="section-title">🏆 Choisis ta compétition</h2>'+
    '<p class="caption">Le créateur sélectionne le trophée disputé pendant cette finale.</p>'+
-   renderCompetitionPicker(competition,'online-select-competition')+'</div>'+
+   renderCompetitionPicker(competition,'online-select-competition')+'</div>'+   stadiumPicker(stadiumId,'online-select-stadium')+
    '<section class="opfc-recruit-choice" aria-label="Type de recrutement"><h2 class="section-title">⚽ Choisis comment composer les équipes</h2>'+
    '<div class="opfc-recruit-buttons">'+
    '<button type="button" class="btn '+(recruitmentMode==='auction'?'primary':'ghost')+'" data-action="online-select-recruitment" data-mode="auction" aria-pressed="'+(recruitmentMode==='auction')+'">⚖️ Mercato classique</button>'+
