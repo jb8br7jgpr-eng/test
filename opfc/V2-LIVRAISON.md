@@ -100,3 +100,11 @@ Branche : `feature/opfc-stades-stats-ancre-20261023`.
 - Quand les statistiques V2 ne sont pas encore accessibles, les tris correspondants retombent provisoirement sur la note, avec message explicite, sans inventer de performances.
 - Fichiers : `opfc/catalog-sorting.mjs`, `opfc/catalog-view.mjs`, `opfc-catalogue.html`. Tests : `tests/opfc-v2-catalog-sort.test.mjs`, inclus dans le workflow OPFC V2.
 - 13 assertions fonctionnelles du nouveau module de tri et 15 vérifications de syntaxe/intégration des menus réussies en inspection ; exécution complète de GitHub Actions encore à confirmer.
+
+## Vérification finale des tris et totaux de carrière
+
+- Le catalogue propose les classements par matchs, buts, passes décisives, Ancres d'Or, note et les deux sens alphabétiques. Le catalogue clubs a également A → Z et Z → A.
+- Le chargement de `opfc_player_totals` rejette maintenant les valeurs `null`, vides, négatives et non entières au lieu de les interpréter comme des zéros. Si le serveur V2 n'est pas disponible, seuls les buts historiques confirmés sont montrés ; les trois autres compteurs restent inconnus.
+- Régression automatisée : `tests/opfc-v2-catalog-sort.test.mjs` couvre explicitement les valeurs manquantes et la chaîne feuille de match → compteurs cumulatifs → classement.
+- Vérifications sur les modules source : 9 essais de lecture de données et 5 assertions d'intégration moteur-statistiques-catalogue ont réussi.
+- Les tests ci-dessus ont été exécutés avec dépendances simulées en lecture seule. L'exécution complète dans GitHub Actions, dans un vrai navigateur et en recette Supabase reste nécessaire avant publication.
