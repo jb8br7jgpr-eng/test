@@ -127,3 +127,12 @@ Branche : `feature/opfc-stades-stats-ancre-20261023`.
 - Supabase ne présente actuellement **aucune branche de prévisualisation existante**. Ne créer aucun environnement de recette sans accord utilisateur explicite sur les coûts potentiels de calcul ; ne jamais tester de nouvelles écritures sur le projet de production.
 - En recette, inspecter aussi les hooks d'archivage externes avant d'insérer des finales synthétiques : un ROLLBACK SQL ne révoque pas les notifications réseau.
 - La migration, la fonction Edge V2 et la publication restent **non appliquées**. Les tests de graphe ajoutés au dépôt restent à exécuter dans une CI avec accès à tous les fichiers.
+
+## Critères de validation SQL renforcés (préparation à la recette)
+
+- Vérification en lecture seule du projet OPFC : la clé primaire `opfc_match_results.source_key` possède bien un index unique, les anciens totaux de buteurs sont accessibles seulement en lecture publique, et les tables privées `opfc_match_results` / `opfc_rooms` ont la RLS activée sans politique publique (protection volontaire).
+- Après application en recette de `README-migration.sql`, exécuter `postflight-readonly.sql` et exiger : **zéro finale V2 invalide**, 14 titulaires et 14 apparitions par finale, exactement un gagnant Ancre d'Or cohérent avec `anchor_id`.
+- Vérifier impérativement que `SUM(opfc_player_totals.goals)=SUM(opfc_scorer_totals.goals)` pour les buts historiques et futurs, et que le total des Ancres d'Or est égal au nombre de finales V2 dotées d'une Ancre.
+- Vérifier RLS active pour `opfc_player_totals`, lecture accordée à `anon`, écriture `INSERT/UPDATE` refusée à `anon`, et présence du nouveau trigger `AFTER INSERT` uniquement.
+- Contrôler les sauvegardes et la présence de salons en cours avant la bascule. Éviter les insertions de résultats fictifs sur la base réelle : certains triggers émettent des notifications externes qui ne seraient pas annulées par un `ROLLBACK`.
+- **Toujours bloqué volontairement :** aucune branche Supabase de recette n'existe ; sa création peut engendrer des frais et nécessite un accord spécifique. Aucun changement en production autorisé à ce stade.
