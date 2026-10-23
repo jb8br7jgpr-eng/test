@@ -21,7 +21,11 @@ const post={GAR:'Gardien',DEF:'Défenseur',MIL:'Milieu',ATT:'Attaquant'};
 const rarityName={DIA:'Diamant',OR:'Or',ARG:'Argent',BRZ:'Bronze'};
 const stats={PUI:'PUI',TEC:'TEC',PAS:'PAS',VIT:'VIT',DEF:'DEF',GAR:'GAR'};
 const goalsFor=id=>scorerTotals?.get(id)?.goals??0;
-const careerValue=(id,key)=>scorerTotals===null||(!careerComplete&&key!=='goals')?'—':scorerTotals.get(id)?.[key]??0;
+const careerValue=(id,key)=>{
+ if(scorerTotals===null||(!careerComplete&&key!=='goals'))return '—';
+ const value=scorerTotals.get(id);
+ return value?.[key]===null?'—':value?.[key]??0;
+};
 function sortedCharacters(){
  const mode=characterSort.value;
  const nameOrder=(a,b)=>a.name.localeCompare(b.name,'fr');
