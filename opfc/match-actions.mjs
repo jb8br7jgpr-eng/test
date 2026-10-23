@@ -8,7 +8,7 @@
  */
 import {lineupDetails,chemistryAdvantage} from './rules.mjs';
 import {prepareOpenPlayRoles,finisherFor} from './roles.mjs';
-import {ATTACK_CHOICES,DEFENSE_CHOICES,drawOpenPlayContext,calculateOpenPlay,resolveOpenPlay} from './open-play.mjs';
+import {ATTACK_CHOICES,DEFENSE_CHOICES,drawOpenPlayContext,calculateOpenPlay,resolveOpenPlay} from './open-play.mjs?v=opfc-tactics-20261023';
 import {SHOT_CHOICES,KEEPER_CHOICES,calculateOpenShot,resolveOpenShot} from './shot.mjs';
 import {currentMatchMoment,resolveMatchMoment,continueMatch} from './match.mjs';
 import {beginSetPieceAction} from './set-piece-actions.mjs';
