@@ -3,7 +3,7 @@ import {CARDS,CARD_BY_ID} from './catalog.mjs?v=opfc-75-roster-20261022';
 import {portraitFile} from './ui-portraits.mjs?v=opfc-75-roster-20261022';
 import {DISPLAY_CLUBS,displayAbbr,clubLogoFile} from './club-identities.mjs';
 import {CLUB_HONOURS,CLUB_TROPHIES} from './club-honours.mjs?v=opfc-trophees-20261022';
-import {loadTrophyHistory,syncQueuedLocalResults} from './trophy-service.mjs';
+import {loadTrophyHistory,syncQueuedLocalResults} from './trophy-service.mjs?v=opfc-v2-20261023';
 import {loadPlayerTotals} from './player-totals-service.mjs';
 
 const root=document.getElementById('catalog-grid');
