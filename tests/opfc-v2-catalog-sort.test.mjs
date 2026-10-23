@@ -2,6 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {sortCatalogCharacters,sortCatalogClubs,characterStatSortAvailable} from '../opfc/catalog-sorting.mjs';
+import {loadPlayerTotals} from '../opfc/player-totals-service.mjs';
 
 const players=[
  {id:'a',name:'Zoro',rating:90},
@@ -50,4 +51,22 @@ test('Les clubs supportent A vers Z et Z vers A sans altérer les classements de
  assert.deepEqual(sort('alpha-desc'),['Zoro FC','Pirates Saint-Grandline','Bayern de Wano']);
  assert.deepEqual(sort('total'),['Zoro FC','Bayern de Wano','Pirates Saint-Grandline']);
  assert.deepEqual(sort('cup'),['Zoro FC','Pirates Saint-Grandline','Bayern de Wano']);
+});
+
+test('Une valeur de carrière null ne peut jamais être affichée comme un vrai zéro',async()=>{
+ const previous=globalThis.fetch;
+ try{
+  globalThis.fetch=async()=>({ok:true,json:async()=>[
+   {card_id:'luffy',matches:null,goals:2,assists:0,anchors:0}
+  ]});
+  await assert.rejects(loadPlayerTotals(),/invalides/);
+  globalThis.fetch=async()=>({ok:true,json:async()=>[
+   {card_id:'luffy',matches:'3',goals:2,assists:0,anchors:1}
+  ]});
+  const {totals,complete}=await loadPlayerTotals();
+  assert.equal(complete,true);
+  assert.deepEqual(totals.get('luffy'),{matches:3,goals:2,assists:0,anchors:1});
+ }finally{
+  globalThis.fetch=previous;
+ }
 });
