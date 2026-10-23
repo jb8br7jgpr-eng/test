@@ -17,7 +17,7 @@ function goalsFor(goals,club){
  if(!list.length)return '<p class="caption">Aucun but</p>';
  return list.map(g=>'<div class="final-goal">'+
  renderCharacterPortrait(g.cardId,'final-portrait')+
- '<div class="final-goal-meta"><strong>'+h(player(g.cardId))+'</strong><span>'+Number(g.minute)+'e</span>'+  (g.assistId?'<small>🎯 Passe décisive : '+h(player(g.assistId))+'</small>':'')+  '</div></div>').join('');
+ '<div class="final-goal-meta"><strong>'+h(player(g.cardId))+'</strong><span>'+Number(g.minute)+'e</span>'+  (g.assistId?'<small class="final-assist">'+renderCharacterPortrait(g.assistId,'final-assist-portrait')+'🎯 Passe décisive : '+h(player(g.assistId))+'</small>':'')+  '</div></div>').join('');
 }
 function statRow(label,a,b){
  const max=Math.max(1,a,b),p1=Math.round(a/max*100),p2=Math.round(b/max*100);
@@ -40,7 +40,6 @@ export function renderFinalResult(state){
  const m=state.match,st=m.statistics;
  const performance=matchPerformances(state);
  const anchor=performance.winner,anchorStats=performance.players[anchor];
- const anchorClub=state.teams.find(t=>t.roster.includes(anchor))?.identityId??'—';
  const trophy=CLUB_TROPHIES.find(t=>t.key===(m.competition??state.competition))??CLUB_TROPHIES.find(t=>t.key==='grandline');
  return '<div class="final-screen">'+
  '<section class="panel final-score"><span class="eyebrow">'+h(competitionName(m.competition??state.competition))+' · Coup de sifflet final</span>'+ 
