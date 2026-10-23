@@ -305,9 +305,11 @@ function onlineAcknowledgementPanel(content,state,club){
    match=>match+(mine?' disabled aria-disabled="true"':''))+
   status+(mine?'<p class="caption">En attente de la validation adverse…</p>':'');
 }
-function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null}={}){
+function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null,competition=null}={}){
  if(state?.teams)setDisplayedClubs(state.teams);
- if(state?.phase==='kickoff-ready')return renderPrematch(state,{canKickoff:!onlineClub||onlineClub===hostClub});
+ if(state?.phase==='kickoff-ready')return renderPrematch(
+   state.competition||!competition?state:{...state,competition},
+   {canKickoff:!onlineClub||onlineClub===hostClub});
  const view=onlineClub?state:matchPublicView(state),m=view.match;
  if(!m)return '<section class="panel match-stage"><h2>Aucun match en cours</h2></section>';
  let out=scoreBoard(m);
@@ -366,8 +368,8 @@ export function renderMatchScreen(state,options={}){
  return matchCore(state,options);
 }
 /** En ligne : présentation locale identique, confidentialité propre à chacun. */
-export function renderOnlineMatchScreen(state,{myClub,hostClub}={}){
+export function renderOnlineMatchScreen(state,{myClub,hostClub,competition}={}){
  if(!['PSG','OM'].includes(myClub)||!['PSG','OM'].includes(hostClub))
   return '<section class="panel"><p>Synchronisation de la partie…</p></section>';
- return asOnlineActions(matchCore(state,{onlineClub:myClub,hostClub}));
+ return asOnlineActions(matchCore(state,{onlineClub:myClub,hostClub,competition}));
 }
