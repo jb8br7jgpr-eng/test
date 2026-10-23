@@ -136,3 +136,24 @@ Branche : `feature/opfc-stades-stats-ancre-20261023`.
 - Vérifier RLS active pour `opfc_player_totals`, lecture accordée à `anon`, écriture `INSERT/UPDATE` refusée à `anon`, et présence du nouveau trigger `AFTER INSERT` uniquement.
 - Contrôler les sauvegardes et la présence de salons en cours avant la bascule. Éviter les insertions de résultats fictifs sur la base réelle : certains triggers émettent des notifications externes qui ne seraient pas annulées par un `ROLLBACK`.
 - **Toujours bloqué volontairement :** aucune branche Supabase de recette n'existe ; sa création peut engendrer des frais et nécessite un accord spécifique. Aucun changement en production autorisé à ce stade.
+
+## Publication autorisée et réalisée — 23 octobre 2026
+
+L'utilisateur a explicitement autorisé le déploiement de la V2 sur les deux infrastructures OPFC existantes, sans troisième projet Supabase.
+
+- **Sauvegarde GitHub avant mise à jour** : branche `backup/opfc-pre-v2-20261023`, commit `c798f0acd457567cf48f4442d84a2e17d00c8d2f`. Inclut la version originale de `main` et les 22 fichiers du serveur OPFC V19 sauvegardés sous `opfc-v19-server-backup/`.
+- **Sauvegarde privée Supabase** : schéma `opfc_v2_backup_20261023`, tables `match_results_pre_v2`, `scorer_totals_pre_v2`, `rooms_pre_v2`. Initialement : 2 finales, 5 buts, 7 salons, conformes aux originaux.
+- **Migrations Supabase OPFC appliquées** : `opfc_v2_private_predeploy_backup_20261023`, `opfc_v2_add_individual_stats_stadium_anchor_20261023`, `opfc_v2_restrict_new_public_totals_to_readonly_20261023`.
+- **Sécurité ajustée avant publication** : les privilèges par défaut de Supabase avaient accordé à `anon` et `authenticated` des droits SQL d'écriture sur la nouvelle table malgré la politique RLS de lecture seule. Ils ont été explicitement révoqués : RLS active, SELECT public autorisé, INSERT/UPDATE public refusés et écriture `service_role` conservée. Le fichier de migration dans `main` contient ce correctif.
+- **Serveur OPFC** : fonction Edge `opfc-online` actualisée de la V19 à la **V20**, bundle vérifié de 24 fichiers, `verify_jwt=false` conservé pour compatibilité avec l'ancienne fonction.
+- **GitHub Pages** : `main` avancée par fast-forward au commit V2 `8175c78353c500fddbdeb5b206c579b5866dc679`. Aucun fichier du jeu classique OPMercato modifié.
+- **Après publication** : contrôle SQL 2 finales archivées, 5 buts historiques dans `opfc_scorer_totals` et 5 dans `opfc_player_totals`, droits INSERT publics refusés.
+- **Attention** : GitHub Pages n'a pas pu être vérifié directement dans un vrai navigateur depuis les outils disponibles, et aucune partie V2 complète sur deux iPhone n'a encore été exécutée. Ne pas confondre publication effective de `main` et recette fonctionnelle complète.
+
+### Scénarios utilisateurs prioritaires à vérifier après publication
+
+1. Recharger complètement la page OPFC sur les deux téléphones, vérifier les huit stades et que le jeu classique OPMercato est intact.
+2. Jouer le mode local jusqu'au double avant-match, puis jusqu'au résultat final ; vérifier buts, passeurs et Ancre d'Or.
+3. Tester le mode en ligne à deux iPhone : deux confirmations distinctes d'avant-match, ensuite coup d'envoi par l'hôte uniquement, puis résultat final.
+4. Vérifier les quatre compteurs et les tris A → Z / Z → A dans le catalogue.
+5. En cas de défaillance, retrouver le serveur V19 dans la branche de sauvegarde ; ne pas supprimer les données V2 ajoutées depuis la mise à jour lors d'un retour en arrière.
