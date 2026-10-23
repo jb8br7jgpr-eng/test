@@ -80,8 +80,8 @@ export function createOnlineClient({
    fail('Vue de mercato reçue invalide');
   const withMatch=['match','moment-result','half-time','resume-ready',
    'shootout-ready','shootout','finished'].includes(payload.phase);
-  const allowed=withMatch?['version','phase','teams','dice','match']:
-   ['version','phase','teams','dice','auction','lastResult','myObservation','reveal'];
+  const allowed=withMatch?['version','phase','teams','dice','match','stadiumId']:
+   ['version','phase','teams','dice','auction','lastResult','myObservation','reveal','stadiumId'];
   if(Object.keys(payload).some(k=>!allowed.includes(k)))fail('Vue de mercato contenant des secrets');
   if(!Array.isArray(payload.dice)||payload.dice.length!==2||
    payload.teams.some(t=>!t||!['PSG','OM'].includes(t.club)))
@@ -317,12 +317,13 @@ export function createOnlineClient({
    try{session=validSession(JSON.parse(raw));room=null;marketGame=null;loadPending();return true;}
    catch{session=null;room=null;marketGame=null;pending=null;persist();rememberPending();return false;}
   },
-  async createRoom(firstClub='PSG',identityId=firstClub,competition='grandline',mode='auction',formation='2-2-2'){
+  async createRoom(firstClub='PSG',identityId=firstClub,competition='grandline',mode='auction',formation='2-2-2',stadiumId='mugiwara'){
    ensureOnline();if(session)fail('Quitte d’abord le salon en cours');
    validateDisplayClub(identityId);
    if(!isCompetition(competition))fail('Compétition inconnue');
    if(!['auction','random'].includes(mode))fail('Mode de recrutement inconnu');
-   const command={action:'create',firstClub:validateClub(firstClub),competition};
+   if(!isStadium(stadiumId))fail('Stade inconnu');
+   const command={action:'create',firstClub:validateClub(firstClub),competition,stadiumId};
    if(identityId!==firstClub)command.identityId=identityId;
    formationPositions(formation);
    // La formation choisie s'applique AUSSI dès l'ouverture du Mercato classique.
