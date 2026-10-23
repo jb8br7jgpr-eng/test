@@ -32,6 +32,8 @@ function finishMoment(s,{outcome,scorerId=null},details){
  // to be resolved directly when the private action is still attached.
  delete s.match.action;
  const next=resolveMatchMoment(s,{outcome,scorerId});
+ if(outcome==='goal'&&details.assistId&&details.assistId!==scorerId)
+  next.match.goals.at(-1).assistId=details.assistId;
  next.match.lastResult.details=details;
  next.match.history.at(-1).details=details;
  return next;
@@ -135,7 +137,10 @@ export function revealOpenPlayShot(state,draw){
   outcome:result.outcome,
   scorerId:result.isGoal?a.shooterId:null
  },{
-  kind:'open',context:a.context,duel:a.duel,
+  kind:'open',context:a.context,duel:a.duel,roles:a.roles,
+  attack:a.choices.attack,keeperId:a.keeper.cardId,
+  assistId:result.isGoal&&a.choices.attack!=='PERCER'?
+   (a.shooterId===a.roles.carrier.cardId?a.roles.partner.cardId:a.roles.carrier.cardId):null,
   finisherId:a.shooterId,shot:{calculation,result}
  });
 }
