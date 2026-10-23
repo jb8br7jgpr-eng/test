@@ -108,3 +108,12 @@ Branche : `feature/opfc-stades-stats-ancre-20261023`.
 - Régression automatisée : `tests/opfc-v2-catalog-sort.test.mjs` couvre explicitement les valeurs manquantes et la chaîne feuille de match → compteurs cumulatifs → classement.
 - Vérifications sur les modules source : 9 essais de lecture de données et 5 assertions d'intégration moteur-statistiques-catalogue ont réussi.
 - Les tests ci-dessus ont été exécutés avec dépendances simulées en lecture seule. L'exécution complète dans GitHub Actions, dans un vrai navigateur et en recette Supabase reste nécessaire avant publication.
+
+## Recette V2 : contrôles de la suite automatique et sauvegarde hors connexion
+
+- Correction d'un faux échec de test : la recherche naïve `opfc-prematch-player` comptait également la classe CSS `opfc-prematch-player-name`. Le test vise désormais exactement les 14 lignes de titulaires.
+- Vérification sur les véritables cartes OPFC et les règles de postes : **14 lignes réelles**, stade et compétition présents.
+- Ajout de `tests/opfc-v2-offline-queue.test.mjs` : sauvegarde V2 hors ligne, résultat en attente, buts et passes préservés, aucune duplication après rechargement, envoi au retour du réseau, confirmation de l'UUID et absence de statistiques inventées sur une ancienne partie.
+- Le module de synchronisation existant écoute déjà l'événement `online` pour reprendre l'envoi des résultats.
+- Le workflow `.github/workflows/opfc-v2-tests.yml` déclenche désormais la nouvelle suite de tests même si ce fichier seul change.
+- Contrôles effectués via les fonctions réelles et un réseau simulé : file intacte pendant l'interruption, vidée après confirmation, ancien résultat compatible. **La totalité de la suite GitHub Actions n'est pas encore attestée** : accès aux journaux des workflows de `push` non disponible ici.
