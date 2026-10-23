@@ -14,9 +14,9 @@ export const CONTEXTS=Object.freeze({
   DIFFICILE:Object.freeze({id:'DIFFICILE',color:'rouge',zone:'loin',setPiece:'free-kick',weight:0.25}),
 });
 const ADVANTAGE=Object.freeze({
-  COMBINER:Object.freeze({PRESSER:-8,INTERCEPTER:0,CONTENIR:8}),
-  LANCER:Object.freeze({PRESSER:8,INTERCEPTER:-8,CONTENIR:0}),
-  PERCER:Object.freeze({PRESSER:0,INTERCEPTER:8,CONTENIR:-8}),
+  COMBINER:Object.freeze({PRESSER:8,INTERCEPTER:0,CONTENIR:-8}),
+  LANCER:Object.freeze({PRESSER:0,INTERCEPTER:-8,CONTENIR:8}),
+  PERCER:Object.freeze({PRESSER:-8,INTERCEPTER:8,CONTENIR:0}),
 });
 const FOUL_BASE=Object.freeze({PRESSER:8,INTERCEPTER:3,CONTENIR:1});
 const clamp=(v,low,high)=>Math.max(low,Math.min(high,v));
