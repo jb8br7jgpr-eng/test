@@ -34,7 +34,7 @@ function sortedCharacters(){
 
 function cardHtml(c){
  const portrait=portraitFile(c.id);
- const letters=c.name.split(/[\\s.-]+/).filter(Boolean).slice(0,2).map(x=>x.charAt(0)).join('');
+ const letters=c.name.split(/[\s.-]+/).filter(Boolean).slice(0,2).map(x=>x.charAt(0)).join('');
  const picture=portrait?
   '<img loading="lazy" decoding="async" src="'+esc(portrait)+'" alt="Portrait de '+esc(c.name)+'">':
   esc(letters);
