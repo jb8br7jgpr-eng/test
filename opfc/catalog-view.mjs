@@ -5,7 +5,7 @@ import {DISPLAY_CLUBS,displayAbbr,clubLogoFile} from './club-identities.mjs';
 import {CLUB_HONOURS,CLUB_TROPHIES} from './club-honours.mjs?v=opfc-trophees-20261022';
 import {loadTrophyHistory,syncQueuedLocalResults} from './trophy-service.mjs?v=opfc-v2-20261023';
 import {loadPlayerTotals} from './player-totals-service.mjs';
-import {sortCatalogCharacters,sortCatalogClubs} from './catalog-sorting.mjs';
+import {sortCatalogCharacters,sortCatalogClubs,characterStatSortAvailable} from './catalog-sorting.mjs';
 
 const root=document.getElementById('catalog-grid');
 const search=document.getElementById('catalog-search');
@@ -16,6 +16,7 @@ const empty=document.getElementById('catalog-empty');
 const characterSort=document.getElementById('catalog-sort');
 const scorerStatus=document.getElementById('catalog-scorers-status');
 let scorerTotals=null,careerComplete=false;
+let careerSyncMessage='Synchronisation des statistiques…';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const compact=value=>String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
 const post={GAR:'Gardien',DEF:'Défenseur',MIL:'Milieu',ATT:'Attaquant'};
@@ -69,7 +70,17 @@ function update(){
 search.addEventListener('input',update);
 position.addEventListener('change',update);
 rarity.addEventListener('change',update);
-characterSort.addEventListener('change',paintCharacters);
+function displayCareerSyncStatus(){
+ const mode=characterSort.value;
+ const metric=['matches','goals','assists','anchors'].includes(mode);
+ if(metric&&!characterStatSortAvailable(mode,scorerTotals,careerComplete)){
+  scorerStatus.textContent=scorerTotals===null?'⏳ Synchronisation des statistiques en cours…':
+   '⚠️ Ce classement attend la synchronisation des statistiques V2 : affichage temporaire par note.';
+  return;
+ }
+ scorerStatus.textContent=careerSyncMessage;
+}
+characterSort.addEventListener('change',()=>{paintCharacters();displayCareerSyncStatus();});
 paintCharacters();
 async function refreshScorers(){
  try{
@@ -77,12 +88,14 @@ async function refreshScorers(){
   const changed=!scorerTotals||careerComplete!==complete||
    JSON.stringify([...scorerTotals])!==JSON.stringify([...totals]);
   scorerTotals=totals;careerComplete=complete;
-  scorerStatus.textContent=complete?
+  careerSyncMessage=complete?
    '✅ Carrières synchronisées : matchs, buts, passes décisives et Ancres d’Or.':
    '⚠️ Nouvelles statistiques en attente du serveur ; buts historiques conservés.';
+  displayCareerSyncStatus();
   if(changed)paintCharacters();
  }catch{
-  scorerStatus.textContent='⚠️ Statistiques momentanément indisponibles ou non actualisées.';
+  careerSyncMessage='⚠️ Statistiques momentanément indisponibles ou non actualisées.';
+  displayCareerSyncStatus();
  }
 }
 
