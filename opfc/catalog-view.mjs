@@ -14,14 +14,14 @@ const count=document.getElementById('catalog-count');
 const empty=document.getElementById('catalog-empty');
 const characterSort=document.getElementById('catalog-sort');
 const scorerStatus=document.getElementById('catalog-scorers-status');
-let scorerTotals=null;
+let scorerTotals=null,careerComplete=false;
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const compact=value=>String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
 const post={GAR:'Gardien',DEF:'Défenseur',MIL:'Milieu',ATT:'Attaquant'};
 const rarityName={DIA:'Diamant',OR:'Or',ARG:'Argent',BRZ:'Bronze'};
 const stats={PUI:'PUI',TEC:'TEC',PAS:'PAS',VIT:'VIT',DEF:'DEF',GAR:'GAR'};
 const goalsFor=id=>scorerTotals?.get(id)?.goals??0;
-const careerValue=(id,key)=>scorerTotals===null?'—':scorerTotals.get(id)?.[key]??0;
+const careerValue=(id,key)=>scorerTotals===null||(!careerComplete&&key!=='goals')?'—':scorerTotals.get(id)?.[key]??0;
 function sortedCharacters(){
  const mode=characterSort.value;
  const nameOrder=(a,b)=>a.name.localeCompare(b.name,'fr');
@@ -74,7 +74,7 @@ async function refreshScorers(){
  try{
   const {totals,complete}=await loadPlayerTotals();
   const changed=!scorerTotals||JSON.stringify([...scorerTotals])!==JSON.stringify([...totals]);
-  scorerTotals=totals;
+  scorerTotals=totals;careerComplete=complete;
   scorerStatus.textContent=complete?
    '✅ Carrières synchronisées : matchs, buts, passes décisives et Ancres d’Or.':
    '⚠️ Nouvelles statistiques en attente du serveur ; buts historiques conservés.';
