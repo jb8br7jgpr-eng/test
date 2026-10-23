@@ -33,6 +33,8 @@ function goalkeeperOf(team){
 function finish(s,outcome,scorerId,details){
  delete s.match.action;
  const next=resolveMatchMoment(s,{outcome,scorerId});
+ if(outcome==='goal'&&details.assistId&&details.assistId!==scorerId)
+  next.match.goals.at(-1).assistId=details.assistId;
  next.match.lastResult.details=details;
  next.match.history.at(-1).details=details;
  return next;
@@ -42,6 +44,9 @@ function detailsOf(a,extra={}){
   ...(a.source==='foul'?{originContext:a.originContext,originalDuel:a.originalDuel}:{}),
   takerId:a.actors?.taker?.cardId??null,
   receiverId:a.actors?.receiver?.cardId??null,
+  keeperId:a.keeper?.cardId??null,
+  assistId:(a.kind==='corner'||(a.kind==='free-kick'&&a.choices?.attack!=='DIRECT'))?
+   (a.actors?.taker?.cardId??null):null,
   defenderId:a.actors?.defender?.cardId??null,
   ...extra};
 }
