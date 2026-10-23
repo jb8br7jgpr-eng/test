@@ -31,7 +31,7 @@ export function onlineKickoffView(state){
  const m=state.match;
  if(m.index!==0||m.history.length!==0||m.action)fail('Match déjà engagé');
  return {
-  version:state.version,phase:'match',
+  version:state.version,phase:'match',stadiumId:state.stadiumId??'mugiwara',
   teams:state.teams.map(copyTeam),dice:[...state.dice],
   match:{
    index:m.index,minute:m.minute,competition:state.competition??null,score:{...m.score},
