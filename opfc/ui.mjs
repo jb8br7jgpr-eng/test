@@ -646,7 +646,7 @@ function playing(){
 function endMercato(){
  return shell()+'<main class="ready-layout">'+sep()+
  '<h1 class="page-title">Les équipes sont prêtes !</h1><p>Les sept recrues de chaque club sont alignées.</p>'+
- wallets()+teams()+renderMatchScreen(game)+
+ renderMatchScreen(game)+wallets()+teams()+
  btn('confirm-reset','Nouvelle partie locale','ghost full')+'</main>';
 }
 function matchPage(){
