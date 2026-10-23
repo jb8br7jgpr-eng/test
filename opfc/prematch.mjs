@@ -11,7 +11,7 @@ const teamBlock=t=>'<div class="opfc-prematch-team"><h3>'+h(visualName(t.club))+
  renderCharacterPortrait(p.cardId,'opfc-prematch-portrait')+
  '<span class="opfc-prematch-player-name">'+h(CARD_BY_ID.get(p.cardId)?.name??p.cardId)+'</span>'+
  '<small>'+h(p.position)+(p.outOfPosition?' ⚠️':'')+'</small><b>'+p.rating+'</b></div>').join('')+'</div>';
-export function renderPrematch(state,{canKickoff=true}={}){
+export function renderPrematch(state,{canKickoff=true,waitingMessage='Le créateur du salon donne le coup d’envoi.'}={}){
  if(state?.phase!=='kickoff-ready'||state.teams?.length!==2)throw Error('Avant-match indisponible');
  setDisplayedClubs(state.teams);
  const stadium=stadiumById(state.stadiumId);
@@ -28,6 +28,6 @@ export function renderPrematch(state,{canKickoff=true}={}){
  '<h3>Compositions officielles</h3>'+
  '<div class="opfc-prematch-rosters">'+state.teams.map(teamBlock).join('')+'</div>'+
  (canKickoff?'<button class="btn primary full" type="button" data-action="match-kickoff">⚽ Donner le coup d’envoi</button>':
- '<p class="caption" role="status">Les compositions sont prêtes. Le créateur du salon donne le coup d’envoi.</p>')+
+ '<p class="caption" role="status">'+h(waitingMessage)+'</p>')+
  '</section>';
 }
