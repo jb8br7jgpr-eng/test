@@ -1,0 +1,39 @@
+name: OPFC V2 — Tests isolés
+on:
+  push:
+    branches:
+      - feature/opfc-stades-stats-ancre-20261023
+    paths:
+      - 'opfc/**'
+      - 'tests/opfc-v2.test.mjs'
+      - 'opfc.html'
+      - 'opfc-catalogue.html'
+      - '.github/workflows/opfc-v2-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  opfc-v2-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Read development branch
+        uses: actions/checkout@v4
+      - name: Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax checks
+        run: |
+          node --check opfc/ui.mjs
+          node --check opfc/ui-match.mjs
+          node --check opfc/ui-final.mjs
+          node --check opfc/online-client.mjs
+          node --check opfc/player-performance.mjs
+          node --check opfc/prematch.mjs
+          node --check opfc/catalog-view.mjs
+          node --check supabase/functions/opfc-online/index.ts || echo "Edge source is TypeScript: syntax check reserved for Deno build"
+      - name: Deterministic V2 tests
+        run: node --test tests/opfc-v2.test.mjs opfc/tests/v2.test.mjs
