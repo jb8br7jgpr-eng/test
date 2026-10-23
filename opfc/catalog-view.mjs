@@ -34,20 +34,35 @@ function sortedCharacters(){
 
 function cardHtml(c){
  const portrait=portraitFile(c.id);
- const letters=c.name.split(/[\s.-]+/).filter(Boolean).slice(0,2).map(x=>x.charAt(0)).join('');
- const picture=portrait?'<img loading="lazy" decoding="async" src="'+esc(portrait)+'" alt="Portrait de '+esc(c.name)+'">':esc(letters);
+ const letters=c.name.split(/[\\s.-]+/).filter(Boolean).slice(0,2).map(x=>x.charAt(0)).join('');
+ const picture=portrait?
+  '<img loading="lazy" decoding="async" src="'+esc(portrait)+'" alt="Portrait de '+esc(c.name)+'">':
+  esc(letters);
  const statBlocks=Object.entries(stats).map(([key,label])=>
   '<div class="catalog-stat"><span>'+label+'</span><strong>'+esc(c.stats[key])+'</strong></div>'
  ).join('');
+ // Le même compteur anchors qu'avant, simplement déplacé dans l'espace
+ // disponible à droite du portrait et des informations de carrière.
+ const anchors=careerValue(c.id,'anchors');
+ const anchorAward='<div class="catalog-anchor-award" aria-label="Ancres d’Or de '+esc(c.name)+' : '+esc(anchors)+'">'+
+  '<img class="catalog-anchor-art" src="./opfc/illustrations/ancre-or.webp" alt="" loading="lazy" decoding="async">'+
+  '<strong class="catalog-anchor-value">'+esc(anchors)+'</strong>'+
+  '<small class="catalog-anchor-label">ANCRES D’OR</small></div>';
+ const career=[['MATCHS','matches'],['BUTS','goals'],['PASSES DÉCISIVES','assists']]
+  .map(([label,key])=>'<div class="catalog-career-cell"><strong>'+esc(careerValue(c.id,key))+
+    '</strong><small>'+label+'</small></div>').join('');
  return '<article class="discovery-panel catalog-card" data-search="'+esc(compact(c.name+' '+c.group))+
   '" data-position="'+esc(c.position)+'" data-rarity="'+esc(c.rarity)+'">'+
   '<div class="catalog-card-top"><div class="catalog-portrait">'+picture+'</div>'+
-  '<div class="catalog-card-info"><h2 class="catalog-card-name">'+esc(c.name)+'</h2>'+
+  '<div class="catalog-card-info">'+anchorAward+
+  '<h2 class="catalog-card-name">'+esc(c.name)+'</h2>'+
   '<div class="catalog-metrics"><div class="catalog-rating">'+esc(c.rating)+'<small>NOTE</small></div></div>'+
   '<div class="catalog-tags"><span class="catalog-tag">'+esc(post[c.position])+'</span>'+
   '<span class="catalog-tag rarity-'+esc(c.rarity)+'">'+esc(rarityName[c.rarity])+'</span></div>'+
   '<p class="catalog-group">'+esc(c.group)+'</p></div></div>'+
-  '<div class="catalog-stats" aria-label="Six statistiques de '+esc(c.name)+'">'+statBlocks+'</div>'+  '<div class="catalog-career" aria-label="Statistiques de carrière de '+esc(c.name)+'">'+  [['MATCHS','matches'],['BUTS','goals'],['PASSES D.','assists'],['ANCRES D’OR','anchors']].map(([label,key])=>  '<div class="catalog-career-cell"><strong>'+esc(careerValue(c.id,key))+'</strong><small>'+label+'</small></div>').join('')+  '</div></article>';
+  '<div class="catalog-stats" aria-label="Six statistiques de '+esc(c.name)+'">'+statBlocks+'</div>'+
+  '<div class="catalog-career" aria-label="Statistiques de carrière de '+esc(c.name)+'">'+career+
+  '</div></article>';
 }
 
 let elements=[];
