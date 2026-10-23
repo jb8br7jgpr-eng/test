@@ -1,5 +1,4 @@
 /** Statistiques OPFC : lecture des résultats déjà résolus, aucun tirage et aucun effet sportif. */
-const number=(n)=>Number.isSafeInteger(n)&&n>=0?n:0;
 const add=(map,id,key)=>{if(id&&map[id])map[id][key]++;};
 export function matchPerformances(state){
  if(!state?.match||!Array.isArray(state.teams)||state.teams.length!==2)
