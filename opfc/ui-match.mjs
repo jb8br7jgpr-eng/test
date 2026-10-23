@@ -10,7 +10,7 @@ import {matchPublicView,kickoffMatch,continueMatch,resumeMatch} from './match.mj
 import {beginOpenPlayAction,lockOpenPlayChoice,revealOpenPlayDuel,continueOpenPlayDuel,revealOpenPlayShot} from './match-actions.mjs?v=opfc-tactics-20261023';
 import {isSetPieceKind,setPieceTurnOwner,dispatchSetPieceMatch,renderSetPieceAction} from './ui-set-piece.mjs?v=opfc-75-roster-20261022';
 import {shootoutTurnOwner,dispatchShootout,renderShootoutScreen} from './ui-shootout.mjs?v=opfc-75-roster-20261022';
-import {renderFinalResult} from './ui-final.mjs?v=opfc-75-roster-20261022';
+import {renderFinalResult} from './ui-final.mjs?v=opfc-v2-20261023';
 import {renderPrematch} from './prematch.mjs';
 import {setDisplayedClubs,visualName,visualAbbr} from './club-identities.mjs';
 import {competitionName} from './club-honours.mjs?v=opfc-trophees-20261022';
