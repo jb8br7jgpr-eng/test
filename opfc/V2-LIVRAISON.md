@@ -45,3 +45,16 @@ Branche : `feature/opfc-stades-stats-ancre-20261023`.
 - Comparaison `main...feature` : seuls OPFC et ses fichiers d'intégration Supabase sont modifiés, aucun fichier de jeu classique.
 - Supabase OPFC de production consulté en lecture seule ; Edge toujours à la version 19, aucune migration exécutée.
 - **Limitations :** ces vérifications ne constituent ni un lancement GitHub Actions complet, ni une partie de bout en bout sur deux iPhone, ni une migration testée sur une base de recette.
+
+## Compatibilité entre versions — revue de prépublication
+
+- Une partie locale créée par V2 porte `playerStatsVersion=2`, y compris avec le recrutement aléatoire (l'état initial est cloné).
+- Un ancien résultat local synchronisé ultérieurement transmet les buts historiques uniquement, **sans inventer** de matchs joués, d'assists ou d'Ancre d'Or.
+- Une nouvelle partie en ligne fournit le stade et `playerStatsVersion=2` au serveur. Les anciens salons n'ont ni ce marqueur ni de nouveaux champs de réponse obligatoires.
+- Les nouveaux compteurs complets en ligne sont enregistrés uniquement lors d'une fin de match issue d'un état `playerStatsVersion=2`.
+- Les anciennes finales en ligne alimentent les buts par la voie de compatibilité SQL `player_stats={}`.
+- Les vues en ligne V1/V2 ont été testées hors production : 6 assertions spécifiques à la compatibilité.
+- Les résultats locaux V1/V2 ont également été simulés, et 9 assertions de validation serveur ont réussi.
+- Contrôle en lecture seule du 23/10/2026 : 5 buts enregistrés dans les finales, 5 dans les totaux de buteurs ; 3 salons non terminés au moment du contrôle.
+- Workflow GitHub Actions limité à notre branche : `.github/workflows/opfc-v2-tests.yml`. **Son exécution réussie reste à confirmer** ; sa présence ne vaut pas validation complète.
+- Aucun déploiement, aucune migration ni manipulation des salons en production.
