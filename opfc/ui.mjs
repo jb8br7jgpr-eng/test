@@ -644,11 +644,17 @@ function playing(){
  '<button class="link-button" data-action="confirm-reset">Nouvelle partie</button></div>';
 }
 function endMercato(){
- // Avant-match V2 : les 14 titulaires sont déjà présentés avec leurs portraits.
- // Pas de deuxième terrain ni de bandeau budgets après verrouillage des équipes.
- return shell()+'<main class="ready-layout">'+renderMatchScreen(game)+
- '<div class="gameplay-nav"><span class="caption">Mode local · Avant-match</span>'+
- btn('confirm-reset','Nouvelle partie locale','ghost small')+'</div></main>';
+ // Conserver intégralement l'écran initial : budgets, terrains, compositions,
+ // puis passer à la nouvelle présentation en validant « Continuer ».
+ if(game.playerStatsVersion===2&&game.prematchSeen===true)
+  return shell()+'<main class="ready-layout">'+renderMatchScreen(game)+
+   '<div class="gameplay-nav"><span class="caption">Mode local · Présentation du match</span>'+
+   btn('confirm-reset','Nouvelle partie locale','ghost small')+'</div></main>';
+ return shell()+'<main class="ready-layout">'+sep()+
+  '<h1 class="page-title">Les équipes sont prêtes !</h1>'+
+  '<p>Les sept recrues de chaque club sont alignées.</p>'+
+  wallets()+teams()+renderMatchScreen(game)+
+  btn('confirm-reset','Nouvelle partie locale','ghost full')+'</main>';
 }
 function matchPage(){
  const middle=renderMatchScreen(game,{uncovered:matchUncovered});
@@ -736,10 +742,16 @@ function onlineTeams(pending=null){
 }
 function onlineSharedMarket(snapshot){
  const ownClub=onlineClient.room.myClub;
- if(snapshot.phase==='kickoff-ready')
+ if(snapshot.phase==='kickoff-ready'){
+  const showingPresentation=snapshot.stadiumId&&snapshot.prematchReady?.[ownClub]===true;
+  const preview=renderOnlineGame(snapshot,{myClub:ownClub,hostClub:onlineClient.room.hostClub,
+   competition:onlineClient.room.competition});
+  // L'écran « équipes prêtes » original reste le premier écran des deux iPhone.
+  // Chaque club passe ensuite à la nouvelle présentation après sa confirmation.
   return '<main class="online-game-content opfc-online-playing">'+
-   renderOnlineGame(snapshot,{myClub:ownClub,hostClub:onlineClient.room.hostClub,
-    competition:onlineClient.room.competition})+'</main>';
+   (showingPresentation?preview:onlineScoped(()=>wallets())+onlineTeams()+preview)+
+   '</main>';
+ }
  if(snapshot.phase==='lineup'&&snapshot.reveal?.step<7)
   return '<main class="online-game-content opfc-online-playing">'+
    randomRevealPanel(snapshot,snapshot.reveal.step,{
@@ -972,6 +984,11 @@ function clicked(button){
   if(entryView!=='local')throw Error('Choix du recrutement indisponible');
   localRecruitmentMode=action==='local-recruit-random'?'random':'auction';render();return;
  }
+ if(action==='match-prematch-next'){
+  if(game?.phase!=='kickoff-ready'||game.playerStatsVersion!==2||game.prematchSeen===true)
+   throw Error('Présentation d’avant-match indisponible');
+  change(s=>({...s,prematchSeen:true}));scrollMatchToTop();return;
+ }
  if(action==='local-select-stadium'){
   if(entryView!=='local'||!isStadium(button.dataset.stadium))throw Error('Stade indisponible');
   localStadium=button.dataset.stadium;render();return;
@@ -997,6 +1014,8 @@ function clicked(button){
  }
  if(action.startsWith('match-')){
   if(!game)throw Error('Aucune partie en cours');
+  if(action==='match-kickoff'&&game.playerStatsVersion===2&&game.prematchSeen!==true)
+   throw Error('Consulte la présentation du stade avant le coup d’envoi');
   const commands={
    'match-kickoff':'kickoff','match-begin-open':'begin-open',
    'match-choose':'choose','match-reveal-duel':'reveal-duel',
