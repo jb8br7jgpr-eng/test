@@ -2,6 +2,7 @@
 import {OPFC_ONLINE_API_URL} from './online-config.mjs';
 import {isCompetition} from './club-honours.mjs';
 import {isDisplayClub} from './club-identities.mjs';
+import {matchPerformances} from './player-performance.mjs';
 
 const QUEUE_KEY='opfc-local-trophy-results-v1';
 const CONFIRMED_KEY='opfc-local-confirmed-trophy-results-v1';
@@ -39,10 +40,12 @@ function localResult(game){
  const teams=Object.fromEntries(game.teams.map(t=>[t.club,t.identityId??t.club]));
  if(!isDisplayClub(teams.PSG)||!isDisplayClub(teams.OM)||teams.PSG===teams.OM)return null;
  const match=game.match;
+ const individual=matchPerformances(game);
  return {id:game.matchRecordId,competition:game.competition,clubs:teams,
   score:{PSG:match.score.PSG,OM:match.score.OM},winner:match.winner,victory:match.victory,
   shootout:match.victory==='shootout'?{PSG:match.shootout.score.PSG,OM:match.shootout.score.OM}:null,
-  goals:match.goals.map(g=>({club:g.club,cardId:g.cardId,minute:g.minute}))};
+  goals:match.goals.map(g=>({club:g.club,cardId:g.cardId,minute:g.minute,...(g.assistId?{assistId:g.assistId}:{})})),
+  playerStats:individual.players,anchorId:individual.winner};
 }
 /** Idempotence : le même match est dans la file et la base sous le même UUID. */
 export function queueFinishedLocalGame(game){
