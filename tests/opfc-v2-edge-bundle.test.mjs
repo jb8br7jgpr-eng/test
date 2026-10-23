@@ -13,8 +13,8 @@ const importsOf=source=>[...source.matchAll(/\b(?:from\s*|import\s*)['"]([^'"]+)
 const isLocal=s=>s.startsWith('./')||s.startsWith('../');
 
 test('Toutes les dépendances du serveur OPFC V2 existent et sont importables localement',async()=>{
- const list=['index.ts',...((await readdir(join(edge,'opfc'))).map(f=>'opfc/'+f))
-  .filter(f=>f.endsWith('.mjs'))];
+ const list=['index.ts',...(await readdir(join(edge,'opfc')))
+  .filter(f=>f.endsWith('.mjs')).map(f=>'opfc/'+f)];
  assert.ok(list.includes('opfc/player-performance.mjs'));
  assert.ok(list.includes('opfc/stadiums.mjs'));
  for(const file of list){
