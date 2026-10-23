@@ -6,9 +6,10 @@ SELECT
   WHERE matches<0 OR goals<0 OR assists<0 OR anchors<0) AS invalid_player_totals,
  (SELECT count(*) FROM public.opfc_match_results
   WHERE jsonb_typeof(player_stats)<>'object') AS invalid_final_payloads;
-SELECT coalesce(sum(goals),0) AS goals_unarchived_in_future_finals
-FROM public.opfc_match_results
-CROSS JOIN LATERAL (SELECT count(*)::bigint AS goals FROM jsonb_array_elements(
- CASE WHEN jsonb_typeof(opfc_match_results.goals)='array'
- THEN opfc_match_results.goals ELSE '[]'::jsonb END)) AS x
-WHERE source_key IS NOT NULL;
+SELECT
+ count(*) AS finals_total,
+ count(*) FILTER (WHERE player_stats<>'{}'::jsonb) AS finals_with_individual_stats,
+ count(*) FILTER (WHERE anchor_id IS NOT NULL) AS finals_with_ancre_dor
+FROM public.opfc_match_results;
+-- Attention : comparer existing_goal_totals et new_goal_totals uniquement
+-- après avoir terminé la migration et les éventuelles files de synchronisation.
