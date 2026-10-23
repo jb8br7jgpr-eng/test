@@ -32,7 +32,7 @@ export function renderOnlineGame(g,{myClub,hostClub,competition}={}){
    '<h2>Prépare ton équipe</h2><p>Choisis la formation et la place de tes sept recrues sur le terrain ci-dessous. '+
    'Tu contrôles uniquement ton club.</p></section>';
  if(['kickoff-ready','match','moment-result','half-time','resume-ready'].includes(g.phase))
-  return renderOnlineMatchScreen(g,{myClub,hostClub});
+  return renderOnlineMatchScreen(g,{myClub,hostClub,competition});
  if(g.phase==='shootout-ready'||g.phase==='shootout')
   return scoreBoard(g.match)+renderOnlineShootoutScreen(g,{myClub,hostClub});
  if(g.phase==='finished'){
