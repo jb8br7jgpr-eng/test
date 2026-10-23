@@ -35,3 +35,13 @@ Branche : `feature/opfc-stades-stats-ancre-20261023`.
 9. Refaire les tests réels après publication et comparer Supabase aux matchs joués.
 
 **Ne jamais fusionner ni déployer sans accord explicite de l'utilisateur.**
+
+## Contrôles effectués pendant la préparation (23/10/2026)
+
+- 9/9 assets `opfc/illustrations` présents et correctement nommés.
+- 12/12 modules modifiés analysés sans erreur de syntaxe JavaScript.
+- 19 assertions de moteur/rendu sur le code réel : Passe courte 50/50, Passe en profondeur, dribble, buts + assists, duels, gardiens, stade, 14 joueurs, écran final.
+- 9 assertions supplémentaires du traitement Edge `record-local` isolé avec base simulée : une finale valide et une finale ancienne acceptées ; passe incorrecte, mauvais club ou mauvaise récompense rejetés.
+- Comparaison `main...feature` : seuls OPFC et ses fichiers d'intégration Supabase sont modifiés, aucun fichier de jeu classique.
+- Supabase OPFC de production consulté en lecture seule ; Edge toujours à la version 19, aucune migration exécutée.
+- **Limitations :** ces vérifications ne constituent ni un lancement GitHub Actions complet, ni une partie de bout en bout sur deux iPhone, ni une migration testée sur une base de recette.
