@@ -66,3 +66,33 @@ test('Compatibilité V1/V2 : le premier état du match conserve la forme attendu
  const updated=onlineKickoffView({...initial,stadiumId:'whole-cake'});
  assert.equal(updated.stadiumId,'whole-cake');
 });
+
+test('Corner et coup franc combiné : tireur passeur, réceptionneur buteur',()=>{
+ const history=[
+  {outcome:'goal',details:{kind:'corner',takerId:'a1',receiverId:'a2',
+    duel:{outcome:{outcome:'chance'}},keeperId:'b0'}},
+  {outcome:'goal',details:{kind:'free-kick',takerId:'a3',receiverId:'a4',
+    duel:{outcome:{outcome:'chance'}},keeperId:'b0'}}
+ ];
+ const goals=[{club:'PSG',cardId:'a2',assistId:'a1',minute:14},
+  {club:'PSG',cardId:'a4',assistId:'a3',minute:46}];
+ const p=finish(goals,history).players;
+ assert.equal(p.a1.assists,1);assert.equal(p.a2.goals,1);
+ assert.equal(p.a3.assists,1);assert.equal(p.a4.goals,1);
+ assert.equal(p.a1.attacks,1);assert.equal(p.a3.attacks,1);
+});
+test('Penalty direct : tireur buteur, pas de passe D, gardien crédité si arrêt',()=>{
+ const goals=[{club:'PSG',cardId:'a0',minute:21}];
+ const history=[
+  {outcome:'goal',details:{kind:'penalty',takerId:'a0',keeperId:'b0',assistId:null}},
+  {outcome:'save',details:{kind:'penalty',takerId:'a2',keeperId:'b0'}}
+ ];
+ const p=finish(goals,history).players;
+ assert.equal(p.a0.goals,1);assert.equal(p.b0.saves,1);
+ assert.equal(Object.values(p).reduce((n,x)=>n+x.assists,0),0);
+});
+test('Un match ancien ne reçoit aucune passe fictive à partir des seuls buts',()=>{
+ const players=finish([{club:'PSG',cardId:'a0',minute:27}],[{outcome:'goal'}]).players;
+ assert.equal(players.a0.goals,1);
+ assert.equal(Object.values(players).reduce((n,p)=>n+p.assists,0),0);
+});
