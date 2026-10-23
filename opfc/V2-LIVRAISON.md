@@ -58,3 +58,14 @@ Branche : `feature/opfc-stades-stats-ancre-20261023`.
 - Contrôle en lecture seule du 23/10/2026 : 5 buts enregistrés dans les finales, 5 dans les totaux de buteurs ; 3 salons non terminés au moment du contrôle.
 - Workflow GitHub Actions limité à notre branche : `.github/workflows/opfc-v2-tests.yml`. **Son exécution réussie reste à confirmer** ; sa présence ne vaut pas validation complète.
 - Aucun déploiement, aucune migration ni manipulation des salons en production.
+
+## Revue de parcours et lisibilité mobile
+
+- Avant-match en mode local : `endMercato()` rend directement la présentation unique puis la navigation, sans terrain ou budget répété.
+- Avant-match en mode en ligne : `onlineSharedMarket()` rend la même présentation que le local, pour l'hôte et son adversaire ; l'hôte seul possède le bouton de coup d'envoi.
+- Portraits ronds et noms sur iPhone : flex propre au portrait et au nom, sans agrandissement involontaire des images.
+- Les nouvelles règles de stats sont également couvertes par des tests des corners, coups francs combinés et penalties.
+- 18 contrôles ciblés supplémentaires de syntaxe, aiguillage d'écran et calculs individuels ont réussi hors navigateur.
+- Scripts de contrôle purement en lecture seule : `supabase/migrations-opfc-v2/preflight-readonly.sql` et `postflight-readonly.sql`.
+- Le précontrôle de production confirme 2 finales archivées, 5 buts dans les finales et 5 dans le catalogue.
+- **Tests encore non réalisés :** navigateur mobile réel, exécution complète GitHub Actions confirmée, SQL sur un Supabase de recette, deux iPhone connectés au serveur de recette.
