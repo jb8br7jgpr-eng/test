@@ -84,7 +84,8 @@ async function create(body){
  if(!competitions.includes(selectedCompetition))return error('Compétition invalide',400);
  initial.competition=selectedCompetition;
  if(body.stadiumId!==undefined&&!isStadium(body.stadiumId))return error('Stade invalide',400);
- initial.stadiumId=body.stadiumId??'mugiwara';
+ // Les anciens clients ne passent pas stadiumId : ne rien ajouter à leurs salons.
+ if(body.stadiumId!==undefined)initial.stadiumId=body.stadiumId;
  const chosen=validateDisplayClub(body.identityId??hostClub);
  const other=hostClub==='PSG'?'OM':'PSG';
  initial.teams.find(t=>t.club===hostClub).identityId=chosen;
