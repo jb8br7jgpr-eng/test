@@ -44,9 +44,13 @@
   </div>
   <div class="catalog-filter"><label for="catalog-sort">Classer les personnages par</label>
    <select id="catalog-sort">
-    <option value="rating">Note · décroissante</option>
+    <option value="rating">⭐ Note · décroissante</option>
+    <option value="matches">👕 Matchs joués · décroissant</option>
     <option value="goals">⚽ Meilleurs buteurs</option>
+    <option value="assists">🎯 Meilleurs passeurs</option>
+    <option value="anchors">⚓ Plus d’Ancres d’Or</option>
     <option value="alpha">A → Z · Ordre alphabétique</option>
+    <option value="alpha-desc">Z → A · Ordre alphabétique</option>
    </select></div>
   <p id="catalog-count" class="catalog-count" aria-live="polite">Chargement du catalogue…</p>
  </section>
@@ -63,6 +67,7 @@
     <select id="club-sort">
      <option value="total">🏆 Nombre total de trophées</option>
      <option value="alpha">A → Z · Ordre alphabétique</option>
+     <option value="alpha-desc">Z → A · Ordre alphabétique</option>
      <option value="grandline">Grandline Champions Cup</option>
      <option value="league">Championnat du Nouveau Monde</option>
      <option value="cup">Coupe des Quatre Mers</option>
