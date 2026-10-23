@@ -81,3 +81,12 @@ Branche : `feature/opfc-stades-stats-ancre-20261023`.
 - En **ancienne partie** sans `playerStatsVersion=2`, rien ne change : pas de nouvel écran imposé, pas de nouveaux champs de synchronisation.
 - Nouvelles régressions ajoutées dans `tests/opfc-v2.test.mjs` pour les confirmations, le refus du coup d’envoi prématuré et la compatibilité V1.
 - Les copies serveur `supabase/functions/opfc-online/opfc/online-market.mjs` et `online-lineup.mjs` sont alignées avec le code V2.
+
+## Vérification ciblée du double avant-match (23/10/2026)
+
+- Le moteur d'affichage a été exécuté avec une représentation de ses dépendances : 8 contrôles concluants, sur l'ancien écran, la présentation du stade et les deux téléphones.
+- Les tests Node `opfc/tests/v2.test.mjs` couvrent maintenant les deux écrans en local et leur synchronisation côté client en ligne.
+- Les tests existants `tests/opfc-v2.test.mjs` vérifient déjà que la fonction de jeu en ligne refuse le coup d'envoi avant la confirmation des deux joueurs.
+- Contrôle en lecture seule des triggers OPFC : archive immuable et total des buts alimentés uniquement par des insertions de finales ; identifiant `source_key` unique pour éviter les doublons.
+- Aucun changement à la mécanique d'enchère, aux choix tactiques, aux notes ou au tirage 50/50 de Passe courte.
+- **Attention :** les tests complets via GitHub Actions ou sur deux téléphones restent à confirmer ; aucune migration ni publication effectuée.
