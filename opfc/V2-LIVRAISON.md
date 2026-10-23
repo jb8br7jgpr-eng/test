@@ -69,3 +69,15 @@ Branche : `feature/opfc-stades-stats-ancre-20261023`.
 - Scripts de contrôle purement en lecture seule : `supabase/migrations-opfc-v2/preflight-readonly.sql` et `postflight-readonly.sql`.
 - Le précontrôle de production confirme 2 finales archivées, 5 buts dans les finales et 5 dans le catalogue.
 - **Tests encore non réalisés :** navigateur mobile réel, exécution complète GitHub Actions confirmée, SQL sur un Supabase de recette, deux iPhone connectés au serveur de recette.
+
+## Parcours d’avant-match conservé (décision utilisateur du 23/10/2026)
+
+1. **Écran existant, intégralement conservé** : « Les équipes sont prêtes ! », budgets, terrain et compositions. Son bouton fait maintenant passer à la présentation au lieu de déclencher le match directement pour les parties V2.
+2. **Nouvel écran supplémentaire** : stade illustré, compétition, écussons des clubs, 14 titulaires avec portraits et notes. Bouton « Donner le coup d’envoi » après validation.
+3. **Match** : les probabilités et les mécaniques restent inchangées.
+
+- En **local**, la progression vers le nouvel écran est sauvegardée avec la partie via `prematchSeen`.
+- En **ligne**, chaque téléphone envoie sa propre commande `prematch-next` ; le serveur conserve `prematchReady.PSG/OM` et refuse le coup d’envoi avant les deux confirmations. L’hôte seul donne le coup d’envoi.
+- En **ancienne partie** sans `playerStatsVersion=2`, rien ne change : pas de nouvel écran imposé, pas de nouveaux champs de synchronisation.
+- Nouvelles régressions ajoutées dans `tests/opfc-v2.test.mjs` pour les confirmations, le refus du coup d’envoi prématuré et la compatibilité V1.
+- Les copies serveur `supabase/functions/opfc-online/opfc/online-market.mjs` et `online-lineup.mjs` sont alignées avec le code V2.
