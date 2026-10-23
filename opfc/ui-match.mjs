@@ -11,6 +11,7 @@ import {beginOpenPlayAction,lockOpenPlayChoice,revealOpenPlayDuel,continueOpenPl
 import {isSetPieceKind,setPieceTurnOwner,dispatchSetPieceMatch,renderSetPieceAction} from './ui-set-piece.mjs?v=opfc-75-roster-20261022';
 import {shootoutTurnOwner,dispatchShootout,renderShootoutScreen} from './ui-shootout.mjs?v=opfc-75-roster-20261022';
 import {renderFinalResult} from './ui-final.mjs?v=opfc-75-roster-20261022';
+import {renderPrematch} from './prematch.mjs';
 import {setDisplayedClubs,visualName,visualAbbr} from './club-identities.mjs';
 import {competitionName} from './club-honours.mjs?v=opfc-trophees-20261022';
 import {matchTacticalChoices,renderShotFaceOff,renderShotResult,renderReceiverCard,matchKeeperId} from './ui-match-widgets.mjs?v=opfc-tactics-20261023';
@@ -306,10 +307,7 @@ function onlineAcknowledgementPanel(content,state,club){
 }
 function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null}={}){
  if(state?.teams)setDisplayedClubs(state.teams);
- if(state?.phase==='kickoff-ready')return '<section class="panel match-stage">'+
-  '<span class="eyebrow">'+html(competitionName(state.match?.competition??state.competition))+' · Avant-match</span><h2>Les équipes sont prêtes !</h2>'+ 
-  '<p>Sept joueurs de chaque côté. Les compositions se verrouillent au coup d’envoi.</p>'+
-  button('match-kickoff','Donner le coup d’envoi')+'</section>';
+ if(state?.phase==='kickoff-ready')return renderPrematch(state,{canKickoff:!onlineClub||onlineClub===hostClub});
  const view=onlineClub?state:matchPublicView(state),m=view.match;
  if(!m)return '<section class="panel match-stage"><h2>Aucun match en cours</h2></section>';
  let out=scoreBoard(m);
@@ -371,7 +369,5 @@ export function renderMatchScreen(state,options={}){
 export function renderOnlineMatchScreen(state,{myClub,hostClub}={}){
  if(!['PSG','OM'].includes(myClub)||!['PSG','OM'].includes(hostClub))
   return '<section class="panel"><p>Synchronisation de la partie…</p></section>';
- if(state.phase==='kickoff-ready'&&myClub!==hostClub)
-  return onlineWaiting(hostClub,'Le club hôte donne le coup d’envoi.');
  return asOnlineActions(matchCore(state,{onlineClub:myClub,hostClub}));
 }
