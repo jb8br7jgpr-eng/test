@@ -320,6 +320,37 @@ async function recordLocal(body){
  if(Object.values(stats).reduce((n,p)=>n+p.goals,0)!==home+away||
    Object.values(stats).reduce((n,p)=>n+p.assists,0)>home+away)
    return error('Statistiques incompatibles avec le score',400);
+ if(!legacy){
+  // En mode local le serveur ne peut pas arbitrer les actions passées ; il vérifie
+  // néanmoins la cohérence exacte des buts, des passes et du meilleur joueur.
+  const counts={PSG:0,OM:0},scored=new Map(),assisted=new Map();
+  for(const item of Object.values(stats))counts[item.club]++;
+  if(counts.PSG!==7||counts.OM!==7)return error('Sept titulaires requis par équipe',400);
+  let psg=0,om=0;
+  for(const goal of x.goals){
+   if(!stats[goal.cardId]||stats[goal.cardId].club!==goal.club)
+    return error('Buteur hors composition',400);
+   if(goal.club==='PSG')psg++;else om++;
+   scored.set(goal.cardId,(scored.get(goal.cardId)??0)+1);
+   if(goal.assistId!==undefined&&goal.assistId!==null){
+    if(typeof goal.assistId!=='string'||!stats[goal.assistId]||
+       stats[goal.assistId].club!==goal.club||goal.assistId===goal.cardId)
+      return error('Passe décisive invalide',400);
+    assisted.set(goal.assistId,(assisted.get(goal.assistId)??0)+1);
+   }
+  }
+  if(psg!==home||om!==away)return error('Buts incohérents par club',400);
+  for(const [id,v] of Object.entries(stats)){
+   if(v.goals!==(scored.get(id)??0)||v.assists!==(assisted.get(id)??0))
+    return error('Buts ou passes individuelles incohérents',400);
+  }
+  const ranked=Object.keys(stats).sort((l,r)=>{
+   const a=stats[l],b=stats[r];
+   return b.points-a.points||b.goals-a.goals||b.assists-a.assists||
+     b.defenses-a.defenses||b.saves-a.saves||l.localeCompare(r);
+  });
+  if(ranked[0]!==x.anchorId)return error('Ancre d’Or incohérente',400);
+ }
  let shootout=null;
  if(x.victory==='shootout'){
    if(!x.shootout||!Number.isInteger(x.shootout.PSG)||!Number.isInteger(x.shootout.OM)||
