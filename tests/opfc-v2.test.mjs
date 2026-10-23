@@ -3,6 +3,8 @@ import {test} from 'node:test';
 import {strict as assert} from 'node:assert';
 import {matchPerformances} from '../opfc/player-performance.mjs';
 import {STADIUMS,isStadium} from '../opfc/stadiums.mjs';
+import {onlineMarketPublicView} from '../opfc/online-market.mjs';
+import {onlineKickoffView} from '../opfc/online-lineup.mjs';
 const clubs=[{club:'PSG',roster:['a0','a1','a2','a3','a4','a5','a6']},
  {club:'OM',roster:['b0','b1','b2','b3','b4','b5','b6']}];
 const finish=(goals,history)=>matchPerformances({phase:'finished',teams:clubs,match:{goals,history}});
@@ -38,4 +40,29 @@ test('Le score de départage aux tirs au but ne compte pas',()=>{
 test('Ancien match sans détails conserve son but',()=>{
  const p=finish([{club:'PSG',cardId:'a3',minute:48}],[{outcome:'goal'}]).players;
  assert.equal(p.a3.goals,1);assert.equal(p.a3.assists,0);
+});
+
+test('Compatibilité V1/V2 : les salons existants ne reçoivent aucun nouveau champ',()=>{
+ const mk=id=>({club:id,identityId:id,roster:[],budget:100,refusals:0,
+  formation:'2-2-2',slots:Array(7).fill(null),ready:true,hakis:{observation:false,kings:false}});
+ const old={version:1,phase:'kickoff-ready',competition:'league',
+  teams:[mk('PSG'),mk('OM')],dice:[2,5],auction:null,lastResult:null};
+ const legacy=onlineMarketPublicView(old,'PSG');
+ assert.equal(Object.hasOwn(legacy,'stadiumId'),false);
+ assert.equal(Object.hasOwn(legacy,'competition'),false);
+ const fresh=onlineMarketPublicView({...old,stadiumId:'whole-cake'},'PSG');
+ assert.equal(fresh.stadiumId,'whole-cake');
+ assert.equal(fresh.competition,'league');
+});
+test('Compatibilité V1/V2 : le premier état du match conserve la forme attendue',()=>{
+ const mk=id=>({club:id,identityId:id,roster:[],budget:100,refusals:0,
+  formation:'2-2-2',slots:Array(7).fill(null),ready:true,hakis:{observation:false,kings:false}});
+ const initial={version:1,phase:'match',dice:[2,5],
+  teams:[mk('PSG'),mk('OM')],match:{index:0,history:[],action:null,
+  minute:13,score:{PSG:0,OM:0},statistics:{PSG:{},OM:{}},
+  goals:[],schedule:[{minute:13,type:'open',attacker:'PSG',period:1}]}};
+ const old=onlineKickoffView(initial);
+ assert.equal(Object.hasOwn(old,'stadiumId'),false);
+ const updated=onlineKickoffView({...initial,stadiumId:'whole-cake'});
+ assert.equal(updated.stadiumId,'whole-cake');
 });
