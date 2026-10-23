@@ -4,7 +4,7 @@ import {strict as assert} from 'node:assert';
 import {matchPerformances} from '../opfc/player-performance.mjs';
 import {STADIUMS,isStadium} from '../opfc/stadiums.mjs';
 import {onlineMarketPublicView} from '../opfc/online-market.mjs';
-import {onlineKickoffView} from '../opfc/online-lineup.mjs';
+import {onlineKickoffView,applyOnlineLineupCommand} from '../opfc/online-lineup.mjs';
 const clubs=[{club:'PSG',roster:['a0','a1','a2','a3','a4','a5','a6']},
  {club:'OM',roster:['b0','b1','b2','b3','b4','b5','b6']}];
 const finish=(goals,history)=>matchPerformances({phase:'finished',teams:clubs,match:{goals,history}});
@@ -95,4 +95,34 @@ test('Un match ancien ne reçoit aucune passe fictive à partir des seuls buts',
  const players=finish([{club:'PSG',cardId:'a0',minute:27}],[{outcome:'goal'}]).players;
  assert.equal(players.a0.goals,1);
  assert.equal(Object.values(players).reduce((n,p)=>n+p.assists,0),0);
+});
+
+test('Avant-match V2 : les deux joueurs valident séparément, le serveur protège le coup d’envoi',()=>{
+ const mk=club=>({club,identityId:club,roster:[],slots:Array(7).fill(null),
+  formation:'2-2-2',budget:100,refusals:0,ready:true,hakis:{observation:false,kings:false}});
+ const current={version:1,phase:'kickoff-ready',competition:'league',stadiumId:'mugiwara',
+  playerStatsVersion:2,prematchReady:{PSG:false,OM:false},
+  teams:[mk('PSG'),mk('OM')],dice:[1,3],auction:null,lastResult:null};
+ assert.throws(()=>applyOnlineLineupCommand(current,'PSG',{type:'kickoff'},{hostClub:'PSG'}),
+  /doivent confirmer/);
+ const host=applyOnlineLineupCommand(current,'PSG',{type:'prematch-next'},{hostClub:'PSG'});
+ assert.deepEqual(host.state.prematchReady,{PSG:true,OM:false});
+ assert.deepEqual(host.publicForActor.prematchReady,{PSG:true,OM:false});
+ assert.throws(()=>applyOnlineLineupCommand(host.state,'PSG',{type:'prematch-next'},{hostClub:'PSG'}),
+  /déjà confirmée/);
+ assert.throws(()=>applyOnlineLineupCommand(host.state,'PSG',{type:'kickoff'},{hostClub:'PSG'}),
+  /doivent confirmer/);
+ const guest=applyOnlineLineupCommand(host.state,'OM',{type:'prematch-next'},{hostClub:'PSG'});
+ assert.deepEqual(guest.state.prematchReady,{PSG:true,OM:true});
+ assert.throws(()=>applyOnlineLineupCommand(guest.state,'OM',{type:'kickoff'},{hostClub:'PSG'}),
+  /Seul l’hôte/);
+});
+test('Salons historiques : pas de nouvelle obligation avant le coup d’envoi',()=>{
+ const mk=club=>({club,identityId:club,roster:[],slots:Array(7).fill(null),
+  formation:'2-2-2',budget:100,refusals:0,ready:true,hakis:{observation:false,kings:false}});
+ const old={version:1,phase:'kickoff-ready',competition:'league',teams:[mk('PSG'),mk('OM')],
+  dice:[1,3],auction:null,lastResult:null};
+ assert.equal(Object.hasOwn(onlineMarketPublicView(old,'PSG'),'prematchReady'),false);
+ assert.throws(()=>applyOnlineLineupCommand(old,'PSG',{type:'prematch-next'},{hostClub:'PSG'}),
+  /indisponible/);
 });
