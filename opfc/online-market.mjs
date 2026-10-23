@@ -47,7 +47,7 @@ export function onlineMarketPublicView(state,club){
  const currentAuction=state.auction;
  const known=state.onlinePrivate?.observations?.[club];
  return {
-  version:state.version,phase:state.phase,
+  version:state.version,phase:state.phase,stadiumId:state.stadiumId??'mugiwara',
   teams:state.teams.map(safeTeam),
   dice:[...state.dice],
   ...(state.recruitmentMode==='random'&&state.phase==='lineup'&&state.randomReveal?.step<7?
