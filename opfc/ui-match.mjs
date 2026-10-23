@@ -7,19 +7,19 @@ import {CARD_BY_ID} from './catalog.mjs?v=opfc-75-roster-20261022';
 import {lineupDetails} from './rules.mjs?v=opfc-75-roster-20261022';
 import {renderCharacterPortrait,renderClubCrest} from './ui-portraits.mjs?v=opfc-75-roster-20261022';
 import {matchPublicView,kickoffMatch,continueMatch,resumeMatch} from './match.mjs?v=opfc-75-roster-20261022';
-import {beginOpenPlayAction,lockOpenPlayChoice,revealOpenPlayDuel,continueOpenPlayDuel,revealOpenPlayShot} from './match-actions.mjs';
+import {beginOpenPlayAction,lockOpenPlayChoice,revealOpenPlayDuel,continueOpenPlayDuel,revealOpenPlayShot} from './match-actions.mjs?v=opfc-tactics-20261023';
 import {isSetPieceKind,setPieceTurnOwner,dispatchSetPieceMatch,renderSetPieceAction} from './ui-set-piece.mjs?v=opfc-75-roster-20261022';
 import {shootoutTurnOwner,dispatchShootout,renderShootoutScreen} from './ui-shootout.mjs?v=opfc-75-roster-20261022';
 import {renderFinalResult} from './ui-final.mjs?v=opfc-75-roster-20261022';
 import {setDisplayedClubs,visualName,visualAbbr} from './club-identities.mjs';
 import {competitionName} from './club-honours.mjs?v=opfc-trophees-20261022';
-import {matchTacticalChoices,renderShotFaceOff,renderShotResult,renderReceiverCard,matchKeeperId} from './ui-match-widgets.mjs?v=opfc-75-roster-20261022';
+import {matchTacticalChoices,renderShotFaceOff,renderShotResult,renderReceiverCard,matchKeeperId} from './ui-match-widgets.mjs?v=opfc-tactics-20261023';
 
 const html=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const name=id=>CARD_BY_ID.get(id)?.name??id??'—';
 const BUTTONS={
- 'attack-choice':[['COMBINER','Combiner'],['LANCER','Lancer'],['PERCER','Percer']],
- 'defense-choice':[['PRESSER','Presser'],['INTERCEPTER','Intercepter'],['CONTENIR','Contenir']],
+ 'attack-choice':[['COMBINER','Passe courte'],['LANCER','Passe en profondeur'],['PERCER','Dribbler']],
+ 'defense-choice':[['PRESSER','Tacler'],['INTERCEPTER','Intercepter'],['CONTENIR','Pressing']],
  'shot-attack-choice':[['PLACEE','Frappe placée'],['PUISSANTE','Frappe puissante'],['PIQUEE','Ballon piqué']],
  'shot-defense-choice':[['LIGNE','Rester sur la ligne'],['SORTIE','Sortir'],['PLONGEON','Anticiper le plongeon']]
 };
