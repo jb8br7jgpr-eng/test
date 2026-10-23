@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {sortCatalogCharacters,sortCatalogClubs,characterStatSortAvailable} from '../opfc/catalog-sorting.mjs';
 import {loadPlayerTotals} from '../opfc/player-totals-service.mjs';
+import {matchPerformances} from '../opfc/player-performance.mjs';
 
 const players=[
  {id:'a',name:'Zoro',rating:90},
@@ -69,4 +70,41 @@ test('Une valeur de carrière null ne peut jamais être affichée comme un vrai 
  }finally{
   globalThis.fetch=previous;
  }
+});
+
+test('De la feuille de match au classement permanent : buts, passes et Ancres d’Or',()=>{
+ const psg=['a0','a1','a2','a3','a4','a5','a6'];
+ const om=['b0','b1','b2','b3','b4','b5','b6'];
+ const squads=[{club:'PSG',roster:psg},{club:'OM',roster:om}];
+ const results=[
+  matchPerformances({phase:'finished',teams:squads,match:{
+   history:[{outcome:'goal',details:{kind:'open',duel:{outcome:{outcome:'chance'}},
+    roles:{carrier:{cardId:'a1'},partner:{cardId:'a2'}}}}],
+   goals:[{club:'PSG',cardId:'a2',assistId:'a1',minute:19}]
+  }}),
+  matchPerformances({phase:'finished',teams:squads,match:{
+   history:[{outcome:'goal',details:{kind:'open',duel:{outcome:{outcome:'chance'}},
+    roles:{carrier:{cardId:'a1'},partner:{cardId:'a2'}}}}],
+   goals:[{club:'PSG',cardId:'a1',assistId:'a2',minute:61}]
+  }})
+ ];
+ const merged=new Map();
+ for(const match of results)for(const [id,p] of Object.entries(match.players)){
+  const old=merged.get(id)??{matches:0,goals:0,assists:0,anchors:0};
+  for(const key of ['matches','goals','assists','anchors'])old[key]+=p[key];
+  merged.set(id,old);
+ }
+ assert.deepEqual(merged.get('a1'),{matches:2,goals:1,assists:1,anchors:1});
+ assert.deepEqual(merged.get('a2'),{matches:2,goals:1,assists:1,anchors:1});
+ assert.deepEqual(merged.get('b0'),{matches:2,goals:0,assists:0,anchors:0});
+ assert.deepEqual(['a1','a2'].map(id=>merged.get(id).matches),[2,2]);
+ const lookup=[
+  {id:'a1',name:'Passeur A',rating:74},
+  {id:'a2',name:'Buteur B',rating:86},
+  {id:'b0',name:'Gardien C',rating:90}
+ ];
+ const winners=sortCatalogCharacters(lookup,'anchors',{totals:merged,complete:true});
+ assert.deepEqual(winners.map(p=>p.id),['a2','a1','b0']);
+ const scorers=sortCatalogCharacters(lookup,'goals',{totals:merged,complete:true});
+ assert.deepEqual(scorers.map(p=>p.id),['a2','a1','b0']);
 });
