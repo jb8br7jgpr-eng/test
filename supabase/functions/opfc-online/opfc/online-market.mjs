@@ -7,7 +7,7 @@
  */
 import {bid,pass,useKings,useObservation,acceptSolo,place,chooseFormation} from './engine.mjs';
 import {formationPositions} from './rules.mjs';
-import {CARDS} from './catalog.mjs?v=opfc-75-roster-20261022';
+import {CARDS} from './catalog.mjs';
 
 const FAIL=message=>{throw Error(message);};
 const CLUBS=['PSG','OM'],ACTIONS=['bid','pass','kings','observation','solo','place','formation'];
