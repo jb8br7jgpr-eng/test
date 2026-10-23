@@ -40,12 +40,12 @@ function localResult(game){
  const teams=Object.fromEntries(game.teams.map(t=>[t.club,t.identityId??t.club]));
  if(!isDisplayClub(teams.PSG)||!isDisplayClub(teams.OM)||teams.PSG===teams.OM)return null;
  const match=game.match;
- const individual=matchPerformances(game);
+ const individual=game.playerStatsVersion===2?matchPerformances(game):null;
  return {id:game.matchRecordId,competition:game.competition,clubs:teams,
   score:{PSG:match.score.PSG,OM:match.score.OM},winner:match.winner,victory:match.victory,
   shootout:match.victory==='shootout'?{PSG:match.shootout.score.PSG,OM:match.shootout.score.OM}:null,
   goals:match.goals.map(g=>({club:g.club,cardId:g.cardId,minute:g.minute,...(g.assistId?{assistId:g.assistId}:{})})),
-  playerStats:individual.players,anchorId:individual.winner};
+  ...(individual?{playerStats:individual.players,anchorId:individual.winner}:{})};
 }
 /** Idempotence : le même match est dans la file et la base sous le même UUID. */
 export function queueFinishedLocalGame(game){
