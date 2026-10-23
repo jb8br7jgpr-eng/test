@@ -277,7 +277,7 @@ function onlineWaiting(club,description){
  '<p>'+html(description)+'</p><p class="caption">Mise à jour automatique.</p></section>';
 }
 const ONLINE_MATCH_COMMANDS=Object.freeze({
- 'match-kickoff':'kickoff','match-resume':'resume',
+ 'match-kickoff':'kickoff','match-prematch-next':'prematch-next','match-resume':'resume',
  'match-begin-open':'begin-open','match-begin-setpiece':'begin-setpiece',
  'match-reveal-duel':'reveal-duel','match-continue-duel':'ack',
  'match-reveal-shot':'reveal-shot','match-continue-result':'ack',
