@@ -292,16 +292,28 @@ async function recordLocal(body){
  if(!Array.isArray(x.goals)||x.goals.length>99||x.goals.some(g=>
    !g||!['PSG','OM'].includes(g.club)||typeof g.cardId!=='string'||g.cardId.length>80||
    !Number.isInteger(g.minute)||g.minute<1||g.minute>90))return error('Buteurs invalides',400);
- const stats=x.playerStats;
- if(!stats||typeof stats!=='object'||Array.isArray(stats)||
-  Object.keys(stats).length!==14||typeof x.anchorId!=='string'||!stats[x.anchorId])
+ // Compatibilité descendante : les téléphones encore sur l'ancienne version
+ // peuvent envoyer une finale contenant uniquement les buts.
+ // Ces finales préservent les buts, mais n'inventent ni matchs, ni passes, ni récompenses.
+ const legacy=!Object.hasOwn(x,'playerStats');
+ const stats=legacy?{}:x.playerStats;
+ if(legacy){
+  for(const g of x.goals){
+   if(!stats[g.cardId])stats[g.cardId]={club:g.club,matches:0,goals:0,assists:0,
+    anchors:0,attacks:0,defenses:0,saves:0,points:0};
+   stats[g.cardId].goals++;
+   stats[g.cardId].points+=5;
+  }
+ }
+ if((!legacy&&(!stats||typeof stats!=='object'||Array.isArray(stats)||
+  Object.keys(stats).length!==14||typeof x.anchorId!=='string'||!stats[x.anchorId])))
   return error('Statistiques individuelles manquantes',400);
  for(const [id,v] of Object.entries(stats)){
   if(!CARD_BY_ID.has(id)||!v||typeof v!=='object'||Array.isArray(v)||
     !['PSG','OM'].includes(v.club)||
     !['matches','goals','assists','anchors','attacks','defenses','saves','points'].every(k=>
        Number.isSafeInteger(v[k])&&v[k]>=0&&v[k]<=99)||
-    v.matches!==1||v.anchors!==(id===x.anchorId?1:0)||
+    v.matches!==(legacy?0:1)||v.anchors!==(id===x.anchorId?1:0)||
     v.points!==5*v.goals+3*v.assists+v.attacks+2*v.defenses+3*v.saves)
     return error('Statistiques individuelles invalides',400);
  }
@@ -318,7 +330,7 @@ async function recordLocal(body){
  const id='local:'+x.id.toLowerCase();
  const record={source_key:id,mode:'local',competition:x.competition,
     home_club:a,away_club:b,home_score:home,away_score:away,winner:w==='PSG'?a:b,
-    shootout,goals:x.goals,player_stats:stats,anchor_id:x.anchorId};
+    shootout,goals:x.goals,player_stats:stats,anchor_id:legacy?null:x.anchorId};
  const {data,error:insertError}=await db.from('opfc_match_results').upsert(record,{onConflict:'source_key',ignoreDuplicates:true}).select('source_key').maybeSingle();
  if(insertError)throw Error('Sauvegarde du résultat indisponible');
  return response({saved:true,duplicate:!data});
