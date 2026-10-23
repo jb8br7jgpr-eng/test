@@ -64,7 +64,8 @@ export function applyOnlineLineupCommand(state,actorClub,command,{hostClub,rng=s
   place:['type','cardId','slot'],
   ready:['type'],
   'reveal-next':['type'],
-  kickoff:['type']
+  kickoff:['type'],
+  'prematch-next':['type']
  }[type];
  if(!expected||Object.keys(command).some(key=>!expected.includes(key))||
   expected.some(key=>!Object.hasOwn(command,key)))
@@ -85,9 +86,21 @@ export function applyOnlineLineupCommand(state,actorClub,command,{hostClub,rng=s
   return {state:next,publicForActor:onlineMarketPublicView(next,actorClub)};
  }
  if(type==='reveal-next')fail('Révélation terminée');
+ if(type==='prematch-next'){
+  if(state.phase!=='kickoff-ready'||state.playerStatsVersion!==2||!state.stadiumId)
+   fail('Présentation d’avant-match indisponible');
+  if(state.prematchReady?.[actorClub]===true)fail('Présentation déjà confirmée');
+  const next=structuredClone(state);
+  next.prematchReady={PSG:!!state.prematchReady?.PSG,OM:!!state.prematchReady?.OM};
+  next.prematchReady[actorClub]=true;
+  return {state:next,publicForActor:onlineMarketPublicView(next,actorClub)};
+ }
  if(type==='kickoff'){
   if(state.phase!=='kickoff-ready')fail('Les deux équipes doivent être prêtes');
   if(actorClub!==hostClub)fail('Seul l’hôte lance le coup d’envoi');
+  if(state.playerStatsVersion===2&&
+    (state.prematchReady?.PSG!==true||state.prematchReady?.OM!==true))
+   fail('Les deux joueurs doivent confirmer la présentation d’avant-match');
   const next=kickoffMatch(state,rng);
   return {state:next,publicForActor:onlineKickoffView(next)};
  }
@@ -107,6 +120,8 @@ export function applyOnlineLineupCommand(state,actorClub,command,{hostClub,rng=s
   next=place(state,actorClub,command.cardId,command.slot);
  }else if(type==='ready'){
   next=ready(state,actorClub);
+  if(next.phase==='kickoff-ready'&&next.playerStatsVersion===2)
+   next.prematchReady={PSG:false,OM:false};
  }else fail('Commande de composition inconnue');
  return {state:next,publicForActor:onlineMarketPublicView(next,actorClub)};
 }
