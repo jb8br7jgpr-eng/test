@@ -40,6 +40,7 @@ export function renderFinalResult(state){
  const m=state.match,st=m.statistics;
  const performance=matchPerformances(state);
  const anchor=performance.winner,anchorStats=performance.players[anchor];
+ const showAnchor=state.playerStatsVersion===2||Boolean(state.stadiumId);
  const trophy=CLUB_TROPHIES.find(t=>t.key===(m.competition??state.competition))??CLUB_TROPHIES.find(t=>t.key==='grandline');
  return '<div class="final-screen">'+
  '<section class="panel final-score"><span class="eyebrow">'+h(competitionName(m.competition??state.competition))+' · Coup de sifflet final</span>'+ 
@@ -64,7 +65,7 @@ export function renderFinalResult(state){
  '</section>'+
  '<section class="panel"><h3 class="section-title">Buteurs du match</h3>'+
  '<div class="final-goals"><div><h4>'+h(visualAbbr('PSG'))+'</h4>'+goalsFor(m.goals,'PSG')+
- '</div><div><h4>'+h(visualAbbr('OM'))+'</h4>'+goalsFor(m.goals,'OM')+'</div></div></section>'+ '<section class="panel opfc-anchor-award"><span class="eyebrow">Meilleur joueur du match</span>'+ '<h3>⚓ Ancre d’Or</h3><img src="./opfc/illustrations/ancre-or.webp" alt="Trophée Ancre d’Or" class="opfc-anchor-illustration" decoding="async">'+ '<div class="opfc-anchor-winner">'+renderCharacterPortrait(anchor,'opfc-anchor-portrait')+ '<div><strong>'+h(player(anchor))+'</strong><small>'+h(visualName(anchorStats?.club??'PSG'))+'</small></div></div>'+ '<p class="opfc-anchor-score">'+performance.points+' points</p>'+ '<p class="caption">'+(anchorStats?.goals??0)+' buts · '+(anchorStats?.assists??0)+' passes D. · '+ (anchorStats?.attacks??0)+' actions offensives · '+(anchorStats?.defenses??0)+' défensives · '+ (anchorStats?.saves??0)+' arrêts</p></section>'+
+ '</div><div><h4>'+h(visualAbbr('OM'))+'</h4>'+goalsFor(m.goals,'OM')+'</div></div></section>'+ (showAnchor?'<section class="panel opfc-anchor-award"><span class="eyebrow">Meilleur joueur du match</span>'+ '<h3>⚓ Ancre d’Or</h3><img src="./opfc/illustrations/ancre-or.webp" alt="Trophée Ancre d’Or" class="opfc-anchor-illustration" decoding="async">'+ '<div class="opfc-anchor-winner">'+renderCharacterPortrait(anchor,'opfc-anchor-portrait')+ '<div><strong>'+h(player(anchor))+'</strong><small>'+h(visualName(anchorStats?.club??'PSG'))+'</small></div></div>'+ '<p class="opfc-anchor-score">'+performance.points+' points</p>'+ '<p class="caption">'+(anchorStats?.goals??0)+' buts · '+(anchorStats?.assists??0)+' passes D. · '+ (anchorStats?.attacks??0)+' actions offensives · '+(anchorStats?.defenses??0)+' défensives · '+ (anchorStats?.saves??0)+' arrêts</p></section>':'')+
  '<section class="panel"><h3 class="section-title">Statistiques comparées · 90 minutes</h3>'+
  statRow('Tirs',st.PSG.shots,st.OM.shots)+
  statRow('Tirs cadrés',st.PSG.onTarget,st.OM.onTarget)+
