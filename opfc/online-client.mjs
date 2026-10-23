@@ -81,7 +81,7 @@ export function createOnlineClient({
   const withMatch=['match','moment-result','half-time','resume-ready',
    'shootout-ready','shootout','finished'].includes(payload.phase);
   const allowed=withMatch?['version','phase','teams','dice','match','stadiumId']:
-   ['version','phase','teams','dice','auction','lastResult','myObservation','reveal','stadiumId'];
+   ['version','phase','teams','dice','auction','lastResult','myObservation','reveal','stadiumId','competition'];
   if(Object.keys(payload).some(k=>!allowed.includes(k)))fail('Vue de mercato contenant des secrets');
   if(!Array.isArray(payload.dice)||payload.dice.length!==2||
    payload.teams.some(t=>!t||!['PSG','OM'].includes(t.club)))
