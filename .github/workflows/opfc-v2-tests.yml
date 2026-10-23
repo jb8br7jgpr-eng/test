@@ -34,6 +34,11 @@ jobs:
           node --check opfc/player-performance.mjs
           node --check opfc/prematch.mjs
           node --check opfc/catalog-view.mjs
-          node --check supabase/functions/opfc-online/index.ts || echo "Edge source is TypeScript: syntax check reserved for Deno build"
+          node --check opfc/match-actions.mjs
+          node --check opfc/set-piece-actions.mjs
+          node --check opfc/online-market.mjs
+          node --check opfc/online-lineup.mjs
+          node --check opfc/online-match.mjs
+          node --check opfc/trophy-service.mjs
       - name: Deterministic V2 tests
         run: node --test tests/opfc-v2.test.mjs opfc/tests/v2.test.mjs
