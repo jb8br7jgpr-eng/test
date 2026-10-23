@@ -78,7 +78,7 @@ test('Avant-match : 14 titulaires, vraie compétition et stade Whole Cake',()=>{
  const html=renderPrematch(s);
  assert.ok(html.includes('Whole Cake Stadium'));
  assert.ok(html.includes('Championnat du Nouveau Monde'));
- assert.equal((html.match(/opfc-prematch-player/g)||[]).length,14);
+ assert.equal((html.match(/class="opfc-prematch-player"/g)||[]).length,14);
 });
 test('Écran final : passeur avec portrait et récompense Ancre d Or',()=>{
  const goals=[{club:'PSG',cardId:A.roster[5],assistId:A.roster[4],minute:38}];
