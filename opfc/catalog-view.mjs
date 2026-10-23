@@ -5,6 +5,7 @@ import {DISPLAY_CLUBS,displayAbbr,clubLogoFile} from './club-identities.mjs';
 import {CLUB_HONOURS,CLUB_TROPHIES} from './club-honours.mjs?v=opfc-trophees-20261022';
 import {loadTrophyHistory,syncQueuedLocalResults} from './trophy-service.mjs?v=opfc-v2-20261023';
 import {loadPlayerTotals} from './player-totals-service.mjs';
+import {sortCatalogCharacters,sortCatalogClubs} from './catalog-sorting.mjs';
 
 const root=document.getElementById('catalog-grid');
 const search=document.getElementById('catalog-search');
@@ -20,18 +21,14 @@ const compact=value=>String(value??'').normalize('NFD').replace(/[\u0300-\u036f]
 const post={GAR:'Gardien',DEF:'Défenseur',MIL:'Milieu',ATT:'Attaquant'};
 const rarityName={DIA:'Diamant',OR:'Or',ARG:'Argent',BRZ:'Bronze'};
 const stats={PUI:'PUI',TEC:'TEC',PAS:'PAS',VIT:'VIT',DEF:'DEF',GAR:'GAR'};
-const goalsFor=id=>scorerTotals?.get(id)?.goals??0;
 const careerValue=(id,key)=>{
  if(scorerTotals===null||(!careerComplete&&key!=='goals'))return '—';
  const value=scorerTotals.get(id);
  return value?.[key]===null?'—':value?.[key]??0;
 };
 function sortedCharacters(){
- const mode=characterSort.value;
- const nameOrder=(a,b)=>a.name.localeCompare(b.name,'fr');
- return [...CARDS].sort((a,b)=>mode==='alpha'?nameOrder(a,b):
-  mode==='goals'?(goalsFor(b.id)-goalsFor(a.id)||b.rating-a.rating||nameOrder(a,b)):
-  b.rating-a.rating||nameOrder(a,b));
+ return sortCatalogCharacters(CARDS,characterSort.value,
+  {totals:scorerTotals,complete:careerComplete});
 }
 
 function cardHtml(c){
@@ -77,7 +74,8 @@ paintCharacters();
 async function refreshScorers(){
  try{
   const {totals,complete}=await loadPlayerTotals();
-  const changed=!scorerTotals||JSON.stringify([...scorerTotals])!==JSON.stringify([...totals]);
+  const changed=!scorerTotals||careerComplete!==complete||
+   JSON.stringify([...scorerTotals])!==JSON.stringify([...totals]);
   scorerTotals=totals;careerComplete=complete;
   scorerStatus.textContent=complete?
    '✅ Carrières synchronisées : matchs, buts, passes décisives et Ancres d’Or.':
@@ -98,14 +96,8 @@ const clubEmpty=document.getElementById('club-empty');
 const clubStatus=document.getElementById('club-sync-status');
 let liveHonours=null;
 
-const clubTotal=club=>CLUB_TROPHIES.reduce((sum,t)=>sum+(liveHonours?.[club.id]?.[t.key]??0),0);
 function sortedClubs(){
- const mode=clubSort.value;
- const names=(a,b)=>a.name.localeCompare(b.name,'fr');
- return [...DISPLAY_CLUBS].sort((a,b)=>mode==='alpha'?names(a,b):
-  mode==='total'?clubTotal(b)-clubTotal(a)||names(a,b):
-  (liveHonours?.[b.id]?.[mode]??0)-(liveHonours?.[a.id]?.[mode]??0)||
-  clubTotal(b)-clubTotal(a)||names(a,b));
+ return sortCatalogClubs(DISPLAY_CLUBS,clubSort.value,liveHonours,CLUB_TROPHIES);
 }
 function clubHtml(club,rank){
  const honours=liveHonours?.[club.id]??CLUB_HONOURS[club.id];
