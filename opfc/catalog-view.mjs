@@ -4,7 +4,7 @@ import {portraitFile} from './ui-portraits.mjs?v=opfc-75-roster-20261022';
 import {DISPLAY_CLUBS,displayAbbr,clubLogoFile} from './club-identities.mjs';
 import {CLUB_HONOURS,CLUB_TROPHIES} from './club-honours.mjs?v=opfc-trophees-20261022';
 import {loadTrophyHistory,syncQueuedLocalResults} from './trophy-service.mjs';
-import {loadScorerTotals} from './scorer-service.mjs';
+import {loadPlayerTotals} from './player-totals-service.mjs';
 
 const root=document.getElementById('catalog-grid');
 const search=document.getElementById('catalog-search');
@@ -20,7 +20,8 @@ const compact=value=>String(value??'').normalize('NFD').replace(/[\u0300-\u036f]
 const post={GAR:'Gardien',DEF:'Défenseur',MIL:'Milieu',ATT:'Attaquant'};
 const rarityName={DIA:'Diamant',OR:'Or',ARG:'Argent',BRZ:'Bronze'};
 const stats={PUI:'PUI',TEC:'TEC',PAS:'PAS',VIT:'VIT',DEF:'DEF',GAR:'GAR'};
-const goalsFor=id=>scorerTotals?.get(id)??0;
+const goalsFor=id=>scorerTotals?.get(id)?.goals??0;
+const careerValue=(id,key)=>scorerTotals===null?'—':scorerTotals.get(id)?.[key]??0;
 function sortedCharacters(){
  const mode=characterSort.value;
  const nameOrder=(a,b)=>a.name.localeCompare(b.name,'fr');
@@ -40,13 +41,11 @@ function cardHtml(c){
   '" data-position="'+esc(c.position)+'" data-rarity="'+esc(c.rarity)+'">'+
   '<div class="catalog-card-top"><div class="catalog-portrait">'+picture+'</div>'+
   '<div class="catalog-card-info"><h2 class="catalog-card-name">'+esc(c.name)+'</h2>'+
-  '<div class="catalog-metrics"><div class="catalog-rating">'+esc(c.rating)+'<small>NOTE</small></div>'+
-  '<div class="catalog-goal-counter" aria-label="'+esc(c.name)+' : '+esc(scorerTotals===null?'statistiques indisponibles':goalsFor(c.id)+' buts')+'">'+
-  '<strong>'+esc(scorerTotals===null?'—':goalsFor(c.id))+'</strong><small>⚽ BUTS</small></div></div>'+
+  '<div class="catalog-metrics"><div class="catalog-rating">'+esc(c.rating)+'<small>NOTE</small></div></div>'+
   '<div class="catalog-tags"><span class="catalog-tag">'+esc(post[c.position])+'</span>'+
   '<span class="catalog-tag rarity-'+esc(c.rarity)+'">'+esc(rarityName[c.rarity])+'</span></div>'+
   '<p class="catalog-group">'+esc(c.group)+'</p></div></div>'+
-  '<div class="catalog-stats" aria-label="Six statistiques de '+esc(c.name)+'">'+statBlocks+'</div></article>';
+  '<div class="catalog-stats" aria-label="Six statistiques de '+esc(c.name)+'">'+statBlocks+'</div>'+  '<div class="catalog-career" aria-label="Statistiques de carrière de '+esc(c.name)+'">'+  [['MATCHS','matches'],['BUTS','goals'],['PASSES D.','assists'],['ANCRES D’OR','anchors']].map(([label,key])=>  '<div class="catalog-career-cell"><strong>'+esc(careerValue(c.id,key))+'</strong><small>'+label+'</small></div>').join('')+  '</div></article>';
 }
 
 let elements=[];
@@ -73,14 +72,15 @@ characterSort.addEventListener('change',paintCharacters);
 paintCharacters();
 async function refreshScorers(){
  try{
-  const fresh=await loadScorerTotals();
-  const changed=!scorerTotals||fresh.size!==scorerTotals.size||
-   [...fresh].some(([id,goals])=>scorerTotals.get(id)!==goals);
-  scorerTotals=fresh;
-  scorerStatus.textContent='✅ Compteurs de buts synchronisés sur toutes les finales officielles.';
+  const {totals,complete}=await loadPlayerTotals();
+  const changed=!scorerTotals||JSON.stringify([...scorerTotals])!==JSON.stringify([...totals]);
+  scorerTotals=totals;
+  scorerStatus.textContent=complete?
+   '✅ Carrières synchronisées : matchs, buts, passes décisives et Ancres d’Or.':
+   '⚠️ Nouvelles statistiques en attente du serveur ; buts historiques conservés.';
   if(changed)paintCharacters();
  }catch{
-  scorerStatus.textContent='⚠️ Compteurs de buts momentanément indisponibles ou non actualisés.';
+  scorerStatus.textContent='⚠️ Statistiques momentanément indisponibles ou non actualisées.';
  }
 }
 
