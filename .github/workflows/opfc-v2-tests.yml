@@ -6,6 +6,7 @@ on:
     paths:
       - 'opfc/**'
       - 'tests/opfc-v2.test.mjs'
+      - 'tests/opfc-v2-catalog-sort.test.mjs'
       - 'opfc.html'
       - 'opfc-catalogue.html'
       - '.github/workflows/opfc-v2-tests.yml'
