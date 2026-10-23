@@ -90,3 +90,13 @@ Branche : `feature/opfc-stades-stats-ancre-20261023`.
 - Contrôle en lecture seule des triggers OPFC : archive immuable et total des buts alimentés uniquement par des insertions de finales ; identifiant `source_key` unique pour éviter les doublons.
 - Aucun changement à la mécanique d'enchère, aux choix tactiques, aux notes ou au tirage 50/50 de Passe courte.
 - **Attention :** les tests complets via GitHub Actions ou sur deux téléphones restent à confirmer ; aucune migration ni publication effectuée.
+
+## Catalogue — classements validés le 23/10/2026
+
+- **Personnages** : note décroissante (choix initial), matchs joués décroissants, meilleurs buteurs, meilleurs passeurs, plus d'Ancres d'Or, A → Z et Z → A.
+- **Clubs** : palmarès et tris existants conservés, avec A → Z **et** Z → A.
+- En cas d'égalité statistique : note générale la plus élevée, puis ordre alphabétique croissant ; les tris alphabétiques simples ignorent la note.
+- Les filtres personnages (nom, poste, rareté) restent compatibles avec tous les tris ; le filtre de recherche des clubs reste compatible avec les deux sens alphabétiques.
+- Quand les statistiques V2 ne sont pas encore accessibles, les tris correspondants retombent provisoirement sur la note, avec message explicite, sans inventer de performances.
+- Fichiers : `opfc/catalog-sorting.mjs`, `opfc/catalog-view.mjs`, `opfc-catalogue.html`. Tests : `tests/opfc-v2-catalog-sort.test.mjs`, inclus dans le workflow OPFC V2.
+- 13 assertions fonctionnelles du nouveau module de tri et 15 vérifications de syntaxe/intégration des menus réussies en inspection ; exécution complète de GitHub Actions encore à confirmer.
