@@ -49,6 +49,9 @@ export function onlineMarketPublicView(state,club){
  return {
   version:state.version,phase:state.phase,
   ...(state.stadiumId?{stadiumId:state.stadiumId,competition:state.competition??'grandline'}:{}),
+  ...(state.phase==='kickoff-ready'&&state.playerStatsVersion===2?
+   {prematchReady:{PSG:state.prematchReady?.PSG===true,
+    OM:state.prematchReady?.OM===true}}:{}),
   teams:state.teams.map(safeTeam),
   dice:[...state.dice],
   ...(state.recruitmentMode==='random'&&state.phase==='lineup'&&state.randomReveal?.step<7?
