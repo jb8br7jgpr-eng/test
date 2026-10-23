@@ -7,6 +7,7 @@ import {matchPerformances} from '../player-performance.mjs';
 import {STADIUMS} from '../stadiums.mjs';
 import {renderPrematch} from '../prematch.mjs';
 import {renderFinalResult} from '../ui-final.mjs';
+import {renderMatchScreen,renderOnlineMatchScreen} from '../ui-match.mjs';
 
 const used=new Set();
 const pick=pos=>{
@@ -86,4 +87,36 @@ test('Écran final : passeur avec portrait et récompense Ancre d Or',()=>{
  assert.ok(html.includes('final-assist-portrait'));
  assert.ok(html.includes('ancre-or.webp'));
  assert.ok(html.includes('Ancre d’Or'));
+});
+
+
+test('Deux écrans avant-match : ancien écran conservé, puis stade en local',()=>{
+ const ready=matchState([],[],'kickoff-ready');
+ ready.playerStatsVersion=2;
+ const original=renderMatchScreen(ready);
+ assert.ok(original.includes('Les équipes sont prêtes !'));
+ assert.ok(original.includes('match-prematch-next'));
+ assert.ok(!original.includes('opfc-prematch-stadium'));
+ const presentation=renderMatchScreen({...ready,prematchSeen:true});
+ assert.ok(presentation.includes('Whole Cake Stadium'));
+ assert.ok(presentation.includes('opfc-prematch-stadium'));
+ assert.ok(presentation.includes('match-kickoff'));
+});
+test('Avant-match en ligne : validations séparées avant le coup d’envoi',()=>{
+ const ready=matchState([],[],'kickoff-ready');
+ ready.playerStatsVersion=2;
+ ready.prematchReady={PSG:false,OM:false};
+ const first=renderOnlineMatchScreen(ready,{myClub:'PSG',hostClub:'PSG'});
+ assert.ok(first.includes('Les équipes sont prêtes !'));
+ assert.ok(first.includes('data-type="prematch-next"'));
+ const host=renderOnlineMatchScreen({...ready,prematchReady:{PSG:true,OM:false}},{myClub:'PSG',hostClub:'PSG'});
+ assert.ok(host.includes('Whole Cake Stadium'));
+ assert.ok(!host.includes('data-type="kickoff"'));
+ const guest=renderOnlineMatchScreen({...ready,prematchReady:{PSG:true,OM:false}},{myClub:'OM',hostClub:'PSG'});
+ assert.ok(guest.includes('data-type="prematch-next"'));
+ const both={...ready,prematchReady:{PSG:true,OM:true}};
+ const finalHost=renderOnlineMatchScreen(both,{myClub:'PSG',hostClub:'PSG'});
+ const finalGuest=renderOnlineMatchScreen(both,{myClub:'OM',hostClub:'PSG'});
+ assert.ok(finalHost.includes('data-type="kickoff"'));
+ assert.ok(!finalGuest.includes('data-type="kickoff"'));
 });
