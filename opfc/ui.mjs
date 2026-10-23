@@ -749,7 +749,7 @@ function onlineSharedMarket(snapshot){
   // L'écran « équipes prêtes » original reste le premier écran des deux iPhone.
   // Chaque club passe ensuite à la nouvelle présentation après sa confirmation.
   return '<main class="online-game-content opfc-online-playing">'+
-   (showingPresentation?preview:onlineScoped(()=>wallets())+onlineTeams()+preview)+
+   (showingPresentation?preview:onlineScoped(()=>wallets())+preview+onlineTeams())+
    '</main>';
  }
  if(snapshot.phase==='lineup'&&snapshot.reveal?.step<7)
