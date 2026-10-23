@@ -308,7 +308,7 @@ function onlineAcknowledgementPanel(content,state,club){
 function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null,competition=null}={}){
  if(state?.teams)setDisplayedClubs(state.teams);
  if(state?.phase==='kickoff-ready')return renderPrematch(
-   state.competition||!competition?state:{...state,competition},
+   state.competition?state:{...state,competition:competition??'grandline'},
    {canKickoff:!onlineClub||onlineClub===hostClub});
  const view=onlineClub?state:matchPublicView(state),m=view.match;
  if(!m)return '<section class="panel match-stage"><h2>Aucun match en cours</h2></section>';
