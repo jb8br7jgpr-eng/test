@@ -14,12 +14,14 @@ import {renderOnlineLobby,normalizeJoinCodeInput} from './ui-online.mjs?v=opfc-s
 import {renderOnlineGame} from './ui-online-game.mjs?v=opfc-tactics-20261023';
 import {CLUB_TROPHIES,isCompetition,competitionName,renderCompetitionPicker} from './club-honours.mjs?v=opfc-trophees-20261022';
 import {queueFinishedLocalGame,syncQueuedLocalResults,pendingLocalResultsCount} from './trophy-service.mjs';
+import {stadiumPicker,isStadium} from './stadiums.mjs';
 
 const app=document.getElementById('opfc-app');
 const STORAGE='opfc-v08-local-dev';
 let game=null,firstClub='PSG',selection=null,modal=null,error='',beforeForm={PSG:'2-2-2',OM:'2-2-2'};
 let localClubChoices={PSG:'PSG',OM:'OM'},onlineHostIdentity='PSG',onlineGuestIdentity='OM';
 let localCompetition='league',onlineCompetition='league';
+let localStadium='mugiwara',onlineStadium='mugiwara';
 let localRecruitmentMode='auction',onlineRecruitmentMode='auction';
 let onlineHostFormation='2-2-2',onlineGuestFormation='2-2-2';
 let matchUncovered=false;
@@ -262,6 +264,10 @@ async function onlineClicked(action,button){
   if(!['auction','random'].includes(button.dataset.mode))throw Error('Mode de recrutement invalide');
   onlineRecruitmentMode=button.dataset.mode;render();return;
  }
+ if(action==='online-select-stadium'){
+  if(onlineStage!=='create'||onlineClient.hasSession||!isStadium(button.dataset.stadium))throw Error('Stade indisponible');
+  onlineStadium=button.dataset.stadium;render();return;
+ }
  if(action==='online-select-competition'){
   if(onlineStage!=='create'||onlineClient.hasSession)throw Error('Compétition non modifiable');
   if(!isCompetition(button.dataset.competition))throw Error('Compétition invalide');
@@ -284,7 +290,7 @@ async function onlineClicked(action,button){
  }
  if(action==='online-create'){
   await onlineMutation(async()=>{
-   await onlineClient.createRoom('PSG',onlineHostIdentity,onlineCompetition,onlineRecruitmentMode,onlineHostFormation);
+   await onlineClient.createRoom('PSG',onlineHostIdentity,onlineCompetition,onlineRecruitmentMode,onlineHostFormation,onlineStadium);
    onlineStage='room';
    try{await onlineClient.refreshRoom();}catch{ /* reprise par actualisation automatique */ }
   });return;
@@ -385,7 +391,7 @@ function welcome(){
  '<h1 class="intro-title">Prépare ton match.</h1><p>Sept recrues. Deux clubs. Un seul vainqueur.</p>'+
  '<section class="panel intro-panel opfc-competition-panel"><h2 class="section-title">🏆 Choisis ta compétition</h2>'+
  '<p class="caption">Sélectionne le trophée à disputer avant de choisir les clubs.</p>'+
- renderCompetitionPicker(localCompetition,'local-select-competition')+'</section>'+
+ renderCompetitionPicker(localCompetition,'local-select-competition')+'</section>'+ '<section class="panel intro-panel">'+stadiumPicker(localStadium,'local-select-stadium')+'</section>'+
  '<section class="panel intro-panel opfc-setup-mode" aria-label="Comment composer les équipes ?">'+
  '<div class="opfc-recruit-buttons opfc-recruit-buttons-local">'+
  btn('local-recruit-auction','⚖️ Mercato classique',(localRecruitmentMode==='auction'?'primary':'ghost')+' full',false,'aria-pressed="'+(localRecruitmentMode==='auction')+'"')+
@@ -882,7 +888,7 @@ function render(){
  const lobby=(!showingGame||onlineRoomDetails)?renderOnlineLobby({
   stage:onlineStage,firstClub,room:onlineClient.room,
   hostIdentity:onlineHostIdentity,guestIdentity:onlineGuestIdentity,competition:onlineCompetition,
-  recruitmentMode:onlineRecruitmentMode,hostFormation:onlineHostFormation,guestFormation:onlineGuestFormation,
+  recruitmentMode:onlineRecruitmentMode,hostFormation:onlineHostFormation,guestFormation:onlineGuestFormation,stadiumId:onlineStadium,
   configured:onlineClient.configured,joinCode:onlineJoinCode,
   busy:onlineBusy,error:onlineError,gameActive:showingGame
  }):'';
@@ -927,6 +933,7 @@ function change(fn){
 function start(){
  let s=createGame({firstClub:'PSG',clubChoices:localClubChoices});
  s.competition=localCompetition;
+ s.stadiumId=localStadium;
  s.matchRecordId=crypto.randomUUID();
  if(localRecruitmentMode==='random'){
   s=generateRandomTeams(s,beforeForm);
@@ -958,6 +965,10 @@ function clicked(button){
  if(action==='local-recruit-auction'||action==='local-recruit-random'){
   if(entryView!=='local')throw Error('Choix du recrutement indisponible');
   localRecruitmentMode=action==='local-recruit-random'?'random':'auction';render();return;
+ }
+ if(action==='local-select-stadium'){
+  if(entryView!=='local'||!isStadium(button.dataset.stadium))throw Error('Stade indisponible');
+  localStadium=button.dataset.stadium;render();return;
  }
  if(action==='local-select-competition'){
   if(!isCompetition(button.dataset.competition))throw Error('Compétition invalide');
