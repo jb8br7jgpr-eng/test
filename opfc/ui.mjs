@@ -934,6 +934,7 @@ function start(){
  let s=createGame({firstClub:'PSG',clubChoices:localClubChoices});
  s.competition=localCompetition;
  s.stadiumId=localStadium;
+  s.playerStatsVersion=2;
  s.matchRecordId=crypto.randomUUID();
  if(localRecruitmentMode==='random'){
   s=generateRandomTeams(s,beforeForm);
