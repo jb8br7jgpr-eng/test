@@ -27,3 +27,9 @@ de migration sur Supabase sans une nouvelle autorisation explicite de l'utilisat
 - Tester explicitement le cas d'un match sauvegardé localement hors ligne puis resynchronisé,
   et les deux clients iPhone sur une même finale enregistrée exactement une fois.
 - Tests visuels mobile iOS + tests migrations en recette requis avant publication.
+
+## Contrôles préparés
+- Préflight lecture seule : `supabase/migrations-opfc-v3/preflight-readonly.sql`.
+- Postflight lecture seule : `supabase/migrations-opfc-v3/postflight-readonly.sql`.
+- Avant déploiement : exécuter les scripts en recette, confronter les nombres à l’archive et sauvegarder la production.
+- Migration en deux parties DRAFT ; ne jamais exécuter sans feu vert.
