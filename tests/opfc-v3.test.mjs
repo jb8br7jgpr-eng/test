@@ -75,8 +75,8 @@ test('Hall complet : les quatre classements affichent chacun tous les personnage
   totals.get(CARDS[0].id).goals=3;
   const points=new Map(CARDS.map(c=>[c.id,5]));
   const html=renderV3Hall(totals,points,new Map());
-  // 75 entrées x 4 classements complets, plus le podium du buteur.
-  assert.equal((html.match(/<li>/g)||[]).length,4*CARDS.length+1);
+  // 75 entrées x 4 classements historiques, 75 prétendants, plus le podium du buteur.
+  assert.equal((html.match(/<li>/g)||[]).length,5*CARDS.length+1);
   assert.equal((html.match(/class="v3-hall-player"/g)||[]).length,7);
   assert.match(html,/class="v3-hall-pitch slot-field slot-field-single"/);
  }finally{globalThis.localStorage=old;}
