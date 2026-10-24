@@ -111,7 +111,6 @@ async function refreshScorers(){
    '⚠️ Nouvelles statistiques en attente du serveur ; buts historiques conservés.';
   displayCareerSyncStatus();
   if(changed)paintCharacters();
-   refreshHall();
  }catch{
   careerSyncMessage='⚠️ Statistiques momentanément indisponibles ou non actualisées.';
   displayCareerSyncStatus();
@@ -341,9 +340,12 @@ async function refreshV3(){
  if(status)status.textContent=clubs.status==='fulfilled'?'✅ Statistiques des clubs synchronisées':'⏳ Statistiques historiques en attente de la migration V3.';
  if(points.status==='fulfilled')v3PlayerPoints=points.value;
  if(milestones.status==='fulfilled')v3Milestones=milestones.value;
+}
+// Une synchronisation à l'ouverture : ne pas reconstruire les classements en cours de lecture.
+async function refreshCatalogue(){
+ await Promise.all([refreshPalmares(),refreshScorers(),refreshV3()]);
  refreshHall();
 }
-const refreshCatalogue=()=>Promise.all([refreshPalmares(),refreshScorers(),refreshV3()]);
-void syncQueuedLocalResults().then(refreshCatalogue);
-setInterval(()=>{if(!document.hidden)void refreshCatalogue();},20000);
-window.addEventListener('focus',()=>void syncQueuedLocalResults().then(refreshCatalogue));
+// Les résultats locaux en attente sont synchronisés avant la lecture unique des statistiques.
+// Même si la synchronisation locale échoue, le catalogue public reste consultable.
+void syncQueuedLocalResults().catch(()=>{}).then(refreshCatalogue);
