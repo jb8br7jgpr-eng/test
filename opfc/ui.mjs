@@ -381,7 +381,7 @@ function modeChooser(){
  btn('open-local','<span class="opfc-mode-action-icon" aria-hidden="true">⚽</span><span><strong>Jouer en local</strong><small>À deux sur le même appareil</small></span><span class="opfc-mode-chevron" aria-hidden="true">›</span>','primary opfc-mode-action')+
  btn('online','<span class="opfc-mode-action-icon" aria-hidden="true">🌐</span><span><strong>Jouer en ligne</strong><small>Deux iPhone · Un salon privé</small></span><span class="opfc-mode-chevron" aria-hidden="true">›</span>','ghost opfc-mode-action')+
  '<nav class="opfc-mode-shortcuts" aria-label="Découvrir OPMercato FC">'+
- '<a class="opfc-mode-shortcut" href="./opfc-catalogue.html?v=opfc-catalog-once-20261024"><span aria-hidden="true">📚</span>Catalogue</a>'+
+ '<a class="opfc-mode-shortcut" href="./opfc-catalogue.html?v=opfc-hall-thumbs-20261024"><span aria-hidden="true">📚</span>Catalogue</a>'+
  '<a class="opfc-mode-shortcut" href="./opfc-regles.html"><span aria-hidden="true">📖</span>Règles</a>'+
  '</nav>'+
  '</div></main>';

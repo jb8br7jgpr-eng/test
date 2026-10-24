@@ -6,8 +6,10 @@ import {CATEGORIES,SEATS,rankCards,hallSeven} from './v3-hall-core.mjs';
 const e=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const key='opfc-v3-hall-incumbents';
 const picture=(c,cls)=>{
- const src=c&&portraitFile(c.id);
- return '<span class="'+cls+'">'+(src?'<img src="'+e(src)+'" alt="Portrait de '+e(c.name)+'" loading="lazy" decoding="async">':'⚓')+'</span>';
+ const original=c&&portraitFile(c.id);
+ // Uniquement dans le Hall : même portrait officiel, miniaturisé hors des écrans de match.
+ const src=original?.replace(/^\.\/portraits_opfc\//,'./opfc/hall-thumbs/');
+ return '<span class="'+cls+'">'+(src?'<img src="'+e(src)+'" alt="Portrait de '+e(c.name)+'" width="192" height="192" loading="lazy" decoding="async">':'⚓')+'</span>';
 };
 const stored=()=>{
  try{const s=JSON.parse(localStorage.getItem(key)||'{}');return s&&typeof s==='object'?s:{};}

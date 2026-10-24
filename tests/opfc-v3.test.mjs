@@ -110,7 +110,10 @@ test('Prétendants : 75 portraits ronds, 4 postes, points et écart sans changer
   assert.match(html,/−3 pts du dernier titulaire/);
   assert.match(html,/★ Sept de légende/);
   assert.match(html,/<strong>0<\/strong><small>pts<\/small>/);
-  assert.match(html,/v3-hall-rank-avatar"><img src="\.\/portraits_opfc\//);
+  assert.match(html,/v3-hall-rank-avatar"><img src="\.\/opfc\/hall-thumbs\//);
+  assert.equal((html.match(/v3-hall-rank-avatar"><img src="\.\/opfc\/hall-thumbs\//g)||[]).length,CARDS.length);
+  assert.doesNotMatch(html,/src="\.\/portraits_opfc\//);
+  assert.match(html,/width="192" height="192" loading="lazy" decoding="async"/);
  }finally{globalThis.localStorage=original;}
 });
 
