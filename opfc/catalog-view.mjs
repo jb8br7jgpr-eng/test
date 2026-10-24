@@ -7,7 +7,7 @@ import {loadTrophyHistory,syncQueuedLocalResults} from './trophy-service.mjs?v=o
 import {loadPlayerTotals} from './player-totals-service.mjs';
 import {loadV3ClubStats,loadV3PlayerPoints,loadV3Milestones} from './v3-data-service.mjs';
 import {renderV3ClubStats} from './v3-club-view.mjs';
-import {renderV3Hall} from './v3-hall-view.mjs';
+import {renderV3Hall} from './v3-hall-view.mjs?v=opfc-challengers-20261024';
 import {sortCatalogCharacters,sortCatalogClubs,characterStatSortAvailable} from './catalog-sorting.mjs';
 
 const root=document.getElementById('catalog-grid');
