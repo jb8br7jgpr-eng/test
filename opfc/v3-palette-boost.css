@@ -1,0 +1,190 @@
+/* OPFC V3.1 — les huit palettes sont héritées de v3-match.css.
+   Habillage seulement, aucune règle de calcul, action tactique ou décision réseau modifiée. */
+#opfc-app[data-v3-phase]{
+ --v3-surface-1:color-mix(in srgb,var(--v3-primary) 39%,#112b3a);
+ --v3-surface-2:color-mix(in srgb,var(--v3-secondary) 23%,#091e30);
+ --v3-line:color-mix(in srgb,var(--v3-primary) 73%,var(--v3-accent));
+ --v3-glow:color-mix(in srgb,var(--v3-primary) 42%,transparent);
+ --v3-detail:color-mix(in srgb,var(--v3-accent) 78%,#f8e7c0);
+}
+/* Vraie colorisation des grandes surfaces, pas uniquement des bordures. */
+#opfc-app[data-v3-phase] :is(
+ .match-stage:not(.shot-result-panel),
+ .halftime-screen .halftime-stats,
+ .halftime-screen .halftime-tactics,
+ .match-handover,
+ .online-turn-wait,
+ .match-team-overview .pitch-panel,
+ .v3-ready-strip
+){
+ background:linear-gradient(130deg,var(--v3-surface-1) 0%,var(--v3-surface-2) 71%,#0c2030 100%)!important;
+ border:1.5px solid var(--v3-line)!important;
+ box-shadow:inset 0 4px 0 -1px var(--v3-accent),0 8px 24px var(--v3-glow),0 12px 30px #0005!important;
+}
+/* Le score doit porter clairement les couleurs du stade. */
+#opfc-app[data-v3-phase] .match-scoreboard{
+ background:radial-gradient(ellipse at 50% 5%,color-mix(in srgb,var(--v3-primary) 65%,#173248) 0%,transparent 80%),
+  linear-gradient(125deg,var(--v3-surface-2),#091f32 85%)!important;
+ border:2px solid var(--v3-line)!important;
+ box-shadow:inset 0 5px 0 -1px var(--v3-accent),0 10px 27px var(--v3-glow)!important;
+}
+#opfc-app[data-v3-phase] .match-score>strong{
+ color:#fff9ed;
+ text-shadow:0 2px 15px color-mix(in srgb,var(--v3-accent) 45%,transparent);
+}
+#opfc-app[data-v3-phase] .match-score>span{
+ background:color-mix(in srgb,var(--v3-primary) 28%,#102639);
+ border-color:var(--v3-accent);
+ color:#f7f5ec;
+}
+/* Mi-temps : en-tête et bilan revêtent les couleurs du stade. */
+#opfc-app[data-v3-phase] .halftime-header{
+ background:radial-gradient(ellipse at 50% 0%,color-mix(in srgb,var(--v3-primary) 36%,transparent),transparent 78%);
+ border-radius:16px;
+}
+#opfc-app[data-v3-phase] :is(.halftime-header h2,.halftime-screen h3,.opfc-prematch>h2,.match-context){
+ color:var(--v3-detail)!important;
+}
+#opfc-app[data-v3-phase] .halftime-stats-heading strong{color:var(--v3-detail)}
+#opfc-app[data-v3-phase] .halftime-stat-rows{
+ border:1px solid color-mix(in srgb,var(--v3-secondary) 75%,#ffffff65);
+ box-shadow:inset 0 0 13px var(--v3-glow);
+}
+#opfc-app[data-v3-phase] .halftime-stat-row{
+ background:color-mix(in srgb,var(--v3-secondary) 19%,#061926);
+}
+#opfc-app[data-v3-phase] .halftime-stat-row strong{color:#fff4d9}
+/* Encarts offensifs et défenseurs : deux couleurs distinctes du stade. */
+#opfc-app[data-v3-phase] .match-faceoff{
+ background:linear-gradient(115deg,var(--v3-surface-1),var(--v3-surface-2))!important;
+ border:2px solid var(--v3-line)!important;
+ box-shadow:0 8px 20px var(--v3-glow);
+}
+#opfc-app[data-v3-phase] .match-faceoff .match-duelist{
+ background:linear-gradient(145deg,color-mix(in srgb,var(--v3-primary) 39%,#0d273b),color-mix(in srgb,var(--v3-secondary) 25%,#071c2e));
+ border-color:var(--v3-line);
+}
+#opfc-app[data-v3-phase] .match-mini-stats>div,
+#opfc-app[data-v3-phase] .match-actors>div{
+ background:linear-gradient(125deg,color-mix(in srgb,var(--v3-primary) 27%,#0b2433),var(--v3-surface-2));
+ border:1px solid var(--v3-line)!important;
+}
+#opfc-app[data-v3-phase] .match-mini-stats strong{color:var(--v3-detail)}
+/* Cartes d'avant-match et illustration du stade. */
+#opfc-app[data-v3-phase] .opfc-prematch-stadium{
+ filter:drop-shadow(0 0 19px var(--v3-glow));
+}
+#opfc-app[data-v3-phase] .opfc-prematch-vs{
+ background:linear-gradient(110deg,color-mix(in srgb,var(--v3-primary) 27%,transparent),color-mix(in srgb,var(--v3-secondary) 24%,transparent));
+ border-block:2px solid var(--v3-line);
+ border-radius:12px;
+ margin:12px 0 9px;
+ padding:12px 3px;
+}
+#opfc-app[data-v3-phase] .opfc-prematch-vs>strong{color:var(--v3-detail)}
+#opfc-app[data-v3-phase] .opfc-prematch-team{
+ background:linear-gradient(145deg,var(--v3-surface-1),var(--v3-surface-2))!important;
+ border:1.5px solid var(--v3-line)!important;
+ box-shadow:inset 0 4px 0 -1px var(--v3-secondary);
+}
+#opfc-app[data-v3-phase] .opfc-prematch-team h3{color:var(--v3-detail)}
+#opfc-app[data-v3-phase] .opfc-prematch-rosters{margin-top:10px}
+#opfc-app[data-v3-phase] .v3-prematch-kickoff{
+ margin:12px 0 17px;
+ border:2px solid var(--v3-accent);
+ border-radius:13px;
+ padding:8px;
+ background:linear-gradient(125deg,var(--v3-surface-1),var(--v3-surface-2));
+ box-shadow:0 8px 23px var(--v3-glow);
+}
+#opfc-app[data-v3-phase] .v3-prematch-kickoff>p{color:#e5f4f7;text-align:center;margin:5px 0}
+/* Les boutons d'action CONTINUER et COUP D'ENVOI portent le stade.
+   Les trois choix tactiques vert/orange/rouge restent volontairement inchangés. */
+#opfc-app[data-v3-phase] .match-stage:not(.shot-result-panel) .btn.primary:not(.match-choice),
+#opfc-app[data-v3-phase] .halftime-tactics .btn[data-action="match-resume"]{
+ background:linear-gradient(120deg,color-mix(in srgb,var(--v3-primary) 65%,#1b3447),color-mix(in srgb,var(--v3-secondary) 38%,#142637))!important;
+ border:2px solid var(--v3-accent)!important;
+ color:#ffffff!important;
+ font-size:clamp(13px,3.8vw,16px);
+ font-weight:950;
+ box-shadow:inset 0 2px 0 color-mix(in srgb,var(--v3-accent) 28%,transparent),0 7px 17px var(--v3-glow)!important;
+ text-shadow:0 1px 3px #0009;
+}
+#opfc-app[data-v3-phase] :is(.match-stage,.halftime-tactics) .btn.primary:not(.match-choice):focus-visible{
+ outline:3px solid #fff;
+ outline-offset:3px;
+}
+/* Fin de match : célébration plus teintée, sans toucher au bouton Quitter doré. */
+#opfc-app[data-v3-phase="finished"] .final-screen :is(.final-score,.final-shootout,.opfc-anchor-award),
+#opfc-app[data-v3-phase="finished"] .final-screen>section.panel{
+ background:linear-gradient(145deg,var(--v3-surface-1),var(--v3-surface-2) 80%)!important;
+ border:2px solid var(--v3-line)!important;
+ box-shadow:inset 0 4px 0 -1px var(--v3-accent),0 9px 26px var(--v3-glow)!important;
+}
+#opfc-app[data-v3-phase="finished"] .final-screen :is(.section-title,.eyebrow,.final-winner-name){color:var(--v3-detail)}
+/* Composition — raccourcis au-dessus du terrain, plus gros et très visibles. */
+#opfc-app[data-v3-phase="lineup"] .v3-ready-strip{
+ margin:12px 0;
+ padding:14px 11px 16px;
+ border-radius:17px;
+}
+.v3-ready-strip h2{font-size:clamp(16px,4.4vw,21px);font-weight:950;color:var(--v3-detail,#f8dba4);margin:0 0 5px}
+.v3-ready-strip p{font-size:12px;color:#e0ebec;margin:0 0 11px;line-height:1.4}
+.v3-ready-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.v3-ready-card{
+ display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;
+ gap:7px;min-width:0;min-height:124px;padding:11px 8px;border-radius:12px;
+ background:linear-gradient(135deg,var(--v3-surface-2,#122d42),var(--v3-surface-1,#19384d));
+ border:1.5px solid var(--v3-accent,#e2bf80);
+}
+.v3-ready-card>strong{font-size:clamp(11px,3.1vw,14px);color:#fff5e0;line-height:1.18;overflow-wrap:anywhere}
+.v3-ready-subtitle{color:#d3e4e6;font-size:10px;font-weight:700}
+#opfc-app[data-v3-phase] .btn.v3-ready-cta{
+ min-height:54px;
+ padding:10px 6px;
+ font-size:clamp(11px,3vw,14px);
+ line-height:1.25;
+ border:2px solid var(--v3-accent)!important;
+ border-radius:11px;
+ background:linear-gradient(135deg,color-mix(in srgb,var(--v3-primary) 80%,#112b3a),color-mix(in srgb,var(--v3-secondary) 46%,#0b2536))!important;
+ color:#fffaf0!important;
+ font-weight:950;
+ text-shadow:0 1px 3px #000b;
+ box-shadow:0 4px 17px var(--v3-glow);
+}
+#opfc-app[data-v3-phase] .btn.v3-ready-cta:not(:disabled):active{transform:scale(.985)}
+#opfc-app[data-v3-phase] .btn.v3-ready-cta:disabled{opacity:.66;filter:saturate(.75);box-shadow:none}
+#opfc-app[data-v3-phase] .v3-ready-complete{
+ display:flex;align-items:center;justify-content:center;
+ min-height:54px;line-height:1.25;font-size:12px;text-align:center;font-weight:900;
+ color:#deffed;background:#164538;border:2px solid #7be6b2;border-radius:11px;
+}
+#opfc-app[data-v3-phase] .v3-ready-wait{
+ display:flex;align-items:center;justify-content:center;
+ min-height:54px;font-size:11px;font-weight:850;text-align:center;line-height:1.25;
+ color:#d9e6ea;border:1px solid color-mix(in srgb,var(--v3-primary) 60%,#c9dee3);border-radius:11px;
+ background:#1b3143b8;padding:7px 5px;
+}
+#opfc-app[data-v3-phase] .v3-ready-card.is-ready,
+#opfc-app[data-v3-phase] .v3-half-ready-card.is-ready{
+ border:2px solid #6bdba8!important;
+ background:linear-gradient(135deg,#144636,#0f302b)!important;
+}
+/* Pause tactique : cartes cliquables directement sous le bilan (avant le terrain). */
+#opfc-app[data-v3-phase] .v3-half-ready-card{
+ display:flex;flex-direction:column;gap:10px;align-items:stretch;justify-content:space-between;
+ padding:12px 8px;min-height:110px;
+ border:2px solid var(--v3-accent);
+ background:linear-gradient(135deg,var(--v3-surface-1),var(--v3-surface-2));
+}
+#opfc-app[data-v3-phase] .v3-ready-club{display:flex;align-items:center;gap:6px;min-width:0;color:#fff1d8;font-size:14px}
+#opfc-app[data-v3-phase] .v3-half-ready-card .v3-ready-complete,
+#opfc-app[data-v3-phase] .v3-half-ready-card .v3-ready-wait{font-size:11px;min-height:50px}
+#opfc-app[data-v3-phase] .halftime-tactics h3{color:var(--v3-detail)}
+/* Sur iPhone étroit : deux colonnes restent lisibles, sans déborder. */
+@media(max-width:390px){
+ .v3-ready-grid,.halftime-statuses{gap:6px}
+ .v3-ready-card{padding:9px 6px}
+ #opfc-app[data-v3-phase] .v3-half-ready-card{padding:9px 6px}
+ #opfc-app[data-v3-phase] .v3-ready-club{font-size:12px}
+}
