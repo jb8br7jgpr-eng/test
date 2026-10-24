@@ -11,7 +11,7 @@ import {beginOpenPlayAction,lockOpenPlayChoice,revealOpenPlayDuel,continueOpenPl
 import {isSetPieceKind,setPieceTurnOwner,dispatchSetPieceMatch,renderSetPieceAction} from './ui-set-piece.mjs?v=opfc-75-roster-20261022';
 import {shootoutTurnOwner,dispatchShootout,renderShootoutScreen} from './ui-shootout.mjs?v=opfc-75-roster-20261022';
 import {renderFinalResult} from './ui-final.mjs?v=opfc-v2-20261023';
-import {renderPrematch} from './prematch.mjs';
+import {renderPrematch} from './prematch.mjs?v=opfc-palette-20261024';
 import {setDisplayedClubs,visualName,visualAbbr} from './club-identities.mjs';
 import {competitionName} from './club-honours.mjs?v=opfc-trophees-20261022';
 import {matchTacticalChoices,renderShotFaceOff,renderShotResult,renderReceiverCard,matchKeeperId} from './ui-match-widgets.mjs?v=opfc-tactics-20261023';
@@ -233,7 +233,7 @@ function resultView(m,state){
  * réellement jouées. Les listes et le terrain commun restent sous ce bloc,
  * où les modifications de postes/formations sont déjà gérées par le moteur.
  */
-function halftimeView(state,m){
+function halftimeView(state,m,{onlineClub=null}={}){
  const resume=state.phase==='resume-ready';
  const stats=m.statistics;
  const compare=[
@@ -243,12 +243,18 @@ function halftimeView(state,m){
   '<strong>'+Number(stats.PSG[key])+'</strong>'+
   '<span>'+label+'</span>'+
   '<strong>'+Number(stats.OM[key])+'</strong></div>').join('');
- const statuses=state.teams.map(t=>
-  '<div class="halftime-team-status '+(t.ready?'is-ready':'is-pending')+'">'+
-  '<span class="halftime-status-symbol" aria-hidden="true">'+(t.ready?'✓':'◷')+'</span>'+
-  '<span><strong>'+html(visualAbbr(t.club))+'</strong> : '+
-   (t.ready?'✓ composition validée':'composition à valider')+'</span></div>'
- ).join('');
+ const statuses=state.teams.map(t=>{
+  const mine=!onlineClub||onlineClub===t.club;
+  const slotsOk=Array.isArray(t.slots)&&t.slots.length===7&&t.slots.every(Boolean);
+  const status=t.ready?'<span class="v3-ready-complete">✓ Composition validée</span>':
+   !mine?'<span class="v3-ready-wait">⏳ En attente de l’autre équipe</span>':
+   '<button type="button" class="btn v3-ready-cta full" data-action="ready" data-club="'+html(t.club)+'"'+
+    (slotsOk?'':' disabled')+'>'+(slotsOk?'✓ Valider la composition':'Place les 7 joueurs')+'</button>';
+  return '<div class="halftime-team-status v3-half-ready-card '+(t.ready?'is-ready':'is-pending')+'">'+
+   '<span class="v3-ready-club"><span class="halftime-status-symbol" aria-hidden="true">'+
+   (t.ready?'✓':'◷')+'</span><strong>'+html(visualAbbr(t.club))+'</strong></span>'+
+   status+'</div>';
+ }).join('');
  return '<div class="halftime-screen">'+
   '<header class="halftime-header">'+
    '<span class="eyebrow">'+html(competitionName(state.match?.competition??state.competition))+' · Pause tactique</span>'+ 
@@ -261,7 +267,7 @@ function halftimeView(state,m){
   '</section>'+
   '<section class="panel halftime-tactics" aria-label="Ajustements tactiques à la mi-temps">'+
    '<h3>🔄 Ajustements tactiques</h3>'+
-   '<p>Change la formation ou repositionne les joueurs sur le terrain ci-dessous, puis valide chaque équipe.</p>'+
+   '<p>Valide les compositions ici après avoir ajusté les postes sur le terrain ci-dessous.</p>'+
    '<div class="halftime-statuses">'+statuses+'</div>'+
    (resume?'<p class="halftime-ready-note">Les deux équipes sont prêtes pour la deuxième période.</p>'+
     button('match-resume','▶️ Reprendre la deuxième mi-temps'):
@@ -335,7 +341,7 @@ function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null,competit
  if(!m)return '<section class="panel match-stage"><h2>Aucun match en cours</h2></section>';
  let out=scoreBoard(m);
  if(state.phase==='half-time'||state.phase==='resume-ready'){
-  const markup=halftimeView(state,m);
+  const markup=halftimeView(state,m,{onlineClub});
   return onlineClub&&state.phase==='resume-ready'&&onlineClub!==hostClub?
    markup.replace(/data-action="match-resume"/g,'data-action="match-resume" disabled aria-disabled="true"')+
    onlineWaiting(hostClub,'Le club hôte reprend la deuxième période.'):markup;

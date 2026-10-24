@@ -25,9 +25,10 @@ export function renderPrematch(state,{canKickoff=true,waitingMessage='Le créate
  '<span>'+h(visualName('PSG'))+'</span></div><strong>VS</strong>'+
  '<div class="opfc-prematch-club">'+renderClubCrest('OM','opfc-prematch-crest')+
  '<span>'+h(visualName('OM'))+'</span></div></div>'+
+ '<div class="v3-prematch-kickoff">'+
+ (canKickoff?'<button class="btn primary full" type="button" data-action="match-kickoff">⚽ Donner le coup d’envoi</button>':
+ '<p class="caption" role="status">'+h(waitingMessage)+'</p>')+'</div>'+
  '<h3>Compositions officielles</h3>'+
  '<div class="opfc-prematch-rosters">'+state.teams.map(teamBlock).join('')+'</div>'+
- (canKickoff?'<button class="btn primary full" type="button" data-action="match-kickoff">⚽ Donner le coup d’envoi</button>':
- '<p class="caption" role="status">'+h(waitingMessage)+'</p>')+
  '</section>';
 }
