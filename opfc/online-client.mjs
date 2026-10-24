@@ -8,6 +8,7 @@ import {OPFC_ONLINE_API_URL,OPFC_ONLINE_PUBLISHABLE_KEY} from './online-config.m
 import {chooseClubPair,validateDisplayClub,isDisplayClub} from './club-identities.mjs';
 import {isCompetition} from './club-honours.mjs';
 import {formationPositions} from './rules.mjs';
+import {isStadium} from './stadiums.mjs';
 
 export const ONLINE_SESSION_KEY='opfc-v1-online-session';
 export const ONLINE_PENDING_KEY='opfc-v1-online-pending-action';
