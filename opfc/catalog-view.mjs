@@ -5,6 +5,9 @@ import {DISPLAY_CLUBS,displayAbbr,clubLogoFile} from './club-identities.mjs';
 import {CLUB_HONOURS,CLUB_TROPHIES} from './club-honours.mjs?v=opfc-trophees-20261022';
 import {loadTrophyHistory,syncQueuedLocalResults} from './trophy-service.mjs?v=opfc-v2-20261023';
 import {loadPlayerTotals} from './player-totals-service.mjs';
+import {loadV3ClubStats,loadV3PlayerPoints} from './v3-data-service.mjs';
+import {renderV3ClubStats} from './v3-club-view.mjs';
+import {renderV3Hall} from './v3-hall-view.mjs';
 import {sortCatalogCharacters,sortCatalogClubs,characterStatSortAvailable} from './catalog-sorting.mjs';
 
 const root=document.getElementById('catalog-grid');
@@ -15,7 +18,7 @@ const count=document.getElementById('catalog-count');
 const empty=document.getElementById('catalog-empty');
 const characterSort=document.getElementById('catalog-sort');
 const scorerStatus=document.getElementById('catalog-scorers-status');
-let scorerTotals=null,careerComplete=false;
+let scorerTotals=null,careerComplete=false,v3ClubTotals=null,v3PlayerPoints=null;
 let careerSyncMessage='Synchronisation des statistiques…';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const compact=value=>String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
@@ -108,6 +111,7 @@ async function refreshScorers(){
    '⚠️ Nouvelles statistiques en attente du serveur ; buts historiques conservés.';
   displayCareerSyncStatus();
   if(changed)paintCharacters();
+   refreshHall();
  }catch{
   careerSyncMessage='⚠️ Statistiques momentanément indisponibles ou non actualisées.';
   displayCareerSyncStatus();
@@ -146,7 +150,7 @@ function clubHtml(club,rank){
   '<div class="club-catalog-identifier"><strong>'+esc(abbr)+'</strong><span>CLUB OPFC</span></div></div>'+
   '<div class="club-catalog-honours"><div class="club-catalog-honours-head"><h3>Palmarès officiel</h3>'+
   '<span class="club-catalog-total"><strong>'+esc(total)+'</strong><span>titre'+(total===1?'':'s')+'</span></span></div>'+
-  '<ul class="club-catalog-awards">'+trophies+'</ul></div></article>';
+  '<ul class="club-catalog-awards">'+trophies+'</ul></div>'+renderV3ClubStats(v3ClubTotals?.get(club.id))+'</article>';
 }
 
 function paintClubs(){
@@ -175,12 +179,15 @@ updateClubs();
 const characterPanel=document.getElementById('catalog-characters');
 const clubPanel=document.getElementById('catalog-clubs');
 const finalPanel=document.getElementById('catalog-finals');
+const hallPanel=document.getElementById('catalog-hall');
+const hallTab=document.getElementById('catalog-tab-hall');
+const hallContent=document.getElementById('v3-hall-content');
 const characterTab=document.getElementById('catalog-tab-characters');
 const clubTab=document.getElementById('catalog-tab-clubs');
 const finalTab=document.getElementById('catalog-tab-finals');
-const panels={characters:characterPanel,clubs:clubPanel,finals:finalPanel};
-const tabs={characters:characterTab,clubs:clubTab,finals:finalTab};
-const hashes={characters:'#personnages',clubs:'#clubs',finals:'#finales'};
+const panels={characters:characterPanel,clubs:clubPanel,finals:finalPanel,hall:hallPanel};
+const tabs={characters:characterTab,clubs:clubTab,finals:finalTab,hall:hallTab};
+const hashes={characters:'#personnages',clubs:'#clubs',finals:'#finales',hall:'#hall-of-fame'};
 characterTab.querySelector('.catalog-tab-count').textContent=CARDS.length;
 clubTab.querySelector('.catalog-tab-count').textContent=DISPLAY_CLUBS.length;
 function selectCatalogTab(tab){
@@ -195,16 +202,16 @@ function selectCatalogTab(tab){
 }
 function syncCatalogTab(){
  const hash=window.location.hash;
- selectCatalogTab(hash==='#clubs'?'clubs':hash==='#finales'?'finals':'characters');
+ selectCatalogTab(hash==='#clubs'?'clubs':hash==='#finales'?'finals':hash==='#hall-of-fame'?'hall':'characters');
 }
 for(const [id,button] of Object.entries(tabs)){
  button.addEventListener('click',()=>{selectCatalogTab(id);window.location.hash=hashes[id];});
  button.addEventListener('keydown',event=>{
-  const order=['characters','clubs','finals'];
+  const order=['characters','clubs','finals','hall'];
   if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
   event.preventDefault();
   const i=order.indexOf(id);
-  const next=event.key==='Home'?0:event.key==='End'?2:
+  const next=event.key==='Home'?0:event.key==='End'?order.length-1:
     (i+(event.key==='ArrowLeft'?-1:1)+order.length)%order.length;
   tabs[order[next]].click();tabs[order[next]].focus();
  });
@@ -324,7 +331,18 @@ async function refreshPalmares(){
   }
  }
 }
-const refreshCatalogue=()=>Promise.all([refreshPalmares(),refreshScorers()]);
+function refreshHall(){
+ if(hallContent)hallContent.innerHTML=renderV3Hall(careerComplete?scorerTotals:null,v3PlayerPoints);
+}
+async function refreshV3(){
+ const [clubs,points]=await Promise.allSettled([loadV3ClubStats(),loadV3PlayerPoints()]);
+ if(clubs.status==='fulfilled'){v3ClubTotals=clubs.value;paintClubs();}
+ const status=document.getElementById('v3-club-status');
+ if(status)status.textContent=clubs.status==='fulfilled'?'✅ Statistiques des clubs synchronisées':'⏳ Statistiques historiques en attente de la migration V3.';
+ if(points.status==='fulfilled')v3PlayerPoints=points.value;
+ refreshHall();
+}
+const refreshCatalogue=()=>Promise.all([refreshPalmares(),refreshScorers(),refreshV3()]);
 void syncQueuedLocalResults().then(refreshCatalogue);
 setInterval(()=>{if(!document.hidden)void refreshCatalogue();},20000);
 window.addEventListener('focus',()=>void syncQueuedLocalResults().then(refreshCatalogue));
