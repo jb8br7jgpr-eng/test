@@ -5,7 +5,7 @@ import {DISPLAY_CLUBS,displayAbbr,clubLogoFile} from './club-identities.mjs';
 import {CLUB_HONOURS,CLUB_TROPHIES} from './club-honours.mjs?v=opfc-trophees-20261022';
 import {loadTrophyHistory,syncQueuedLocalResults} from './trophy-service.mjs?v=opfc-v2-20261023';
 import {loadPlayerTotals} from './player-totals-service.mjs';
-import {loadV3ClubStats,loadV3PlayerPoints} from './v3-data-service.mjs';
+import {loadV3ClubStats,loadV3PlayerPoints,loadV3Milestones} from './v3-data-service.mjs';
 import {renderV3ClubStats} from './v3-club-view.mjs';
 import {renderV3Hall} from './v3-hall-view.mjs';
 import {sortCatalogCharacters,sortCatalogClubs,characterStatSortAvailable} from './catalog-sorting.mjs';
@@ -18,7 +18,7 @@ const count=document.getElementById('catalog-count');
 const empty=document.getElementById('catalog-empty');
 const characterSort=document.getElementById('catalog-sort');
 const scorerStatus=document.getElementById('catalog-scorers-status');
-let scorerTotals=null,careerComplete=false,v3ClubTotals=null,v3PlayerPoints=null;
+let scorerTotals=null,careerComplete=false,v3ClubTotals=null,v3PlayerPoints=null,v3Milestones=null;
 let careerSyncMessage='Synchronisation des statistiques…';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const compact=value=>String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
@@ -332,14 +332,15 @@ async function refreshPalmares(){
  }
 }
 function refreshHall(){
- if(hallContent)hallContent.innerHTML=renderV3Hall(careerComplete?scorerTotals:null,v3PlayerPoints);
+ if(hallContent)hallContent.innerHTML=renderV3Hall(careerComplete?scorerTotals:null,v3PlayerPoints,v3Milestones);
 }
 async function refreshV3(){
- const [clubs,points]=await Promise.allSettled([loadV3ClubStats(),loadV3PlayerPoints()]);
+ const [clubs,points,milestones]=await Promise.allSettled([loadV3ClubStats(),loadV3PlayerPoints(),loadV3Milestones()]);
  if(clubs.status==='fulfilled'){v3ClubTotals=clubs.value;paintClubs();}
  const status=document.getElementById('v3-club-status');
  if(status)status.textContent=clubs.status==='fulfilled'?'✅ Statistiques des clubs synchronisées':'⏳ Statistiques historiques en attente de la migration V3.';
  if(points.status==='fulfilled')v3PlayerPoints=points.value;
+ if(milestones.status==='fulfilled')v3Milestones=milestones.value;
  refreshHall();
 }
 const refreshCatalogue=()=>Promise.all([refreshPalmares(),refreshScorers(),refreshV3()]);

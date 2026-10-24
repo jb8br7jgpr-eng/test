@@ -22,8 +22,8 @@ de migration sur Supabase sans une nouvelle autorisation explicite de l'utilisat
 - Les anciennes finales dépourvues de statistiques individuelles n'ont pas de points inventés.
 - Backfill historique des clubs : toutes les lignes, sans limitation à 100 finales.
 - Ne pas utiliser les positions techniques PSG/OM comme véritables identités des 20 clubs.
-- Les égalités Hall of Fame doivent être persistantes et cohérentes entre appareils :
-  la sélection sur affichage seule n'est pas suffisante pour garantir une titularisation globale.
+- Les égalités Hall of Fame sont départagées par le dernier palier atteint, lu dans
+  opfc_v3_player_milestones, pour un ordre cohérent entre appareils.
 - Tester explicitement le cas d'un match sauvegardé localement hors ligne puis resynchronisé,
   et les deux clients iPhone sur une même finale enregistrée exactement une fois.
 - Tests visuels mobile iOS + tests migrations en recette requis avant publication.

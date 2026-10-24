@@ -39,3 +39,20 @@ export function clubMetrics(record){
  const ratio=record.matches>0?100*record.wins/record.matches:null;
  return {...record,diff,ratio};
 }
+
+export async function loadV3Milestones(){
+ const rows=await get('opfc_v3_player_milestones','card_id,matches_at,goals_at,assists_at,anchors_at,points_at');
+ const milestones=new Map();
+ for(const row of rows){
+  if(typeof row.card_id!=='string')throw Error('Jalons historiques invalides');
+  const item={};
+  for(const type of ['matches','goals','assists','anchors','points']){
+   const stamp=row[type+'_at'];
+   if(stamp!==null&&(typeof stamp!=='string'||!Number.isFinite(Date.parse(stamp))))
+    throw Error('Date de palier invalide');
+   item[type]=stamp;
+  }
+  milestones.set(row.card_id,item);
+ }
+ return milestones;
+}

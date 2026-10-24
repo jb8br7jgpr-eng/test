@@ -13,8 +13,8 @@ const stored=()=>{
  try{const s=JSON.parse(localStorage.getItem(key)||'{}');return s&&typeof s==='object'?s:{};}
  catch{return {};}
 };
-function categoryHtml(c,totals,prior){
- const ranked=rankCards(CARDS,c.key,totals,{incumbents:prior||[]});
+function categoryHtml(c,totals,prior,milestones){
+ const ranked=rankCards(CARDS,c.key,totals,{incumbents:prior||[],milestones});
  const rows=ranked.filter(p=>(totals.get(p.id)?.[c.key]??0)>0);
  const lead=rows[0],value=id=>Number(totals.get(id)?.[c.key]??0);
  const list=limit=>'<ol>'+rows.slice(0,limit).map((p,i)=>
@@ -39,11 +39,11 @@ function teamPitch(team){
   by('MIL').map((p,i)=>point(p,i?64:36,60)).join('')+
   by('ATT').map((p,i)=>point(p,i?80:20,83)).join('')+'</div>';
 }
-export function renderV3Hall(totals,points){
- if(!totals||!points)return '<p class="discovery-notes">⏳ Données historiques en cours de synchronisation.</p>';
+export function renderV3Hall(totals,points,milestones){
+ if(!totals||!points||!milestones)return '<p class="discovery-notes">⏳ Données historiques en cours de synchronisation.</p>';
  const prior=stored(),next={};
- const categories=CATEGORIES.map(c=>{const x=categoryHtml(c,totals,prior[c.key]);next[c.key]=x.id?[x.id]:[];return x.html;});
- const seven=hallSeven(CARDS,points,prior.seats??{});
+ const categories=CATEGORIES.map(c=>{const x=categoryHtml(c,totals,prior[c.key],milestones);next[c.key]=x.id?[x.id]:[];return x.html;});
+ const seven=hallSeven(CARDS,points,prior.seats??{},milestones);
  next.seats=Object.fromEntries(Object.keys(SEATS).map(pos=>[pos,seven.filter(p=>p.position===pos).map(p=>p.id)]));
  try{localStorage.setItem(key,JSON.stringify(next));}catch{}
  return '<div class="v3-hall-grid">'+categories.join('')+'</div>'+
