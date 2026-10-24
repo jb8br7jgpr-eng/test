@@ -75,9 +75,36 @@ test('Hall complet : les quatre classements affichent chacun tous les personnage
   totals.get(CARDS[0].id).goals=3;
   const points=new Map(CARDS.map(c=>[c.id,5]));
   const html=renderV3Hall(totals,points,new Map());
-  // 75 entrées x 4 classements complets, plus le podium du buteur.
+  // Les quatre classements historiques conservent leurs 75 entrées et le podium du buteur.
   assert.equal((html.match(/<li>/g)||[]).length,4*CARDS.length+1);
   assert.equal((html.match(/class="v3-hall-player"/g)||[]).length,7);
   assert.match(html,/class="v3-hall-pitch slot-field slot-field-single"/);
  }finally{globalThis.localStorage=old;}
+});
+
+test('Prétendants : 75 portraits ronds, 4 postes, points et écart sans changer le Sept',()=>{
+ const original=globalThis.localStorage;
+ try{
+  globalThis.localStorage={getItem:()=>null,setItem:()=>{}};
+  const totals=new Map(CARDS.map(c=>[c.id,{matches:0,goals:0,assists:0,anchors:0}]));
+  const points=new Map(CARDS.map(c=>[c.id,0]));
+  const defenders=CARDS.filter(c=>c.position==='DEF');
+  assert.ok(defenders.length>=3);
+  points.set(defenders[0].id,40);
+  points.set(defenders[1].id,30);
+  points.set(defenders[2].id,27);
+  const before=hallSeven(CARDS,points,{},new Map());
+  const html=renderV3Hall(totals,points,new Map());
+  const after=hallSeven(CARDS,points,{},new Map());
+  assert.deepEqual(after,before);
+  assert.match(html,/<details class="discovery-panel v3-hall-chasers">/);
+  assert.equal((html.match(/class="v3-hall-rank-row/g)||[]).length,CARDS.length);
+  assert.equal((html.match(/class="v3-hall-rank-avatar"/g)||[]).length,CARDS.length);
+  assert.equal((html.match(/class="v3-hall-position"/g)||[]).length,4);
+  assert.match(html,/Gardiens[\s\S]*Défenseurs[\s\S]*Milieux[\s\S]*Attaquants/);
+  assert.match(html,/−3 pts du dernier titulaire/);
+  assert.match(html,/★ Sept de légende/);
+  assert.match(html,/<strong>0<\/strong><small>pts<\/small>/);
+  assert.match(html,/v3-hall-rank-avatar"><img src="\.\/portraits_opfc\//);
+ }finally{globalThis.localStorage=original;}
 });

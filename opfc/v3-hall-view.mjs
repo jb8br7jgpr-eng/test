@@ -39,6 +39,49 @@ function teamPitch(team){
   by('MIL').map((p,i)=>point(p,i?64:36,60)).join('')+
   by('ATT').map((p,i)=>point(p,i?80:20,83)).join('')+'</div>';
 }
+/** Classement dépliable : mêmes points, postes et départages que le Sept de Légende. */
+const HALL_POSITIONS=Object.freeze([
+ {id:'GAR',icon:'🧤',name:'Gardiens'},
+ {id:'DEF',icon:'🛡️',name:'Défenseurs'},
+ {id:'MIL',icon:'🎯',name:'Milieux'},
+ {id:'ATT',icon:'⚽',name:'Attaquants'}
+]);
+function hallPretenders(points,prior,milestones,seven){
+ const rankedTotals=new Map([...points].map(([id,n])=>[id,{points:n}]));
+ const incumbents=prior.seats??{};
+ const legends=new Set(seven.filter(p=>p.points>0).map(p=>p.id));
+ const sections=HALL_POSITIONS.map(position=>{
+  const positionCards=rankCards(CARDS.filter(c=>c.position===position.id),'points',rankedTotals,{
+   incumbents:incumbents[position.id]??[],milestones
+  });
+  const seats=SEATS[position.id];
+  const cutoff=Number(points.get(positionCards[seats-1]?.id)??0);
+  const rows=positionCards.map((card,index)=>{
+   const earned=Number(points.get(card.id)??0);
+   const isLegend=legends.has(card.id);
+   const deficit=cutoff-earned;
+   const status=isLegend?'<span class="v3-hall-rank-legend">★ Sept de légende</span>':
+    cutoff<=0?'':deficit===0?
+    '<span class="v3-hall-rank-gap">À égalité de points · départage</span>':
+    '<span class="v3-hall-rank-gap">−'+deficit+' pts du dernier titulaire</span>';
+   return '<li class="v3-hall-rank-row'+(isLegend?' is-legend':'')+'">'+
+    '<span class="v3-hall-rank-index">'+(index+1)+'.</span>'+
+    picture(card,'v3-hall-rank-avatar')+
+    '<span class="v3-hall-rank-identity"><strong>'+e(card.name)+'</strong>'+status+'</span>'+
+    '<span class="v3-hall-rank-score"><strong>'+earned+'</strong><small>pts</small></span></li>';
+  }).join('');
+  return '<section class="v3-hall-position" aria-label="'+e(position.name)+'">'+
+   '<h3><span>'+e(position.icon)+' '+e(position.name)+'</span>'+
+   '<small>'+seats+' place'+(seats>1?'s':'')+' dans le Sept</small></h3>'+
+   '<ol class="v3-hall-rank-list">'+rows+'</ol></section>';
+ }).join('');
+ return '<details class="discovery-panel v3-hall-chasers">'+
+  '<summary class="v3-hall-chasers-toggle">'+
+  '<span class="v3-hall-chasers-title"><strong>🏆 Classement des prétendants</strong>'+
+  '<small>Tous les personnages · Points cumulés</small></span>'+
+  '<span class="v3-hall-chasers-counter">'+CARDS.length+' joueurs <span aria-hidden="true">▾</span></span>'+
+  '</summary><div class="v3-hall-chasers-body">'+sections+'</div></details>';
+}
 export function renderV3Hall(totals,points,milestones){
  if(!totals||!points||!milestones)return '<p class="discovery-notes">⏳ Données historiques en cours de synchronisation.</p>';
  const prior=stored(),next={};
@@ -49,5 +92,6 @@ export function renderV3Hall(totals,points,milestones){
  return '<div class="v3-hall-grid">'+categories.join('')+'</div>'+
  '<section class="discovery-panel v3-hall-team"><h2>🏆 Sept de Légende</h2>'+
  '<p>La meilleure équipe historique · 2-2-2 · Points de l’Ancre d’Or</p>'+
- (seven.some(p=>p.points>0)?teamPitch(seven):'<p>En attente des premières performances.</p>')+'</section>';
+ (seven.some(p=>p.points>0)?teamPitch(seven):'<p>En attente des premières performances.</p>')+'</section>'+ 
+ hallPretenders(points,prior,milestones,seven);
 }

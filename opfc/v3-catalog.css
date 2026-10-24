@@ -44,3 +44,42 @@
 .v3-hall-player strong{font-size:11px;line-height:1.1;color:#fff;overflow-wrap:anywhere}
 .v3-hall-player small{font-size:10px;color:#ffdd94;font-weight:900}
 @media(max-width:360px){.v3-hall-pitch{height:450px}.v3-hall-player strong{font-size:9px}}
+
+/* V3.2 — Classement des prétendants, fermé par défaut et adapté aux iPhone. */
+.v3-hall-chasers{margin-top:13px;padding:0;overflow:hidden}
+.v3-hall-chasers-toggle{min-height:76px;display:flex;align-items:center;justify-content:space-between;gap:9px;padding:13px 12px;cursor:pointer;list-style:none}
+.v3-hall-chasers-toggle::-webkit-details-marker{display:none}
+.v3-hall-chasers-toggle:focus-visible{outline:3px solid #fff;outline-offset:-4px;border-radius:12px}
+.v3-hall-chasers-title{display:flex;min-width:0;flex-direction:column;gap:3px;text-align:left}
+.v3-hall-chasers-title strong{color:#f7daa0;font-size:clamp(14px,3.8vw,18px);line-height:1.2}
+.v3-hall-chasers-title small{color:#c4dae2;font-size:11px;line-height:1.35}
+.v3-hall-chasers-counter{display:flex;align-items:center;flex-shrink:0;gap:7px;color:#e5d3ad;font-size:10px;font-weight:900;white-space:nowrap}
+.v3-hall-chasers-counter span{font-size:20px;transition:transform .15s ease}
+.v3-hall-chasers[open] .v3-hall-chasers-counter span{transform:rotate(180deg)}
+.v3-hall-chasers-body{padding:0 11px 13px}
+.v3-hall-position{margin-top:12px;border-top:2px solid #e5c47c8c;padding-top:8px}
+.v3-hall-position h3{display:flex;align-items:center;justify-content:space-between;gap:5px;min-height:37px;margin:0 0 6px;padding:6px 9px;background:#263e50;border-radius:9px;color:#f8dda6;font-size:13px;text-align:left}
+.v3-hall-position h3 small{font-size:10px;color:#c4d8df;text-align:right;font-weight:700}
+.v3-hall-rank-list{list-style:none;margin:0;padding:0}
+.v3-hall-rank-row{display:grid;grid-template-columns:20px 35px minmax(0,1fr) auto;align-items:center;gap:7px;min-height:49px;padding:6px 4px;border-bottom:1px solid #ffffff20;text-align:left}
+.v3-hall-rank-row.is-legend{background:linear-gradient(90deg,#d4b06222,transparent 90%);border-radius:8px}
+.v3-hall-rank-index{color:#a7bbc5;font-size:11px;font-weight:800;font-variant-numeric:tabular-nums}
+.v3-hall-rank-avatar{display:flex;align-items:center;justify-content:center;overflow:hidden;width:34px;height:34px;border:2px solid #cbb685;border-radius:50%;background:#244055;flex-shrink:0;font-size:14px}
+.v3-hall-rank-avatar img{width:100%;height:100%;object-fit:cover;object-position:center 22%}
+.v3-hall-rank-row.is-legend .v3-hall-rank-avatar{border-color:#f4d27e;box-shadow:0 0 9px #d5a95377}
+.v3-hall-rank-identity{display:flex;min-width:0;flex-direction:column;gap:2px}
+.v3-hall-rank-identity>strong{color:#f1f6f5;font-size:11px;font-weight:900;overflow-wrap:anywhere;line-height:1.25}
+.v3-hall-rank-legend{color:#f3d184;font-size:9px;line-height:1.2;font-weight:850}
+.v3-hall-rank-gap{color:#a9c6d4;font-size:9px;line-height:1.2}
+.v3-hall-rank-score{display:flex;min-width:38px;align-items:baseline;justify-content:flex-end;gap:3px;white-space:nowrap;color:#f1d89b}
+.v3-hall-rank-score strong{font-size:14px;font-variant-numeric:tabular-nums}
+.v3-hall-rank-score small{font-size:9px;color:#b3c8d0}
+@media(max-width:360px){
+ .v3-hall-chasers-toggle{padding:12px 9px}
+ .v3-hall-chasers-body{padding:0 7px 11px}
+ .v3-hall-rank-row{grid-template-columns:18px 31px minmax(0,1fr) auto;gap:5px}
+ .v3-hall-rank-avatar{width:31px;height:31px}
+ .v3-hall-position h3{padding:6px}
+ .v3-hall-position h3 small{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){.v3-hall-chasers-counter span{transition:none}}
