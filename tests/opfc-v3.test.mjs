@@ -133,3 +133,43 @@ test('Le catalogue synchronise à chaque ouverture, sans actualisation périodiq
  assert.match(hall,/<section class="discovery-panel v3-hall-chasers"/);
  assert.doesNotMatch(hall,/<details class="discovery-panel v3-hall-chasers"/);
 });
+
+
+test('Catalogue Personnages : badge violet et six notes avec exactement les couleurs du jeu',()=>{
+ const src=s('../opfc/catalog-view.mjs');
+ const css=s('../opfc/discover.css');
+ const game=s('../opfc/ui.css');
+ const extracted=src.match(/function cardHtml\(c\)\{[\s\S]*?\n\}\n\nlet elements=/);
+ assert.ok(extracted,'Fonction de fiche personnage identifiable');
+ const func=extracted[0].replace(/\n\nlet elements=$/,'');
+ const esc=value=>String(value??'');
+ const cardHtml=new Function('portraitFile','esc','compact','stats','careerValue','post','rarityName',
+  func+';return cardHtml;')(()=>null,esc,s=>s.toLowerCase(),
+  {PUI:'PUI',TEC:'TEC',PAS:'PAS',VIT:'VIT',DEF:'DEF',GAR:'GAR'},
+  ()=>0,{GAR:'Gardien',DEF:'Défenseur',MIL:'Milieu',ATT:'Attaquant'},
+  {DIA:'Diamant',OR:'Or',ARG:'Argent',BRZ:'Bronze'});
+ const values={PUI:90,TEC:89,PAS:79,VIT:69,DEF:59,GAR:0};
+ const markup=cardHtml({id:'test',name:'Personnage test',group:'Pirates',position:'DEF',rarity:'OR',rating:78,stats:values});
+ assert.match(markup,/<span class="catalog-tag catalog-position-purple">Défenseur<\/span>/);
+ for(const [label,value,grade] of [['PUI',90,'elite'],['TEC',89,'high'],['PAS',79,'medium'],['VIT',69,'low'],['DEF',59,'weak'],['GAR',0,'weak']]){
+  assert.match(markup,new RegExp('<span>'+label+'</span><strong class="catalog-stat-value stat-'+grade+'">'+value+'</strong>'));
+ }
+ assert.equal((markup.match(/class="catalog-stat"/g)||[]).length,6);
+ const gamePurple=game.match(/\.opfc-player-card \.position-purple\{([^}]+)\}/)?.[1];
+ const catalogPurple=css.match(/\.catalog-card \.catalog-tag\.catalog-position-purple\{([^}]+)\}/)?.[1];
+ assert.ok(gamePurple&&catalogPurple);
+ for(const key of ['background','color','border-color']){
+  const value=gamePurple.match(new RegExp('(?:^|;)'+key+':([^;]+)'))?.[1];
+  assert.ok(value,'Couleur violette en jeu : '+key);
+  assert.ok(catalogPurple.includes(key+':'+value),'Poste : même '+key);
+ }
+ for(const grade of ['elite','high','medium','low','weak']){
+  const gameRule=game.match(new RegExp('\\.opfc-player-card \\.stat-'+grade+'\\{([^}]+)\\}'))?.[1];
+  const catalogRule=css.match(new RegExp('\\.catalog-card \\.catalog-stat-value\\.stat-'+grade+'\\{([^}]+)\\}'))?.[1];
+  assert.ok(gameRule&&catalogRule,'Règles présentes : '+grade);
+  for(const key of ['background','color']){
+   const value=gameRule.match(new RegExp('(?:^|;)'+key+':([^;]+)'))?.[1];
+   assert.ok(catalogRule.includes(key+':'+value),'Même '+key+' pour '+grade);
+  }
+ }
+});

@@ -41,9 +41,12 @@ function cardHtml(c){
  const picture=portrait?
   '<img loading="lazy" decoding="async" src="'+esc(portrait)+'" alt="Portrait de '+esc(c.name)+'">':
   esc(letters);
- const statBlocks=Object.entries(stats).map(([key,label])=>
-  '<div class="catalog-stat"><span>'+label+'</span><strong>'+esc(c.stats[key])+'</strong></div>'
- ).join('');
+ const statBlocks=Object.entries(stats).map(([key,label])=>{
+  const value=c.stats[key];
+  // Identical thresholds to OPFC cardPanel: elite 90+, high 80+, medium 70+, low 60+, weak below 60.
+  const grade=value>=90?'elite':value>=80?'high':value>=70?'medium':value>=60?'low':'weak';
+  return '<div class="catalog-stat"><span>'+label+'</span><strong class="catalog-stat-value stat-'+grade+'">'+esc(value)+'</strong></div>';
+ }).join('');
  // Le même compteur anchors qu'avant, simplement déplacé dans l'espace
  // disponible à droite du portrait et des informations de carrière.
  const anchors=careerValue(c.id,'anchors');
@@ -60,7 +63,7 @@ function cardHtml(c){
   '<div class="catalog-card-info">'+anchorAward+
   '<h2 class="catalog-card-name">'+esc(c.name)+'</h2>'+
   '<div class="catalog-metrics"><div class="catalog-rating">'+esc(c.rating)+'<small>NOTE</small></div></div>'+
-  '<div class="catalog-tags"><span class="catalog-tag">'+esc(post[c.position])+'</span>'+
+  '<div class="catalog-tags"><span class="catalog-tag catalog-position-purple">'+esc(post[c.position])+'</span>'+
   '<span class="catalog-tag rarity-'+esc(c.rarity)+'">'+esc(rarityName[c.rarity])+'</span></div>'+
   '<p class="catalog-group">'+esc(c.group)+'</p></div></div>'+
   '<div class="catalog-stats" aria-label="Six statistiques de '+esc(c.name)+'">'+statBlocks+'</div>'+
