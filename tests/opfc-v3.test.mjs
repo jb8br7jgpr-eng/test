@@ -113,3 +113,20 @@ test('Prétendants : 75 portraits ronds, 4 postes, points et écart sans changer
   assert.match(html,/v3-hall-rank-avatar"><img src="\.\/portraits_opfc\//);
  }finally{globalThis.localStorage=original;}
 });
+
+
+test('Le catalogue synchronise à chaque ouverture, sans actualisation périodique ni au focus',()=>{
+ const catalog=s('../opfc/catalog-view.mjs');
+ const start=catalog.indexOf('async function refreshCatalogue()');
+ assert.ok(start>=0);
+ const lifecycle=catalog.slice(start);
+ assert.match(lifecycle,/await Promise\.all\(\[refreshPalmares\(\),refreshScorers\(\),refreshV3\(\)\]\)/);
+ assert.match(lifecycle,/refreshHall\(\)/);
+ assert.match(lifecycle,/syncQueuedLocalResults\(\)\.catch\(\(\)=>\{\}\)\.then\(refreshCatalogue\)/);
+ assert.doesNotMatch(lifecycle,/setInterval\s*\(/);
+ assert.doesNotMatch(lifecycle,/addEventListener\(['"]focus['"]/);
+ assert.equal((catalog.match(/refreshHall\(\);/g)||[]).length,1);
+ const hall=s('../opfc/v3-hall-view.mjs');
+ assert.match(hall,/<section class="discovery-panel v3-hall-chasers"/);
+ assert.doesNotMatch(hall,/<details class="discovery-panel v3-hall-chasers"/);
+});
