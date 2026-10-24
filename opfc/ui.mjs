@@ -902,7 +902,7 @@ function render(){
  const hasTheme=v3State&&themePhases.includes(v3State.phase)&&isStadium(v3State.stadiumId);
  if(hasTheme){app.dataset.v3Stadium=v3State.stadiumId;app.dataset.v3Phase=v3State.phase;}
  else{delete app.dataset.v3Stadium;delete app.dataset.v3Phase;}
- const v3HelpVisible=hasTheme&&['match','moment-result','half-time','resume-ready','shootout-ready','shootout'].includes(v3State.phase);
+ const v3HelpVisible=Boolean(v3State)&&['match','moment-result','half-time','resume-ready','shootout-ready','shootout'].includes(v3State.phase);
  if(!v3HelpVisible)v3HelpOpen=false;
  const room=onlineClient.room;
  const compactRoom=showingGame?'<div class="online-session-bar" role="status">'+
