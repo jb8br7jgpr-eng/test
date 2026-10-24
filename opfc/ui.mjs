@@ -8,10 +8,10 @@ import {DISPLAY_CLUBS,currentClubChoices,setDisplayedClubs,setDisplayedChoices,v
 import {renderCharacterPortrait,renderClubCrest,renderIdentityCrest} from './ui-portraits.mjs?v=opfc-75-roster-20261022';
 import {effectiveRating,lineupDetails} from './rules.mjs?v=opfc-75-roster-20261022';
 import {FORMATION_NAMES,uiAuction,uiTeam,uiRoster,cardStats,currentAuctionEnding,clubName} from './ui-model.mjs?v=opfc-75-roster-20261022';
-import {renderMatchScreen,matchRequiresPrivacy,dispatchOpenMatch} from './ui-match.mjs?v=opfc-v2-20261023';
+import {renderMatchScreen,matchRequiresPrivacy,dispatchOpenMatch} from './ui-match.mjs?v=opfc-palette-20261024';
 import {createOnlineClient} from './online-client.mjs?v=opfc-fix-isstadium-20261024';
 import {renderOnlineLobby,normalizeJoinCodeInput} from './ui-online.mjs?v=opfc-v2-20261023';
-import {renderOnlineGame} from './ui-online-game.mjs?v=opfc-v2-20261023';
+import {renderOnlineGame} from './ui-online-game.mjs?v=opfc-palette-20261024';
 import {CLUB_TROPHIES,isCompetition,competitionName,renderCompetitionPicker} from './club-honours.mjs?v=opfc-trophees-20261022';
 import {queueFinishedLocalGame,syncQueuedLocalResults,pendingLocalResultsCount} from './trophy-service.mjs?v=opfc-v2-20261023';
 import {stadiumPicker,isStadium} from './stadiums.mjs';
@@ -599,8 +599,25 @@ function teamPanel(team){
    '<span class="roster-tier tier-'+info.rarity.toLowerCase()+'">'+ranks[info.rarity]+'</span></span></span>'+
    '<small class="chip-placed">'+(placed?'✓':'+')+'</small></button>';
  }).join(''):'<span class="caption">Aucune recrue.</span>')+'</div>'+
- (['lineup','half-time'].includes(game.phase)?btn('ready',u.ready?'✓ Équipe prête':u.canReady?'Valider cette composition':'Place les 7 joueurs',
- 'small full '+(u.canReady?'primary':'ghost'),!u.canReady,'data-club="'+team.club+'"'):'')+'</section>';
+ '</section>';
+}
+/** Validation visible avant le terrain, sans changer la logique des équipes. */
+function v3ReadyStrip({onlineClub=null}={}){
+ if(game?.phase!=='lineup')return '';
+ const cards=game.teams.map(t=>{
+  const ui=uiTeam(t),mine=!onlineClub||onlineClub===t.club;
+  const state=ui.ready?'is-ready':mine&&ui.canReady?'can-confirm':'is-waiting';
+  const action=ui.ready?'<span class="v3-ready-complete">✓ Composition validée</span>':
+   !mine?'<span class="v3-ready-wait">⏳ En attente de l’autre équipe</span>':
+   btn('ready',ui.canReady?'✓ Valider la composition':'Place les 7 joueurs',
+     'v3-ready-cta full',!ui.canReady,'data-club="'+t.club+'"');
+  return '<div class="v3-ready-card '+state+'"><strong>'+esc(clubName(t.club))+'</strong>'+
+   '<span class="v3-ready-subtitle">'+esc(visualAbbr(t.club))+' · '+(ui.ready?'Équipe prête':ui.canReady?'7 joueurs placés':'Composition à compléter')+'</span>'+action+'</div>';
+ }).join('');
+ return '<section class="v3-ready-strip" aria-label="Validation des compositions avant le match">'+
+  '<h2>✅ Valider les compositions</h2>'+
+  '<p>Après avoir placé tes joueurs, confirme ton équipe ici.</p>'+
+  '<div class="v3-ready-grid">'+cards+'</div></section>';
 }
 function teams(){
  const upper=currentPitchClub();
@@ -639,9 +656,7 @@ function playing(){
  const next=game.phase==='mercato'?sale()+
  '<div class="view-teams-actions">'+btn('toggle-teams',teamsVisible?'Masquer les équipes':'Voir les équipes',
  'ghost full',false,'aria-expanded="'+teamsVisible+'"')+'</div>'+
- (teamsVisible?teams():''):teams()+
- '<div class="ready-banner"><strong>Compositions en préparation</strong>'+
- '<p>Les 2 clubs doivent confirmer leurs équipes.</p></div>';
+ (teamsVisible?teams():''):v3ReadyStrip()+teams();
  return intro+next+'<div class="gameplay-nav"><span class="caption">Mode local</span>'+
  '<button class="link-button" data-action="confirm-reset">Nouvelle partie</button></div>';
 }
@@ -655,7 +670,7 @@ function endMercato(){
  return shell()+'<main class="ready-layout">'+sep()+
   '<h1 class="page-title">Les équipes sont prêtes !</h1>'+
   '<p>Les sept recrues de chaque club sont alignées.</p>'+
-  wallets()+teams()+renderMatchScreen(game)+
+  wallets()+renderMatchScreen(game)+teams()+
   btn('confirm-reset','Nouvelle partie locale','ghost full')+'</main>';
 }
 function matchPage(){
@@ -799,6 +814,7 @@ function onlineSharedMarket(snapshot){
  }
  return '<main class="online-game-content opfc-online-playing">'+hud+
   renderOnlineGame(snapshot,{myClub:ownClub,hostClub:onlineClient.room.hostClub,competition:onlineClient.room?.competition})+
+  (snapshot.phase==='lineup'?onlineScoped(()=>v3ReadyStrip({onlineClub:ownClub})):'')+
   onlineTeams()+'</main>';
 }
 /**
@@ -898,7 +914,7 @@ function render(){
  }else if(game)setDisplayedClubs(game.teams);
  else setDisplayedChoices(localClubChoices);
  const v3State=onlineVisible?(showingGame?snapshot:null):entryView==='playing'?game:null;
- const themePhases=['kickoff-ready','match','moment-result','half-time','resume-ready','shootout-ready','shootout','finished'];
+ const themePhases=['lineup','kickoff-ready','match','moment-result','half-time','resume-ready','shootout-ready','shootout','finished'];
  const hasTheme=v3State&&themePhases.includes(v3State.phase)&&isStadium(v3State.stadiumId);
  if(hasTheme){app.dataset.v3Stadium=v3State.stadiumId;app.dataset.v3Phase=v3State.phase;}
  else{delete app.dataset.v3Stadium;delete app.dataset.v3Phase;}
