@@ -38,6 +38,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 .catalog-rating small{font-size:9px;letter-spacing:.1em;color:#b8ced7}
 .catalog-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
 .catalog-tag{display:inline-flex;align-items:center;border-radius:99px;padding:5px 8px;background:#18394e;border:1px solid #ffffff35;font-size:10px;font-weight:850}
+.catalog-card .catalog-tag.catalog-position-purple{background:linear-gradient(135deg,#7650b3,#4d2b80);color:#fff2ff;border-color:#bd9ae6}
 .catalog-tag.rarity-DIA{color:#c2f1ff;border-color:#9ce6f9}
 .catalog-tag.rarity-OR{color:#ffe3a6;border-color:#e8c06f}
 .catalog-tag.rarity-ARG{color:#e4eaf3;border-color:#b5c5d3}
@@ -47,6 +48,13 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 .catalog-stat{display:flex;justify-content:space-between;align-items:center;gap:3px;border:1px solid #ffffff1e;border-radius:9px;background:#061c2ba8;padding:8px}
 .catalog-stat span{font-size:10px;font-weight:800;color:#bdd2da}
 .catalog-stat strong{font-size:13px;font-variant-numeric:tabular-nums;color:#fff0cd}
+/* Les six notes suivent exactement les seuils et les couleurs des fiches OPFC en jeu. */
+.catalog-card .catalog-stat-value{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-width:31px;min-height:29px;padding:4px 6px;border-radius:7px;font-size:14px;font-weight:950;line-height:1.1;font-variant-numeric:tabular-nums}
+.catalog-card .catalog-stat-value.stat-elite{background:#186039;color:#fff}
+.catalog-card .catalog-stat-value.stat-high{background:#a5df96;color:#12371a}
+.catalog-card .catalog-stat-value.stat-medium{background:#f2d057;color:#3a3009}
+.catalog-card .catalog-stat-value.stat-low{background:#ec9645;color:#402008}
+.catalog-card .catalog-stat-value.stat-weak{background:#c93f51;color:#fff}
 .catalog-empty{padding:24px;text-align:center;color:#c9d9df;border:1px dashed #c2b78d6e;border-radius:14px}
 .discovery-notes{font-size:11px;color:#adc5d0;line-height:1.55;margin:17px auto 0;text-align:center;max-width:550px}
 .rules-stack{display:grid;gap:11px}
