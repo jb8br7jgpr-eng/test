@@ -43,8 +43,9 @@
 #opfc-app[data-v3-phase] .final-stat{
  border-color:var(--v3-secondary,#e2bc75);
 }
-/* Bouton flottant discret : aucune insertion entre les commandes de match. */
-.v3-help-trigger{position:fixed;z-index:55;top:calc(env(safe-area-inset-top) + 63px);right:max(10px,calc((100vw - 760px)/2 + 10px));height:36px;width:36px;border:1.5px solid #e2c078;border-radius:50%;background:#1d3549eb;color:#ffe4ad;font-weight:1000;font-size:21px;box-shadow:0 4px 13px #0008;cursor:pointer}
+/* Bouton flottant discret dans l’espace entre marque et lien Accueil de l’en-tête ;
+   ni score, ni terrain, ni choix tactiques ne sont recouverts au chargement. */
+.v3-help-trigger{position:fixed;z-index:55;top:calc(env(safe-area-inset-top) + 17px);right:max(91px,calc((100vw - 760px)/2 + 91px));height:31px;width:31px;border:1.5px solid #e2c078;border-radius:50%;background:#1d3549eb;color:#ffe4ad;font-weight:1000;font-size:21px;box-shadow:0 4px 13px #0008;cursor:pointer}
 .v3-help-overlay{position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top) + 12px) 12px calc(env(safe-area-inset-bottom) + 12px);background:#05101aeb}
 .v3-help-dialog{width:min(100%,560px);max-height:100%;overflow:auto;border-radius:18px;border:1px solid #e6c27c;background:linear-gradient(145deg,#1b3548,#0b2031);padding:16px;box-shadow:0 15px 45px #000b}
 .v3-help-head{display:flex;justify-content:space-between;gap:8px;align-items:center}
@@ -59,4 +60,4 @@
 .v3-help-dialog td.plus{color:#76dfaa}.v3-help-dialog td.minus{color:#fb959a}
 .v3-help-explain{color:#b9cdd6!important}
 .v3-help-dismiss{width:100%;min-height:44px;margin-top:8px;border:1px solid #f7db9d;border-radius:11px;background:linear-gradient(100deg,#f4dfa8,#cba261);color:#152a38;font-weight:950}
-@media(max-width:370px){.v3-help-trigger{width:32px;height:32px;font-size:19px;right:5px}}
+@media(max-width:370px){.v3-help-trigger{width:27px;height:27px;font-size:18px;right:83px;top:calc(env(safe-area-inset-top) + 19px)}}
