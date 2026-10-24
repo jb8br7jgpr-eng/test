@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {CATEGORIES,rankCards,hallSeven} from '../opfc/v3-hall-core.mjs';
+import {renderV3Hall} from '../opfc/v3-hall-view.mjs';
+import {CARDS} from '../opfc/catalog.mjs';
 import {clubMetrics,loadV3ClubStats,loadV3PlayerPoints,loadV3Milestones} from '../opfc/v3-data-service.mjs';
 const s=p=>readFileSync(new URL(p,import.meta.url),'utf8');
 test('Le Sept de Légende garde exactement 1 G, 2 D, 2 M et 2 A',()=>{
@@ -63,4 +65,19 @@ test('Dates des paliers chargées uniquement depuis les compteurs publics',async
   globalThis.fetch=async()=>({ok:true,json:async()=>[{card_id:'zoro',matches_at:null,goals_at:null,assists_at:null,anchors_at:null,points_at:'2026-10-24T12:00:00Z'}]});
   assert.equal((await loadV3Milestones()).get('zoro').points,'2026-10-24T12:00:00Z');
  }finally{globalThis.fetch=old;}
+});
+
+test('Hall complet : les quatre classements affichent chacun tous les personnages, même à zéro',()=>{
+ const old=globalThis.localStorage;
+ try {
+  globalThis.localStorage={getItem:()=>null,setItem:()=>{}};
+  const totals=new Map(CARDS.map(c=>[c.id,{matches:0,goals:0,assists:0,anchors:0}]));
+  totals.get(CARDS[0].id).goals=3;
+  const points=new Map(CARDS.map(c=>[c.id,5]));
+  const html=renderV3Hall(totals,points,new Map());
+  // 75 entrées x 4 classements complets, plus le podium du buteur.
+  assert.equal((html.match(/<li>/g)||[]).length,4*CARDS.length+1);
+  assert.equal((html.match(/class="v3-hall-player"/g)||[]).length,7);
+  assert.match(html,/class="v3-hall-pitch slot-field slot-field-single"/);
+ }finally{globalThis.localStorage=old;}
 });
