@@ -1,0 +1,31 @@
+name: OPFC — Validation couleurs fiches Personnages
+on:
+  push:
+    branches:
+      - feature/opfc-catalog-character-colors-20261024
+    paths:
+      - '.github/workflows/opfc-catalog-character-color-oneoff.yml'
+permissions:
+  contents: read
+jobs:
+  verify-character-colors:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Contrôler la syntaxe JS du catalogue et du menu
+        run: |
+          node --check opfc/catalog-view.mjs
+          node --check opfc/ui.mjs
+          node --check tests/opfc-v3.test.mjs
+      - name: Préserver moteur, serveur et OPMercato classique
+        run: |
+          git diff --exit-code origin/main...HEAD -- opfc/engine.mjs opfc/match.mjs opfc/match-actions.mjs opfc/player-performance.mjs opfc/open-play.mjs supabase/functions/opfc-online/index.ts classique.html sw.js opfc/v3-hall-view.mjs
+      - name: Régressions OPFC V2 et V3, incluant les nouvelles couleurs
+        run: |
+          node --test tests/opfc-v2.test.mjs tests/opfc-v2-catalog-sort.test.mjs tests/opfc-v2-offline-queue.test.mjs tests/opfc-v2-edge-bundle.test.mjs opfc/tests/v2.test.mjs tests/opfc-v3.test.mjs
