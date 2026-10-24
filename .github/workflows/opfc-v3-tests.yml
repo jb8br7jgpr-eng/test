@@ -1,0 +1,30 @@
+name: OPFC V3 — Tests branche isolée
+on:
+  push:
+    branches:
+      - feature/opfc-v3-hall-stats-stadium-help-20261024
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  opfc-v3-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntaxe des modules V3
+        run: |
+          node --check opfc/ui.mjs
+          node --check opfc/catalog-view.mjs
+          for f in opfc/v3-*.mjs; do node --check "$f"; done
+      - name: Moteur sportif strictement inchangé par rapport à main
+        run: git diff --exit-code origin/main...HEAD -- opfc/engine.mjs opfc/match.mjs opfc/open-play.mjs opfc/match-actions.mjs opfc/player-performance.mjs
+      - name: Régressions V2 et tests V3
+        run: |
+          node --test tests/opfc-v2.test.mjs tests/opfc-v2-catalog-sort.test.mjs tests/opfc-v2-offline-queue.test.mjs tests/opfc-v2-edge-bundle.test.mjs opfc/tests/v2.test.mjs
+          node --test tests/opfc-v3.test.mjs

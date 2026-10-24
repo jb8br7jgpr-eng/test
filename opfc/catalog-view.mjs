@@ -150,7 +150,7 @@ function clubHtml(club,rank){
   '<div class="club-catalog-identifier"><strong>'+esc(abbr)+'</strong><span>CLUB OPFC</span></div></div>'+
   '<div class="club-catalog-honours"><div class="club-catalog-honours-head"><h3>Palmarès officiel</h3>'+
   '<span class="club-catalog-total"><strong>'+esc(total)+'</strong><span>titre'+(total===1?'':'s')+'</span></span></div>'+
-  '<ul class="club-catalog-awards">'+trophies+'</ul></div>'+renderV3ClubStats(v3ClubTotals?.get(club.id))+'</article>';
+  '<ul class="club-catalog-awards">'+trophies+'</ul></div>'+renderV3ClubStats(v3ClubTotals?(v3ClubTotals.get(club.id)??{matches:0,wins:0,losses:0,goalsFor:0,goalsAgainst:0}):null)+'</article>';
 }
 
 function paintClubs(){

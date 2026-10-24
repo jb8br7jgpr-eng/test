@@ -28,7 +28,7 @@ function categoryHtml(c,totals,prior){
 }
 function teamPitch(team){
  const point=(p,x,y)=>{
-  const c=CARDS.find(c=>c.id===p.id);
+  const c=p.points>0?CARDS.find(c=>c.id===p.id):null;
   return '<div class="v3-hall-player" style="left:'+x+'%;top:'+y+'%">'+
    picture(c,'v3-hall-avatar')+'<strong>'+e(c?.name??'—')+'</strong><small>'+p.points+' pts</small></div>';
  };

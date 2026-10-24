@@ -1,7 +1,8 @@
 /** OPFC V3 : lecture publique des totaux agrégés exclusivement ; jamais les tables privées. */
 const api='https://cihzwaxernachchpjktj.supabase.co/rest/v1/';
 const key='sb_publishable_YHtE82cuI72CARv9rScVqw_g3sxbaHG';
-const integer=value=>{const n=Number(value);return Number.isSafeInteger(n)&&n>=0?n:null;};
+const integer=value=>{if(typeof value!=='number'&&!(typeof value==='string'&&/^(0|[1-9][0-9]*)$/.test(value)))return null;
+ const n=Number(value);return Number.isSafeInteger(n)&&n>=0?n:null;};
 async function get(table,fields){
  const response=await fetch(api+table+'?select='+fields,{cache:'no-store',
   headers:{apikey:key,Accept:'application/json'}});
