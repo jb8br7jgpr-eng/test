@@ -1,6 +1,10 @@
 -- OPFC V3 — DRAFT UNIQUEMENT : NE PAS EXÉCUTER SUR LA PRODUCTION SANS ACCORD.
 -- Migration additive, uniquement pour le projet OPFC. Aucun moteur de jeu touché.
 BEGIN;
+-- Migration brève : aucune finale insérée entre le backfill et les triggers.
+-- Si une partie termine au même instant, abandonner plutôt que bloquer le jeu.
+SET LOCAL lock_timeout = '3s';
+LOCK TABLE public.opfc_match_results IN SHARE ROW EXCLUSIVE MODE;
 ALTER TABLE public.opfc_player_totals ADD COLUMN IF NOT EXISTS points bigint NOT NULL DEFAULT 0 CHECK (points>=0);
 -- Reconstruire les points réels des résultats V2 possédant des statistiques individuelles.
 -- Les anciennes finales V1 sans détail contribuent zéro point, jamais une estimation.

@@ -1,5 +1,9 @@
 -- DEUXIÈME SCRIPT V3 : DRAFT, après README-migration.sql, jamais en production sans accord.
 BEGIN;
+-- Migration brève : aucune finale insérée entre le backfill et les triggers.
+-- Si une partie termine au même instant, abandonner plutôt que bloquer le jeu.
+SET LOCAL lock_timeout = '3s';
+LOCK TABLE public.opfc_match_results IN SHARE ROW EXCLUSIVE MODE;
 CREATE TABLE IF NOT EXISTS public.opfc_v3_player_milestones(
  card_id text PRIMARY KEY,
  matches_at timestamptz, goals_at timestamptz,assists_at timestamptz,
