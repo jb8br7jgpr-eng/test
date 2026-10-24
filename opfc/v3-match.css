@@ -1,0 +1,63 @@
+/* Personnalisation V3 : strictement restreinte aux phases affichées du match. */
+#opfc-app[data-v3-phase][data-v3-stadium="mugiwara"]{--v3-primary:#185B88;--v3-secondary:#962C35;--v3-accent:#E3B454}
+#opfc-app[data-v3-phase][data-v3-stadium="wanodrome"]{--v3-primary:#74BCE4;--v3-secondary:#F4F6FA;--v3-accent:#E8A1BE}
+#opfc-app[data-v3-phase][data-v3-stadium="erbaf"]{--v3-primary:#327657;--v3-secondary:#9A6844;--v3-accent:#D9B66F}
+#opfc-app[data-v3-phase][data-v3-stadium="skypiea"]{--v3-primary:#EAF2F6;--v3-secondary:#E7C66F;--v3-accent:#8775BE}
+#opfc-app[data-v3-phase][data-v3-stadium="alabasta"]{--v3-primary:#C99B64;--v3-secondary:#319C9A;--v3-accent:#E8CA83}
+#opfc-app[data-v3-phase][data-v3-stadium="marineford"]{--v3-primary:#285A91;--v3-secondary:#F0F5FA;--v3-accent:#A5B6C7}
+#opfc-app[data-v3-phase][data-v3-stadium="dressrosa"]{--v3-primary:#8055AE;--v3-secondary:#C74B58;--v3-accent:#E6BD70}
+#opfc-app[data-v3-phase][data-v3-stadium="whole-cake"]{--v3-primary:#CF6A9F;--v3-secondary:#8753A0;--v3-accent:#F4D8AC}
+/* Thèmes : uniquement bordures/bandeaux/encarts ; aucun bouton tactique ou terrain modifié. */
+#opfc-app[data-v3-phase] .match-scoreboard,
+#opfc-app[data-v3-phase] .match-stage,
+#opfc-app[data-v3-phase] .match-faceoff,
+#opfc-app[data-v3-phase] .match-attack-banner,
+#opfc-app[data-v3-phase] .halftime-stats,
+#opfc-app[data-v3-phase] .halftime-tactics,
+#opfc-app[data-v3-phase] .final-score,
+#opfc-app[data-v3-phase] .final-shootout,
+#opfc-app[data-v3-phase] .opfc-anchor-award,
+#opfc-app[data-v3-phase] .opfc-prematch-team,
+#opfc-app[data-v3-phase] .opfc-prematch-club{
+ border-color:var(--v3-primary,#e2bc75)!important;
+}
+#opfc-app[data-v3-phase] .match-stage>.eyebrow,
+#opfc-app[data-v3-phase] .opfc-prematch>h2,
+#opfc-app[data-v3-phase] .halftime-header h2,
+#opfc-app[data-v3-phase] .final-victory-title{color:var(--v3-accent,#e2bc75)}
+#opfc-app[data-v3-phase] .match-scoreboard{
+ box-shadow:inset 0 3px 0 -1px var(--v3-accent,#e2bc75),0 12px 24px #0006;
+}
+#opfc-app[data-v3-phase] .match-faceoff,
+#opfc-app[data-v3-phase] .opfc-prematch-rosters,
+#opfc-app[data-v3-phase] .halftime-tactics,
+#opfc-app[data-v3-phase] .final-score{
+ box-shadow:inset 0 3px 0 -1px var(--v3-secondary,#e2bc75);
+}
+#opfc-app[data-v3-phase] .match-faceoff .character-portrait,
+#opfc-app[data-v3-phase] .opfc-prematch-portrait,
+#opfc-app[data-v3-phase] .opfc-anchor-portrait{
+ border-color:var(--v3-accent,#e2bc75);
+}
+#opfc-app[data-v3-phase] .match-mini-stats,
+#opfc-app[data-v3-phase] .final-stat{
+ border-color:var(--v3-secondary,#e2bc75);
+}
+/* Bouton flottant discret dans l’espace entre marque et lien Accueil de l’en-tête ;
+   ni score, ni terrain, ni choix tactiques ne sont recouverts au chargement. */
+.v3-help-trigger{position:fixed;z-index:55;top:calc(env(safe-area-inset-top) + 17px);right:max(91px,calc((100vw - 760px)/2 + 91px));height:31px;width:31px;border:1.5px solid #e2c078;border-radius:50%;background:#1d3549eb;color:#ffe4ad;font-weight:1000;font-size:21px;box-shadow:0 4px 13px #0008;cursor:pointer}
+.v3-help-overlay{position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top) + 12px) 12px calc(env(safe-area-inset-bottom) + 12px);background:#05101aeb}
+.v3-help-dialog{width:min(100%,560px);max-height:100%;overflow:auto;border-radius:18px;border:1px solid #e6c27c;background:linear-gradient(145deg,#1b3548,#0b2031);padding:16px;box-shadow:0 15px 45px #000b}
+.v3-help-head{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.v3-help-head h2{margin:0;color:#f5d797;font-size:20px}
+.v3-help-head button{font-size:18px;background:#1a3040;color:#fff;border:1px solid #cbb17c;border-radius:50%;width:36px;height:36px}
+.v3-help-dialog p{font-size:12px;line-height:1.45;color:#d4e3ea}
+.v3-help-scroll{overflow:auto}
+.v3-help-dialog table{border-collapse:collapse;min-width:340px;width:100%;font-size:11px}
+.v3-help-dialog th,.v3-help-dialog td{border:1px solid #ffffff24;padding:9px 4px;text-align:center}
+.v3-help-dialog th{color:#ffe2a3;font-size:10px}
+.v3-help-dialog td{color:#f2f5f5;font-weight:900}
+.v3-help-dialog td.plus{color:#76dfaa}.v3-help-dialog td.minus{color:#fb959a}
+.v3-help-explain{color:#b9cdd6!important}
+.v3-help-dismiss{width:100%;min-height:44px;margin-top:8px;border:1px solid #f7db9d;border-radius:11px;background:linear-gradient(100deg,#f4dfa8,#cba261);color:#152a38;font-weight:950}
+@media(max-width:370px){.v3-help-trigger{width:27px;height:27px;font-size:18px;right:83px;top:calc(env(safe-area-inset-top) + 19px)}}

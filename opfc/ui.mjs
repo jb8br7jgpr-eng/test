@@ -15,9 +15,11 @@ import {renderOnlineGame} from './ui-online-game.mjs?v=opfc-v2-20261023';
 import {CLUB_TROPHIES,isCompetition,competitionName,renderCompetitionPicker} from './club-honours.mjs?v=opfc-trophees-20261022';
 import {queueFinishedLocalGame,syncQueuedLocalResults,pendingLocalResultsCount} from './trophy-service.mjs?v=opfc-v2-20261023';
 import {stadiumPicker,isStadium} from './stadiums.mjs';
+import {v3HelpUi} from './v3-tactical-help.mjs';
 
 const app=document.getElementById('opfc-app');
 const STORAGE='opfc-v08-local-dev';
+let v3HelpOpen=false;
 let game=null,firstClub='PSG',selection=null,modal=null,error='',beforeForm={PSG:'2-2-2',OM:'2-2-2'};
 let localClubChoices={PSG:'PSG',OM:'OM'},onlineHostIdentity='PSG',onlineGuestIdentity='OM';
 let localCompetition='league',onlineCompetition='league';
@@ -895,6 +897,13 @@ function render(){
   else setDisplayedClubs(null);
  }else if(game)setDisplayedClubs(game.teams);
  else setDisplayedChoices(localClubChoices);
+ const v3State=onlineVisible?(showingGame?snapshot:null):entryView==='playing'?game:null;
+ const themePhases=['kickoff-ready','match','moment-result','half-time','resume-ready','shootout-ready','shootout','finished'];
+ const hasTheme=v3State&&themePhases.includes(v3State.phase)&&isStadium(v3State.stadiumId);
+ if(hasTheme){app.dataset.v3Stadium=v3State.stadiumId;app.dataset.v3Phase=v3State.phase;}
+ else{delete app.dataset.v3Stadium;delete app.dataset.v3Phase;}
+ const v3HelpVisible=Boolean(v3State)&&['match','moment-result','half-time','resume-ready','shootout-ready','shootout'].includes(v3State.phase);
+ if(!v3HelpVisible)v3HelpOpen=false;
  const room=onlineClient.room;
  const compactRoom=showingGame?'<div class="online-session-bar" role="status">'+
   '<span>🌐 Partie en ligne · '+esc(visualAbbr(room.myClub))+' vs '+
@@ -928,7 +937,8 @@ function render(){
  app.innerHTML=(onlineVisible?onlineDisplay:entryView==='modes'?modeChooser():entryView==='local'?welcome():game?
   (game.phase==='kickoff-ready'?endMercato():['mercato','lineup'].includes(game.phase)?playing():matchPage()):welcome())+
  (error?'<div class="alert" role="alert">'+esc(error)+'</div>':'')+
- (onlineVisible?onlineAnnouncementView():'')+popup();
+ (onlineVisible?onlineAnnouncementView():'')+popup()+
+  (v3HelpVisible?v3HelpUi(v3HelpOpen):'');
 }
 function change(fn){
  const before=game,next=fn(before),end=before.phase==='mercato'?currentAuctionEnding(before,next):null;
@@ -964,6 +974,10 @@ function start(){
 }
 function clicked(button){
  const action=button.dataset.action,club=button.dataset.club;
+ if(action==='v3-help-toggle'||action==='v3-help-close'){
+  v3HelpOpen=action==='v3-help-toggle'?!v3HelpOpen:false;
+  render();return;
+ }
  if(action==='open-local'){entryView='local';error='';render();return;}
  if(action==='exit-finished-local'){
   if(game?.phase!=='finished')throw Error('La partie n’est pas terminée');

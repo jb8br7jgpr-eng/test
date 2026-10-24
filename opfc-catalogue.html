@@ -8,7 +8,8 @@
 <title>Catalogue — OPMercato FC</title>
 <link rel="icon" type="image/png" href="./apple-touch-icon.png">
 <link rel="stylesheet" href="./opfc/discover.css?v=opfc-anchor-header-20261023">
-<script type="module" src="./opfc/catalog-view.mjs?v=opfc-anchor-header-20261023"></script>
+<link rel="stylesheet" href="./opfc/v3-catalog.css?v=opfc-v3-20261024">
+<script type="module" src="./opfc/catalog-view.mjs?v=opfc-v3-20261024"></script>
 </head>
 <body>
 <main class="discovery" aria-label="Catalogue OPFC : personnages, clubs et finales">
@@ -25,6 +26,7 @@
   <button type="button" id="catalog-tab-characters" class="catalog-tab is-active" role="tab" aria-selected="true" aria-controls="catalog-characters">⚔️ Personnages <span class="catalog-tab-count">75</span></button>
   <button type="button" id="catalog-tab-clubs" class="catalog-tab" role="tab" aria-selected="false" aria-controls="catalog-clubs" tabindex="-1">🛡️ Clubs <span class="catalog-tab-count">20</span></button>
   <button type="button" id="catalog-tab-finals" class="catalog-tab catalog-tab-wide" role="tab" aria-selected="false" aria-controls="catalog-finals" tabindex="-1">🏆 Historique des Finales</button>
+   <button type="button" id="catalog-tab-hall" class="catalog-tab catalog-tab-wide" role="tab" aria-selected="false" aria-controls="catalog-hall" tabindex="-1">⚓ Hall of Fame</button>
  </div>
  <section id="catalog-characters" role="tabpanel" aria-labelledby="catalog-tab-characters">
  <section class="discovery-panel catalog-tools" aria-label="Rechercher et filtrer">
@@ -75,7 +77,8 @@
    <p id="club-count" class="catalog-count" aria-live="polite">Chargement des clubs…</p>
   </section>
   <p id="club-sync-status" class="discovery-notes" role="status" aria-live="polite">Synchronisation des palmarès…</p>
-  <div id="club-grid" class="club-catalog-grid" aria-label="Fiches des vingt clubs"></div>
+  <p id="v3-club-status" class="discovery-notes" role="status">Synchronisation des statistiques historiques…</p>
+   <div id="club-grid" class="club-catalog-grid" aria-label="Fiches des vingt clubs"></div>
   <p id="club-empty" class="catalog-empty" hidden>Aucun club ne correspond à ta recherche.</p>
   <p class="discovery-notes">🏆 Les trophées sont remportés pendant vos matchs et sauvegardés de manière durable. Ils ne donnent aucun avantage sportif.</p>
  </section>
@@ -108,6 +111,10 @@
    <button type="button" id="finals-next" class="finals-page-button" disabled>Suivantes →</button>
   </nav>
   <p class="discovery-notes">Appuie sur une finale pour découvrir les buteurs.</p>
+ </section>
+ <section id="catalog-hall" role="tabpanel" aria-labelledby="catalog-tab-hall" hidden>
+  <section class="discovery-panel catalog-tools"><h2 style="margin:0;color:#f6d997">🏆 Panthéon des Légendes</h2><p style="margin:0;font-size:12px;color:#cedce5">Quatre records historiques et le Sept de Légende.</p></section>
+  <div id="v3-hall-content" aria-live="polite">Synchronisation du Hall of Fame…</div>
  </section>
  <footer class="rules-footer"><a href="./opfc.html">← Retour au menu OPFC</a></footer>
 </main>
