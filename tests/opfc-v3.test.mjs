@@ -97,7 +97,12 @@ test('Prétendants : 75 portraits ronds, 4 postes, points et écart sans changer
   const html=renderV3Hall(totals,points,new Map());
   const after=hallSeven(CARDS,points,{},new Map());
   assert.deepEqual(after,before);
-  assert.match(html,/<details class="discovery-panel v3-hall-chasers">/);
+  assert.match(html,/<section class="discovery-panel v3-hall-chasers" aria-label="Classement des prétendants">/);
+  assert.match(html,/<header class="v3-hall-chasers-header">/);
+  assert.doesNotMatch(html,/<details class="discovery-panel v3-hall-chasers"/);
+  const refreshed=renderV3Hall(totals,points,new Map());
+  assert.match(refreshed,/<section class="discovery-panel v3-hall-chasers"/);
+  assert.equal((refreshed.match(/class="v3-hall-rank-row/g)||[]).length,CARDS.length);
   assert.equal((html.match(/class="v3-hall-rank-row/g)||[]).length,CARDS.length);
   assert.equal((html.match(/class="v3-hall-rank-avatar"/g)||[]).length,CARDS.length);
   assert.equal((html.match(/class="v3-hall-position"/g)||[]).length,4);

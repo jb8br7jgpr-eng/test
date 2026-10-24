@@ -39,7 +39,7 @@ function teamPitch(team){
   by('MIL').map((p,i)=>point(p,i?64:36,60)).join('')+
   by('ATT').map((p,i)=>point(p,i?80:20,83)).join('')+'</div>';
 }
-/** Classement dépliable : mêmes points, postes et départages que le Sept de Légende. */
+/** Classement toujours affiché, y compris après synchronisation des statistiques. */
 const HALL_POSITIONS=Object.freeze([
  {id:'GAR',icon:'🧤',name:'Gardiens'},
  {id:'DEF',icon:'🛡️',name:'Défenseurs'},
@@ -75,12 +75,12 @@ function hallPretenders(points,prior,milestones,seven){
    '<small>'+seats+' place'+(seats>1?'s':'')+' dans le Sept</small></h3>'+
    '<ol class="v3-hall-rank-list">'+rows+'</ol></section>';
  }).join('');
- return '<details class="discovery-panel v3-hall-chasers">'+
-  '<summary class="v3-hall-chasers-toggle">'+
+ return '<section class="discovery-panel v3-hall-chasers" aria-label="Classement des prétendants">'+
+  '<header class="v3-hall-chasers-header">'+
   '<span class="v3-hall-chasers-title"><strong>🏆 Classement des prétendants</strong>'+
   '<small>Tous les personnages · Points cumulés</small></span>'+
-  '<span class="v3-hall-chasers-counter">'+CARDS.length+' joueurs <span aria-hidden="true">▾</span></span>'+
-  '</summary><div class="v3-hall-chasers-body">'+sections+'</div></details>';
+  '<span class="v3-hall-chasers-counter">'+CARDS.length+' joueurs</span>'+
+  '</header><div class="v3-hall-chasers-body">'+sections+'</div></section>';
 }
 export function renderV3Hall(totals,points,milestones){
  if(!totals||!points||!milestones)return '<p class="discovery-notes">⏳ Données historiques en cours de synchronisation.</p>';
