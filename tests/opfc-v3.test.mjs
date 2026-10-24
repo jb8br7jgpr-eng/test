@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {CATEGORIES,rankCards,hallSeven} from '../opfc/v3-hall-core.mjs';
-import {clubMetrics,loadV3ClubStats,loadV3PlayerPoints} from '../opfc/v3-data-service.mjs';
+import {clubMetrics,loadV3ClubStats,loadV3PlayerPoints,loadV3Milestones} from '../opfc/v3-data-service.mjs';
 const s=p=>readFileSync(new URL(p,import.meta.url),'utf8');
 test('Le Sept de Légende garde exactement 1 G, 2 D, 2 M et 2 A',()=>{
  const cards=['GAR','DEF','MIL','ATT'].flatMap((position,pi)=>[1,2,3].map(n=>({id:position+n,position})));
@@ -48,4 +48,19 @@ test('Le bouton et la matrice ne changent aucun choix de l’action moteur',()=>
  assert.match(css,/data-v3-phase/);
  assert.doesNotMatch(css,/\.match-choice\s*\{/);
  assert.equal(CATEGORIES.length,4);
+});
+
+test('Les égalités utilisent les dates de palier communes à tous les appareils',()=>{
+ const cards=[{id:'A'},{id:'B'}],totals=new Map([['A',{points:20}],['B',{points:20}]]);
+ const milestones=new Map([['A',{points:'2026-10-20T10:00:00Z'}],['B',{points:'2026-10-21T10:00:00Z'}]]);
+ assert.equal(rankCards(cards,'points',totals,{incumbents:['B'],milestones})[0].id,'A');
+ totals.get('B').points=21;
+ assert.equal(rankCards(cards,'points',totals,{incumbents:['A'],milestones})[0].id,'B');
+});
+test('Dates des paliers chargées uniquement depuis les compteurs publics',async()=>{
+ const old=globalThis.fetch;
+ try{
+  globalThis.fetch=async()=>({ok:true,json:async()=>[{card_id:'zoro',matches_at:null,goals_at:null,assists_at:null,anchors_at:null,points_at:'2026-10-24T12:00:00Z'}]});
+  assert.equal((await loadV3Milestones()).get('zoro').points,'2026-10-24T12:00:00Z');
+ }finally{globalThis.fetch=old;}
 });
