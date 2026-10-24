@@ -18,7 +18,7 @@ function categoryHtml(c,totals,prior,milestones){
  const rows=ranked.filter(p=>(totals.get(p.id)?.[c.key]??0)>0);
  const lead=rows[0],value=id=>Number(totals.get(id)?.[c.key]??0);
  const list=limit=>'<ol>'+rows.slice(0,limit).map((p,i)=>
-  '<li><span>'+(i<3?['🥇','🥈','🥉'][i]+' ':'')+(i+1)+'. +e(p.name)+'</span><strong>'+value(p.id)+'</strong></li>').join('')+'</ol>';
+  '<li><span>'+(i<3?['🥇','🥈','🥉'][i]+' ':'')+(i+1)+'. '+e(p.name)+'</span><strong>'+value(p.id)+'</strong></li>').join('')+'</ol>';
  return {id:lead?.id??null,html:'<article class="discovery-panel v3-hall-card">'+
   '<h3>'+e(c.icon)+' '+e(c.title)+'</h3>'+picture(lead,'v3-hall-leader')+
   '<strong>'+e(lead?.name??'En attente de légende')+'</strong><span class="v3-hall-number">'+
