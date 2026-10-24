@@ -1,0 +1,32 @@
+name: OPFC V3.1 — Validation et palettes de stades
+on:
+  push:
+    branches:
+      - feature/opfc-v3-stadium-colors-ready-20261024
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  opfc-visual-polish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntaxe et scripts existants
+        run: |
+          node --check opfc/ui.mjs
+          node --check opfc/ui-match.mjs
+          node --check opfc/ui-online-game.mjs
+          node --check opfc/prematch.mjs
+      - name: Moteur et serveur inchangés
+        run: git diff --exit-code origin/main...HEAD -- opfc/engine.mjs opfc/match.mjs opfc/match-actions.mjs opfc/player-performance.mjs opfc/open-play.mjs supabase/functions/opfc-online/index.ts classical.html
+      - name: Régressions V2 et V3
+        run: |
+          node --test tests/opfc-v2.test.mjs tests/opfc-v2-catalog-sort.test.mjs tests/opfc-v2-offline-queue.test.mjs tests/opfc-v2-edge-bundle.test.mjs opfc/tests/v2.test.mjs tests/opfc-v3.test.mjs
+      - name: Nouvelle validation des compositions et huit couleurs
+        run: node --test tests/opfc-v3-visual.test.mjs
