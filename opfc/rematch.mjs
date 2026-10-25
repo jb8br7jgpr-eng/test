@@ -30,6 +30,7 @@ export function prepareRematch(state,{matchRecordId}={}){
  next.prematchReady={PSG:false,OM:false}; // Chacun valide l'avant-match en ligne.
  next.teams.forEach(team=>team.ready=true);
  delete next.rematch;
- delete next.onlineRequestIds; // Pas de rejouabilité d'anciennes commandes dans la nouvelle rencontre.
+ // Conserver l'historique des identifiants de commandes : un retry ancien
+ // doit toujours être reconnu comme déjà traité, même après une revanche.
  return next;
 }
