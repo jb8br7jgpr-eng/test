@@ -40,16 +40,29 @@ const KEEPER_HINTS=Object.freeze({
  SORTIE:'Contre surtout la frappe placée',
  PLONGEON:'Contre surtout la frappe puissante'
 });
+// Conseils dérivés des avantages tactiques existants ; rien de secret n'est lu.
+const DEFENSE_HINTS=Object.freeze({
+ PRESSER:'Contre surtout le dribble',
+ INTERCEPTER:'Contre surtout la passe en profondeur',
+ CONTENIR:'Contre surtout la passe courte'
+});
+const FREE_KICK_HINTS=Object.freeze({
+ MUR:'Contre surtout la frappe directe',
+ MARQUAGE:'Contre surtout le centre',
+ ANTICIPER:'Contre surtout la combinaison courte'
+});
 export function matchTacticalChoices(options,action='match-choose',recommended=null){
- const keeperResponses=options.length===3&&
-  options.map(([id])=>id).join(',')==='LIGNE,SORTIE,PLONGEON';
+ const ids=options.map(([id])=>id).join(',');
+ const descriptions=ids==='LIGNE,SORTIE,PLONGEON'?KEEPER_HINTS:
+  ids==='PRESSER,INTERCEPTER,CONTENIR'?DEFENSE_HINTS:
+  ids==='MUR,MARQUAGE,ANTICIPER'?FREE_KICK_HINTS:null;
  return '<div class="match-choice-grid match-tactical-choices">'+options.map(([id,label])=>{
   const emoji=TACTICAL_EMOJIS[label]??'⚽';
   return '<button type="button" class="btn match-choice" data-action="'+h(action)+
    '" data-choice="'+h(id)+'"'+(id===recommended?' data-recommended="true"':'')+'>'+
    '<span class="match-choice-emoji" aria-hidden="true">'+emoji+'</span>'+
-   (keeperResponses?'<span class="keeper-choice-copy"><strong>'+h(label)+'</strong>'+
-    '<small class="match-keeper-hint">'+h(KEEPER_HINTS[id])+'</small></span>':
+   (descriptions?'<span class="keeper-choice-copy"><strong>'+h(label)+'</strong>'+
+    '<small class="match-keeper-hint">'+h(descriptions[id])+'</small></span>':
     '<strong>'+h(label)+'</strong>')+
    (id===recommended?'<small class="match-shot-recommendation">⭐ Tir conseillé</small>':'')+'</button>';
  }).join('')+'</div>';
@@ -108,6 +121,17 @@ const RESULTS=Object.freeze({
  chance:{title:'OCCASION CRÉÉE !',detail:'Le duel offensif est remporté ! Le tir va pouvoir être préparé.',tone:'chance',tag:'🔥'},
  foul:{title:'FAUTE SIFFLÉE !',detail:'Le jeu est arrêté : un coup franc ou un penalty va être tiré.',tone:'foul',tag:'🚩'}
 });
+// Un bref effet à la première apparition, pas à chaque rafraîchissement en ligne.
+const seenResultIntros=new Set();
+function briefResultIntro(state,{outcome,attacker,minute,context,actorId}){
+ const m=state?.match;
+ const key=[state?.matchRecordId??'initial',m?.index??'',m?.action?.stage??'',
+  m?.shootout?.timeline?.length??'',outcome,attacker,minute??'',context,actorId??''].join('|');
+ if(seenResultIntros.has(key))return false;
+ if(seenResultIntros.size>200)seenResultIntros.clear();
+ seenResultIntros.add(key);
+ return true;
+}
 const GOAL_GESTURES=Object.freeze({
  PLACEE:'🎯 Frappe placée',PUISSANTE:'💥 Frappe puissante',PIQUEE:'🪄 Ballon piqué',
  TETE:'⚽ Tête sur corner',VOLEE:'💥 Reprise de volée sur corner',
@@ -126,7 +150,7 @@ function goalCaption(info){
  */
 export function renderShotResult(state,{outcome,attacker,minute,shooterId,keeperId,defenderId,
  score,action='match-continue-result',continueLabel='Continuer',context='Résultat du tir',detailExtra='',
- goalInfo=null,localGoalAcks=null,animateGoal=false}={}){
+ goalInfo=null,localGoalAcks=null,animateGoal=false,scoreLabel='Score après la frappe'}={}){
  const cfg=RESULTS[outcome];if(!cfg)return '';
  const defender=opposite(attacker);
  const actorId=outcome==='save'?(keeperId??keeperOf(state,defender)):
@@ -138,6 +162,7 @@ export function renderShotResult(state,{outcome,attacker,minute,shooterId,keeper
   outcome==='stopped'?'Défenseur décisif':outcome==='chance'?'Attaquant décisif':
   outcome==='foul'?'Joueur impliqué':'Tireur';
  const regulationGoal=outcome==='goal'&&goalInfo!==null;
+ const briefIntro=!regulationGoal&&briefResultIntro(state,{outcome,attacker,minute,context,actorId});
  const portrait=actorId?'<div class="shot-result-player">'+
   renderCharacterPortrait(actorId,'shot-result-portrait')+
   '<strong>'+h(natural?.name??actorId)+'</strong>'+
@@ -145,10 +170,9 @@ export function renderShotResult(state,{outcome,attacker,minute,shooterId,keeper
    '<div class="shot-result-player-meta">'+h(visualAbbr(club))+' · '+role+
    (actual?' · '+h(actual.position)+' · Note '+actual.rating:'')+
    (actual?.outOfPosition?' · Hors poste':'')+'</div>')+'</div>':'';
- const scoreTeam=id=>regulationGoal?
-  '<span class="shot-goal-team">'+renderClubCrest(id,'shot-goal-crest')+h(visualAbbr(id))+'</span>':
-  '<span>'+h(visualAbbr(id))+'</span>';
- const scoreboard=score?'<div class="shot-result-score" aria-label="Score après la frappe">'+
+ const scoreTeam=id=>'<span class="shot-goal-team">'+
+  renderClubCrest(id,'shot-goal-crest')+h(visualAbbr(id))+'</span>';
+ const scoreboard=score?'<div class="shot-result-score" aria-label="'+h(scoreLabel)+'">'+
   scoreTeam('PSG')+'<strong>'+h(score.PSG)+' – '+h(score.OM)+'</strong>'+scoreTeam('OM')+'</div>':'';
  const assister=regulationGoal&&goalInfo.assistId&&CARD_BY_ID.has(goalInfo.assistId)?
   '<div class="shot-goal-assist">🎯 Passe décisive : '+h(CARD_BY_ID.get(goalInfo.assistId).name)+'</div>':'';
@@ -159,13 +183,13 @@ export function renderShotResult(state,{outcome,attacker,minute,shooterId,keeper
    (localGoalAcks[id]?'✓ ':'')+h(visualAbbr(id))+' · '+(localGoalAcks[id]?'Prêt':'Continuer')+'</button>').join('')+'</div>':
   '<button class="btn primary full" data-action="'+h(action)+'">'+h(continueLabel)+'</button>';
  return '<section class="panel match-stage shot-result-panel shot-result-'+cfg.tone+
-  (regulationGoal?' shot-goal-celebration'+(animateGoal?' shot-goal-intro':''):'')+'" aria-label="'+cfg.title+'">'+
+  ' shot-goal-celebration shot-result-unified'+
+  (regulationGoal?(animateGoal?' shot-goal-intro':''):(briefIntro?' shot-result-intro':''))+
+  '" aria-label="'+cfg.title+'">'+
   '<span class="eyebrow">'+h(context)+(Number.isInteger(minute)?' · '+minute+'e':'')+'</span>'+
   '<span class="shot-result-icon" aria-hidden="true">'+cfg.tag+'</span>'+
   '<h2 class="shot-result-headline">'+cfg.title+'</h2>'+
-  (regulationGoal?'':'<p class="shot-result-description">'+cfg.detail+'</p>')+
-  (detailExtra?'<p class="shot-result-directions">'+h(detailExtra)+'</p>':'')+
-  (outcome==='stopped'?'<div class="shot-result-defense">🛡️ Ballon récupéré par '+h(visualAbbr(defender))+'</div>':'')+
+  (regulationGoal?'':'<p class="shot-result-description">'+h(detailExtra||cfg.detail)+'</p>')+
   portrait+scoreboard+assister+
   '<p class="shot-result-wait">'+(regulationGoal?'Les deux joueurs doivent valider.':'Le résultat reste affiché jusqu’à validation.')+'</p>'+
   confirmation+'</section>';
