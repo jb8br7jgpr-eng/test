@@ -14,7 +14,7 @@ import {renderFinalResult} from './ui-final.mjs?v=opfc-v2-20261023';
 import {renderPrematch} from './prematch.mjs?v=opfc-palette-20261024';
 import {setDisplayedClubs,visualName,visualAbbr} from './club-identities.mjs';
 import {competitionName} from './club-honours.mjs?v=opfc-trophees-20261022';
-import {matchTacticalChoices,renderShotFaceOff,renderShotResult,renderReceiverCard,matchKeeperId} from './ui-match-widgets.mjs?v=opfc-goal-suggestion-20261025';
+import {matchTacticalChoices,renderShotFaceOff,renderShotResult,renderReceiverCard,matchKeeperId} from './ui-match-widgets.mjs?v=opfc-keeper-hints-20261025';
 import {recommendOpenShot} from './shot.mjs?v=opfc-openshot-20261025';
 
 const html=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
