@@ -147,10 +147,12 @@ test('Le chargement iPhone utilise explicitement les modules rééquilibrés',()
  const version='opfc-match-balance-20261025';
  // Seuls les modules réellement remplacés changent d'URL de cache.
  const updated=new Map([
-  ['opfc.html|./opfc/ui.mjs','opfc-keeper-hints-20261025'],
-  ['opfc/ui.mjs|./ui-match.mjs','opfc-keeper-hints-20261025'],
+  ['opfc.html|./opfc/ui.mjs','opfc-result-polish-20261026'],
+  ['opfc/ui.mjs|./ui-match.mjs','opfc-result-polish-20261026'],
   ['opfc/ui-match.mjs|./match-actions.mjs','opfc-integration-20261025'],
-  ['opfc/match-actions.mjs|./shot.mjs','opfc-openshot-20261025']
+  ['opfc/match-actions.mjs|./shot.mjs','opfc-openshot-20261025'],
+  ['opfc/ui-match.mjs|./ui-set-piece.mjs','opfc-result-polish-20261026'],
+  ['opfc/ui-match.mjs|./ui-shootout.mjs','opfc-result-polish-20261026']
  ]);
  for(const [file,dependency] of [
   ['opfc.html','./opfc/ui.mjs'],
