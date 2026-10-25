@@ -2,6 +2,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {CARDS} from '../catalog.mjs';
+import {readFileSync} from 'node:fs';
+import {onlineMarketPublicView} from '../online-market.mjs';
+import {onlineKickoffView} from '../online-lineup.mjs';
 import {lineupDetails} from '../rules.mjs';
 import {kickoffMatch,resolveMatchMoment,continueMatch,resumeMatch} from '../match.mjs';
 import {matchPerformances} from '../player-performance.mjs';
@@ -118,4 +121,27 @@ test('Revanche en ligne : ancien résultat intact, désaccord puis double accept
  assert.deepEqual(accepted.state.prematchReady,{PSG:false,OM:false});
  const final=completeMatch(accepted.state);
  assert.notEqual(final.matchRecordId,initial.matchRecordId);
+});
+
+test('Ancienne commande réseau : historique conservé et nouvelle rencontre identifiée',()=>{
+ const original=finished();
+ original.onlineRequestIds={
+  '5d2aefba-7102-4b0f-9d34-890c97f3d93b':{club:'PSG',signature:'match:ack'}
+ };
+ const first=prepareRematch(original,{matchRecordId:'e9db394e-d962-4c45-aa35-5b283024b084'});
+ assert.deepEqual(first.onlineRequestIds,original.onlineRequestIds);
+ const prematch=onlineMarketPublicView(first,'PSG');
+ assert.equal(prematch.matchRecordId,first.matchRecordId);
+ const started=kickoffMatch(first,rng(1298));
+ assert.equal(onlineKickoffView(started).matchRecordId,first.matchRecordId);
+ assert.equal(onlineMatchView(started,'PSG').matchRecordId,first.matchRecordId);
+ const old=finished();
+ assert.equal(onlineMatchView(old,'PSG').matchRecordId,undefined,
+  'Premier match historique reste compatible sans nouveau champ');
+ const edge=readFileSync(new URL('../../supabase/functions/opfc-online/index.ts',import.meta.url),'utf8');
+ const client=readFileSync(new URL('../online-client.mjs',import.meta.url),'utf8');
+ assert.match(edge,/state\.rematchNumber>0&&typeof state\.matchRecordId/);
+ assert.match(client,/typeof state\?\.matchRecordId==='string'/);
+ assert.match(edge,/\.\.\.\(row\.private_state\?\.onlineRequestIds\?\?\{\}\)/);
+ assert.match(client,/ctx\.matchRecordId=state\.matchRecordId/);
 });
