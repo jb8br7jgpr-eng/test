@@ -4,8 +4,8 @@
  * reprise après rechargement ; elles sont exclues de matchPublicView().
  * Aucune formule de tir recodée : advanceShootout() est l'unique autorité.
  */
-import {beginShootout,advanceShootout} from './match.mjs';
-import {nextShootoutShooter} from './shootout.mjs';
+import {beginShootout,advanceShootout} from './match.mjs?v=opfc-match-balance-20261025';
+import {nextShootoutShooter} from './shootout.mjs?v=opfc-match-balance-20261025';
 import {CARD_BY_ID} from './catalog.mjs?v=opfc-75-roster-20261022';
 import {visualAbbr} from './club-identities.mjs';
 import {renderCharacterPortrait} from './ui-portraits.mjs';
