@@ -13,6 +13,8 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -25,4 +27,4 @@ jobs:
         run: node --test tests/*.test.mjs opfc/tests/*.test.mjs
       - name: Aucun changement sur OPMercato classique, catalogue, UI ou statistiques
         run: |
-          git diff --exit-code HEAD~1..HEAD -- index.html opmercato-logo.jpg opfc/catalog.mjs opfc/player-performance.mjs opfc/ui.mjs opfc/ui.css
+          git diff --exit-code origin/main...HEAD -- index.html opmercato-logo.jpg opfc/catalog.mjs opfc/player-performance.mjs opfc/ui.mjs opfc/ui.css
