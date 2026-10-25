@@ -189,6 +189,8 @@ function commandSignature(kind,command){
 }
 function commandContext(state,command){
  const ctx={phase:state?.phase};
+ if(state?.rematchNumber>0&&typeof state.matchRecordId==='string')
+  ctx.matchRecordId=state.matchRecordId;
  if(state?.phase==='mercato'&&!['place','formation'].includes(command?.type)){
   ctx.auctionCard=state?.auction?.cardId??null;
   if(command?.type!=='observation')ctx.auctionTurn=state?.auction?.turn??null;
@@ -251,10 +253,8 @@ async function mutate(body,kind){
  }
  // Effet et identifiant enregistrés dans une seule écriture atomique.
  if(id)transition.state.onlineRequestIds={
-  // Nouvelle rencontre dans le même salon : oublier les requêtes des anciens
-  // matchs, mais conserver celle qui a confirmé cette revanche.
-  ...(transition.state.phase==='kickoff-ready'&&row.private_state?.phase==='finished'?
-   {}:(row.private_state?.onlineRequestIds??{})),
+  // Conserver l'historique des requêtes déjà traitées entre les revanches.
+  ...(row.private_state?.onlineRequestIds??{}),
   [id]:{club,signature:commandSignature(kind,body.command)}
  };
  const {data:updated,error:writeErr}=await db.from('opfc_rooms')
