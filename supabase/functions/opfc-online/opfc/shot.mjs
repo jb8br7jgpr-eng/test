@@ -10,9 +10,9 @@
 export const SHOT_CHOICES=Object.freeze(['PLACEE','PUISSANTE','PIQUEE']);
 export const KEEPER_CHOICES=Object.freeze(['LIGNE','SORTIE','PLONGEON']);
 export const SHOT_CONTEXTS=Object.freeze({
-  FRANCHE:Object.freeze({accuracyBase:85,saveBase:3000/85}),
-  BONNE:Object.freeze({accuracyBase:200/3,saveBase:50}),
-  DIFFICILE:Object.freeze({accuracyBase:45,saveBase:3000/45}),
+  FRANCHE:Object.freeze({accuracyBase:85,saveBase:3000/85,accuracyBonus:16}),
+  BONNE:Object.freeze({accuracyBase:200/3,saveBase:50,accuracyBonus:13}),
+  DIFFICILE:Object.freeze({accuracyBase:45,saveBase:3000/45,accuracyBonus:15}),
 });
 const SHOT_EFFECTS=Object.freeze({
   PLACEE:Object.freeze({accuracy:6,save:5,stopStat:'PUI'}),
@@ -49,7 +49,7 @@ export function calculateOpenShot({finisher,keeper,context,shot,keeperReaction}=
   const power=stat(finisher,effects.stopStat);
   const goalkeeper=stat(keeper,'GAR');
   const tacticalAdjustment=SAVE_TACTICS[shot][keeperReaction];
-  const accuracy=clamp(setting.accuracyBase+effects.accuracy+0.4*(technique-75)+8,5,95);
+  const accuracy=clamp(setting.accuracyBase+effects.accuracy+0.4*(technique-75)+setting.accuracyBonus,5,95);
   const saveIfOnTarget=clamp(
     setting.saveBase+effects.save+tacticalAdjustment+
     0.5*(goalkeeper-75)-0.2*(power-75),5,90

@@ -5,8 +5,8 @@
  * Score et statistiques de séance sont séparés du temps réglementaire.
  */
 import {CARDS} from './catalog.mjs?v=opfc-75-roster-20261022';
-import {lineupDetails} from './rules.mjs?v=opfc-75-roster-20261022';
-import {calculatePenalty,resolvePenalty,averagePenaltyGoal} from './penalty.mjs';
+import {lineupDetails} from './rules.mjs?v=opfc-match-balance-20261025';
+import {calculatePenalty,resolvePenalty,averagePenaltyGoal} from './penalty.mjs?v=opfc-match-balance-20261025';
 
 const CLUBS=Object.freeze(['PSG','OM']);
 const catalogueOrder=new Map(CARDS.map((card,index)=>[card.id,index]));

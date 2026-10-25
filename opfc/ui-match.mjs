@@ -4,12 +4,12 @@
  * Les actions appellent les fonctions officielles de match-actions.mjs.
  */
 import {CARD_BY_ID} from './catalog.mjs?v=opfc-75-roster-20261022';
-import {lineupDetails} from './rules.mjs?v=opfc-75-roster-20261022';
+import {lineupDetails} from './rules.mjs?v=opfc-match-balance-20261025';
 import {renderCharacterPortrait,renderClubCrest} from './ui-portraits.mjs?v=opfc-75-roster-20261022';
-import {matchPublicView,kickoffMatch,continueMatch,resumeMatch} from './match.mjs?v=opfc-75-roster-20261022';
-import {beginOpenPlayAction,lockOpenPlayChoice,revealOpenPlayDuel,continueOpenPlayDuel,revealOpenPlayShot} from './match-actions.mjs?v=opfc-tactics-20261023';
-import {isSetPieceKind,setPieceTurnOwner,dispatchSetPieceMatch,renderSetPieceAction} from './ui-set-piece.mjs?v=opfc-75-roster-20261022';
-import {shootoutTurnOwner,dispatchShootout,renderShootoutScreen} from './ui-shootout.mjs?v=opfc-75-roster-20261022';
+import {matchPublicView,kickoffMatch,continueMatch,resumeMatch} from './match.mjs?v=opfc-match-balance-20261025';
+import {beginOpenPlayAction,lockOpenPlayChoice,revealOpenPlayDuel,continueOpenPlayDuel,revealOpenPlayShot} from './match-actions.mjs?v=opfc-match-balance-20261025';
+import {isSetPieceKind,setPieceTurnOwner,dispatchSetPieceMatch,renderSetPieceAction} from './ui-set-piece.mjs?v=opfc-match-balance-20261025';
+import {shootoutTurnOwner,dispatchShootout,renderShootoutScreen} from './ui-shootout.mjs?v=opfc-match-balance-20261025';
 import {renderFinalResult} from './ui-final.mjs?v=opfc-v2-20261023';
 import {renderPrematch} from './prematch.mjs?v=opfc-palette-20261024';
 import {setDisplayedClubs,visualName,visualAbbr} from './club-identities.mjs';

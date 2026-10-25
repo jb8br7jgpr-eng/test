@@ -4,11 +4,11 @@
  * Le contrôleur local / serveur conserve cet état PRIVÉ et n'expose que
  * matchPublicView(). Aucun choix adverse ne peut être modifié après validation.
  */
-import {lineupDetails,chemistryAdvantage} from './rules.mjs';
-import {currentMatchMoment,resolveMatchMoment,continueMatch} from './match.mjs';
-import {CORNER_ZONES,CORNER_GESTURES,prepareCornerActors,calculateCornerDuel,resolveCornerDuel,calculateCornerFinish,resolveCornerFinish} from './corner.mjs';
-import {FREE_KICK_ATTACKS,FREE_KICK_DEFENSES,prepareFreeKickActors,freeKickFinisherId,calculateFreeKickDuel,resolveFreeKickDuel,calculateFreeKickFinish,resolveFreeKickFinish} from './free-kick.mjs';
-import {PENALTY_DIRECTIONS,calculatePenalty,resolvePenalty} from './penalty.mjs';
+import {lineupDetails,chemistryAdvantage} from './rules.mjs?v=opfc-match-balance-20261025';
+import {currentMatchMoment,resolveMatchMoment,continueMatch} from './match.mjs?v=opfc-match-balance-20261025';
+import {CORNER_ZONES,CORNER_GESTURES,prepareCornerActors,calculateCornerDuel,resolveCornerDuel,calculateCornerFinish,resolveCornerFinish} from './corner.mjs?v=opfc-match-balance-20261025';
+import {FREE_KICK_ATTACKS,FREE_KICK_DEFENSES,prepareFreeKickActors,freeKickFinisherId,calculateFreeKickDuel,resolveFreeKickDuel,calculateFreeKickFinish,resolveFreeKickFinish} from './free-kick.mjs?v=opfc-match-balance-20261025';
+import {PENALTY_DIRECTIONS,calculatePenalty,resolvePenalty} from './penalty.mjs?v=opfc-match-balance-20261025';
 
 const clone=state=>structuredClone(state);
 const fail=message=>{throw Error(message);};

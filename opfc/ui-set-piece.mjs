@@ -8,7 +8,7 @@ import {renderCharacterPortrait} from './ui-portraits.mjs';
 import {visualAbbr} from './club-identities.mjs';
 import {matchTacticalChoices,renderShotFaceOff,renderReceiverCard,renderShotResult} from './ui-match-widgets.mjs';
 import {beginSetPieceAction,selectSetPieceTaker,lockSetPieceChoice,
- revealSetPieceDuel,continueSetPieceDuel,finishSetPieceCorner,revealSetPiecePenalty} from './set-piece-actions.mjs';
+ revealSetPieceDuel,continueSetPieceDuel,finishSetPieceCorner,revealSetPiecePenalty} from './set-piece-actions.mjs?v=opfc-match-balance-20261025';
 const escape=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const name=id=>CARD_BY_ID.get(id)?.name??id??'—';
 const kindLabel={corner:'Corner','free-kick':'Coup franc',penalty:'Penalty'};

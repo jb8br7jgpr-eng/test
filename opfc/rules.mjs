@@ -79,7 +79,11 @@ export function buildSchedule(teamA,teamB,rng=Math.random){
     const types=()=>{const x=draw();return x<.70?'open':x<.85?'corner':x<.95?'free-kick':'penalty';};
     const out=sorted.map(minute=>({minute,period:minute<45?1:2,attacker:draw()<pA?'PSG':'OM',type:types()}));
     const countFor=(club,period)=>out.filter(e=>e.attacker===club&&(period==null||e.period===period)).length;
-    if(['PSG','OM'].every(c=>countFor(c,null)>=3&&countFor(c,1)>=1&&countFor(c,2)>=1))return out;
+    // Écart maximal de deux séquences : 5–5/6–4, 6–5 ou 6–6/7–5.
+    // Le tirage pondéré par la force collective reste inchangé ; on rejette uniquement
+    // les calendriers trop déséquilibrés, avec au moins un passage par mi-temps.
+    if(Math.abs(countFor('PSG',null)-countFor('OM',null))<=2&&
+      ['PSG','OM'].every(c=>countFor(c,null)>=3&&countFor(c,1)>=1&&countFor(c,2)>=1))return out;
   }
   throw new Error('Calendrier impossible à générer');
 }
