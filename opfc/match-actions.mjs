@@ -6,12 +6,12 @@
  * Les fautes sont mises en attente : leur résolution dans la MEME séquence
  * sera ajoutée au bloc 8B2, sans fabriquer de tir ou score anticipé.
  */
-import {lineupDetails,chemistryAdvantage} from './rules.mjs';
+import {lineupDetails,chemistryAdvantage} from './rules.mjs?v=opfc-match-balance-20261025';
 import {prepareOpenPlayRoles,finisherFor} from './roles.mjs';
-import {ATTACK_CHOICES,DEFENSE_CHOICES,drawOpenPlayContext,calculateOpenPlay,resolveOpenPlay} from './open-play.mjs?v=opfc-tactics-20261023';
-import {SHOT_CHOICES,KEEPER_CHOICES,calculateOpenShot,resolveOpenShot} from './shot.mjs';
-import {currentMatchMoment,resolveMatchMoment,continueMatch} from './match.mjs';
-import {beginSetPieceAction} from './set-piece-actions.mjs';
+import {ATTACK_CHOICES,DEFENSE_CHOICES,drawOpenPlayContext,calculateOpenPlay,resolveOpenPlay} from './open-play.mjs?v=opfc-match-balance-20261025';
+import {SHOT_CHOICES,KEEPER_CHOICES,calculateOpenShot,resolveOpenShot} from './shot.mjs?v=opfc-match-balance-20261025';
+import {currentMatchMoment,resolveMatchMoment,continueMatch} from './match.mjs?v=opfc-match-balance-20261025';
+import {beginSetPieceAction} from './set-piece-actions.mjs?v=opfc-match-balance-20261025';
 
 const copy=s=>structuredClone(s);
 const fail=message=>{throw Error(message);};
