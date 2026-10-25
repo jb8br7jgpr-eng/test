@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - opfc-integration-20261025
+      - opfc-keeper-hints-20261025
   workflow_dispatch:
 permissions:
   contents: read
