@@ -9,7 +9,7 @@ import {nextShootoutShooter} from './shootout.mjs?v=opfc-match-balance-20261025'
 import {CARD_BY_ID} from './catalog.mjs?v=opfc-75-roster-20261022';
 import {visualAbbr} from './club-identities.mjs';
 import {renderCharacterPortrait} from './ui-portraits.mjs';
-import {matchTacticalChoices,renderShotFaceOff,renderShotResult} from './ui-match-widgets.mjs';
+import {matchTacticalChoices,renderShotFaceOff,renderShotResult} from './ui-match-widgets.mjs?v=opfc-result-polish-20261026';
 
 const fail=m=>{throw Error(m);};
 const escape=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -162,7 +162,7 @@ export function renderShootoutScreen(state,{uncovered=false}={}){
    outcome:last.scored?'goal':last.result==='save'?'save':'miss',
    attacker:last.club,shooterId:last.shooterId,
    keeperId:s.keepers[last.club==='PSG'?'OM':'PSG']?.cardId,
-   score:s.score,context:'Séance de tirs au but',
+   score:s.score,context:'Séance de tirs au but',scoreLabel:'Score de la séance de tirs au but',
    detailExtra:'Direction de la frappe : '+last.shotDirection+' · Gardien : '+last.keeperDirection,
    action:'match-shootout-continue',
    continueLabel:state.phase==='finished'?'Voir le résultat final':'Continuer'
@@ -218,7 +218,7 @@ export function renderOnlineShootoutScreen(state,{myClub,hostClub}={}){
   const result=renderShotResult(state,{
    outcome:last.scored?'goal':last.result==='save'?'save':'miss',
    attacker:last.club,shooterId:last.shooterId,keeperId:last.keeperId,
-   score:s.score,context:'Séance de tirs au but',
+   score:s.score,context:'Séance de tirs au but',scoreLabel:'Score de la séance de tirs au but',
    detailExtra:'Direction de la frappe : '+last.shotDirection+' · Gardien : '+last.keeperDirection,
    action:'online-game',
    continueLabel:state.phase==='finished'?'Voir le résultat final':'Continuer'
