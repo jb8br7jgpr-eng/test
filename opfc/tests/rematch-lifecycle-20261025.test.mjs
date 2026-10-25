@@ -108,6 +108,21 @@ test('Affichage du tir conseillé : uniquement à l’attaquant, pas au défense
  assert.ok(!localHidden.includes('⭐ Tir conseillé'),'Téléphone masqué pendant la transmission');
  const localRevealed=renderMatchScreen(state,{uncovered:true});
  assert.ok(localRevealed.includes('⭐ Tir conseillé'),'Conseil visible après transmission');
+ // Les trois réactions gardien restent les mêmes, avec une aide sur le bouton.
+ state.match.action.stage='shot-defense-choice';
+ state.match.action.choices.shot='PLACEE';
+ const defenderScreen=renderOnlineMatchScreen(onlineMatchView(state,'OM'),{myClub:'OM',hostClub:'PSG'});
+ const hints=['Contre surtout le ballon piqué','Contre surtout la frappe placée','Contre surtout la frappe puissante'];
+ for(const hint of hints){
+  assert.equal(defenderScreen.split(hint).length-1,1,'Une seule occurrence de '+hint);
+  assert.ok(renderMatchScreen(state,{uncovered:true}).includes(hint),'Présent en local');
+ }
+ assert.equal((defenderScreen.match(/class="match-keeper-hint"/g)||[]).length,3);
+ assert.ok(!defenderScreen.includes('⭐ Tir conseillé'),'Pas de conseil offensif chez le gardien');
+ for(const id of ['LIGNE','SORTIE','PLONGEON'])
+  assert.ok(defenderScreen.includes('data-choice="'+id+'"'),'Identifiant inchangé');
+ assert.ok(!renderMatchScreen(state,{uncovered:false}).includes('Contre surtout'),'Écran local masqué');
+
 });
 test('Revanche en ligne : ancien résultat intact, désaccord puis double acceptation',()=>{
  const initial=finished();
