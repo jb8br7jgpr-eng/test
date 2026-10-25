@@ -130,11 +130,38 @@ test('Calendrier 10–12 : écart <=2, deux mi-temps couvertes, force collective
 });
 
 test('Les six calculateurs et le calendrier sont identiques pour local et serveur',()=>{
- for(const file of ['rules.mjs','open-play.mjs','shot.mjs','corner.mjs','free-kick.mjs','penalty.mjs']){
+ for(const file of ['rules.mjs','open-play.mjs','shot.mjs','corner.mjs','free-kick.mjs','penalty.mjs',
+  'match.mjs','engine.mjs','shootout.mjs','match-actions.mjs','set-piece-actions.mjs']){
   const local=readFileSync(new URL('../opfc/'+file,import.meta.url),'utf8');
   const server=readFileSync(new URL('../supabase/functions/opfc-online/opfc/'+file,import.meta.url),'utf8');
   const withoutBrowserCache=s=>s.replace(/\?v=[\w-]+/g,'');
   assert.equal(withoutBrowserCache(local),server,'Écart local / serveur dans '+file);
  }
  assert.equal(CARDS.length,75,'Le catalogue de 75 personnages reste complet');
+});
+
+
+test('Le chargement iPhone utilise explicitement les modules rééquilibrés',()=>{
+ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+ const version='opfc-match-balance-20261025';
+ for(const [file,dependency] of [
+  ['opfc.html','./opfc/ui.mjs'],
+  ['opfc/ui.mjs','./ui-match.mjs'],
+  ['opfc/ui.mjs','./engine.mjs'],
+  ['opfc/ui-match.mjs','./match.mjs'],
+  ['opfc/ui-match.mjs','./match-actions.mjs'],
+  ['opfc/ui-match.mjs','./ui-set-piece.mjs'],
+  ['opfc/ui-match.mjs','./ui-shootout.mjs'],
+  ['opfc/ui-set-piece.mjs','./set-piece-actions.mjs'],
+  ['opfc/ui-shootout.mjs','./shootout.mjs'],
+  ['opfc/match-actions.mjs','./open-play.mjs'],
+  ['opfc/match-actions.mjs','./shot.mjs'],
+  ['opfc/set-piece-actions.mjs','./corner.mjs'],
+  ['opfc/set-piece-actions.mjs','./free-kick.mjs'],
+  ['opfc/set-piece-actions.mjs','./penalty.mjs'],
+  ['opfc/shootout.mjs','./penalty.mjs']
+ ]){
+  assert.ok(read(file).includes(dependency+'?v='+version),
+   'Cache de '+dependency+' pas invalidé dans '+file);
+ }
 });
