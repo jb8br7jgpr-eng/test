@@ -1042,6 +1042,22 @@ function clicked(button){
   if(!game||!matchRequiresPrivacy(game))throw Error('Aucun choix privé à révéler');
   matchUncovered=true;render();return;
  }
+ if(action==='match-goal-ack'){
+  if(game?.phase!=='moment-result'||game.match?.lastResult?.outcome!=='goal'||!['PSG','OM'].includes(club))
+   throw Error('Validation de but indisponible');
+  change(s=>{
+   if(s.match?.resultAcks?.[club])throw Error('Ce club a déjà confirmé');
+   const next=structuredClone(s);
+   next.match.resultAcks={PSG:!!s.match?.resultAcks?.PSG,OM:!!s.match?.resultAcks?.OM};
+   next.match.resultAcks[club]=true;
+   if(next.match.resultAcks.PSG&&next.match.resultAcks.OM){
+    delete next.match.resultAcks;
+    return dispatchOpenMatch(next,'continue-result');
+   }
+   return next;
+  });
+  return;
+ }
  if(action.startsWith('match-')){
   if(!game)throw Error('Aucune partie en cours');
   if(action==='match-kickoff'&&game.playerStatsVersion===2&&game.prematchSeen!==true)
