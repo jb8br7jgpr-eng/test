@@ -5,7 +5,7 @@
  */
 import {CARD_BY_ID} from './catalog.mjs?v=opfc-75-roster-20261022';
 import {lineupDetails} from './rules.mjs';
-import {renderCharacterPortrait} from './ui-portraits.mjs';
+import {renderCharacterPortrait,renderClubCrest} from './ui-portraits.mjs';
 import {visualAbbr} from './club-identities.mjs';
 
 const h=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
@@ -96,9 +96,25 @@ const RESULTS=Object.freeze({
  chance:{title:'OCCASION CRÉÉE !',detail:'Le duel offensif est remporté ! Le tir va pouvoir être préparé.',tone:'chance',tag:'🔥'},
  foul:{title:'FAUTE SIFFLÉE !',detail:'Le jeu est arrêté : un coup franc ou un penalty va être tiré.',tone:'foul',tag:'🚩'}
 });
-/** Écran premium unique pour chaque véritable issue du match et chaque occasion. */
+const GOAL_GESTURES=Object.freeze({
+ PLACEE:'🎯 Frappe placée',PUISSANTE:'💥 Frappe puissante',PIQUEE:'🪄 Ballon piqué',
+ TETE:'⚽ Tête sur corner',VOLEE:'💥 Reprise de volée sur corner',
+ RETOURNE:'🤸 Retourné sur corner'
+});
+function goalCaption(info){
+ if(!info)return '';
+ if(info.kind==='penalty')return '🥅 But sur penalty';
+ if(info.kind==='corner')return GOAL_GESTURES[info.gesture]??'🚩 But sur corner';
+ if(info.kind==='free-kick')return '⚽ But sur coup franc';
+ if(info.kind==='open')return GOAL_GESTURES[info.shot]??'⚽ But en jeu ouvert';
+ return '';
+}
+/** Shared regulation goal panel, preserving the existing outcome screen dimensions.
+ * Shootout goals intentionally use the existing non-regulation result screen.
+ */
 export function renderShotResult(state,{outcome,attacker,minute,shooterId,keeperId,defenderId,
- score,action='match-continue-result',continueLabel='Continuer',context='Résultat du tir',detailExtra=''}={}){
+ score,action='match-continue-result',continueLabel='Continuer',context='Résultat du tir',detailExtra='',
+ goalInfo=null,localGoalAcks=null}={}){
  const cfg=RESULTS[outcome];if(!cfg)return '';
  const defender=opposite(attacker);
  const actorId=outcome==='save'?(keeperId??keeperOf(state,defender)):
@@ -109,24 +125,38 @@ export function renderShotResult(state,{outcome,attacker,minute,shooterId,keeper
  const role=outcome==='goal'?'Buteur':outcome==='save'?'Gardien':
   outcome==='stopped'?'Défenseur décisif':outcome==='chance'?'Attaquant décisif':
   outcome==='foul'?'Joueur impliqué':'Tireur';
+ const regulationGoal=outcome==='goal'&&goalInfo!==null;
  const portrait=actorId?'<div class="shot-result-player">'+
   renderCharacterPortrait(actorId,'shot-result-portrait')+
   '<strong>'+h(natural?.name??actorId)+'</strong>'+
-  '<div class="shot-result-player-meta">'+h(visualAbbr(club))+' · '+role+
-  (actual?' · '+h(actual.position)+' · Note '+actual.rating:'')+
-  (actual?.outOfPosition?' · Hors poste':'')+'</div></div>':'';
+  (regulationGoal?'<div class="shot-goal-caption">'+h(goalCaption(goalInfo))+'</div>':
+   '<div class="shot-result-player-meta">'+h(visualAbbr(club))+' · '+role+
+   (actual?' · '+h(actual.position)+' · Note '+actual.rating:'')+
+   (actual?.outOfPosition?' · Hors poste':'')+'</div>')+'</div>':'';
+ const scoreTeam=id=>regulationGoal?
+  '<span class="shot-goal-team">'+renderClubCrest(id,'shot-goal-crest')+h(visualAbbr(id))+'</span>':
+  '<span>'+h(visualAbbr(id))+'</span>';
  const scoreboard=score?'<div class="shot-result-score" aria-label="Score après la frappe">'+
-  '<span>'+h(visualAbbr('PSG'))+'</span><strong>'+h(score.PSG)+' – '+h(score.OM)+'</strong><span>'+h(visualAbbr('OM'))+'</span></div>':'';
- return '<section class="panel match-stage shot-result-panel shot-result-'+cfg.tone+'" aria-label="'+cfg.title+'">'+
+  scoreTeam('PSG')+'<strong>'+h(score.PSG)+' – '+h(score.OM)+'</strong>'+scoreTeam('OM')+'</div>':'';
+ const assister=regulationGoal&&goalInfo.assistId&&CARD_BY_ID.has(goalInfo.assistId)?
+  '<div class="shot-goal-assist">🎯 Passe décisive : '+h(CARD_BY_ID.get(goalInfo.assistId).name)+'</div>':'';
+ const confirmation=regulationGoal&&localGoalAcks?
+  '<div class="shot-goal-acks" aria-label="Confirmation des deux joueurs">'+
+  ['PSG','OM'].map(id=>'<button type="button" class="btn shot-goal-ack" data-action="match-goal-ack" data-club="'+h(id)+'"'+
+   (localGoalAcks[id]?' disabled aria-disabled="true"':'')+'>'+
+   (localGoalAcks[id]?'✓ ':'')+h(visualAbbr(id))+' · '+(localGoalAcks[id]?'Prêt':'Continuer')+'</button>').join('')+'</div>':
+  '<button class="btn primary full" data-action="'+h(action)+'">'+h(continueLabel)+'</button>';
+ return '<section class="panel match-stage shot-result-panel shot-result-'+cfg.tone+
+  (regulationGoal?' shot-goal-celebration':'')+'" aria-label="'+cfg.title+'">'+
   '<span class="eyebrow">'+h(context)+(Number.isInteger(minute)?' · '+minute+'e':'')+'</span>'+
   '<span class="shot-result-icon" aria-hidden="true">'+cfg.tag+'</span>'+
   '<h2 class="shot-result-headline">'+cfg.title+'</h2>'+
-  '<p class="shot-result-description">'+cfg.detail+'</p>'+
+  (regulationGoal?'':'<p class="shot-result-description">'+cfg.detail+'</p>')+
   (detailExtra?'<p class="shot-result-directions">'+h(detailExtra)+'</p>':'')+
   (outcome==='stopped'?'<div class="shot-result-defense">🛡️ Ballon récupéré par '+h(visualAbbr(defender))+'</div>':'')+
-  portrait+scoreboard+
-  '<p class="shot-result-wait">Le résultat reste affiché jusqu’à validation.</p>'+
-  '<button class="btn primary full" data-action="'+h(action)+'">'+h(continueLabel)+'</button></section>';
+  portrait+scoreboard+assister+
+  '<p class="shot-result-wait">'+(regulationGoal?'Les deux joueurs doivent valider.':'Le résultat reste affiché jusqu’à validation.')+'</p>'+
+  confirmation+'</section>';
 }
 
 export function matchKeeperId(state,club){return keeperOf(state,club);}
