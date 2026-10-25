@@ -214,18 +214,26 @@ function renderAction(state,view,uncovered){
   button('match-begin-setpiece','Continuer avec la phase arrêtée')+'</section>';
  return '<section class="panel match-stage"><h2>Action en préparation</h2></section>';
 }
-function resultView(m,state){
+function resultView(m,state,{onlineClub=null}={}){
  const r=m.lastResult;
  // Au sein d'une action officielle, les IDs des finisseurs sont fournis par
  // le moteur (jeu ouvert, corner, coup franc, penalty). Pour un ancien
  // résultat sans détails, ne jamais inventer l'identité d'un tireur.
  if(['goal','save','miss','stopped'].includes(r?.outcome)){
   const detail=r.details??{};
+  const scored=r.outcome==='goal'?m.goals?.findLast(g=>g.club===r.attacker&&g.cardId===r.scorerId&&g.minute===r.minute):null;
+  const goalInfo=r.outcome==='goal'?{
+   kind:detail.kind??r.type,
+   shot:detail.shot?.calculation?.shot??null,
+   gesture:detail.gesture??detail.shot?.calculation?.gesture??null,
+   assistId:scored?.assistId??null
+  }:null;
   return renderShotResult(state,{
    outcome:r.outcome,attacker:r.attacker,minute:r.minute,score:m.score,
    shooterId:r.scorerId??detail.finisherId??detail.takerId??null,
    keeperId:matchKeeperId(state,r.attacker==='PSG'?'OM':'PSG'),
    defenderId:detail.defenderId??detail.roles?.defender?.cardId??null,
+   goalInfo,localGoalAcks:goalInfo&&!onlineClub?(state.match?.resultAcks??{PSG:false,OM:false}):null,
    context:detail.kind==='free-kick'?'Coup franc':detail.kind==='corner'?'Corner':
     detail.kind==='penalty'?'Penalty':
     r.type==='open'?(r.outcome==='stopped'?'Jeu ouvert':'Tir en jeu ouvert'):
@@ -362,7 +370,7 @@ function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null,competit
  }
  if(state.phase==='moment-result'){
   const last=m.lastResult;
-  const announced=out+attackBanner(last?.attacker,last?.details?.context,last?.type,last?.minute)+scoreStats(m)+resultView(m,state);
+  const announced=out+attackBanner(last?.attacker,last?.details?.context,last?.type,last?.minute)+scoreStats(m)+resultView(m,state,{onlineClub});
   return onlineClub?onlineAcknowledgementPanel(announced,state,onlineClub):announced;
  }
  const moment=m.currentMoment;
