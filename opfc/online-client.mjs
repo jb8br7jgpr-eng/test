@@ -81,9 +81,13 @@ export function createOnlineClient({
    fail('Vue de mercato reçue invalide');
   const withMatch=['match','moment-result','half-time','resume-ready',
    'shootout-ready','shootout','finished'].includes(payload.phase);
-  const allowed=withMatch?['version','phase','teams','dice','match','stadiumId']:
-   ['version','phase','teams','dice','auction','lastResult','myObservation','reveal','stadiumId','competition','prematchReady'];
+  const allowed=withMatch?['version','phase','teams','dice','match','stadiumId','matchRecordId']:
+   ['version','phase','teams','dice','auction','lastResult','myObservation','reveal','stadiumId','competition','prematchReady','matchRecordId'];
   if(Object.keys(payload).some(k=>!allowed.includes(k)))fail('Vue de mercato contenant des secrets');
+  if(payload.matchRecordId!==undefined&&
+    (typeof payload.matchRecordId!=='string'||
+     !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(payload.matchRecordId)))
+    fail('Identifiant de revanche invalide');
   if(!Array.isArray(payload.dice)||payload.dice.length!==2||
    payload.teams.some(t=>!t||!['PSG','OM'].includes(t.club)))
    fail('Vue de partie incohérente');
@@ -231,6 +235,7 @@ export function createOnlineClient({
  // personnage, une autre enchère ou une autre séquence après synchronisation.
  const contextFor=(state,command)=>{
   const ctx={phase:state?.phase};
+  if(typeof state?.matchRecordId==='string')ctx.matchRecordId=state.matchRecordId;
   if(state?.phase==='mercato'){
    if(!['place','formation'].includes(command.type)){
     ctx.auctionCard=state?.auction?.cardId??null;
