@@ -13,6 +13,8 @@ import {secureRandomBytes} from './online-protocol.mjs';
 import {SET_PIECE_TYPES,handlesOnlineSetPiece,applyOnlineSetPieceTransition} from './online-set-piece.mjs';
 import {continueSetPieceDuel} from './set-piece-actions.mjs';
 import {ONLINE_ENDGAME_COMMANDS,applyOnlineEndgameTransition,onlineShootoutView} from './online-endgame.mjs';
+import {prepareRematch} from './rematch.mjs';
+import {onlineMarketPublicView} from './online-market.mjs';
 
 const fail=message=>{throw Error(message);};
 const other=c=>c==='PSG'?'OM':'PSG';
@@ -89,6 +91,10 @@ export function onlineMatchView(state,club){
    winner:m.winner??null,victory:m.victory??null,
    currentMoment:m.currentMoment??null,
    action:m.action?structuredClone(m.action):null,
+   rematch:state.phase==='finished'?{
+    votes:{PSG:!!state.rematch?.votes?.PSG,OM:!!state.rematch?.votes?.OM},
+    rejectedBy:state.rematch?.rejectedBy??null
+   }:null,
    ...(state.match.shootout?{shootout:onlineShootoutView(state)}:{})
   }
  };
@@ -102,6 +108,8 @@ function actionOwner(a){
  fail('Étape de jeu ouvert non prise en charge');
 }
 const TYPES={
+ 'rematch-accept':['type'],
+ 'rematch-decline':['type'],
  'begin-open':['type'],
  'choose':['type','choice'],
  'reveal-duel':['type'],
@@ -112,6 +120,27 @@ const TYPES={
  ...SET_PIECE_TYPES,
  ...ONLINE_ENDGAME_COMMANDS
 };
+/** Two confirmations in the existing room; the previous official result has
+ * already been recorded by the database trigger when finished was reached.
+ */
+function voteRematch(state,club,kind){
+ if(state?.phase!=='finished'||!state.match?.winner||state.match.shootoutLastResult)
+  fail('La rencontre doit être totalement terminée');
+ const prior=state.rematch?.votes??{PSG:false,OM:false};
+ const votes={PSG:!!prior.PSG,OM:!!prior.OM};
+ const other=club==='PSG'?'OM':'PSG';
+ const next=structuredClone(state);
+ if(kind==='rematch-decline'){
+  if(!votes[other])fail('Aucune demande de revanche à refuser');
+  next.rematch={votes:{PSG:false,OM:false},rejectedBy:club};
+  return next;
+ }
+ if(votes[club])fail('Revanche déjà acceptée');
+ votes[club]=true;
+ next.rematch={votes,rejectedBy:null};
+ if(!votes.PSG||!votes.OM)return next;
+ return prepareRematch(next,{matchRecordId:crypto.randomUUID()});
+}
 export function applyOnlineOpenPlayCommand(state,club,command,{rng=cryptoRng,hostClub=null}={}){
  clubValid(club);
  if(!state||!PHASES.includes(state.phase)||!state.match)
@@ -128,7 +157,9 @@ export function applyOnlineOpenPlayCommand(state,club,command,{rng=cryptoRng,hos
  // Les anciennes commandes de continuation sont réinterprétées comme
  // une confirmation INDIVIDUELLE. Aucun ancien iPhone ne peut passer
  // une annonce sans la validation du second joueur.
- if(['ack','continue-result','continue-duel','continue-setpiece-duel',
+ if(type==='rematch-accept'||type==='rematch-decline'){
+  next=voteRematch(state,club,type);
+ }else if(['ack','continue-result','continue-duel','continue-setpiece-duel',
   'shootout-continue'].includes(type)){
   next=acknowledgeScreen(state,club,rng);
  }else if(Object.hasOwn(ONLINE_ENDGAME_COMMANDS,type)){
@@ -169,5 +200,6 @@ export function applyOnlineOpenPlayCommand(state,club,command,{rng=cryptoRng,hos
   }
  }
  if(!next)fail('Action de match non prise en charge');
- return {state:next,publicForActor:onlineMatchView(next,club)};
+ return {state:next,publicForActor:next.phase==='kickoff-ready'?
+  onlineMarketPublicView(next,club):onlineMatchView(next,club)};
 }
