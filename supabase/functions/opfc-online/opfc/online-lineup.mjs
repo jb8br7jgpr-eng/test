@@ -32,6 +32,7 @@ export function onlineKickoffView(state){
  if(m.index!==0||m.history.length!==0||m.action)fail('Match déjà engagé');
  return {
   version:state.version,phase:'match',
+  ...(state.rematchNumber>0?{matchRecordId:state.matchRecordId}:{}),
   ...(state.stadiumId?{stadiumId:state.stadiumId}:{}),
   teams:state.teams.map(copyTeam),dice:[...state.dice],
   match:{
