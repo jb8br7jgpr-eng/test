@@ -68,7 +68,7 @@ export function calculateFreeKickDuel({taker,receiver,defender,attack,defense,ch
   const defenseStrength=defense==='ANTICIPER'?
     .7*effective(defender,'DEF')+.3*effective(defender,'VIT'):
     .7*effective(defender,'DEF')+.3*effective(defender,'PUI');
-  const tacticalAdjustment=COUNTERS[attack]===defense?-12:6;
+  const tacticalAdjustment=COUNTERS[attack]===defense?-20:16;
   const appliedChemistry=attack==='DIRECT'?0:chemistryBonus;
   const successProbability=clamp(
     50+attackStrength-defenseStrength+tacticalAdjustment+appliedChemistry+11,15,85
@@ -86,7 +86,7 @@ export function resolveFreeKickDuel(calculation,draw){
   return Object.freeze({outcome:chance(draw)<c.successProbability?'chance':'stopped'});
 }
 /** §29. Aucune seconde qualité d'occasion, aucune tactique de gardien.
- * Bonus +8 sur CADRE seulement et un seul tirage final (via shot.mjs).
+ * Bonus +18 sur CADRE seulement et un seul tirage final (via shot.mjs).
  */
 export function calculateFreeKickFinish({taker,receiver,keeper,attack}={}){
   choice(attack,FREE_KICK_ATTACKS,'Stratégie offensive');
@@ -94,8 +94,8 @@ export function calculateFreeKickFinish({taker,receiver,keeper,attack}={}){
   const base=FINISH_BASE[attack];
   const technique=effective(finisher,'TEC'),power=effective(finisher,'PUI');
   const goalkeeper=effective(keeper,'GAR');
-  const accuracy=clamp(base.accuracy+.4*(technique-75)+8,5,95);
-  const saveIfOnTarget=clamp(base.save+.5*(goalkeeper-75)-.2*(power-75),5,90);
+  const accuracy=clamp(base.accuracy+.4*(technique-75)+18,5,95);
+  const saveIfOnTarget=clamp(base.save-4+.5*(goalkeeper-75)-.2*(power-75),5,90);
   const missProbability=100-accuracy;
   const saveProbability=accuracy*saveIfOnTarget/100;
   const goalProbability=accuracy-saveProbability;
