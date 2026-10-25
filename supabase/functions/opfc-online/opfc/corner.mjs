@@ -47,7 +47,7 @@ export function calculateCornerDuel({taker,receiver,defender,attackZone,defenseZ
   if(taker?.cardId && receiver?.cardId && taker.cardId===receiver.cardId)throw Error('Réceptionneur identique au tireur');
   const attackStrength=.65*stat(taker,'PAS')+.35*stat(receiver,'PUI');
   const defenseStrength=.75*stat(defender,'DEF')+.25*stat(defender,'PUI');
-  const tacticalAdjustment=attackZone===defenseZone?-12:6;
+  const tacticalAdjustment=attackZone===defenseZone?-19:19;
   const successProbability=clamp(
     50+attackStrength-defenseStrength+tacticalAdjustment+chemistryBonus+11,15,85
   );
@@ -66,7 +66,7 @@ export function resolveCornerDuel(calculation,draw){
   const outcome=validRngDraw(draw)*100<calculation.successProbability?'chance':'stopped';
   return Object.freeze({outcome});
 }
-/** §27. Le +8 de précision s'ajoute APRÈS l'effet des statistiques,
+/** §27. Le +20 de précision s'ajoute APRÈS l'effet des statistiques,
  * puis est soumis à la borne de cadrage 5–95 %. */
 export function calculateCornerFinish({receiver,keeper,gesture}={}){
   const conf=GESTURES[gesture];if(!conf)throw Error('Geste de corner inconnu');
@@ -75,8 +75,8 @@ export function calculateCornerFinish({receiver,keeper,gesture}={}){
   if(gesture==='TETE')force=.70*stat(receiver,'PUI')+.30*stat(receiver,'TEC');
   else if(gesture==='VOLEE')force=.65*stat(receiver,'TEC')+.35*stat(receiver,'PUI');
   else force=.70*stat(receiver,'TEC')+.30*stat(receiver,'VIT');
-  const accuracy=clamp(conf.accuracy+conf.sensitivity*(force-75)+8,5,95);
-  const saveIfOnTarget=clamp(conf.save+.5*(goalkeeper-75)-.2*(force-75),5,90);
+  const accuracy=clamp(conf.accuracy+conf.sensitivity*(force-75)+20,5,95);
+  const saveIfOnTarget=clamp(conf.save-5+.5*(goalkeeper-75)-.2*(force-75),5,90);
   const missProbability=100-accuracy;
   const saveProbability=accuracy*saveIfOnTarget/100;
   const goalProbability=accuracy-saveProbability;
