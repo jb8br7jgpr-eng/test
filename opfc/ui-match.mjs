@@ -23,7 +23,7 @@ const BUTTONS={
  'attack-choice':[['COMBINER','Passe courte'],['LANCER','Passe en profondeur'],['PERCER','Dribbler']],
  'defense-choice':[['PRESSER','Tacler'],['INTERCEPTER','Intercepter'],['CONTENIR','Pressing']],
  'shot-attack-choice':[['PLACEE','Frappe placée'],['PUISSANTE','Frappe puissante'],['PIQUEE','Ballon piqué']],
- 'shot-defense-choice':[['LIGNE','Rester sur la ligne'],['SORTIE','Sortir'],['PLONGEON','Anticiper le plongeon']]
+ 'shot-defense-choice':[['LIGNE','Rester sur sa ligne'],['SORTIE','Réduire l’angle'],['PLONGEON','Plongeon anticipé']]
 };
 const ACTOR={
  'attack-choice':'attacker','defense-choice':'defender',
