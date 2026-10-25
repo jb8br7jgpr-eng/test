@@ -7,14 +7,15 @@ import {CARD_BY_ID} from './catalog.mjs?v=opfc-75-roster-20261022';
 import {lineupDetails} from './rules.mjs?v=opfc-match-balance-20261025';
 import {renderCharacterPortrait,renderClubCrest} from './ui-portraits.mjs?v=opfc-75-roster-20261022';
 import {matchPublicView,kickoffMatch,continueMatch,resumeMatch} from './match.mjs?v=opfc-match-balance-20261025';
-import {beginOpenPlayAction,lockOpenPlayChoice,revealOpenPlayDuel,continueOpenPlayDuel,revealOpenPlayShot} from './match-actions.mjs?v=opfc-match-balance-20261025';
+import {beginOpenPlayAction,lockOpenPlayChoice,revealOpenPlayDuel,continueOpenPlayDuel,revealOpenPlayShot} from './match-actions.mjs?v=opfc-integration-20261025';
 import {isSetPieceKind,setPieceTurnOwner,dispatchSetPieceMatch,renderSetPieceAction} from './ui-set-piece.mjs?v=opfc-match-balance-20261025';
 import {shootoutTurnOwner,dispatchShootout,renderShootoutScreen} from './ui-shootout.mjs?v=opfc-match-balance-20261025';
 import {renderFinalResult} from './ui-final.mjs?v=opfc-v2-20261023';
 import {renderPrematch} from './prematch.mjs?v=opfc-palette-20261024';
 import {setDisplayedClubs,visualName,visualAbbr} from './club-identities.mjs';
 import {competitionName} from './club-honours.mjs?v=opfc-trophees-20261022';
-import {matchTacticalChoices,renderShotFaceOff,renderShotResult,renderReceiverCard,matchKeeperId} from './ui-match-widgets.mjs?v=opfc-tactics-20261023';
+import {matchTacticalChoices,renderShotFaceOff,renderShotResult,renderReceiverCard,matchKeeperId} from './ui-match-widgets.mjs?v=opfc-goal-suggestion-20261025';
+import {recommendOpenShot} from './shot.mjs?v=opfc-openshot-20261025';
 
 const html=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const name=id=>CARD_BY_ID.get(id)?.name??id??'—';
@@ -22,7 +23,7 @@ const BUTTONS={
  'attack-choice':[['COMBINER','Passe courte'],['LANCER','Passe en profondeur'],['PERCER','Dribbler']],
  'defense-choice':[['PRESSER','Tacler'],['INTERCEPTER','Intercepter'],['CONTENIR','Pressing']],
  'shot-attack-choice':[['PLACEE','Frappe placée'],['PUISSANTE','Frappe puissante'],['PIQUEE','Ballon piqué']],
- 'shot-defense-choice':[['LIGNE','Rester sur la ligne'],['SORTIE','Sortir'],['PLONGEON','Anticiper le plongeon']]
+ 'shot-defense-choice':[['LIGNE','Rester sur sa ligne'],['SORTIE','Réduire l’angle'],['PLONGEON','Plongeon anticipé']]
 };
 const ACTOR={
  'attack-choice':'attacker','defense-choice':'defender',
@@ -112,7 +113,24 @@ function attackBanner(attacker,context,kind,minute){
  '<strong>'+html(ACTION_LABEL[kind]??'Action en cours')+'</strong><small>'+html(minute)+'e minute</small>')+
  '</div></section>';
 }
-const choiceGrid=options=>matchTacticalChoices(options);
+function recommendedShot(state,action){
+ if(action?.stage!=='shot-attack-choice')return null;
+ const finisher=[action.roles?.carrier,action.roles?.partner].find(p=>p?.cardId===action.shooterId);
+ const team=state?.teams?.find(t=>t.club===action.defender);
+ const keeper=team?lineupDetails(team).find(p=>p?.position==='GAR'):null;
+ if(!finisher||!keeper)return null;
+ return recommendOpenShot({finisher,keeper,context:action.context});
+}
+const choiceGrid=(options,recommended=null)=>matchTacticalChoices(options,'match-choose',recommended);
+// Évite de relancer les animations lors des rafraîchissements des validations.
+const shownGoalIntros=new Set();
+function firstGoalRender(state,event,onlineClub){
+ const key=(onlineClub?'online':'local')+':'+state.match?.index+':'+event.minute+':'+event.scorerId+':'+
+  state.match?.score?.PSG+':'+state.match?.score?.OM;
+ if(shownGoalIntros.has(key))return false;
+ if(shownGoalIntros.size>64)shownGoalIntros.clear();
+ shownGoalIntros.add(key);return true;
+}
 function fieldNames(a){
  if(!a?.roles)return '';
  const players=[
@@ -177,7 +195,7 @@ function renderAction(state,view,uncovered){
    (isShot?shotFaceOff(state):
     fieldNames(a)+renderReceiverCard(state,{
       receiverId:a.roles?.partner?.cardId,club:a.attacker,possible:true
-    }))+choiceGrid(BUTTONS[a.stage])+'</section>';
+    }))+choiceGrid(BUTTONS[a.stage],recommendedShot(state,a))+'</section>';
  }
  if(a.stage==='duel-ready')return '<section class="panel match-stage"><h2 class="match-duel-ready-heading">Les deux tactiques sont validées</h2>'+
   duelFaceOff(state,a)+'<p class="muted">Elles vont être révélées simultanément.</p>'+button('match-reveal-duel','Révéler et résoudre le duel')+'</section>';
@@ -205,18 +223,27 @@ function renderAction(state,view,uncovered){
   button('match-begin-setpiece','Continuer avec la phase arrêtée')+'</section>';
  return '<section class="panel match-stage"><h2>Action en préparation</h2></section>';
 }
-function resultView(m,state){
+function resultView(m,state,{onlineClub=null}={}){
  const r=m.lastResult;
  // Au sein d'une action officielle, les IDs des finisseurs sont fournis par
  // le moteur (jeu ouvert, corner, coup franc, penalty). Pour un ancien
  // résultat sans détails, ne jamais inventer l'identité d'un tireur.
  if(['goal','save','miss','stopped'].includes(r?.outcome)){
   const detail=r.details??{};
+  const scored=r.outcome==='goal'?m.goals?.findLast(g=>g.club===r.attacker&&g.cardId===r.scorerId&&g.minute===r.minute):null;
+  const goalInfo=r.outcome==='goal'?{
+   kind:detail.kind??r.type,
+   shot:detail.shot?.calculation?.shot??null,
+   gesture:detail.gesture??detail.shot?.calculation?.gesture??null,
+   assistId:scored?.assistId??null
+  }:null;
   return renderShotResult(state,{
    outcome:r.outcome,attacker:r.attacker,minute:r.minute,score:m.score,
    shooterId:r.scorerId??detail.finisherId??detail.takerId??null,
    keeperId:matchKeeperId(state,r.attacker==='PSG'?'OM':'PSG'),
    defenderId:detail.defenderId??detail.roles?.defender?.cardId??null,
+   goalInfo,animateGoal:!!goalInfo&&firstGoalRender(state,r,onlineClub),
+   localGoalAcks:goalInfo&&!onlineClub?(state.match?.resultAcks??{PSG:false,OM:false}):null,
    context:detail.kind==='free-kick'?'Coup franc':detail.kind==='corner'?'Corner':
     detail.kind==='penalty'?'Penalty':
     r.type==='open'?(r.outcome==='stopped'?'Jeu ouvert':'Tir en jeu ouvert'):
@@ -313,6 +340,7 @@ function onlineAcknowledgementPanel(content,state,club){
 }
 function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null,competition=null}={}){
  if(state?.teams)setDisplayedClubs(state.teams);
+ if(state?.phase==='kickoff-ready')shownGoalIntros.clear();
  if(state?.phase==='kickoff-ready'){
   const v2=state.playerStatsVersion===2||!!state.stadiumId;
   const myAcknowledged=onlineClub?
@@ -353,7 +381,7 @@ function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null,competit
  }
  if(state.phase==='moment-result'){
   const last=m.lastResult;
-  const announced=out+attackBanner(last?.attacker,last?.details?.context,last?.type,last?.minute)+scoreStats(m)+resultView(m,state);
+  const announced=out+attackBanner(last?.attacker,last?.details?.context,last?.type,last?.minute)+scoreStats(m)+resultView(m,state,{onlineClub});
   return onlineClub?onlineAcknowledgementPanel(announced,state,onlineClub):announced;
  }
  const moment=m.currentMoment;

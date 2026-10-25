@@ -3,7 +3,7 @@
  * d'attente réseau diffèrent : aucun moteur ni calcul d'action côté client.
  * Le mercato et les compositions réutilisent les composants locaux de ui.mjs.
  */
-import {renderOnlineMatchScreen} from './ui-match.mjs?v=opfc-match-balance-20261025';
+import {renderOnlineMatchScreen} from './ui-match.mjs?v=opfc-integration-20261025';
 import {renderOnlineShootoutScreen} from './ui-shootout.mjs?v=opfc-match-balance-20261025';
 import {renderFinalResult} from './ui-final.mjs?v=opfc-v2-20261023';
 import {renderClubCrest} from './ui-portraits.mjs?v=opfc-75-roster-20261022';
@@ -22,6 +22,20 @@ function scoreBoard(m){
  * Les écrans de gameplay sont produits par les mêmes fonctions visuelles
  * que le local ; chaque commande est exécutée par la fonction Edge.
  */
+function renderRematchChoices(g,myClub){
+ const rematch=g.match?.rematch??{},votes=rematch.votes??{PSG:false,OM:false};
+ const other=myClub==='PSG'?'OM':'PSG';
+ const mine=!!votes[myClub],theirs=!!votes[other];
+ const label=theirs?'Accepter la revanche':'Proposer une revanche';
+ return '<section class="panel opfc-rematch-choice" aria-label="Revanche officielle">'+
+  '<h3>🔄 REVANCHE</h3><p>Mêmes clubs, personnages, compositions de fin de match, stade et compétition.</p>'+
+  (rematch.rejectedBy?'<p class="caption">Demande de revanche précédente refusée.</p>':'')+
+  (mine?'<p class="opfc-rematch-await">✓ '+esc(visualAbbr(myClub))+' prêt · En attente de '+esc(visualAbbr(other))+'</p>':
+   '<button class="btn primary full" data-action="online-game" data-type="rematch-accept">'+label+'</button>')+
+  (theirs&&!mine?'<button class="btn ghost full" data-action="online-game" data-type="rematch-decline">Refuser la revanche</button>':'')+
+  '<p class="caption">Chaque rencontre est enregistrée séparément dans les statistiques officielles.</p>'+
+  '</section>';
+}
 export function renderOnlineGame(g,{myClub,hostClub,competition}={}){
  if(g?.teams)setDisplayedClubs(g.teams);
  if(!g||!['PSG','OM'].includes(myClub)||!['PSG','OM'].includes(hostClub))
@@ -38,7 +52,7 @@ export function renderOnlineGame(g,{myClub,hostClub,competition}={}){
  if(g.phase==='finished'){
   if(g.match?.shootout?.lastResult)
    return scoreBoard(g.match)+renderOnlineShootoutScreen(g,{myClub,hostClub});
-  return renderFinalResult(g);
+  return renderFinalResult(g)+renderRematchChoices(g,myClub);
  }
  return '<section class="panel"><p>Préparation de la prochaine étape…</p></section>';
 }

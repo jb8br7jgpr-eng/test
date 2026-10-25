@@ -38,7 +38,8 @@ test('Duels ouverts : bonus fixe +5 ; désavantage / neutre / avantage à 47 / 5
 });
 
 test('Finitions du jeu ouvert : objectifs moyens ≈63 / 40 / 20 et gardien toujours déterminant',()=>{
- const contexts={FRANCHE:63,BONNE:40,DIFFICILE:20};
+ // Cible exacte de la nouvelle grille : (19+22+18)/3 pour difficile.
+ const contexts={FRANCHE:63,BONNE:40,DIFFICILE:59/3};
  for(const [context,want] of Object.entries(contexts)){
   const all=[];
   for(const shot of ['PLACEE','PUISSANTE','PIQUEE'])
@@ -144,6 +145,13 @@ test('Les six calculateurs et le calendrier sont identiques pour local et serveu
 test('Le chargement iPhone utilise explicitement les modules rééquilibrés',()=>{
  const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
  const version='opfc-match-balance-20261025';
+ // Seuls les modules réellement remplacés changent d'URL de cache.
+ const updated=new Map([
+  ['opfc.html|./opfc/ui.mjs','opfc-integration-20261025'],
+  ['opfc/ui.mjs|./ui-match.mjs','opfc-integration-20261025'],
+  ['opfc/ui-match.mjs|./match-actions.mjs','opfc-integration-20261025'],
+  ['opfc/match-actions.mjs|./shot.mjs','opfc-openshot-20261025']
+ ]);
  for(const [file,dependency] of [
   ['opfc.html','./opfc/ui.mjs'],
   ['opfc/ui.mjs','./ui-match.mjs'],
@@ -161,7 +169,7 @@ test('Le chargement iPhone utilise explicitement les modules rééquilibrés',()
   ['opfc/set-piece-actions.mjs','./penalty.mjs'],
   ['opfc/shootout.mjs','./penalty.mjs']
  ]){
-  assert.ok(read(file).includes(dependency+'?v='+version),
+  assert.ok(read(file).includes(dependency+'?v='+(updated.get(file+'|'+dependency)??version)),
    'Cache de '+dependency+' pas invalidé dans '+file);
  }
 });

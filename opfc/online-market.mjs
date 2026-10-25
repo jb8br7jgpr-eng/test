@@ -48,6 +48,7 @@ export function onlineMarketPublicView(state,club){
  const known=state.onlinePrivate?.observations?.[club];
  return {
   version:state.version,phase:state.phase,
+  ...(state.rematchNumber>0?{matchRecordId:state.matchRecordId}:{}),
   ...(state.stadiumId?{stadiumId:state.stadiumId,competition:state.competition??'grandline'}:{}),
   ...(state.phase==='kickoff-ready'&&state.playerStatsVersion===2?
    {prematchReady:{PSG:state.prematchReady?.PSG===true,
