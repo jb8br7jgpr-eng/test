@@ -33,13 +33,25 @@ const TACTICAL_EMOJIS=Object.freeze({
  'Tête':'⚽','Reprise de volée':'💥','Retourné acrobatique':'🤸',
  'Gauche':'⬅️','Droite':'➡️'
 });
+// Explications purement visuelles de la matrice de sauvegarde, affichées
+// uniquement quand les trois options sont les réactions du gardien.
+const KEEPER_HINTS=Object.freeze({
+ LIGNE:'Contre surtout le ballon piqué',
+ SORTIE:'Contre surtout la frappe placée',
+ PLONGEON:'Contre surtout la frappe puissante'
+});
 export function matchTacticalChoices(options,action='match-choose',recommended=null){
+ const keeperResponses=options.length===3&&
+  options.map(([id])=>id).join(',')==='LIGNE,SORTIE,PLONGEON';
  return '<div class="match-choice-grid match-tactical-choices">'+options.map(([id,label])=>{
   const emoji=TACTICAL_EMOJIS[label]??'⚽';
   return '<button type="button" class="btn match-choice" data-action="'+h(action)+
    '" data-choice="'+h(id)+'"'+(id===recommended?' data-recommended="true"':'')+'>'+
    '<span class="match-choice-emoji" aria-hidden="true">'+emoji+'</span>'+
-   '<strong>'+h(label)+'</strong>'+(id===recommended?'<small class="match-shot-recommendation">⭐ Tir conseillé</small>':'')+'</button>';
+   (keeperResponses?'<span class="keeper-choice-copy"><strong>'+h(label)+'</strong>'+
+    '<small class="match-keeper-hint">'+h(KEEPER_HINTS[id])+'</small></span>':
+    '<strong>'+h(label)+'</strong>')+
+   (id===recommended?'<small class="match-shot-recommendation">⭐ Tir conseillé</small>':'')+'</button>';
  }).join('')+'</div>';
 }
 
