@@ -251,7 +251,10 @@ async function mutate(body,kind){
  }
  // Effet et identifiant enregistrés dans une seule écriture atomique.
  if(id)transition.state.onlineRequestIds={
-  ...(row.private_state?.onlineRequestIds??{}),
+  // Nouvelle rencontre dans le même salon : oublier les requêtes des anciens
+  // matchs, mais conserver celle qui a confirmé cette revanche.
+  ...(transition.state.phase==='kickoff-ready'&&row.private_state?.phase==='finished'?
+   {}:(row.private_state?.onlineRequestIds??{})),
   [id]:{club,signature:commandSignature(kind,body.command)}
  };
  const {data:updated,error:writeErr}=await db.from('opfc_rooms')
