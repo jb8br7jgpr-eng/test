@@ -14,6 +14,7 @@ import {renderOnlineLobby,normalizeJoinCodeInput} from './ui-online.mjs?v=opfc-v
 import {renderOnlineGame} from './ui-online-game.mjs?v=opfc-match-balance-20261025';
 import {CLUB_TROPHIES,isCompetition,competitionName,renderCompetitionPicker} from './club-honours.mjs?v=opfc-trophees-20261022';
 import {queueFinishedLocalGame,syncQueuedLocalResults,pendingLocalResultsCount} from './trophy-service.mjs?v=opfc-v2-20261023';
+import {prepareRematch} from './rematch.mjs?v=opfc-rematch-20261025';
 import {stadiumPicker,isStadium} from './stadiums.mjs';
 import {v3HelpUi} from './v3-tactical-help.mjs';
 
@@ -683,6 +684,7 @@ function matchPage(){
  teams()+'</section>';
  return shell()+'<main class="ready-layout">'+
  (game.phase==='finished'?'<div class="opfc-final-exit-wrap">'+
+   btn('rematch-local','🔄 Revanche · mêmes équipes','primary full')+
    btn('exit-finished-local','← Quitter la partie et revenir au menu','opfc-exit-gold full')+'</div>':'')+
  middle+
  (game.phase==='finished'&&pendingLocalResultsCount()>0?'<p class="caption" role="status">🏆 Résultat en cours de synchronisation. Il sera envoyé automatiquement dès que la connexion sera disponible.</p>':'')+
@@ -995,6 +997,14 @@ function clicked(button){
   render();return;
  }
  if(action==='open-local'){entryView='local';error='';render();return;}
+ if(action==='rematch-local'){
+  if(game?.phase!=='finished'||game.match?.shootoutLastResult)
+   throw Error('La finale doit être entièrement terminée');
+  if(!queueFinishedLocalGame(game))
+   throw Error('Impossible de placer les statistiques officielles dans la sauvegarde.');
+  change(s=>prepareRematch(s,{matchRecordId:crypto.randomUUID()}));
+  matchUncovered=false;scrollMatchToTop();return;
+ }
  if(action==='exit-finished-local'){
   if(game?.phase!=='finished')throw Error('La partie n’est pas terminée');
   entryView='modes';modal=null;selection=null;error='';render();return;
