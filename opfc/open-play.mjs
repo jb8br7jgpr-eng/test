@@ -44,9 +44,10 @@ export function calculateOpenPlay({carrier,partner,defender,attack,defense,chemi
   const defenseStrength=defense==='PRESSER'?0.6*defenderDef+0.4*defenderVit:
     defense==='INTERCEPTER'?0.75*defenderDef+0.25*defenderVit:0.7*defenderDef+0.3*defenderVit;
   const tacticalAdvantage=ADVANTAGE[attack][defense];
-  // +11 fixe, borne 15–85 %, et entente seulement pour construction collective.
+  // +5 fixe : un choix défensif qui contre l'attaque réduit réellement ses chances.
+  // Borne 15–85 %, entente uniquement pour la construction collective.
   const appliedChemistry=attack==='PERCER'?0:chemistryBonus;
-  const successConditional=clamp(50+attackStrength-defenseStrength+tacticalAdvantage+appliedChemistry+11,15,85);
+  const successConditional=clamp(50+attackStrength-defenseStrength+tacticalAdvantage+appliedChemistry+5,15,85);
   const foulProbability=FOUL_BASE[defense]*(1+(75-defenderDef)/100);
   return Object.freeze({
     attack,defense,attackStrength,defenseStrength,tacticalAdvantage,
