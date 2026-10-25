@@ -110,7 +110,7 @@ export function createOnlineClient({
   if(withMatch){
    const m=payload.match;
    const matchFields=['index','minute','score','statistics','goals',
-    'history','lastResult','winner','victory','currentMoment','action','shootout','resultAcks','competition'];
+    'history','lastResult','winner','victory','currentMoment','action','shootout','resultAcks','competition','rematch'];
    if(!m||typeof m!=='object'||Array.isArray(m)||
     Object.keys(m).some(k=>!matchFields.includes(k))||
     !Number.isInteger(m.index)||m.index<0||
@@ -120,6 +120,14 @@ export function createOnlineClient({
     fail('Vue de match invalide');
    if(m.history!==undefined&&!Array.isArray(m.history))
     fail('Historique de match invalide');
+   if(m.rematch!==undefined&&m.rematch!==null){
+    const r=m.rematch;
+    if(!r||typeof r!=='object'||Array.isArray(r)||
+      Object.keys(r).some(k=>!['votes','rejectedBy'].includes(k))||
+      !r.votes||typeof r.votes.PSG!=='boolean'||typeof r.votes.OM!=='boolean'||
+      (r.rejectedBy!==null&&!['PSG','OM'].includes(r.rejectedBy)))
+     fail('Demande de revanche invalide');
+   }
    if(m.resultAcks!==undefined&&(
     !m.resultAcks||typeof m.resultAcks!=='object'||Array.isArray(m.resultAcks)||
     Object.keys(m.resultAcks).some(k=>!['PSG','OM'].includes(k))||
