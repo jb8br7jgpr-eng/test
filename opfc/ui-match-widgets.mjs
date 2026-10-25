@@ -21,8 +21,8 @@ const keeperOf=(state,club)=>state?.teams?.find(t=>t.club===club)
 const TACTICAL_EMOJIS=Object.freeze({
  'Passe courte':'🔗','Passe en profondeur':'🚀','Dribbler':'⚡',
  'Tacler':'🦵','Intercepter':'🛡️','Pressing':'🏃',
- 'Frappe placée':'🎯','Frappe puissante':'💥','Ballon piqué':'🎈',
- 'Rester sur la ligne':'🧤','Sortir':'🚀','Anticiper le plongeon':'👀',
+ 'Frappe placée':'🎯','Frappe puissante':'💥','Ballon piqué':'🪄',
+ 'Rester sur sa ligne':'🧤','Réduire l’angle':'🏃','Plongeon anticipé':'🤿',
  'Premier poteau':'🥅','Point de penalty':'🎯','Second poteau':'🥅',
  'Couvrir le premier poteau':'🛡️','Couvrir le point de penalty':'🧱',
  'Couvrir le second poteau':'🛡️',
