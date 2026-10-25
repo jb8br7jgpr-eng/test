@@ -14,7 +14,8 @@ import {renderFinalResult} from './ui-final.mjs?v=opfc-v2-20261023';
 import {renderPrematch} from './prematch.mjs?v=opfc-palette-20261024';
 import {setDisplayedClubs,visualName,visualAbbr} from './club-identities.mjs';
 import {competitionName} from './club-honours.mjs?v=opfc-trophees-20261022';
-import {matchTacticalChoices,renderShotFaceOff,renderShotResult,renderReceiverCard,matchKeeperId} from './ui-match-widgets.mjs?v=opfc-tactics-20261023';
+import {matchTacticalChoices,renderShotFaceOff,renderShotResult,renderReceiverCard,matchKeeperId} from './ui-match-widgets.mjs?v=opfc-goal-suggestion-20261025';
+import {recommendOpenShot} from './shot.mjs?v=opfc-openshot-20261025';
 
 const html=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const name=id=>CARD_BY_ID.get(id)?.name??id??'—';
@@ -112,7 +113,15 @@ function attackBanner(attacker,context,kind,minute){
  '<strong>'+html(ACTION_LABEL[kind]??'Action en cours')+'</strong><small>'+html(minute)+'e minute</small>')+
  '</div></section>';
 }
-const choiceGrid=options=>matchTacticalChoices(options);
+function recommendedShot(state,action){
+ if(action?.stage!=='shot-attack-choice')return null;
+ const finisher=[action.roles?.carrier,action.roles?.partner].find(p=>p?.cardId===action.shooterId);
+ const team=state?.teams?.find(t=>t.club===action.defender);
+ const keeper=team?lineupDetails(team).find(p=>p?.position==='GAR'):null;
+ if(!finisher||!keeper)return null;
+ return recommendOpenShot({finisher,keeper,context:action.context});
+}
+const choiceGrid=(options,recommended=null)=>matchTacticalChoices(options,'match-choose',recommended);
 function fieldNames(a){
  if(!a?.roles)return '';
  const players=[
@@ -177,7 +186,7 @@ function renderAction(state,view,uncovered){
    (isShot?shotFaceOff(state):
     fieldNames(a)+renderReceiverCard(state,{
       receiverId:a.roles?.partner?.cardId,club:a.attacker,possible:true
-    }))+choiceGrid(BUTTONS[a.stage])+'</section>';
+    }))+choiceGrid(BUTTONS[a.stage],recommendedShot(state,a))+'</section>';
  }
  if(a.stage==='duel-ready')return '<section class="panel match-stage"><h2 class="match-duel-ready-heading">Les deux tactiques sont validées</h2>'+
   duelFaceOff(state,a)+'<p class="muted">Elles vont être révélées simultanément.</p>'+button('match-reveal-duel','Révéler et résoudre le duel')+'</section>';
