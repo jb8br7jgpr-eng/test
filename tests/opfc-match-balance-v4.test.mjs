@@ -38,7 +38,8 @@ test('Duels ouverts : bonus fixe +5 ; désavantage / neutre / avantage à 47 / 5
 });
 
 test('Finitions du jeu ouvert : objectifs moyens ≈63 / 40 / 20 et gardien toujours déterminant',()=>{
- const contexts={FRANCHE:63,BONNE:40,DIFFICILE:20};
+ // Cible exacte de la nouvelle grille : (19+22+18)/3 pour difficile.
+ const contexts={FRANCHE:63,BONNE:40,DIFFICILE:59/3};
  for(const [context,want] of Object.entries(contexts)){
   const all=[];
   for(const shot of ['PLACEE','PUISSANTE','PIQUEE'])
