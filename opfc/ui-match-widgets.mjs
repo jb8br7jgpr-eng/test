@@ -33,13 +33,13 @@ const TACTICAL_EMOJIS=Object.freeze({
  'Tête':'⚽','Reprise de volée':'💥','Retourné acrobatique':'🤸',
  'Gauche':'⬅️','Droite':'➡️'
 });
-export function matchTacticalChoices(options,action='match-choose'){
+export function matchTacticalChoices(options,action='match-choose',recommended=null){
  return '<div class="match-choice-grid match-tactical-choices">'+options.map(([id,label])=>{
   const emoji=TACTICAL_EMOJIS[label]??'⚽';
   return '<button type="button" class="btn match-choice" data-action="'+h(action)+
-   '" data-choice="'+h(id)+'">'+
+   '" data-choice="'+h(id)+'"'+(id===recommended?' data-recommended="true"':'')+'>'+
    '<span class="match-choice-emoji" aria-hidden="true">'+emoji+'</span>'+
-   '<strong>'+h(label)+'</strong></button>';
+   '<strong>'+h(label)+'</strong>'+(id===recommended?'<small class="match-shot-recommendation">⭐ Tir conseillé</small>':'')+'</button>';
  }).join('')+'</div>';
 }
 
