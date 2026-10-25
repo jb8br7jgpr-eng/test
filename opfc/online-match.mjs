@@ -76,6 +76,7 @@ export function onlineMatchView(state,club){
  const m=publicState.match;
  return {
   version:state.version,phase:state.phase,
+  ...(state.rematchNumber>0?{matchRecordId:state.matchRecordId}:{}),
   ...(state.stadiumId?{stadiumId:state.stadiumId}:{}),
   teams:safeTeams(state.teams),dice:[...state.dice],
   match:{
