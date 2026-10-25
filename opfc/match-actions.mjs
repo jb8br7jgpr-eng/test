@@ -9,7 +9,7 @@
 import {lineupDetails,chemistryAdvantage} from './rules.mjs?v=opfc-match-balance-20261025';
 import {prepareOpenPlayRoles,finisherFor} from './roles.mjs';
 import {ATTACK_CHOICES,DEFENSE_CHOICES,drawOpenPlayContext,calculateOpenPlay,resolveOpenPlay} from './open-play.mjs?v=opfc-match-balance-20261025';
-import {SHOT_CHOICES,KEEPER_CHOICES,calculateOpenShot,resolveOpenShot} from './shot.mjs?v=opfc-match-balance-20261025';
+import {SHOT_CHOICES,KEEPER_CHOICES,calculateOpenShot,resolveOpenShot} from './shot.mjs?v=opfc-openshot-20261025';
 import {currentMatchMoment,resolveMatchMoment,continueMatch} from './match.mjs?v=opfc-match-balance-20261025';
 import {beginSetPieceAction} from './set-piece-actions.mjs?v=opfc-match-balance-20261025';
 
