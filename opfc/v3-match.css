@@ -154,3 +154,15 @@
 #opfc-app .opfc-rematch-choice p{font-size:11px;color:#d8e9ee;margin:7px auto}
 #opfc-app .opfc-rematch-choice .btn{margin:6px 0 0}
 #opfc-app .opfc-rematch-await{padding:9px;background:#15533a;border-radius:10px;color:#deffeb!important}
+
+/* OPFC : lignes tactiques du gardien, compactes et lisibles sur mobile. */
+#opfc-app .match-tactical-choices>.match-choice .keeper-choice-copy{
+ display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;
+}
+#opfc-app .match-tactical-choices>.match-choice .match-keeper-hint{
+ display:block;color:#d7e9ed;font-size:clamp(10px,2.8vw,11px);
+ font-weight:650;line-height:1.2;overflow-wrap:anywhere;
+}
+#opfc-app .match-tactical-choices>.match-choice:has(.match-keeper-hint){
+ padding-top:10px;padding-bottom:10px;
+}
