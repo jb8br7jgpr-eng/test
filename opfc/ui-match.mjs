@@ -122,6 +122,15 @@ function recommendedShot(state,action){
  return recommendOpenShot({finisher,keeper,context:action.context});
 }
 const choiceGrid=(options,recommended=null)=>matchTacticalChoices(options,'match-choose',recommended);
+// Évite de relancer les animations lors des rafraîchissements des validations.
+const shownGoalIntros=new Set();
+function firstGoalRender(state,event,onlineClub){
+ const key=(onlineClub?'online':'local')+':'+state.match?.index+':'+event.minute+':'+event.scorerId+':'+
+  state.match?.score?.PSG+':'+state.match?.score?.OM;
+ if(shownGoalIntros.has(key))return false;
+ if(shownGoalIntros.size>64)shownGoalIntros.clear();
+ shownGoalIntros.add(key);return true;
+}
 function fieldNames(a){
  if(!a?.roles)return '';
  const players=[
@@ -233,7 +242,8 @@ function resultView(m,state,{onlineClub=null}={}){
    shooterId:r.scorerId??detail.finisherId??detail.takerId??null,
    keeperId:matchKeeperId(state,r.attacker==='PSG'?'OM':'PSG'),
    defenderId:detail.defenderId??detail.roles?.defender?.cardId??null,
-   goalInfo,localGoalAcks:goalInfo&&!onlineClub?(state.match?.resultAcks??{PSG:false,OM:false}):null,
+   goalInfo,animateGoal:!!goalInfo&&firstGoalRender(state,r,onlineClub),
+   localGoalAcks:goalInfo&&!onlineClub?(state.match?.resultAcks??{PSG:false,OM:false}):null,
    context:detail.kind==='free-kick'?'Coup franc':detail.kind==='corner'?'Corner':
     detail.kind==='penalty'?'Penalty':
     r.type==='open'?(r.outcome==='stopped'?'Jeu ouvert':'Tir en jeu ouvert'):
@@ -330,6 +340,7 @@ function onlineAcknowledgementPanel(content,state,club){
 }
 function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null,competition=null}={}){
  if(state?.teams)setDisplayedClubs(state.teams);
+ if(state?.phase==='kickoff-ready')shownGoalIntros.clear();
  if(state?.phase==='kickoff-ready'){
   const v2=state.playerStatsVersion===2||!!state.stadiumId;
   const myAcknowledged=onlineClub?
