@@ -114,7 +114,7 @@ function goalCaption(info){
  */
 export function renderShotResult(state,{outcome,attacker,minute,shooterId,keeperId,defenderId,
  score,action='match-continue-result',continueLabel='Continuer',context='Résultat du tir',detailExtra='',
- goalInfo=null,localGoalAcks=null}={}){
+ goalInfo=null,localGoalAcks=null,animateGoal=false}={}){
  const cfg=RESULTS[outcome];if(!cfg)return '';
  const defender=opposite(attacker);
  const actorId=outcome==='save'?(keeperId??keeperOf(state,defender)):
@@ -147,7 +147,7 @@ export function renderShotResult(state,{outcome,attacker,minute,shooterId,keeper
    (localGoalAcks[id]?'✓ ':'')+h(visualAbbr(id))+' · '+(localGoalAcks[id]?'Prêt':'Continuer')+'</button>').join('')+'</div>':
   '<button class="btn primary full" data-action="'+h(action)+'">'+h(continueLabel)+'</button>';
  return '<section class="panel match-stage shot-result-panel shot-result-'+cfg.tone+
-  (regulationGoal?' shot-goal-celebration':'')+'" aria-label="'+cfg.title+'">'+
+  (regulationGoal?' shot-goal-celebration'+(animateGoal?' shot-goal-intro':''):'')+'" aria-label="'+cfg.title+'">'+
   '<span class="eyebrow">'+h(context)+(Number.isInteger(minute)?' · '+minute+'e':'')+'</span>'+
   '<span class="shot-result-icon" aria-hidden="true">'+cfg.tag+'</span>'+
   '<h2 class="shot-result-headline">'+cfg.title+'</h2>'+
