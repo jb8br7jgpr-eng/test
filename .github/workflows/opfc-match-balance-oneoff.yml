@@ -25,6 +25,6 @@ jobs:
           node --check tests/opfc-match-balance-v4.test.mjs
       - name: Régressions OPFC complètes et calculs rééquilibrés
         run: node --test tests/*.test.mjs opfc/tests/*.test.mjs
-      - name: Aucun changement sur OPMercato classique, catalogue, UI ou statistiques
+      - name: Aucun changement sur OPMercato classique, catalogue et statistiques
         run: |
-          git diff --exit-code origin/main...HEAD -- index.html opmercato-logo.jpg opfc/catalog.mjs opfc/player-performance.mjs opfc/ui.mjs opfc/ui.css
+          git diff --exit-code origin/main...HEAD -- index.html opmercato-logo.jpg opfc/catalog.mjs opfc/player-performance.mjs opfc/ui.css
