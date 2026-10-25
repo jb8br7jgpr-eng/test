@@ -140,7 +140,7 @@ test('Ancienne commande réseau : historique conservé et nouvelle rencontre ide
   'Premier match historique reste compatible sans nouveau champ');
  const edge=readFileSync(new URL('../../supabase/functions/opfc-online/index.ts',import.meta.url),'utf8');
  const client=readFileSync(new URL('../online-client.mjs',import.meta.url),'utf8');
- assert.match(edge,/state\.rematchNumber>0&&typeof state\.matchRecordId/);
+ assert.ok(edge.includes("state?.rematchNumber>0&&typeof state.matchRecordId"));
  assert.match(client,/typeof state\?\.matchRecordId==='string'/);
  assert.match(edge,/\.\.\.\(row\.private_state\?\.onlineRequestIds\?\?\{\}\)/);
  assert.match(client,/ctx\.matchRecordId=state\.matchRecordId/);
