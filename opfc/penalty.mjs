@@ -23,7 +23,7 @@ export function calculatePenalty({taker,keeper,shotDirection,keeperDirection}={}
   const missProbability=clamp(10-.4*(tec-75),2,25);
   // 2 / 90 est une probabilité conditionnelle; elle n'est PAS 2 points de cadrage.
   const saveIfOnTarget=sameDirection?
-    clamp(200/3+.5*(gar-75)-.2*(pui-75),20,85):
+    clamp(700/9+.5*(gar-75)-.2*(pui-75),20,85):
     200/90;
   const saveProbability=(100-missProbability)*saveIfOnTarget/100;
   const goalProbability=100-missProbability-saveProbability;
