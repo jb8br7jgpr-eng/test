@@ -116,10 +116,10 @@ export function renderShotFaceOff(state,{shooterId,keeperId,attacker,defender,sh
 const RESULTS=Object.freeze({
  goal:{title:'BUUUUT !',detail:'Le ballon termine au fond des filets !',tone:'goal',tag:'⚽'},
  save:{title:'ARRÊT DU GARDIEN !',detail:'Le gardien repousse la frappe !',tone:'save',tag:'🧤'},
- miss:{title:'TIR RATÉ !',detail:'Le ballon ne trouve pas le cadre !',tone:'miss',tag:'🎯'},
+ miss:{title:'TIR RATÉ !',detail:'Le ballon ne trouve pas le cadre !',tone:'miss',tag:'❌'},
  stopped:{title:'ATTAQUE STOPPÉE !',detail:"Le défenseur récupère le ballon, l'attaque est terminée.",tone:'stopped',tag:'🛡️'},
  chance:{title:'OCCASION CRÉÉE !',detail:'Le duel offensif est remporté ! Le tir va pouvoir être préparé.',tone:'chance',tag:'🔥'},
- foul:{title:'FAUTE SIFFLÉE !',detail:'Le jeu est arrêté : un coup franc ou un penalty va être tiré.',tone:'foul',tag:'🚩'}
+ foul:{title:'FAUTE SIFFLÉE !',detail:'Le jeu est arrêté : un coup franc ou un penalty va être tiré.',tone:'foul',tag:'📣'}
 });
 // Un bref effet à la première apparition, pas à chaque rafraîchissement en ligne.
 const seenResultIntros=new Set();
@@ -146,7 +146,7 @@ function goalCaption(info){
  return '';
 }
 /** Shared regulation goal panel, preserving the existing outcome screen dimensions.
- * Shootout goals intentionally use the existing non-regulation result screen.
+ * Shootout outcomes reuse the same panel; only the score context changes.
  */
 export function renderShotResult(state,{outcome,attacker,minute,shooterId,keeperId,defenderId,
  score,action='match-continue-result',continueLabel='Continuer',context='Résultat du tir',detailExtra='',
