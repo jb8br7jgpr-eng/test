@@ -61,3 +61,89 @@
 .v3-help-explain{color:#b9cdd6!important}
 .v3-help-dismiss{width:100%;min-height:44px;margin-top:8px;border:1px solid #f7db9d;border-radius:11px;background:linear-gradient(100deg,#f4dfa8,#cba261);color:#152a38;font-weight:950}
 @media(max-width:370px){.v3-help-trigger{width:27px;height:27px;font-size:18px;right:83px;top:calc(env(safe-area-inset-top) + 19px)}}
+
+/* OPFC — Nouveaux tirs : une étoile sur le seul bouton conseillé, sans taux. */
+#opfc-app .match-tactical-choices>.match-choice[data-recommended="true"]{
+ border-color:#eacb87!important;
+ box-shadow:inset 0 0 0 1px #eacb8744,0 5px 16px #0003;
+}
+#opfc-app .match-shot-recommendation{
+ display:block;font-size:10px;line-height:1.15;font-weight:900;
+ color:#ffdfa2;margin-top:3px;white-space:nowrap;
+}
+/* Écran de but compact : pas de confettis ni d'illustrations supplémentaires. */
+#opfc-app .shot-goal-celebration{
+ position:relative;isolation:isolate;overflow:hidden;
+ padding:14px 12px 13px;
+ border:2px solid var(--v3-accent,#e8c58c);
+ background:
+  radial-gradient(ellipse at 50% 22%,color-mix(in srgb,var(--v3-primary,#2d6381) 60%,transparent),transparent 68%),
+  linear-gradient(150deg,color-mix(in srgb,var(--v3-secondary,#273b57) 45%,#081b2a),#071b28 88%);
+ box-shadow:inset 0 3px 0 var(--v3-accent,#e8c58c),0 12px 27px #0008;
+}
+#opfc-app .shot-goal-celebration::before{
+ content:"";position:absolute;inset:-30% -35% 23%;z-index:-1;pointer-events:none;
+ background:
+  linear-gradient(73deg,transparent 42%,color-mix(in srgb,var(--v3-accent,#dbb773) 16%,transparent) 49%,transparent 55%),
+  linear-gradient(108deg,transparent 44%,color-mix(in srgb,var(--v3-primary,#326890) 27%,transparent) 50%,transparent 57%);
+}
+#opfc-app .shot-goal-celebration .shot-result-icon{font-size:25px;margin:0}
+#opfc-app .shot-goal-celebration .shot-result-headline{
+ font-size:clamp(28px,8.3vw,37px);margin:2px 0 5px;color:#fff3d0;
+ text-shadow:0 3px 17px color-mix(in srgb,var(--v3-accent,#e3b454) 38%,#000);
+}
+#opfc-app .shot-goal-celebration .eyebrow{margin:0 0 4px;color:#f5e5c6}
+#opfc-app .shot-goal-celebration .shot-result-player{
+ max-width:240px;padding:8px 8px 6px;margin:6px auto;
+ gap:3px;background:color-mix(in srgb,var(--v3-primary,#245a7e) 19%,#071a2a);
+ border:1px solid var(--v3-accent,#e2bd7c);
+}
+#opfc-app .shot-goal-celebration .character-portrait.shot-result-portrait{
+ width:116px;height:116px;border:2px solid var(--v3-accent,#e2bd7c);
+ box-shadow:0 0 23px color-mix(in srgb,var(--v3-primary,#24638a) 65%,transparent);
+ border-radius:22px;
+}
+#opfc-app .shot-goal-celebration .shot-result-player strong{font-size:clamp(16px,5vw,20px)}
+#opfc-app .shot-goal-caption{color:#ffe7ac;font-weight:850;font-size:11px;line-height:1.25}
+#opfc-app .shot-goal-celebration .shot-result-score{
+ margin:8px auto 5px;padding:8px 6px;max-width:340px;
+ border-color:var(--v3-accent,#e2bd7c);
+ background:#071b29a8;
+}
+#opfc-app .shot-goal-celebration .shot-result-score strong{font-size:clamp(22px,7vw,29px)}
+#opfc-app .shot-goal-celebration .shot-goal-team{
+ display:flex;flex-direction:column;gap:3px;align-items:center;justify-content:center;
+ font-size:11px;
+}
+#opfc-app .shot-goal-crest{width:29px;height:29px;object-fit:contain}
+#opfc-app .shot-goal-assist{font-size:11px;color:#e7f2f1;font-weight:750;margin:5px 0 3px}
+#opfc-app .shot-goal-celebration .shot-result-wait{font-size:10px;margin:7px 0 5px}
+#opfc-app .shot-goal-celebration .btn.primary.full{margin-top:7px}
+#opfc-app .shot-goal-acks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+#opfc-app .shot-goal-ack{min-height:45px;border:2px solid var(--v3-accent,#e3b454);font-size:12px;padding:8px 4px}
+#opfc-app .shot-goal-ack[disabled]{
+ opacity:1;filter:none;background:#15513d;border-color:#7de1ab;color:#eaffed
+}
+@keyframes opfc-goal-hero{
+ 0%{opacity:.45;transform:scale(.96)}
+ 64%{opacity:1;transform:scale(1.02)}
+ 100%{opacity:1;transform:scale(1)}
+}
+@keyframes opfc-goal-portrait{
+ from{opacity:.3;transform:translateY(8px) scale(.95)}
+ to{opacity:1;transform:translateY(0) scale(1)}
+}
+#opfc-app .shot-goal-celebration .shot-result-headline{
+ animation:opfc-goal-hero .75s ease-out both
+}
+#opfc-app .shot-goal-celebration .shot-result-player{
+ animation:opfc-goal-portrait .85s .3s ease-out both
+}
+@media(max-width:370px){
+ #opfc-app .shot-goal-celebration{padding:11px 8px}
+ #opfc-app .shot-goal-celebration .character-portrait.shot-result-portrait{width:100px;height:100px}
+}
+@media(prefers-reduced-motion:reduce){
+ #opfc-app .shot-goal-celebration .shot-result-headline,
+ #opfc-app .shot-goal-celebration .shot-result-player{animation:none}
+}
