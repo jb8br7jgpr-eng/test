@@ -302,3 +302,23 @@
 @media(prefers-reduced-motion:reduce){
  #opfc-app .shot-result-unified:is(.shot-result-intro,.shot-goal-intro){animation:none}
 }
+
+/* Résultats OPFC : score lisible, centré et régulier sur iPhone.
+ * Les chiffres héritaient de la règle générique .shot-result-score span (13px),
+ * contrairement au tiret : correction ciblée sur les six écrans de résultats.
+ * Ne touche ni au score du match en haut ni à la feuille de match finale. */
+#opfc-app .shot-result-unified .shot-result-score>strong{
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ gap:clamp(7px,2.2vw,10px);
+ font-size:clamp(24px,7vw,29px);
+ line-height:1;
+ white-space:nowrap;
+}
+#opfc-app .shot-result-unified .shot-result-score>strong>.score-digit{
+ font-size:inherit;
+ font-weight:inherit;
+ line-height:1;
+ color:#edf7f8;
+}
