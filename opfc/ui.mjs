@@ -15,7 +15,7 @@ import {renderOnlineGame} from './ui-online-game.mjs?v=opfc-immersive-score-2026
 import {CLUB_TROPHIES,isCompetition,competitionName,renderCompetitionPicker} from './club-honours.mjs?v=opfc-trophees-20261022';
 import {queueFinishedLocalGame,syncQueuedLocalResults,pendingLocalResultsCount} from './trophy-service.mjs?v=opfc-v2-20261023';
 import {prepareRematch} from './rematch.mjs?v=opfc-rematch-20261025';
-import {stadiumPicker,isStadium} from './stadiums.mjs';
+import {stadiumPicker,isStadium,preloadStadiumBackdrop} from './stadiums.mjs?v=opfc-finale-smooth-20261026';
 import {v3HelpUi} from './v3-tactical-help.mjs';
 
 const app=document.getElementById('opfc-app');
@@ -269,7 +269,7 @@ async function onlineClicked(action,button){
  }
  if(action==='online-select-stadium'){
   if(onlineStage!=='create'||onlineClient.hasSession||!isStadium(button.dataset.stadium))throw Error('Stade indisponible');
-  onlineStadium=button.dataset.stadium;render();return;
+  onlineStadium=button.dataset.stadium;preloadStadiumBackdrop(onlineStadium);render();return;
  }
  if(action==='online-select-competition'){
   if(onlineStage!=='create'||onlineClient.hasSession)throw Error('Compétition non modifiable');
@@ -918,7 +918,10 @@ function render(){
  const v3State=onlineVisible?(showingGame?snapshot:null):entryView==='playing'?game:null;
  const themePhases=['lineup','kickoff-ready','match','moment-result','half-time','resume-ready','shootout-ready','shootout','finished'];
  const hasTheme=v3State&&themePhases.includes(v3State.phase)&&isStadium(v3State.stadiumId);
- if(hasTheme){app.dataset.v3Stadium=v3State.stadiumId;app.dataset.v3Phase=v3State.phase;}
+ if(hasTheme){
+  app.dataset.v3Stadium=v3State.stadiumId;app.dataset.v3Phase=v3State.phase;
+  preloadStadiumBackdrop(v3State.stadiumId);
+ }
  else{delete app.dataset.v3Stadium;delete app.dataset.v3Phase;}
  const v3HelpVisible=Boolean(v3State)&&['match','moment-result','half-time','resume-ready','shootout-ready','shootout'].includes(v3State.phase);
  if(!v3HelpVisible)v3HelpOpen=false;
@@ -986,6 +989,7 @@ function start(){
  }else{
   for(const id of ['PSG','OM'])if(beforeForm[id]!=='2-2-2')Object.assign(s,chooseFormation(s,id,beforeForm[id]));
  }
+ preloadStadiumBackdrop(localStadium);
  game=s;entryView='playing';selection=null;placement=null;teamsVisible=false;pitchClub=null;
  modal=localRecruitmentMode==='random'?{type:'random-reveal',step:0}:{type:'dice'};
  error='';save();render();
@@ -1031,7 +1035,7 @@ function clicked(button){
  }
  if(action==='local-select-stadium'){
   if(entryView!=='local'||!isStadium(button.dataset.stadium))throw Error('Stade indisponible');
-  localStadium=button.dataset.stadium;render();return;
+  localStadium=button.dataset.stadium;preloadStadiumBackdrop(localStadium);render();return;
  }
  if(action==='local-select-competition'){
   if(!isCompetition(button.dataset.competition))throw Error('Compétition invalide');
