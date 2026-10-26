@@ -250,3 +250,41 @@
 #opfc-app .score-digit-goal{animation:opfc-score-pulse .85s ease-out both}
 @keyframes opfc-score-pulse{0%{transform:scale(.85);color:#fff1ca;text-shadow:0 0 0 transparent}40%{transform:scale(1.26);color:#ffe29b;text-shadow:0 0 18px #efbb56}100%{transform:scale(1);color:inherit;text-shadow:none}}
 @media(prefers-reduced-motion:reduce){#opfc-app .score-digit-goal{animation:none}}
+
+
+/* OPFC V3.2 — Illustrations de stades sur les six résultats uniquement.
+ * L'enceinte sélectionnée est déjà exposée via data-v3-stadium en local / en ligne.
+ * Conserve les six couleurs de résultat, le score animé et les dimensions actuelles.
+ * Toutes les URLs sont relatives à opfc/v3-match.css ; pas de nouveau chargement JS. */
+#opfc-app[data-v3-stadium="mugiwara"]{--opfc-result-stadium-image:url("./illustrations/01_mugiwara_stadium.webp")}
+#opfc-app[data-v3-stadium="wanodrome"]{--opfc-result-stadium-image:url("./illustrations/02_wanodrome.webp")}
+#opfc-app[data-v3-stadium="erbaf"]{--opfc-result-stadium-image:url("./illustrations/03_erbaf_arena.webp")}
+#opfc-app[data-v3-stadium="skypiea"]{--opfc-result-stadium-image:url("./illustrations/04_skypiea_field.webp")}
+#opfc-app[data-v3-stadium="alabasta"]{--opfc-result-stadium-image:url("./illustrations/05_alabasta_park.webp")}
+#opfc-app[data-v3-stadium="marineford"]{--opfc-result-stadium-image:url("./illustrations/06_marineford_stadion.webp")}
+#opfc-app[data-v3-stadium="dressrosa"]{--opfc-result-stadium-image:url("./illustrations/07_dressrosa_arena.webp")}
+#opfc-app[data-v3-stadium="whole-cake"]{--opfc-result-stadium-image:url("./illustrations/08_whole_cake_stadium.webp")}
+/* Même scène de stade dans but, arrêt, raté, attaque stoppée, occasion et faute.
+ * Voile sombre + reflet coloré par résultat pour les textes sur iPhone. */
+#opfc-app[data-v3-phase][data-v3-stadium] .shot-result-unified{
+ background-image:
+  linear-gradient(155deg,rgba(4,17,28,.52),rgba(4,17,28,.68)),
+  radial-gradient(ellipse at 50% 15%,color-mix(in srgb,var(--result-accent,var(--v3-accent,#e3b454)) 23%,transparent),transparent 73%),
+  var(--opfc-result-stadium-image);
+ background-position:center,center,center 51%;
+ background-size:cover,cover,cover;
+ background-repeat:no-repeat;
+}
+/* Encart buteur/joueur translucide comme celui du score, avec bordure intacte. */
+#opfc-app[data-v3-phase][data-v3-stadium] .shot-result-unified .shot-result-player{
+ background:rgba(7,27,41,.56);
+ -webkit-backdrop-filter:blur(2px);
+ backdrop-filter:blur(2px);
+}
+@media(prefers-reduced-transparency:reduce){
+ #opfc-app[data-v3-phase][data-v3-stadium] .shot-result-unified .shot-result-player{
+  background:rgba(7,27,41,.88);
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+ }
+}
