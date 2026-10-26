@@ -239,3 +239,14 @@
  #opfc-app .shot-result-unified.shot-result-intro .shot-result-headline,
  #opfc-app .shot-result-unified.shot-result-intro .shot-result-player{animation:none}
 }
+
+/* Immersive open-play duels: presentation only, shared by local and online. */
+#opfc-app .match-faceoff.match-faceoff-immersive{grid-template-columns:minmax(0,1fr) 26px minmax(0,1fr);padding:10px 6px;gap:5px}
+#opfc-app .match-faceoff-immersive .match-duelist{align-self:stretch;justify-content:flex-start;padding:9px 5px;min-height:0;gap:7px}
+#opfc-app .match-faceoff-immersive .character-portrait.faceoff-portrait{width:100%;height:auto;aspect-ratio:1;max-width:170px;flex:none;border-radius:12px;border-width:2px;box-shadow:0 6px 18px #0005}
+#opfc-app .match-faceoff-immersive .match-duelist-name{min-height:34px;font-size:clamp(12px,3.5vw,15px)}
+#opfc-app .match-faceoff-immersive .faceoff-vs{font-size:18px;text-shadow:0 0 14px #e3b45455}
+#opfc-app .score-digit{display:inline-block;font-variant-numeric:tabular-nums;min-width:.65em;text-align:center}
+#opfc-app .score-digit-goal{animation:opfc-score-pulse .85s ease-out both}
+@keyframes opfc-score-pulse{0%{transform:scale(.85);color:#fff1ca;text-shadow:0 0 0 transparent}40%{transform:scale(1.26);color:#ffe29b;text-shadow:0 0 18px #efbb56}100%{transform:scale(1);color:inherit;text-shadow:none}}
+@media(prefers-reduced-motion:reduce){#opfc-app .score-digit-goal{animation:none}}

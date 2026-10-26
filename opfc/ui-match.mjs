@@ -8,13 +8,13 @@ import {lineupDetails} from './rules.mjs?v=opfc-match-balance-20261025';
 import {renderCharacterPortrait,renderClubCrest} from './ui-portraits.mjs?v=opfc-75-roster-20261022';
 import {matchPublicView,kickoffMatch,continueMatch,resumeMatch} from './match.mjs?v=opfc-match-balance-20261025';
 import {beginOpenPlayAction,lockOpenPlayChoice,revealOpenPlayDuel,continueOpenPlayDuel,revealOpenPlayShot} from './match-actions.mjs?v=opfc-integration-20261025';
-import {isSetPieceKind,setPieceTurnOwner,dispatchSetPieceMatch,renderSetPieceAction} from './ui-set-piece.mjs?v=opfc-result-polish-20261026';
-import {shootoutTurnOwner,dispatchShootout,renderShootoutScreen} from './ui-shootout.mjs?v=opfc-result-polish-20261026';
+import {isSetPieceKind,setPieceTurnOwner,dispatchSetPieceMatch,renderSetPieceAction} from './ui-set-piece.mjs?v=opfc-immersive-score-20261026';
+import {shootoutTurnOwner,dispatchShootout,renderShootoutScreen} from './ui-shootout.mjs?v=opfc-immersive-score-20261026';
 import {renderFinalResult} from './ui-final.mjs?v=opfc-v2-20261023';
 import {renderPrematch} from './prematch.mjs?v=opfc-palette-20261024';
 import {setDisplayedClubs,visualName,visualAbbr} from './club-identities.mjs';
 import {competitionName} from './club-honours.mjs?v=opfc-trophees-20261022';
-import {matchTacticalChoices,renderShotFaceOff,renderShotResult,renderReceiverCard,matchKeeperId} from './ui-match-widgets.mjs?v=opfc-result-polish-20261026';
+import {matchTacticalChoices,renderShotFaceOff,renderShotResult,renderReceiverCard,matchKeeperId} from './ui-match-widgets.mjs?v=opfc-immersive-score-20261026';
 import {recommendOpenShot} from './shot.mjs?v=opfc-openshot-20261025';
 
 const html=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -90,9 +90,9 @@ export function dispatchOpenMatch(state,command,{choice,takerId,rng=Math.random}
  if(command==='reveal-shot')return revealOpenPlayShot(state,rng());
  throw Error('Commande de match inconnue');
 }
-function scoreBoard(m){
+function scoreBoard(m,animateClub=null){
  return '<div class="match-scoreboard"><div>'+renderClubCrest('PSG','score-crest')+'<small>'+html(visualName('PSG'))+'</small></div>'+
- '<div class="match-score"><strong>'+m.score.PSG+' – '+m.score.OM+'</strong><span>'+m.minute+'e minute</span></div>'+
+ '<div class="match-score"><strong>'+['PSG','OM'].map(id=>'<span class="score-digit'+(id===animateClub?' score-digit-goal':'')+'">'+m.score[id]+'</span>').join(' – ')+'</strong><span>'+m.minute+'e minute</span></div>'+
  '<div>'+renderClubCrest('OM','score-crest')+'<small>'+html(visualName('OM'))+'</small></div></div>';
 }
 function scoreStats(m){
@@ -131,17 +131,6 @@ function firstGoalRender(state,event,onlineClub){
  if(shownGoalIntros.size>64)shownGoalIntros.clear();
  shownGoalIntros.add(key);return true;
 }
-function fieldNames(a){
- if(!a?.roles)return '';
- const players=[
-  ['Porteur',a.roles.carrier?.cardId],
-  ['Partenaire',a.roles.partner?.cardId],
-  ['Défenseur',a.roles.defender?.cardId]
- ];
- return '<div class="match-actors">'+players.map(([label,id])=>
-  '<div>'+renderCharacterPortrait(id,'match-actor-portrait')+
-  '<span>'+label+'</span><strong>'+html(name(id))+'</strong></div>').join('')+'</div>';
-}
 function actualPlayer(state,club,id){
  if(!id||!['PSG','OM'].includes(club))return null;
  const team=state.teams?.find(t=>t.club===club);
@@ -163,13 +152,13 @@ function faceOff(state,left,right,leftLabel,rightLabel,attacker,defender){
    (player?.outOfPosition?'<small class="match-duelist-out">Hors poste</small>':'')+
    '</div>';
  };
- return '<div class="match-faceoff" aria-label="'+html(name(left))+' face à '+html(name(right))+'">'+
+ return '<div class="match-faceoff match-faceoff-immersive" aria-label="'+html(name(left))+' face à '+html(name(right))+'">'+
  playerCard(left,leftLabel,attacker)+
  '<span class="faceoff-vs" aria-hidden="true">VS</span>'+
  playerCard(right,rightLabel,defender)+'</div>';
 }
 const duelFaceOff=(state,a)=>faceOff(state,a?.roles?.carrier?.cardId,a?.roles?.defender?.cardId,
- 'Attaque','Défense',a?.attacker,a?.defender);
+ 'Porteur','Défenseur',a?.attacker,a?.defender);
 const shotFaceOff=state=>{
  const a=state?.match?.action;
  return renderShotFaceOff(state,{shooterId:a?.shooterId,keeperId:a?.keeper?.cardId??matchKeeperId(state,a?.defender),
@@ -193,7 +182,7 @@ function renderAction(state,view,uncovered){
    '<h2>'+html(visualAbbr(a[role]))+' · '+(role==='attacker'?'Attaque':'Défense')+'</h2>'+
    '<p class="muted">Ta décision est secrète jusqu’à la confirmation de ton adversaire.</p>'+
    (isShot?shotFaceOff(state):
-    fieldNames(a)+renderReceiverCard(state,{
+    duelFaceOff(state,a)+renderReceiverCard(state,{
       receiverId:a.roles?.partner?.cardId,club:a.attacker,possible:true
     }))+choiceGrid(BUTTONS[a.stage],recommendedShot(state,a))+'</section>';
  }
@@ -381,7 +370,9 @@ function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null,competit
  }
  if(state.phase==='moment-result'){
   const last=m.lastResult;
-  const announced=out+attackBanner(last?.attacker,last?.details?.context,last?.type,last?.minute)+scoreStats(m)+resultView(m,state,{onlineClub});
+  const result=resultView(m,state,{onlineClub});
+  const header=scoreBoard(m,result.includes('score-digit-goal')?last?.attacker:null);
+  const announced=header+attackBanner(last?.attacker,last?.details?.context,last?.type,last?.minute)+scoreStats(m)+result;
   return onlineClub?onlineAcknowledgementPanel(announced,state,onlineClub):announced;
  }
  const moment=m.currentMoment;

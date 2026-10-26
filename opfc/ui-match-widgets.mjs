@@ -105,7 +105,7 @@ export function renderShotFaceOff(state,{shooterId,keeperId,attacker,defender,sh
    '<span class="match-duelist-rating">NOTE '+h(rating)+'</span></div>'+
    (actual?.outOfPosition?'<small class="match-duelist-out">Hors poste</small>':'')+'</div>';
  };
- return '<div class="match-faceoff match-shot-faceoff" aria-label="Tireur : '+
+ return '<div class="match-faceoff match-shot-faceoff match-faceoff-immersive" aria-label="Tireur : '+
   h(CARD_BY_ID.get(shooterId)?.name??shooterId)+' face au gardien : '+
   h(CARD_BY_ID.get(keeperId)?.name??keeperId)+'">'+
   profile(shooterId,attacker,shooterLabel)+
@@ -173,7 +173,7 @@ export function renderShotResult(state,{outcome,attacker,minute,shooterId,keeper
  const scoreTeam=id=>'<span class="shot-goal-team">'+
   renderClubCrest(id,'shot-goal-crest')+h(visualAbbr(id))+'</span>';
  const scoreboard=score?'<div class="shot-result-score" aria-label="'+h(scoreLabel)+'">'+
-  scoreTeam('PSG')+'<strong>'+h(score.PSG)+' – '+h(score.OM)+'</strong>'+scoreTeam('OM')+'</div>':'';
+  scoreTeam('PSG')+'<strong>'+['PSG','OM'].map(id=>'<span class="score-digit'+(regulationGoal&&animateGoal&&id===attacker?' score-digit-goal':'')+'">'+h(score[id])+'</span>').join(' – ')+'</strong>'+scoreTeam('OM')+'</div>':'';
  const assister=regulationGoal&&goalInfo.assistId&&CARD_BY_ID.has(goalInfo.assistId)?
   '<div class="shot-goal-assist">🎯 Passe décisive : '+h(CARD_BY_ID.get(goalInfo.assistId).name)+'</div>':'';
  const confirmation=regulationGoal&&localGoalAcks?

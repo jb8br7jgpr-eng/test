@@ -9,7 +9,7 @@ import {nextShootoutShooter} from './shootout.mjs?v=opfc-match-balance-20261025'
 import {CARD_BY_ID} from './catalog.mjs?v=opfc-75-roster-20261022';
 import {visualAbbr} from './club-identities.mjs';
 import {renderCharacterPortrait} from './ui-portraits.mjs';
-import {matchTacticalChoices,renderShotFaceOff,renderShotResult} from './ui-match-widgets.mjs?v=opfc-result-polish-20261026';
+import {matchTacticalChoices,renderShotFaceOff,renderShotResult} from './ui-match-widgets.mjs?v=opfc-immersive-score-20261026';
 
 const fail=m=>{throw Error(m);};
 const escape=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
