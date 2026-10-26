@@ -188,3 +188,17 @@
  #opfc-app[data-v3-phase] .v3-half-ready-card{padding:9px 6px}
  #opfc-app[data-v3-phase] .v3-ready-club{font-size:12px}
 }
+
+/* OPFC V3.3 — stade sélectionné derrière le trophée / score final seulement.
+ * Les blocs buteurs, statistiques, TAB et Ancre d'Or restent lisibles et inchangés.
+ * Important : cette feuille applique déjà un background !important aux panneaux
+ * de fin ; override ciblé, plus spécifique et volontairement en dernier. */
+#opfc-app[data-v3-phase="finished"][data-v3-stadium] .final-screen>.final-score{
+ background-image:
+  linear-gradient(155deg,rgba(4,17,28,.53),rgba(4,17,28,.74)),
+  radial-gradient(ellipse at 50% 12%,color-mix(in srgb,var(--v3-accent,#e3b454) 25%,transparent),transparent 76%),
+  var(--opfc-result-stadium-image)!important;
+ background-position:center,center,center 51%!important;
+ background-size:cover,cover,cover!important;
+ background-repeat:no-repeat!important;
+}

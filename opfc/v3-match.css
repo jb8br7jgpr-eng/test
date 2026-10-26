@@ -288,3 +288,17 @@
   backdrop-filter:none;
  }
 }
+
+/* OPFC V3.3 — transition douce au premier affichage de chaque résultat.
+ * Les classes d'intro ne sont activées qu'une fois par événement, y compris
+ * lors des rafraîchissements et validations des deux iPhone en ligne. */
+@keyframes opfc-result-panel-reveal{
+ from{opacity:.68;transform:translateY(6px)}
+ to{opacity:1;transform:translateY(0)}
+}
+#opfc-app .shot-result-unified:is(.shot-result-intro,.shot-goal-intro){
+ animation:opfc-result-panel-reveal .38s cubic-bezier(.22,1,.36,1) both;
+}
+@media(prefers-reduced-motion:reduce){
+ #opfc-app .shot-result-unified:is(.shot-result-intro,.shot-goal-intro){animation:none}
+}
