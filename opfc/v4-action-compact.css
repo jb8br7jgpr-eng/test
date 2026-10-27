@@ -1,0 +1,140 @@
+/* OPFC — écrans d'action compacts (local / en ligne).
+   La sélection tactique et les écrans de transition sont les seuls ciblés.
+   IMPORTANT : aucune règle n'affecte .shot-result-panel ou les écrans de fin. */
+
+/* Cartes d'action : textes/portraits conservés, marges verticales resserrées. */
+#opfc-app .match-stage:not(.shot-result-panel):is(
+  :has(.match-faceoff-immersive),
+  :has(.match-tactical-choices),
+  :has([data-action="match-begin-open"]),
+  :has([data-action="match-begin-setpiece"]),
+  :has([data-action="match-begin-shootout"])
+){padding:11px 10px 12px}
+#opfc-app .match-stage:not(.shot-result-panel):is(
+  :has(.match-faceoff-immersive),
+  :has(.match-tactical-choices)
+)>h2{
+  margin:3px 0 5px;
+  font-size:clamp(15px,4.1vw,18px);
+  line-height:1.22;
+}
+#opfc-app .match-stage:not(.shot-result-panel):is(
+  :has(.match-faceoff-immersive),
+  :has(.match-tactical-choices)
+)>p{
+  margin:4px 0 7px;
+  font-size:11px;
+  line-height:1.35;
+}
+#opfc-app .match-stage:not(.shot-result-panel) .match-faceoff.match-faceoff-immersive{
+  grid-template-columns:minmax(0,1fr) 22px minmax(0,1fr);
+  gap:4px;padding:7px 5px;margin:7px 0;
+}
+#opfc-app .match-stage:not(.shot-result-panel) .match-faceoff-immersive .match-duelist{
+  padding:6px 4px;gap:4px;min-width:0;min-height:0;
+}
+#opfc-app .match-stage:not(.shot-result-panel) .match-faceoff-immersive .character-portrait.faceoff-portrait{
+  width:min(100%,120px);max-width:120px;height:auto;aspect-ratio:1;flex:none;
+}
+#opfc-app .match-stage:not(.shot-result-panel) .match-faceoff-immersive .match-duelist-name{
+  min-height:0;font-size:clamp(11px,3.2vw,13px);line-height:1.2;overflow-wrap:anywhere;
+}
+#opfc-app .match-stage:not(.shot-result-panel) .match-faceoff-immersive .match-duelist-team{
+  font-size:9px;line-height:1.25;overflow-wrap:anywhere;
+}
+#opfc-app .match-stage:not(.shot-result-panel) .match-faceoff-immersive .match-duelist-badges{gap:4px}
+#opfc-app .match-stage:not(.shot-result-panel) .match-faceoff-immersive :is(.match-duelist-position,.match-duelist-rating){
+  padding:4px 5px;font-size:9px;
+}
+#opfc-app .match-stage:not(.shot-result-panel) .match-faceoff-immersive .faceoff-vs{font-size:15px}
+
+/* Réceptionneur : portrait, nom, club, poste, note et hors-poste visibles. */
+#opfc-app .match-stage:not(.shot-result-panel) .receiver-card{
+  padding:6px 8px;margin:6px 0;gap:7px;
+}
+#opfc-app .match-stage:not(.shot-result-panel) .receiver-card-portrait{
+  flex:0 0 42px;width:42px;height:42px;
+}
+#opfc-app .match-stage:not(.shot-result-panel) .character-portrait.receiver-portrait{
+  width:42px;height:42px;min-width:42px;flex-basis:42px;
+}
+#opfc-app .match-stage:not(.shot-result-panel) .receiver-card-content{gap:2px}
+#opfc-app .match-stage:not(.shot-result-panel) .receiver-card-name{font-size:12px}
+#opfc-app .match-stage:not(.shot-result-panel) .receiver-card-label{
+  font-size:9px;line-height:1.15;letter-spacing:.02em;
+}
+#opfc-app .match-stage:not(.shot-result-panel) .receiver-card-details{gap:4px}
+#opfc-app .match-stage:not(.shot-result-panel) .receiver-card-details>span{
+  font-size:9px;padding:3px 4px;
+}
+
+/* Trois tactiques sur une seule ligne. Explications défensives/gardien toujours
+   présentes ; la hauteur augmente naturellement en cas de texte long. */
+#opfc-app .match-stage:not(.shot-result-panel) .match-choice-grid.match-tactical-choices{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:6px;margin:7px 0 5px;align-items:stretch;
+}
+#opfc-app .match-stage:not(.shot-result-panel) .match-tactical-choices>.match-choice{
+  grid-column:auto;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;text-align:center;min-width:0;min-height:72px;
+  height:100%;padding:8px 4px;gap:5px;overflow-wrap:anywhere;white-space:normal;
+}
+#opfc-app .match-stage:not(.shot-result-panel) .match-tactical-choices>.match-choice:nth-child(odd):last-child{
+  grid-column:auto;
+}
+#opfc-app .match-stage:not(.shot-result-panel) .match-tactical-choices>.match-choice strong{
+  font-size:clamp(10px,3.0vw,12px);line-height:1.2;width:100%;overflow-wrap:anywhere;
+}
+#opfc-app .match-stage:not(.shot-result-panel) .match-tactical-choices .match-choice-emoji{
+  font-size:19px;line-height:1.1;
+}
+#opfc-app .match-stage:not(.shot-result-panel) .match-tactical-choices>.match-choice .keeper-choice-copy{
+  flex:none;width:100%;min-width:0;gap:4px;align-items:center;text-align:center;
+}
+#opfc-app .match-stage:not(.shot-result-panel) .match-tactical-choices>.match-choice .match-keeper-hint{
+  font-size:10px;line-height:1.23;font-weight:650;overflow-wrap:anywhere;text-align:center;
+}
+#opfc-app .match-stage:not(.shot-result-panel) .match-tactical-choices>.match-choice:has(.match-keeper-hint){
+  min-height:108px;padding:8px 3px;
+}
+#opfc-app .match-stage:not(.shot-result-panel) .match-shot-recommendation{
+  font-size:9px;line-height:1.15;margin-top:2px;white-space:normal;
+}
+
+/* Sélection des tireurs : les sept titulaires restent en deux colonnes. */
+#opfc-app .match-stage:not(.shot-result-panel):has(.setpiece-taker) .match-choice-grid.match-tactical-choices{
+  grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;
+}
+#opfc-app .match-stage:not(.shot-result-panel):has(.setpiece-taker) .match-tactical-choices>.match-choice.setpiece-taker{
+  flex-direction:row;align-items:center;justify-content:flex-start;
+  min-height:70px;height:100%;gap:8px;padding:7px;text-align:left;
+}
+#opfc-app .match-stage:not(.shot-result-panel):has(.setpiece-taker) .match-tactical-choices>.match-choice.setpiece-taker .setpiece-taker-portrait{
+  flex:0 0 38px;width:38px;height:38px;
+}
+#opfc-app .match-stage:not(.shot-result-panel):has(.setpiece-taker) .match-tactical-choices .setpiece-taker-label{
+  min-width:0;width:auto;flex:1;gap:3px;text-align:center;
+}
+#opfc-app .match-stage:not(.shot-result-panel):has(.setpiece-taker) .match-tactical-choices .setpiece-taker-label strong{
+  font-size:11px;overflow-wrap:anywhere;
+}
+#opfc-app .match-stage:not(.shot-result-panel):has(.setpiece-taker) .match-tactical-choices>.match-choice.setpiece-taker:nth-child(odd):last-child{
+  grid-column:1/-1;
+}
+
+/* Transmission secrète locale : message visible, moins d'espace perdu. */
+#opfc-app .match-handover{min-height:190px;padding:17px 12px}
+#opfc-app .match-handover h2{font-size:19px}
+#opfc-app .match-handover p{margin:5px auto;font-size:12px}
+
+/* Petits iPhone : aucun bouton ni aide masqué, pas de texte tronqué. */
+@media(max-width:355px){
+  #opfc-app .match-stage:not(.shot-result-panel):has(.match-tactical-choices){padding:9px 7px 10px}
+  #opfc-app .match-stage:not(.shot-result-panel) .match-faceoff-immersive .character-portrait.faceoff-portrait{max-width:108px}
+  #opfc-app .match-stage:not(.shot-result-panel) .match-tactical-choices>.match-choice{padding:7px 3px;gap:4px}
+  #opfc-app .match-stage:not(.shot-result-panel) .match-tactical-choices>.match-choice strong{font-size:10px}
+  #opfc-app .match-stage:not(.shot-result-panel) .match-tactical-choices .match-choice-emoji{font-size:17px}
+  #opfc-app .match-stage:not(.shot-result-panel) .match-tactical-choices>.match-choice .match-keeper-hint{font-size:10px}
+  #opfc-app .match-stage:not(.shot-result-panel):has(.setpiece-taker) .match-tactical-choices>.match-choice.setpiece-taker{gap:5px;padding:5px}
+  #opfc-app .match-stage:not(.shot-result-panel):has(.setpiece-taker) .match-tactical-choices .setpiece-taker-label strong{font-size:10px}
+}
