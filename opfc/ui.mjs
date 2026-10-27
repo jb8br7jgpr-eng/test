@@ -8,19 +8,21 @@ import {DISPLAY_CLUBS,currentClubChoices,setDisplayedClubs,setDisplayedChoices,v
 import {renderCharacterPortrait,renderClubCrest,renderIdentityCrest} from './ui-portraits.mjs?v=opfc-75-roster-20261022';
 import {effectiveRating,lineupDetails} from './rules.mjs?v=opfc-match-balance-20261025';
 import {FORMATION_NAMES,uiAuction,uiTeam,uiRoster,cardStats,currentAuctionEnding,clubName} from './ui-model.mjs?v=opfc-75-roster-20261022';
-import {renderMatchScreen,matchRequiresPrivacy,dispatchOpenMatch} from './ui-match.mjs?v=opfc-immersive-score-20261026';
+import {renderMatchScreen,matchRequiresPrivacy,dispatchOpenMatch} from './ui-match.mjs?v=opfc-ux-20261027';
 import {createOnlineClient} from './online-client.mjs?v=opfc-integration-20261025';
 import {renderOnlineLobby,normalizeJoinCodeInput} from './ui-online.mjs?v=opfc-v2-20261023';
-import {renderOnlineGame} from './ui-online-game.mjs?v=opfc-immersive-score-20261026';
+import {renderOnlineGame} from './ui-online-game.mjs?v=opfc-ux-20261027';
 import {CLUB_TROPHIES,isCompetition,competitionName,renderCompetitionPicker} from './club-honours.mjs?v=opfc-trophees-20261022';
 import {queueFinishedLocalGame,syncQueuedLocalResults,pendingLocalResultsCount} from './trophy-service.mjs?v=opfc-v2-20261023';
 import {prepareRematch} from './rematch.mjs?v=opfc-rematch-20261025';
 import {stadiumPicker,isStadium,preloadStadiumBackdrop} from './stadiums.mjs?v=opfc-finale-smooth-20261026';
-import {v3HelpUi} from './v3-tactical-help.mjs';
+import {v3HelpUi,GUIDE_CATEGORIES,suggestedGuideCategory} from './v3-tactical-help.mjs?v=opfc-ux-20261027';
+import {preloadMatchPortraits,matchUiStepKey,scrollToMatchFocus} from './v3-match-ux.mjs?v=opfc-ux-20261027';
 
 const app=document.getElementById('opfc-app');
 const STORAGE='opfc-v08-local-dev';
-let v3HelpOpen=false;
+let v3HelpOpen=false,v3HelpCategory=null,headerMatchHelp=false;
+let lastMatchStepKey=null,lastRenderedGuideCategory=null;
 let game=null,firstClub='PSG',selection=null,modal=null,error='',beforeForm={PSG:'2-2-2',OM:'2-2-2'};
 let localClubChoices={PSG:'PSG',OM:'OM'},onlineHostIdentity='PSG',onlineGuestIdentity='OM';
 let localCompetition='league',onlineCompetition='league';
@@ -38,14 +40,6 @@ let onlineSelection=null,onlineOwnClubScope=null,onlinePitchClub=null,onlineTeam
 let onlineModal=null,onlineSeenRoom=null,onlineSeenAuctionCard=null;
 let onlinePendingTaker=null;
 let onlineTimer=null,onlineRefreshInFlight=false;
-const scrollMatchToTop=()=>{try{window.scrollTo({top:0,behavior:'instant'});}catch{window.scrollTo(0,0);}};
-function onlineMatchDisplayKey(snapshot){
- if(!snapshot||!['match','moment-result','shootout','finished','shootout-ready'].includes(snapshot.phase))
-  return null;
- const m=snapshot.match??{},a=m.action,s=m.shootout;
- return [snapshot.phase,m.index,a?.stage??'',m.lastResult?.outcome??'',
-  s?.active?.shotNumber??'',s?.lastResult?.shotNumber??''].join(':');
-}
 function stopOnlinePoll(){
  if(onlineTimer!==null){clearInterval(onlineTimer);onlineTimer=null;}
 }
@@ -66,8 +60,6 @@ async function onlineMutation(fn){
  try{
   await fn();
   onlineError='';
-  if(['match','moment-result','shootout','finished','shootout-ready'].includes(onlineClient.game?.phase))
-   scrollMatchToTop();
  }catch(err){
   onlineError=err?.message||'Impossible de contacter le salon.';
  }finally{
@@ -78,7 +70,6 @@ async function refreshOnlineRoom(silent=false){
  if(silent){
   if(onlineBusy||onlineRefreshInFlight)return;
   onlineRefreshInFlight=true;
-  const beforeScreen=onlineMatchDisplayKey(onlineClient.game);
   try{
    const version=onlineClient.room?.version;
    const before=onlineClient.room?.status;
@@ -86,8 +77,6 @@ async function refreshOnlineRoom(silent=false){
    if(onlineStage!=='room'||onlineClient.room?.version!==version||
       onlineClient.room?.status!==before){
     onlineStage='room';onlineError='';render();
-    if(beforeScreen!==onlineMatchDisplayKey(onlineClient.game)&&
-       onlineMatchDisplayKey(onlineClient.game)!==null)scrollMatchToTop();
    }
   }catch(err){
    const message=err?.message??'Actualisation impossible';
@@ -230,8 +219,6 @@ async function onlineGameClicked(action,button){
     await onlineClient.lineupAction(command);
    else await onlineClient.matchAction(command);
   });
-  if(['match','moment-result','shootout','finished'].includes(onlineClient.game?.phase))
-   scrollMatchToTop();
   return;
  }
  throw Error('Cette action n’est pas disponible en ligne');
@@ -362,7 +349,14 @@ function restore(){try{
    }
   }
 }catch{}}
-const shell=()=>'<header class="topbar"><a class="brand-mini" href="./"><img src="./opfc-logo-hd.PNG" alt="" width="35" height="35"> OPMERCATO FC</a><a class="small-link" href="./">← Accueil</a></header>';
+const shell=()=>'<header class="topbar'+(headerMatchHelp?' opfc-match-topbar':'')+'">'+
+ '<a class="brand-mini" href="./"><img src="./opfc-logo-hd.PNG" alt="" width="35" height="35"> <span>OPMERCATO FC</span></a>'+
+ '<nav class="opfc-header-actions" aria-label="Navigation">'+
+ (headerMatchHelp?'<button type="button" class="opfc-head-action" data-action="v3-help-toggle" aria-haspopup="dialog" aria-expanded="'+v3HelpOpen+'">? Aide</button>':'')+
+ '<a class="opfc-head-action" href="./">⌂ Accueil</a></nav></header>';
+const backToAction=phase=>['match','moment-result','half-time','resume-ready','shootout-ready','shootout'].includes(phase)?
+ '<button type="button" class="opfc-back-to-action" data-action="match-scroll-to-action">↑ Revenir à l’action</button>':'';
+
 const options=(values,current)=>values.map(v=>'<option value="'+esc(v)+'" '+(v===current?'selected':'')+'>'+esc(v)+'</option>').join('');
 const btn=(action,title,klass='ghost',disabled=false,extra='')=>'<button type="button" class="btn '+klass+'" data-action="'+action+'" '+extra+' '+(disabled?'disabled':'')+'>'+title+'</button>';
 const sep=()=>'<span class="eyebrow">Le tournoi de Grand Line</span>';
@@ -688,7 +682,7 @@ function matchPage(){
    btn('exit-finished-local','← Quitter la partie et revenir au menu','opfc-exit-gold full')+'</div>':'')+
  middle+
  (game.phase==='finished'&&pendingLocalResultsCount()>0?'<p class="caption" role="status">🏆 Résultat en cours de synchronisation. Il sera envoyé automatiquement dès que la connexion sera disponible.</p>':'')+
- overview+'<div class="gameplay-nav"><span class="caption">'+esc(competitionName(game.competition))+' · Mode local</span>'+btn('confirm-reset','Nouvelle partie','ghost small')+'</div></main>';
+ overview+backToAction(game.phase)+'<div class="gameplay-nav"><span class="caption">'+esc(competitionName(game.competition))+' · Mode local</span>'+btn('confirm-reset','Nouvelle partie','ghost small')+'</div></main>';
 }
 function popup(){
  if(!modal)return '';
@@ -916,6 +910,7 @@ function render(){
  }else if(game)setDisplayedClubs(game.teams);
  else setDisplayedChoices(localClubChoices);
  const v3State=onlineVisible?(showingGame?snapshot:null):entryView==='playing'?game:null;
+ preloadMatchPortraits(v3State);
  const themePhases=['lineup','kickoff-ready','match','moment-result','half-time','resume-ready','shootout-ready','shootout','finished'];
  const hasTheme=v3State&&themePhases.includes(v3State.phase)&&isStadium(v3State.stadiumId);
  if(hasTheme){
@@ -923,8 +918,9 @@ function render(){
   preloadStadiumBackdrop(v3State.stadiumId);
  }
  else{delete app.dataset.v3Stadium;delete app.dataset.v3Phase;}
- const v3HelpVisible=Boolean(v3State)&&['match','moment-result','half-time','resume-ready','shootout-ready','shootout'].includes(v3State.phase);
- if(!v3HelpVisible)v3HelpOpen=false;
+ const v3HelpVisible=Boolean(v3State)&&['kickoff-ready','match','moment-result','half-time','resume-ready','shootout-ready','shootout','finished'].includes(v3State.phase);
+ headerMatchHelp=v3HelpVisible;
+ if(!v3HelpVisible){v3HelpOpen=false;v3HelpCategory=null;}
  const room=onlineClient.room;
  const compactRoom=showingGame?'<div class="online-session-bar" role="status">'+
   '<span>🌐 Partie en ligne · '+esc(visualAbbr(room.myClub))+' vs '+
@@ -954,12 +950,36 @@ function render(){
    '<main class="online-game-content opfc-online-playing">'+
    renderOnlineGame(snapshot,{myClub:room.myClub,hostClub:room.hostClub,competition:onlineClient.room?.competition})+
    (['match','moment-result','half-time','resume-ready','shootout-ready','shootout','finished'].includes(snapshot.phase)?
-    onlineTeams():'')+'</main>'):'');
+    onlineTeams()+backToAction(snapshot.phase):'')+'</main>'):'');
+ // Capture the scroll position before replacing the DOM on network polls / acks.
+ // Local handover is a new visible step even when the engine phase stays the same.
+ const step=matchUiStepKey(v3State);
+ const key=step?(onlineVisible?'online:':'local:')+step+
+  (!onlineVisible?(matchUncovered?':revealed':':private'):''):null;
+ const newStep=key!==lastMatchStepKey;
+ const oldScroll=window.scrollY;
+ const currentGuideScroll=app.querySelector('.v3-guide-body')?.scrollTop??0;
+ const sameGuidePage=lastRenderedGuideCategory===v3HelpCategory;
  app.innerHTML=(onlineVisible?onlineDisplay:entryView==='modes'?modeChooser():entryView==='local'?welcome():game?
   (game.phase==='kickoff-ready'?endMercato():['mercato','lineup'].includes(game.phase)?playing():matchPage()):welcome())+
  (error?'<div class="alert" role="alert">'+esc(error)+'</div>':'')+
  (onlineVisible?onlineAnnouncementView():'')+popup()+
-  (v3HelpVisible?v3HelpUi(v3HelpOpen):'');
+  (v3HelpVisible?v3HelpUi(v3HelpOpen,v3HelpCategory,suggestedGuideCategory(v3State)):'');
+ if(sameGuidePage&&v3HelpOpen){
+  const body=app.querySelector('.v3-guide-body');
+  if(body)body.scrollTop=currentGuideScroll;
+ }
+ lastRenderedGuideCategory=v3HelpCategory;
+ if(newStep){
+  lastMatchStepKey=key;
+  if(key&&!v3HelpOpen&&!modal&&!onlineModal){
+   requestAnimationFrame(()=>{if(lastMatchStepKey===key)scrollToMatchFocus(app);});
+  }
+ }else if(key){
+  // Preserve the user's voluntary scroll (including the period while waiting
+  // for their opponent). This only restores, it never changes the target.
+  window.scrollTo({top:oldScroll,behavior:'instant'});
+ }
 }
 function change(fn){
  const before=game,next=fn(before),end=before.phase==='mercato'?currentAuctionEnding(before,next):null;
@@ -998,8 +1018,14 @@ function clicked(button){
  const action=button.dataset.action,club=button.dataset.club;
  if(action==='v3-help-toggle'||action==='v3-help-close'){
   v3HelpOpen=action==='v3-help-toggle'?!v3HelpOpen:false;
-  render();return;
+  v3HelpCategory=null;render();return;
  }
+ if(action==='v3-help-menu'&&v3HelpOpen){v3HelpCategory=null;render();return;}
+ if(action==='v3-help-category'&&v3HelpOpen){
+  if(!GUIDE_CATEGORIES.includes(button.dataset.category))return;
+  v3HelpCategory=button.dataset.category;render();return;
+ }
+ if(action==='match-scroll-to-action'){scrollToMatchFocus(app);return;}
  if(action==='open-local'){entryView='local';error='';render();return;}
  if(action==='rematch-local'){
   if(game?.phase!=='finished'||game.match?.shootoutLastResult)
@@ -1007,7 +1033,7 @@ function clicked(button){
   if(!queueFinishedLocalGame(game))
    throw Error('Impossible de placer les statistiques officielles dans la sauvegarde.');
   change(s=>prepareRematch(s,{matchRecordId:crypto.randomUUID()}));
-  matchUncovered=false;scrollMatchToTop();return;
+  matchUncovered=false;return;
  }
  if(action==='exit-finished-local'){
   if(game?.phase!=='finished')throw Error('La partie n’est pas terminée');
@@ -1031,7 +1057,7 @@ function clicked(button){
  if(action==='match-prematch-next'){
   if(game?.phase!=='kickoff-ready'||game.playerStatsVersion!==2||game.prematchSeen===true)
    throw Error('Présentation d’avant-match indisponible');
-  change(s=>({...s,prematchSeen:true}));scrollMatchToTop();return;
+  change(s=>({...s,prematchSeen:true}));return;
  }
  if(action==='local-select-stadium'){
   if(entryView!=='local'||!isStadium(button.dataset.stadium))throw Error('Stade indisponible');
@@ -1098,7 +1124,6 @@ function clicked(button){
   const choice=button.dataset.choice,takerId=button.dataset.card;
   matchUncovered=false; // masque immédiatement toute décision précédente
   change(s=>dispatchOpenMatch(s,command,{choice,takerId}));
-  if(['match','moment-result','shootout','finished'].includes(game?.phase))scrollMatchToTop();
   return;
  }
  if(action==='club'){firstClub=club;render();return;}
