@@ -250,12 +250,17 @@
 #opfc-app[data-v3-phase] .match-attack-arrow{
  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
  display:flex;align-items:center;justify-content:center;
- width:53px;height:43px;z-index:2;border-radius:14px;
- color:#18364c;font-size:32px;font-weight:1000;
- border:2px solid #f6faff;
- background:linear-gradient(135deg,var(--v3-accent,#e8a1be),#f9fcff 50%,
- color-mix(in srgb,var(--v3-primary,#74bce4) 55%,#fff));
- box-shadow:0 0 0 3px #102a3c,0 5px 14px #0009;
+ width:clamp(58px,18vw,68px);height:clamp(58px,18vw,68px);
+ box-sizing:border-box;z-index:2;border-radius:21px;
+ color:#18364c;pointer-events:none;
+ border:2px solid #f8fcff;
+ background:linear-gradient(120deg,#ffe0ed 0%,#f8faff 48%,#a9e0ff 100%);
+ box-shadow:inset 0 2px 0 #ffffffcf,inset 0 -2px 0 #6bbad94d,
+            0 0 0 5px #102a3c,0 7px 17px #0009;
+}
+#opfc-app[data-v3-phase] .match-attack-arrow svg{
+ display:block;width:75%;height:75%;
+ overflow:visible;filter:drop-shadow(0 1px 1px #ffffffaa);
 }
 #opfc-app[data-v3-phase] .match-attack-banner .match-mini-stats{
  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
