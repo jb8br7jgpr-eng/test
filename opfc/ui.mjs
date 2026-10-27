@@ -1109,7 +1109,6 @@ function clicked(button){
   const choice=button.dataset.choice,takerId=button.dataset.card;
   matchUncovered=false; // masque immédiatement toute décision précédente
   change(s=>dispatchOpenMatch(s,command,{choice,takerId}));
-  if(['match','moment-result','shootout','finished'].includes(game?.phase))
   return;
  }
  if(action==='club'){firstClub=club;render();return;}
