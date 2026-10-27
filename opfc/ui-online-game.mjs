@@ -5,7 +5,7 @@
  */
 import {renderOnlineMatchScreen} from './ui-match.mjs?v=opfc-ux-20261027';
 import {renderOnlineShootoutScreen} from './ui-shootout.mjs?v=opfc-immersive-score-20261026';
-import {renderFinalResult} from './ui-final.mjs?v=opfc-v2-20261023';
+import {renderFinalResult} from './ui-final.mjs?v=opfc-momentum-20261027';
 import {renderClubCrest} from './ui-portraits.mjs?v=opfc-75-roster-20261022';
 import {visualAbbr,setDisplayedClubs} from './club-identities.mjs';
 import {competitionName} from './club-honours.mjs?v=opfc-trophees-20261022';
@@ -54,7 +54,7 @@ export function renderOnlineGame(g,{myClub,hostClub,competition,momentumOpen=fal
  if(g.phase==='finished'){
   if(g.match?.shootout?.lastResult)
    return scoreBoard(g.match,momentumOpen)+renderOnlineShootoutScreen(g,{myClub,hostClub});
-  return renderFinalResult(g)+renderRematchChoices(g,myClub);
+  return renderFinalResult(g,{momentumOpen})+renderRematchChoices(g,myClub);
  }
  return '<section class="panel"><p>Préparation de la prochaine étape…</p></section>';
 }
