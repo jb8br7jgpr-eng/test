@@ -253,7 +253,7 @@ function resultView(m,state,{onlineClub=null}={}){
  * réellement jouées. Les listes et le terrain commun restent sous ce bloc,
  * où les modifications de postes/formations sont déjà gérées par le moteur.
  */
-function halftimeView(state,m,{onlineClub=null}={}){
+function halftimeView(state,m,{onlineClub=null,momentumOpen=false}={}){
  const resume=state.phase==='resume-ready';
  const stats=m.statistics;
  const compare=[
@@ -279,7 +279,7 @@ function halftimeView(state,m,{onlineClub=null}={}){
   '<header class="halftime-header">'+
    '<span class="eyebrow">'+html(competitionName(state.match?.competition??state.competition))+' · Pause tactique</span>'+ 
    '<h2>⏸️ MI-TEMPS</h2><p>Mi-temps · 45e minute</p>'+
-  '</header>'+scoreBoard(m)+
+  '</header>'+scoreBoard(m,null,momentumOpen)+
   '<section class="panel halftime-stats" aria-label="Bilan de la première période">'+
    '<h3>📊 Bilan de la première période</h3>'+
    '<div class="halftime-stats-heading"><strong>'+html(visualAbbr('PSG'))+'</strong><span>Statistiques officielles</span><strong>'+html(visualAbbr('OM'))+'</strong></div>'+
@@ -367,7 +367,7 @@ function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null,competit
  if(!m)return '<section class="panel match-stage"><h2>Aucun match en cours</h2></section>';
  let out=scoreBoard(m,null,momentumOpen);
  if(state.phase==='half-time'||state.phase==='resume-ready'){
-  const markup=halftimeView(state,m,{onlineClub});
+  const markup=halftimeView(state,m,{onlineClub,momentumOpen});
   return onlineClub&&state.phase==='resume-ready'&&onlineClub!==hostClub?
    markup.replace(/data-action="match-resume"/g,'data-action="match-resume" disabled aria-disabled="true"')+
    onlineWaiting(hostClub,'Le club hôte reprend la deuxième période.'):markup;
@@ -375,7 +375,7 @@ function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null,competit
  if(state.phase==='shootout-ready'||state.phase==='shootout')return out+renderShootoutScreen(state,{uncovered});
  if(state.phase==='finished'){
   if(state.match.shootoutLastResult)return out+renderShootoutScreen(state,{uncovered});
-  return renderFinalResult(state);
+  return renderFinalResult(state,{momentumOpen});
  }
  if(state.phase==='moment-result'){
   const last=m.lastResult;
