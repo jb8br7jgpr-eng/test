@@ -22,7 +22,7 @@ import {preloadMatchPortraits,matchUiStepKey,scrollToMatchFocus} from './v3-matc
 const app=document.getElementById('opfc-app');
 const STORAGE='opfc-v08-local-dev';
 let v3HelpOpen=false,v3HelpCategory=null,headerMatchHelp=false;
-let lastMatchStepKey=null;
+let lastMatchStepKey=null,lastRenderedGuideCategory=null;
 let game=null,firstClub='PSG',selection=null,modal=null,error='',beforeForm={PSG:'2-2-2',OM:'2-2-2'};
 let localClubChoices={PSG:'PSG',OM:'OM'},onlineHostIdentity='PSG',onlineGuestIdentity='OM';
 let localCompetition='league',onlineCompetition='league';
@@ -918,7 +918,7 @@ function render(){
   preloadStadiumBackdrop(v3State.stadiumId);
  }
  else{delete app.dataset.v3Stadium;delete app.dataset.v3Phase;}
- const v3HelpVisible=Boolean(v3State)&&['match','moment-result','half-time','resume-ready','shootout-ready','shootout'].includes(v3State.phase);
+ const v3HelpVisible=Boolean(v3State)&&['kickoff-ready','match','moment-result','half-time','resume-ready','shootout-ready','shootout','finished'].includes(v3State.phase);
  headerMatchHelp=v3HelpVisible;
  if(!v3HelpVisible){v3HelpOpen=false;v3HelpCategory=null;}
  const room=onlineClient.room;
@@ -951,19 +951,34 @@ function render(){
    renderOnlineGame(snapshot,{myClub:room.myClub,hostClub:room.hostClub,competition:onlineClient.room?.competition})+
    (['match','moment-result','half-time','resume-ready','shootout-ready','shootout','finished'].includes(snapshot.phase)?
     onlineTeams()+backToAction(snapshot.phase):'')+'</main>'):'');
+ // Capture the scroll position before replacing the DOM on network polls / acks.
+ // Local handover is a new visible step even when the engine phase stays the same.
+ const step=matchUiStepKey(v3State);
+ const key=step?(onlineVisible?'online:':'local:')+step+
+  (!onlineVisible?(matchUncovered?':revealed':':private'):''):null;
+ const newStep=key!==lastMatchStepKey;
+ const oldScroll=window.scrollY;
+ const currentGuideScroll=app.querySelector('.v3-guide-body')?.scrollTop??0;
+ const sameGuidePage=lastRenderedGuideCategory===v3HelpCategory;
  app.innerHTML=(onlineVisible?onlineDisplay:entryView==='modes'?modeChooser():entryView==='local'?welcome():game?
   (game.phase==='kickoff-ready'?endMercato():['mercato','lineup'].includes(game.phase)?playing():matchPage()):welcome())+
  (error?'<div class="alert" role="alert">'+esc(error)+'</div>':'')+
  (onlineVisible?onlineAnnouncementView():'')+popup()+
   (v3HelpVisible?v3HelpUi(v3HelpOpen,v3HelpCategory,suggestedGuideCategory(v3State)):'');
- // Step changes only: acks, polling, and help navigation never move the page.
- const step=matchUiStepKey(v3State);
- const key=step?(onlineVisible?'online:':'local:')+step:null;
- if(key!==lastMatchStepKey){
+ if(sameGuidePage&&v3HelpOpen){
+  const body=app.querySelector('.v3-guide-body');
+  if(body)body.scrollTop=currentGuideScroll;
+ }
+ lastRenderedGuideCategory=v3HelpCategory;
+ if(newStep){
   lastMatchStepKey=key;
   if(key&&!v3HelpOpen&&!modal&&!onlineModal){
    requestAnimationFrame(()=>{if(lastMatchStepKey===key)scrollToMatchFocus(app);});
   }
+ }else if(key){
+  // Preserve the user's voluntary scroll (including the period while waiting
+  // for their opponent). This only restores, it never changes the target.
+  window.scrollTo({top:oldScroll,behavior:'instant'});
  }
 }
 function change(fn){
