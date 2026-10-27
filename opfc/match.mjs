@@ -7,7 +7,7 @@
  * Le calendrier complet est SECRET (stockage serveur), immuable après kickoff.
  * Les deux modes utilisent les mêmes transitions. Aucune horloge réelle.
  */
-import {buildSchedule,lineupDetails} from './rules.mjs?v=opfc-match-balance-20261025';
+import {buildSchedule,lineupDetails} from './rules.mjs?v=opfc-half-balance-20261027';
 import {publicView} from './engine.mjs';
 import {createShootout,applyShootoutKick} from './shootout.mjs?v=opfc-match-balance-20261025';
 

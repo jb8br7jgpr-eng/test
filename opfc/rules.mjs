@@ -79,11 +79,16 @@ export function buildSchedule(teamA,teamB,rng=Math.random){
     const types=()=>{const x=draw();return x<.70?'open':x<.85?'corner':x<.95?'free-kick':'penalty';};
     const out=sorted.map(minute=>({minute,period:minute<45?1:2,attacker:draw()<pA?'PSG':'OM',type:types()}));
     const countFor=(club,period)=>out.filter(e=>e.attacker===club&&(period==null||e.period===period)).length;
-    // Écart maximal de deux séquences : 5–5/6–4, 6–5 ou 6–6/7–5.
-    // Le tirage pondéré par la force collective reste inchangé ; on rejette uniquement
-    // les calendriers trop déséquilibrés, avec au moins un passage par mi-temps.
+    // Option B validée : 10 occasions => 5/5 par période, 11 => 5/6 ou 6/5,
+    // 12 => 6/6. Chaque club : au moins deux attaques par mi-temps et au plus
+    // deux d'écart avec l'adversaire, dans chaque période comme sur 90 minutes.
+    // Les minutes, les types d'actions et le tirage pondéré par la force
+    // collective restent aléatoires. Les attaques consécutives sont autorisées.
+    const firstHalf=out.filter(e=>e.period===1).length;
+    if(Math.abs(firstHalf-(count-firstHalf))>1)continue;
     if(Math.abs(countFor('PSG',null)-countFor('OM',null))<=2&&
-      ['PSG','OM'].every(c=>countFor(c,null)>=3&&countFor(c,1)>=1&&countFor(c,2)>=1))return out;
+      [1,2].every(period=>countFor('PSG',period)>=2&&countFor('OM',period)>=2&&
+        Math.abs(countFor('PSG',period)-countFor('OM',period))<=2))return out;
   }
   throw new Error('Calendrier impossible à générer');
 }
