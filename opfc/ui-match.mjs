@@ -10,12 +10,13 @@ import {matchPublicView,kickoffMatch,continueMatch,resumeMatch} from './match.mj
 import {beginOpenPlayAction,lockOpenPlayChoice,revealOpenPlayDuel,continueOpenPlayDuel,revealOpenPlayShot} from './match-actions.mjs?v=opfc-integration-20261025';
 import {isSetPieceKind,setPieceTurnOwner,dispatchSetPieceMatch,renderSetPieceAction} from './ui-set-piece.mjs?v=opfc-immersive-score-20261026';
 import {shootoutTurnOwner,dispatchShootout,renderShootoutScreen} from './ui-shootout.mjs?v=opfc-immersive-score-20261026';
-import {renderFinalResult} from './ui-final.mjs?v=opfc-v2-20261023';
+import {renderFinalResult} from './ui-final.mjs?v=opfc-momentum-20261027';
 import {renderPrematch} from './prematch.mjs?v=opfc-palette-20261024';
 import {setDisplayedClubs,visualName,visualAbbr} from './club-identities.mjs';
 import {competitionName} from './club-honours.mjs?v=opfc-trophees-20261022';
 import {matchTacticalChoices,renderShotFaceOff,renderShotResult,renderReceiverCard,matchKeeperId} from './ui-match-widgets.mjs?v=opfc-immersive-score-20261026';
 import {recommendOpenShot} from './shot.mjs?v=opfc-openshot-20261025';
+import {renderMatchMomentum} from './v4-momentum.mjs?v=opfc-momentum-20261027';
 
 const html=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const name=id=>CARD_BY_ID.get(id)?.name??id??'—';
@@ -90,10 +91,11 @@ export function dispatchOpenMatch(state,command,{choice,takerId,rng=Math.random}
  if(command==='reveal-shot')return revealOpenPlayShot(state,rng());
  throw Error('Commande de match inconnue');
 }
-function scoreBoard(m,animateClub=null){
+function scoreBoard(m,animateClub=null,momentumOpen=false){
  return '<div class="match-scoreboard"><div>'+renderClubCrest('PSG','score-crest')+'<small>'+html(visualName('PSG'))+'</small></div>'+
  '<div class="match-score"><strong>'+['PSG','OM'].map(id=>'<span class="score-digit'+(id===animateClub?' score-digit-goal':'')+'">'+m.score[id]+'</span>').join(' – ')+'</strong><span>'+m.minute+'e minute</span></div>'+
- '<div>'+renderClubCrest('OM','score-crest')+'<small>'+html(visualName('OM'))+'</small></div></div>';
+ '<div>'+renderClubCrest('OM','score-crest')+'<small>'+html(visualName('OM'))+'</small></div></div>'+
+  renderMatchMomentum(m,{open:momentumOpen,clubA:visualAbbr('PSG'),clubB:visualAbbr('OM')});
 }
 function scoreStats(m){
  return '<div class="match-mini-stats">'+['PSG','OM'].map(id=>'<div><strong>'+html(visualAbbr(id))+'</strong><span>'+
@@ -251,7 +253,7 @@ function resultView(m,state,{onlineClub=null}={}){
  * réellement jouées. Les listes et le terrain commun restent sous ce bloc,
  * où les modifications de postes/formations sont déjà gérées par le moteur.
  */
-function halftimeView(state,m,{onlineClub=null}={}){
+function halftimeView(state,m,{onlineClub=null,momentumOpen=false}={}){
  const resume=state.phase==='resume-ready';
  const stats=m.statistics;
  const compare=[
@@ -277,7 +279,7 @@ function halftimeView(state,m,{onlineClub=null}={}){
   '<header class="halftime-header">'+
    '<span class="eyebrow">'+html(competitionName(state.match?.competition??state.competition))+' · Pause tactique</span>'+ 
    '<h2>⏸️ MI-TEMPS</h2><p>Mi-temps · 45e minute</p>'+
-  '</header>'+scoreBoard(m)+
+  '</header>'+scoreBoard(m,null,momentumOpen)+
   '<section class="panel halftime-stats" aria-label="Bilan de la première période">'+
    '<h3>📊 Bilan de la première période</h3>'+
    '<div class="halftime-stats-heading"><strong>'+html(visualAbbr('PSG'))+'</strong><span>Statistiques officielles</span><strong>'+html(visualAbbr('OM'))+'</strong></div>'+
@@ -294,10 +296,15 @@ function halftimeView(state,m,{onlineClub=null}={}){
 }
 
 /** Le moteur et la structure de l'écran restent communs aux deux modes. */
+function turnSignal(club,stage){
+ const role=stage==='shot-defense-choice'?'GARDIEN':stage==='shot-attack-choice'?'TIR':
+  stage==='defense-choice'?'DÉFENSE':stage==='taker-choice'?'PHASE ARRÊTÉE':'ATTAQUE';
+ return '<div class="opfc-turn-indicator is-playing" role="status"><strong>🎮 À TOI DE JOUER · '+html(visualAbbr(club))+'</strong><span>'+role+' · Choisis ton action</span></div>';
+}
 function onlineWaiting(club,description){
  return '<section class="panel online-turn-wait" role="status">'+
  '<span class="eyebrow">Deux iPhone · synchronisation</span>'+
- '<h2>⏳ Au tour de '+html(visualAbbr(club??'PSG'))+'</h2>'+
+ '<h2>⏳ EN ATTENTE DE L’ADVERSAIRE</h2><p class="opfc-wait-club">Au tour de '+html(visualAbbr(club??'PSG'))+'</p>'+
  '<p>'+html(description)+'</p><p class="caption">Mise à jour automatique.</p></section>';
 }
 const ONLINE_MATCH_COMMANDS=Object.freeze({
@@ -329,7 +336,7 @@ function onlineAcknowledgementPanel(content,state,club){
    match=>match+(mine?' disabled aria-disabled="true"':''))+
   status+(mine?'<p class="caption">En attente de la validation adverse…</p>':'');
 }
-function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null,competition=null}={}){
+function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null,competition=null,momentumOpen=false}={}){
  if(state?.teams)setDisplayedClubs(state.teams);
  if(state?.phase==='kickoff-ready')shownGoalIntros.clear();
  if(state?.phase==='kickoff-ready'){
@@ -358,9 +365,9 @@ function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null,competit
  }
  const view=onlineClub?state:matchPublicView(state),m=view.match;
  if(!m)return '<section class="panel match-stage"><h2>Aucun match en cours</h2></section>';
- let out=scoreBoard(m);
+ let out=scoreBoard(m,null,momentumOpen);
  if(state.phase==='half-time'||state.phase==='resume-ready'){
-  const markup=halftimeView(state,m,{onlineClub});
+  const markup=halftimeView(state,m,{onlineClub,momentumOpen});
   return onlineClub&&state.phase==='resume-ready'&&onlineClub!==hostClub?
    markup.replace(/data-action="match-resume"/g,'data-action="match-resume" disabled aria-disabled="true"')+
    onlineWaiting(hostClub,'Le club hôte reprend la deuxième période.'):markup;
@@ -368,12 +375,12 @@ function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null,competit
  if(state.phase==='shootout-ready'||state.phase==='shootout')return out+renderShootoutScreen(state,{uncovered});
  if(state.phase==='finished'){
   if(state.match.shootoutLastResult)return out+renderShootoutScreen(state,{uncovered});
-  return renderFinalResult(state);
+  return renderFinalResult(state,{momentumOpen});
  }
  if(state.phase==='moment-result'){
   const last=m.lastResult;
   const result=resultView(m,state,{onlineClub});
-  const header=scoreBoard(m,result.includes('score-digit-goal')?last?.attacker:null);
+  const header=scoreBoard(m,result.includes('score-digit-goal')?last?.attacker:null,momentumOpen);
   const announced=header+attackBanner(last?.attacker,last?.details?.context,last?.type,last?.minute,m)+result;
   return onlineClub?onlineAcknowledgementPanel(announced,state,onlineClub):announced;
  }
@@ -406,7 +413,13 @@ function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null,competit
   if(owner!==onlineClub&&action.stage!=='duel-revealed')
    return out+onlineWaiting(owner,'Le choix de l’adversaire reste secret.');
  }
- const display=out+renderAction(state,view,onlineClub?true:uncovered);
+ const rendered=renderAction(state,view,onlineClub?true:uncovered);
+  const turn=matchTurnOwner(state);
+  const isDecision=['attack-choice','defense-choice','shot-attack-choice','shot-defense-choice','taker-choice','corner-gesture-choice'].includes(m.action.stage);
+  const shown=isDecision&&turn&&(onlineClub?turn===onlineClub:uncovered);
+  const stageHtml=shown?rendered.replace('<section class="panel match-stage">',
+   '<section class="panel match-stage">'+turnSignal(turn,m.action.stage)):rendered;
+  const display=out+stageHtml;
  return onlineClub&&m.action?.stage==='duel-revealed'?
   onlineAcknowledgementPanel(display,state,onlineClub):display;
 }
@@ -416,8 +429,8 @@ export function renderMatchScreen(state,options={}){
  return matchCore(state,options);
 }
 /** En ligne : présentation locale identique, confidentialité propre à chacun. */
-export function renderOnlineMatchScreen(state,{myClub,hostClub,competition}={}){
+export function renderOnlineMatchScreen(state,{myClub,hostClub,competition,momentumOpen=false}={}){
  if(!['PSG','OM'].includes(myClub)||!['PSG','OM'].includes(hostClub))
   return '<section class="panel"><p>Synchronisation de la partie…</p></section>';
- return asOnlineActions(matchCore(state,{onlineClub:myClub,hostClub,competition}));
+ return asOnlineActions(matchCore(state,{onlineClub:myClub,hostClub,competition,momentumOpen}));
 }

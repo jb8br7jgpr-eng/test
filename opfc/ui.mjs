@@ -8,10 +8,10 @@ import {DISPLAY_CLUBS,currentClubChoices,setDisplayedClubs,setDisplayedChoices,v
 import {renderCharacterPortrait,renderClubCrest,renderIdentityCrest} from './ui-portraits.mjs?v=opfc-75-roster-20261022';
 import {effectiveRating,lineupDetails} from './rules.mjs?v=opfc-match-balance-20261025';
 import {FORMATION_NAMES,uiAuction,uiTeam,uiRoster,cardStats,currentAuctionEnding,clubName} from './ui-model.mjs?v=opfc-75-roster-20261022';
-import {renderMatchScreen,matchRequiresPrivacy,dispatchOpenMatch} from './ui-match.mjs?v=opfc-ux-20261027';
+import {renderMatchScreen,matchRequiresPrivacy,dispatchOpenMatch} from './ui-match.mjs?v=opfc-momentum-20261027';
 import {createOnlineClient} from './online-client.mjs?v=opfc-integration-20261025';
 import {renderOnlineLobby,normalizeJoinCodeInput} from './ui-online.mjs?v=opfc-v2-20261023';
-import {renderOnlineGame} from './ui-online-game.mjs?v=opfc-ux-20261027';
+import {renderOnlineGame} from './ui-online-game.mjs?v=opfc-momentum-20261027';
 import {CLUB_TROPHIES,isCompetition,competitionName,renderCompetitionPicker} from './club-honours.mjs?v=opfc-trophees-20261022';
 import {queueFinishedLocalGame,syncQueuedLocalResults,pendingLocalResultsCount} from './trophy-service.mjs?v=opfc-v2-20261023';
 import {prepareRematch} from './rematch.mjs?v=opfc-rematch-20261025';
@@ -22,6 +22,7 @@ import {preloadMatchPortraits,matchUiStepKey,scrollToMatchFocus} from './v3-matc
 const app=document.getElementById('opfc-app');
 const STORAGE='opfc-v08-local-dev';
 let v3HelpOpen=false,v3HelpCategory=null,headerMatchHelp=false;
+let momentumOpen=false,exitConfirmOpen=false;
 let lastMatchStepKey=null,lastRenderedGuideCategory=null;
 let game=null,firstClub='PSG',selection=null,modal=null,error='',beforeForm={PSG:'2-2-2',OM:'2-2-2'};
 let localClubChoices={PSG:'PSG',OM:'OM'},onlineHostIdentity='PSG',onlineGuestIdentity='OM';
@@ -349,11 +350,12 @@ function restore(){try{
    }
   }
 }catch{}}
+const exitNeedsConfirmation=()=>Boolean(onlineVisible?(onlineClient.room?.status==='ready'&&onlineClient.game):entryView==='playing'&&game);
 const shell=()=>'<header class="topbar'+(headerMatchHelp?' opfc-match-topbar':'')+'">'+
  '<a class="brand-mini" href="./"><img src="./opfc-logo-hd.PNG" alt="" width="35" height="35"> <span>OPMERCATO FC</span></a>'+
  '<nav class="opfc-header-actions" aria-label="Navigation">'+
  (headerMatchHelp?'<button type="button" class="opfc-head-action" data-action="v3-help-toggle" aria-haspopup="dialog" aria-expanded="'+v3HelpOpen+'">? Aide</button>':'')+
- '<a class="opfc-head-action" href="./">⌂ Accueil</a></nav></header>';
+ (exitNeedsConfirmation()?'<button type="button" class="opfc-head-action" data-action="v4-exit-request">⌂ Accueil</button>':'<a class="opfc-head-action" href="./">⌂ Accueil</a>')+'</nav></header>';
 const backToAction=phase=>['match','moment-result','half-time','resume-ready','shootout-ready','shootout'].includes(phase)?
  '<button type="button" class="opfc-back-to-action" data-action="match-scroll-to-action">↑ Revenir à l’action</button>':'';
 
@@ -669,7 +671,7 @@ function endMercato(){
   btn('confirm-reset','Nouvelle partie locale','ghost full')+'</main>';
 }
 function matchPage(){
- const middle=renderMatchScreen(game,{uncovered:matchUncovered});
+ const middle=renderMatchScreen(game,{uncovered:matchUncovered,momentumOpen});
  // Terrain et listes de recrues présents sous TOUTES les étapes du match.
  // Les commandes de composition restent actives uniquement à la mi-temps.
  const overview='<section class="match-team-overview" aria-label="Terrain et effectifs du match">'+
@@ -683,6 +685,15 @@ function matchPage(){
  middle+
  (game.phase==='finished'&&pendingLocalResultsCount()>0?'<p class="caption" role="status">🏆 Résultat en cours de synchronisation. Il sera envoyé automatiquement dès que la connexion sera disponible.</p>':'')+
  overview+backToAction(game.phase)+'<div class="gameplay-nav"><span class="caption">'+esc(competitionName(game.competition))+' · Mode local</span>'+btn('confirm-reset','Nouvelle partie','ghost small')+'</div></main>';
+}
+function exitConfirmation(){
+ if(!exitConfirmOpen)return '';
+ return '<div class="opfc-exit-overlay"><section class="opfc-exit-dialog" role="dialog" aria-modal="true" aria-labelledby="opfc-exit-heading">'+
+  '<div class="opfc-exit-symbol">⌂</div><h2 id="opfc-exit-heading">Quitter la partie ?</h2>'+
+  '<p>Tu vas revenir à l’accueil d’OPFC. Veux-tu vraiment quitter cet écran ?</p>'+
+  '<button type="button" class="opfc-exit-stay" data-action="v4-exit-cancel">Rester dans la partie</button>'+
+  '<button type="button" class="opfc-exit-leave" data-action="v4-exit-confirm">Quitter vers l’accueil</button>'+
+  '</section></div>';
 }
 function popup(){
  if(!modal)return '';
@@ -910,6 +921,7 @@ function render(){
  }else if(game)setDisplayedClubs(game.teams);
  else setDisplayedChoices(localClubChoices);
  const v3State=onlineVisible?(showingGame?snapshot:null):entryView==='playing'?game:null;
+  if(!v3State?.match)momentumOpen=false;
  preloadMatchPortraits(v3State);
  const themePhases=['lineup','kickoff-ready','match','moment-result','half-time','resume-ready','shootout-ready','shootout','finished'];
  const hasTheme=v3State&&themePhases.includes(v3State.phase)&&isStadium(v3State.stadiumId);
@@ -948,7 +960,7 @@ function render(){
   compactRoom+lobby+liveStatus+
   (showingGame?(['mercato','lineup','kickoff-ready'].includes(snapshot.phase)?onlineSharedMarket(snapshot):
    '<main class="online-game-content opfc-online-playing">'+
-   renderOnlineGame(snapshot,{myClub:room.myClub,hostClub:room.hostClub,competition:onlineClient.room?.competition})+
+   renderOnlineGame(snapshot,{myClub:room.myClub,hostClub:room.hostClub,competition:onlineClient.room?.competition,momentumOpen})+
    (['match','moment-result','half-time','resume-ready','shootout-ready','shootout','finished'].includes(snapshot.phase)?
     onlineTeams()+backToAction(snapshot.phase):'')+'</main>'):'');
  // Capture the scroll position before replacing the DOM on network polls / acks.
@@ -964,7 +976,7 @@ function render(){
   (game.phase==='kickoff-ready'?endMercato():['mercato','lineup'].includes(game.phase)?playing():matchPage()):welcome())+
  (error?'<div class="alert" role="alert">'+esc(error)+'</div>':'')+
  (onlineVisible?onlineAnnouncementView():'')+popup()+
-  (v3HelpVisible?v3HelpUi(v3HelpOpen,v3HelpCategory,suggestedGuideCategory(v3State)):'');
+  (v3HelpVisible?v3HelpUi(v3HelpOpen,v3HelpCategory,suggestedGuideCategory(v3State)):'')+exitConfirmation();
  if(sameGuidePage&&v3HelpOpen){
   const body=app.querySelector('.v3-guide-body');
   if(body)body.scrollTop=currentGuideScroll;
@@ -1010,12 +1022,17 @@ function start(){
   for(const id of ['PSG','OM'])if(beforeForm[id]!=='2-2-2')Object.assign(s,chooseFormation(s,id,beforeForm[id]));
  }
  preloadStadiumBackdrop(localStadium);
- game=s;entryView='playing';selection=null;placement=null;teamsVisible=false;pitchClub=null;
+ game=s;entryView='playing';selection=null;placement=null;teamsVisible=false;pitchClub=null;momentumOpen=false;exitConfirmOpen=false;
  modal=localRecruitmentMode==='random'?{type:'random-reveal',step:0}:{type:'dice'};
  error='';save();render();
 }
 function clicked(button){
  const action=button.dataset.action,club=button.dataset.club;
+ if(action==='v4-momentum-toggle'){momentumOpen=!momentumOpen;render();return;}
+ if(action==='v4-exit-request'){exitConfirmOpen=true;render();return;}
+ if(action==='v4-exit-cancel'){exitConfirmOpen=false;render();return;}
+ if(action==='v4-exit-confirm'&&exitConfirmOpen){window.location.assign('./');return;}
+ if(exitConfirmOpen)return;
  if(action==='v3-help-toggle'||action==='v3-help-close'){
   v3HelpOpen=action==='v3-help-toggle'?!v3HelpOpen:false;
   v3HelpCategory=null;render();return;
@@ -1241,6 +1258,9 @@ function clicked(button){
  }
 }
 app.addEventListener('click',event=>{
+ if(event.target.closest('a.brand-mini')&&exitNeedsConfirmation()){
+  event.preventDefault();exitConfirmOpen=true;render();return;
+ }
  const target=event.target.closest('button[data-action]');
  if(!target||target.disabled)return;
  try{clicked(target);}catch(e){error=e.message||'Action impossible';render();}
