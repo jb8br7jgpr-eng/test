@@ -26,6 +26,10 @@ function detail(id){
  ['Finition','Si une occasion est créée, le tireur défie le gardien.'],
  ['Mi-temps','Ajuster les compositions, puis les valider.'],
  ['Fin de match','Retrouver score, buteurs, statistiques et trophée.']])+
+ table(['Statistique','Ce qu’elle mesure'],[
+ ['Tirs','Tentatives de tir pendant le temps réglementaire.'],
+ ['Tirs cadrés','Frappes qui finissent au but ou sont arrêtées par le gardien.'],
+ ['Arrêts','Tirs cadrés repoussés par le gardien.']])+
  tip('Les occasions franches (vert), bonnes (orange) et difficiles (rouge) indiquent la qualité de la situation. La couleur ne garantit jamais un but.');
  case 'duels':return header('','Les deux joueurs choisissent leur tactique sans connaître celle de l’autre. Le tableau indique le modificateur pour l’attaque.')+
  table(['Attaque','Tacler','Intercepter','Pressing'],[
@@ -56,13 +60,18 @@ function detail(id){
  ['Premier poteau','Couvrir le premier poteau'],
  ['Point de penalty','Couvrir le point de penalty'],
  ['Second poteau','Couvrir le second poteau']])+
- tip('La bonne lecture tactique améliore la défense, mais ne supprime pas l’aléatoire ni la valeur des personnages.');
+ pct('Si la défense couvre la zone choisie, elle réduit les chances de créer une occasion. Si le centre réussit, le réceptionneur choisit sa finition.')+
+ table(['Finition de corner','Choix du réceptionneur'],[
+ ['Tête','Jeu de tête.'],
+ ['Reprise de volée','Frappe avant que le ballon touche le sol.'],
+ ['Retourné acrobatique','Geste spectaculaire plus risqué.']])+
+ tip('Après un centre réussi sur corner, le réceptionneur choisit son geste : il n’y a pas de second choix tactique du gardien.');
  case 'penalties':return header('','Les penalties et les séances de tirs au but reposent sur un choix de zone, effectué séparément par le tireur et le gardien.')+
  table(['Tireur','Gardien'],[
  ['Gauche, centre ou droite','Plonger à gauche, rester au centre ou plonger à droite'],
  ['Choix secret','Choix secret jusqu’à la résolution']])+
  tip('Le gardien tente d’anticiper la zone du tir. Même lorsque la direction est correcte, le résultat n’est pas automatiquement un arrêt.')+
- pct('Pendant une séance, le suivi des tentatives affiche les buts, arrêts et tirs manqués. Les deux joueurs continuent chacun à leur tour.');
+ pct('Pendant une séance, chaque camp dispose de cinq tentatives initiales. En cas d’égalité, la mort subite départage les clubs. Le suivi affiche les buts, arrêts et tirs manqués.');
  case 'lineups':return header('','Chaque équipe dispose de sept joueurs placés sur le terrain. Leur position et leurs statistiques influencent les actions du match.')+
  table(['Élément','Signification'],[
  ['Note effective','Note du joueur à son poste actuel.'],
