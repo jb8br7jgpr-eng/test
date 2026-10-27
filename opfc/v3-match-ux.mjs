@@ -1,7 +1,7 @@
 /** UI-only helpers for OPFC match transitions and targeted portrait warm-up.
  * No match-engine, network or persistence mutations.
  */
-import {portraitFile} from './ui-portraits.mjs';
+import {portraitFile} from './ui-portraits.mjs?v=opfc-75-roster-20261022';
 
 const loadedPortraits=new Map();
 const portraitQueue=[];
