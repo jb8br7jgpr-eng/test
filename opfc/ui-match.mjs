@@ -97,7 +97,7 @@ function scoreBoard(m,animateClub=null){
 }
 function scoreStats(m){
  return '<div class="match-mini-stats">'+['PSG','OM'].map(id=>'<div><strong>'+html(visualAbbr(id))+'</strong><span>'+
- m.statistics[id].shots+' tirs · '+m.statistics[id].onTarget+' cadrés</span></div>').join('')+'</div>';
+ m.statistics[id].shots+' tir'+(m.statistics[id].shots===1?'':'s')+' · '+m.statistics[id].onTarget+' cadré'+(m.statistics[id].onTarget===1?'':'s')</span></div>').join('')+'</div>';
 }
 /** Le contexte de l'occasion provient du moteur existant, jamais d'une estimation UI. */
 function attackBanner(attacker,context,kind,minute,m=null){
