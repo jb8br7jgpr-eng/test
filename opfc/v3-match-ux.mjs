@@ -50,6 +50,24 @@ export function matchUiStepKey(state){
   s.active?.shotNumber??'',s.lastResult?.shotNumber??'',s.stage??''].join(':');
 }
 
+/** En ligne, seuls les boutons d'action réellement disponibles pour CE
+ * téléphone déclenchent le retour automatique. Jamais les écrans d'attente.
+ * On interroge la vue déjà filtrée par les règles d'autorisation locales/serveur,
+ * sans accéder aux choix secrets ni au calendrier futur.
+ */
+const ONLINE_ACTION_PHASES=new Set([
+ 'kickoff-ready','match','moment-result','half-time','resume-ready','shootout-ready','shootout'
+]);
+export function onlineOwnTurnHasAction(root,phase){
+ if(!root||!ONLINE_ACTION_PHASES.has(phase))return false;
+ const content=root.querySelector('.online-game-content.opfc-online-playing');
+ if(!content)return false;
+ const choices=content.querySelectorAll(
+  'button[data-action="online-choice"],button[data-action="online-game"],button[data-action="ready"]'
+ );
+ return Array.from(choices).some(b=>!b.disabled&&b.getAttribute('aria-disabled')!=='true');
+}
+
 /** Reposition to a newly rendered step, never on a mere acknowledgement. */
 export function scrollToMatchFocus(root){
  if(!root)return;
