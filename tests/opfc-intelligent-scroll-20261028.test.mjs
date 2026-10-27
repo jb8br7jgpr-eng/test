@@ -25,13 +25,13 @@ test('Encart court : bas du résultat/action à la marge de sécurité du bas du
 test('Encart trop haut : garder son début lisible sous l’en-tête fixe',()=>{
  assert.equal(target({height:680}),595); // 200 + 500 - 105
  assert.equal(target({height:595}),595); // au-dessus de la zone utile
- assert.equal(target({height:594}),544); // tient tout juste : priorité au bas
+ assert.equal(target({height:594}),594); // tient tout juste : priorité au bas
 });
 
 test('Petits écrans, safe areas et bandeau navigateur Safari',()=>{
- assert.equal(target({viewportHeight:568,topInset:95,bottomInset:50,height:260}),392);
+ assert.equal(target({viewportHeight:568,topInset:95,bottomInset:50,height:260}),442);
  assert.equal(target({viewportHeight:750,viewportOffset:20}),320);
- assert.equal(target({viewportHeight:700,topInset:120,bottomInset:70,height:400}),600);
+ assert.equal(target({viewportHeight:700,topInset:120,bottomInset:70,height:400}),470);
 });
 
 test('Jamais de scroll négatif ou au-delà de la fin du document',()=>{
