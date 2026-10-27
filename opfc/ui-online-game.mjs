@@ -3,7 +3,7 @@
  * d'attente réseau diffèrent : aucun moteur ni calcul d'action côté client.
  * Le mercato et les compositions réutilisent les composants locaux de ui.mjs.
  */
-import {renderOnlineMatchScreen} from './ui-match.mjs?v=opfc-immersive-score-20261026';
+import {renderOnlineMatchScreen} from './ui-match.mjs?v=opfc-ux-20261027';
 import {renderOnlineShootoutScreen} from './ui-shootout.mjs?v=opfc-immersive-score-20261026';
 import {renderFinalResult} from './ui-final.mjs?v=opfc-v2-20261023';
 import {renderClubCrest} from './ui-portraits.mjs?v=opfc-75-roster-20261022';
