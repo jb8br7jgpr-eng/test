@@ -109,7 +109,7 @@ function attackBanner(attacker,context,kind,minute,m=null){
  return '<section class="match-attack-banner '+attacker.toLowerCase()+'" aria-label="Équipe attaquante : '+html(visualAbbr(attacker))+'">'+
  '<div class="match-attack-top"><span>⚽ PHASE OFFENSIVE</span><span>'+html(minute)+'e MIN.</span></div>'+
  '<div class="match-attack-teams"><div class="match-attacking-team"><span>⚽ À L’ATTAQUE</span><strong>'+html(visualAbbr(attacker))+'</strong></div>'+
- '<div class="match-attack-arrow" aria-hidden="true">→</div>'+
+ '<div class="match-attack-arrow" aria-hidden="true"><svg viewBox="0 0 64 64" focusable="false"><path d="M12 32H50 M36 18L50 32L36 46" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'+
  '<div class="match-defending-team"><span>🛡 EN DÉFENSE</span><strong>'+html(visualAbbr(defense))+'</strong></div></div>'+
  (m?.statistics?scoreStats(m):'')+
  '<div class="match-action-type '+(quality?'type-'+quality.tone:'type-neutral')+'">'+
