@@ -100,17 +100,19 @@ function scoreStats(m){
  m.statistics[id].shots+' tirs · '+m.statistics[id].onTarget+' cadrés</span></div>').join('')+'</div>';
 }
 /** Le contexte de l'occasion provient du moteur existant, jamais d'une estimation UI. */
-function attackBanner(attacker,context,kind,minute){
+function attackBanner(attacker,context,kind,minute,m=null){
  if(!['PSG','OM'].includes(attacker))return '';
  const defense=attacker==='PSG'?'OM':'PSG';
  const quality=QUALITY[context];
  return '<section class="match-attack-banner '+attacker.toLowerCase()+'" aria-label="Équipe attaquante : '+html(visualAbbr(attacker))+'">'+
+ '<div class="match-attack-top"><span>⚽ PHASE OFFENSIVE</span><span>'+html(minute)+'e MIN.</span></div>'+
  '<div class="match-attack-teams"><div class="match-attacking-team"><span>⚽ À L’ATTAQUE</span><strong>'+html(visualAbbr(attacker))+'</strong></div>'+
  '<div class="match-attack-arrow" aria-hidden="true">→</div>'+
- '<div class="match-defending-team"><span>EN DÉFENSE</span><strong>'+html(visualAbbr(defense))+'</strong></div></div>'+
+ '<div class="match-defending-team"><span>🛡 EN DÉFENSE</span><strong>'+html(visualAbbr(defense))+'</strong></div></div>'+
+ (m?.statistics?scoreStats(m):'')+
  '<div class="match-action-type '+(quality?'type-'+quality.tone:'type-neutral')+'">'+
- (quality?'<strong>'+quality.icon+' '+quality.label+'</strong><small>'+quality.detail+'</small>':
- '<strong>'+html(ACTION_LABEL[kind]??'Action en cours')+'</strong><small>'+html(minute)+'e minute</small>')+
+ (quality?'<strong>'+quality.icon+' '+quality.label+'</strong>':
+ '<strong>'+html(ACTION_LABEL[kind]??'Action en cours')+'</strong>')+
  '</div></section>';
 }
 function recommendedShot(state,action){
@@ -372,7 +374,7 @@ function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null,competit
   const last=m.lastResult;
   const result=resultView(m,state,{onlineClub});
   const header=scoreBoard(m,result.includes('score-digit-goal')?last?.attacker:null);
-  const announced=header+attackBanner(last?.attacker,last?.details?.context,last?.type,last?.minute)+scoreStats(m)+result;
+  const announced=header+attackBanner(last?.attacker,last?.details?.context,last?.type,last?.minute,m)+result;
   return onlineClub?onlineAcknowledgementPanel(announced,state,onlineClub):announced;
  }
  const moment=m.currentMoment;
@@ -380,11 +382,11 @@ function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null,competit
   // Avant de construire un bouton d'action, vérifier le club autorisé.
   // L'autre téléphone n'obtient jamais de commande qui pourrait être cliquée.
   if(onlineClub&&onlineClub!==moment?.attacker)
-   return out+attackBanner(moment?.attacker,null,moment?.type,moment?.minute)+
-    scoreStats(m)+onlineWaiting(moment?.attacker,'Le club attaquant prépare la séquence.');
+   return out+attackBanner(moment?.attacker,null,moment?.type,moment?.minute,m)+
+    onlineWaiting(moment?.attacker,'Le club attaquant prépare la séquence.');
   const supported=moment?.type==='open';
   const setPiece=isSetPieceKind(moment?.type);
-  out+=attackBanner(moment?.attacker,null,moment?.type,moment?.minute)+
+  out+=attackBanner(moment?.attacker,null,moment?.type,moment?.minute,m)+
   '<section class="panel match-stage"><span class="eyebrow">'+html(moment?.minute)+'e · '+html(ACTION_LABEL[moment?.type]??'Action')+'</span>'+
    '<h2>'+html(visualAbbr(moment?.attacker))+' passe à l’attaque</h2>'+
    (supported?'<p>Annonce des personnages et choix tactiques confidentiels.</p>'+
@@ -393,18 +395,18 @@ function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null,competit
     '<p>Séquence inconnue : aucune action simulée.</p>')+
    '</section>';
   return onlineClub&&onlineClub!==moment?.attacker?
-   out+scoreStats(m)+onlineWaiting(moment?.attacker,'Le club attaquant prépare la séquence.') :
-   out+scoreStats(m);
+   out+onlineWaiting(moment?.attacker,'Le club attaquant prépare la séquence.') :
+   out;
  }
- out+=attackBanner(m.action.attacker,m.action.context??m.action.originContext,m.action.kind,m.action.minute);
+ out+=attackBanner(m.action.attacker,m.action.context??m.action.originContext,m.action.kind,m.action.minute,m);
  if(onlineClub){
   const action=m.action,owner=action.kind==='open'?
    (ACTOR[action.stage]?action[ACTOR[action.stage]]:action.attacker):
    action.stage==='defense-choice'?action.defender:action.attacker;
   if(owner!==onlineClub&&action.stage!=='duel-revealed')
-   return out+scoreStats(m)+onlineWaiting(owner,'Le choix de l’adversaire reste secret.');
+   return out+onlineWaiting(owner,'Le choix de l’adversaire reste secret.');
  }
- const display=out+scoreStats(m)+renderAction(state,view,onlineClub?true:uncovered);
+ const display=out+renderAction(state,view,onlineClub?true:uncovered);
  return onlineClub&&m.action?.stage==='duel-revealed'?
   onlineAcknowledgementPanel(display,state,onlineClub):display;
 }
