@@ -349,3 +349,65 @@
 #opfc-app .v3-guide-tip p{margin:5px 0 0;color:#dbe9ef}
 #opfc-app .v3-guide-note{font-size:11px;color:#b8cfdc}
 #opfc-app .v3-help-dismiss{flex-shrink:0}
+
+/* OPFC V4 — momentum à barres bordées, intégré sous le score, 100 % responsive. */
+#opfc-app .opfc-momentum-wrap{margin:6px 0 11px;max-width:100%;min-width:0}
+#opfc-app .opfc-momentum-toggle{
+  width:100%;min-height:39px;padding:8px 12px;
+  display:flex;align-items:center;justify-content:center;gap:13px;
+  border:1px solid var(--v3-accent,#d3b779);border-radius:11px;
+  background:linear-gradient(115deg,#173449,#223F53);
+  color:#f8e1ad;font-size:12px;font-weight:900;letter-spacing:.02em;
+}
+#opfc-app .opfc-momentum-toggle:focus-visible{outline:3px solid #f5d794;outline-offset:2px}
+#opfc-app .opfc-momentum-panel{
+  min-width:0;max-width:100%;overflow:hidden;
+  border:1px solid #5b778a;border-radius:12px;
+  margin-top:7px;padding:10px 9px;background:#132a3c;
+  box-shadow:0 6px 18px #0005;
+}
+#opfc-app .opfc-momentum-heading{display:flex;justify-content:space-between;gap:6px;align-items:center;margin:0 1px 4px}
+#opfc-app .opfc-momentum-heading strong{font-size:11px;color:#f1d396;letter-spacing:.025em}
+#opfc-app .opfc-momentum-heading span{font-size:10px;color:#c1d7e2}
+#opfc-app .opfc-momentum-svg{display:block;width:100%;height:auto;max-width:100%;overflow:visible}
+#opfc-app .opfc-momentum-legend{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:5px}
+#opfc-app .opfc-momentum-legend span{display:inline-flex;align-items:center;gap:5px;color:#e0ecf2;font-size:11px}
+#opfc-app .opfc-momentum-key{display:inline-block;width:11px;height:11px;border-radius:2px;border:1.3px solid}
+#opfc-app .opfc-momentum-key.psg{background:#36c77a;border-color:#c2fbdd}
+#opfc-app .opfc-momentum-key.om{background:#8996f4;border-color:#d4dcff}
+#opfc-app .opfc-momentum-caption{font-size:10px;line-height:1.4;color:#b9ccd9;text-align:center;margin:8px 0 0}
+#opfc-app .opfc-momentum-empty{text-align:center;font-size:12px;color:#dbe8ed;line-height:1.4;margin:20px 3px}
+#opfc-app .opfc-turn-indicator{
+ display:flex;flex-direction:column;gap:4px;margin:0 0 11px;padding:11px 12px;
+ background:linear-gradient(120deg,#184735,#153c3d);border:1px solid #64d29d;
+ border-radius:11px;box-shadow:inset 3px 0 0 #84ecc0;
+}
+#opfc-app .opfc-turn-indicator strong{font-size:13px;color:#bffff0;letter-spacing:.035em}
+#opfc-app .opfc-turn-indicator span{font-size:12px;color:#e5f7ed}
+#opfc-app .online-turn-wait{border-color:#b4a374a8;background:linear-gradient(130deg,#20364b,#1b2d3c)}
+#opfc-app .online-turn-wait h2{font-size:clamp(15px,4.3vw,19px);line-height:1.4;color:#f8dc9f}
+#opfc-app .online-turn-wait .opfc-wait-club{color:#f7e9c9;font-weight:900;font-size:14px}
+#opfc-app .opfc-exit-overlay{
+ position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
+ padding:calc(env(safe-area-inset-top) + 16px) 14px calc(env(safe-area-inset-bottom) + 16px);
+ background:#081523dc;backdrop-filter:blur(9px);overscroll-behavior:contain;
+}
+#opfc-app .opfc-exit-dialog{
+ width:min(100%,410px);max-height:100%;overflow:auto;padding:22px 17px 18px;
+ background:linear-gradient(150deg,#1b364b,#0c2334);
+ border:1.5px solid #d9ba81;border-radius:19px;text-align:center;box-shadow:0 16px 38px #0009;
+}
+#opfc-app .opfc-exit-symbol{font-size:29px;color:#f1d49d;font-weight:900}
+#opfc-app .opfc-exit-dialog h2{font-size:21px;color:#fbe5b7;margin:9px 0}
+#opfc-app .opfc-exit-dialog p{font-size:13px;color:#e4eef2;line-height:1.5;margin:6px 0 18px}
+#opfc-app .opfc-exit-stay,#opfc-app .opfc-exit-leave{
+ display:block;width:100%;min-height:47px;padding:11px 13px;border-radius:11px;
+ font-size:13px;font-weight:900;margin:8px 0 0;
+}
+#opfc-app .opfc-exit-stay{color:#162c3c;background:linear-gradient(110deg,#efdbaf,#cba96b);border:1px solid #edcf97}
+#opfc-app .opfc-exit-leave{color:#edf5fa;background:#27485e;border:1px solid #abc1d0}
+@media(max-width:355px){
+ #opfc-app .opfc-momentum-panel{padding:8px 5px}
+ #opfc-app .opfc-momentum-legend{gap:8px}
+ #opfc-app .opfc-momentum-caption{font-size:9px}
+}
