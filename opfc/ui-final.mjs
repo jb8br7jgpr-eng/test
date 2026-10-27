@@ -8,6 +8,7 @@ import {renderCharacterPortrait,renderClubCrest} from './ui-portraits.mjs';
 import {setDisplayedClubs,visualName,visualAbbr} from './club-identities.mjs';
 import {matchPerformances} from './player-performance.mjs';
 import {CLUB_TROPHIES,competitionName} from './club-honours.mjs?v=opfc-trophies-20261022';
+import {renderMatchMomentum} from './v4-momentum.mjs?v=opfc-momentum-20261027';
 const h=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const player=id=>CARD_BY_ID.get(id)?.name??id??'—';
 
@@ -34,7 +35,7 @@ function shootoutReport(shootout){
  '<p class="caption">Scores et tentatives de séance séparés du temps réglementaire.</p>'+
  '<div class="final-kicks">'+rows+'</div></section>';
 }
-export function renderFinalResult(state){
+export function renderFinalResult(state,{momentumOpen=false}={}){
  if(state?.phase!=='finished'||!state.match?.winner)throw Error('Résultat final indisponible');
  setDisplayedClubs(state.teams);
  const m=state.match,st=m.statistics;
@@ -62,7 +63,7 @@ export function renderFinalResult(state){
   '</div>':'')+
  (m.victory==='shootout'?'<p class="final-qualification">Vainqueur aux tirs au but</p>':
  '<p class="final-qualification">Vainqueur au terme du temps réglementaire</p>')+
- '</section>'+
+ '</section>'+renderMatchMomentum(m,{open:momentumOpen,clubA:visualAbbr('PSG'),clubB:visualAbbr('OM')})+
  '<section class="panel"><h3 class="section-title">Buteurs du match</h3>'+
  '<div class="final-goals"><div><h4>'+h(visualAbbr('PSG'))+'</h4>'+goalsFor(m.goals,'PSG')+
  '</div><div><h4>'+h(visualAbbr('OM'))+'</h4>'+goalsFor(m.goals,'OM')+'</div></div></section>'+ (showAnchor?'<section class="panel opfc-anchor-award"><span class="eyebrow">Meilleur joueur du match</span>'+ '<h3>⚓ Ancre d’Or</h3><img src="./opfc/illustrations/ancre-or.webp" alt="Trophée Ancre d’Or" class="opfc-anchor-illustration" decoding="async">'+ '<div class="opfc-anchor-winner">'+renderCharacterPortrait(anchor,'opfc-anchor-portrait')+ '<div><strong>'+h(player(anchor))+'</strong><small>'+h(visualName(anchorStats?.club??'PSG'))+'</small></div></div>'+ '<p class="opfc-anchor-score">'+performance.points+' points</p>'+ '<p class="caption">'+(anchorStats?.goals??0)+' buts · '+(anchorStats?.assists??0)+' passes D. · '+ (anchorStats?.attacks??0)+' actions offensives · '+(anchorStats?.defenses??0)+' défensives · '+ (anchorStats?.saves??0)+' arrêts</p></section>':'')+
