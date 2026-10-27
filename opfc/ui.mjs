@@ -1258,6 +1258,9 @@ function clicked(button){
  }
 }
 app.addEventListener('click',event=>{
+ if(event.target.closest('a.brand-mini')&&exitNeedsConfirmation()){
+  event.preventDefault();exitConfirmOpen=true;render();return;
+ }
  const target=event.target.closest('button[data-action]');
  if(!target||target.disabled)return;
  try{clicked(target);}catch(e){error=e.message||'Action impossible';render();}
