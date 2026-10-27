@@ -46,8 +46,8 @@ test('La force collective garde un effet sur le tirage',()=>{
 });
 test('Le code de la règle est le même côté navigateur et Edge Function',()=>{
  const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
- const local=read('opfc/rules.mjs').replace(/\\?v=[\\w-]+/g,'');
- const server=read('supabase/functions/opfc-online/opfc/rules.mjs').replace(/\\?v=[\\w-]+/g,'');
+ const local=read('opfc/rules.mjs').replace(/\?v=[\w-]+/g,'');
+ const server=read('supabase/functions/opfc-online/opfc/rules.mjs').replace(/\?v=[\w-]+/g,'');
  assert.equal(local,server);
  assert.ok(read('opfc/match.mjs').includes('rules.mjs?v=opfc-half-balance-20261027'));
  assert.ok(read('opfc/ui-match.mjs').includes('match.mjs?v=opfc-half-balance-20261027'));
