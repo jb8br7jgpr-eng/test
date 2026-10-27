@@ -17,7 +17,7 @@ import {queueFinishedLocalGame,syncQueuedLocalResults,pendingLocalResultsCount} 
 import {prepareRematch} from './rematch.mjs?v=opfc-rematch-20261025';
 import {stadiumPicker,isStadium,preloadStadiumBackdrop} from './stadiums.mjs?v=opfc-finale-smooth-20261026';
 import {v3HelpUi,GUIDE_CATEGORIES,suggestedGuideCategory} from './v3-tactical-help.mjs?v=opfc-ux-20261027';
-import {preloadMatchPortraits,matchUiStepKey,scrollToMatchFocus} from './v3-match-ux.mjs?v=opfc-ux-20261027';
+import {preloadMatchPortraits,matchUiStepKey,scrollToMatchFocus,onlineOwnTurnHasAction} from './v3-match-ux.mjs?v=opfc-online-own-turn-scroll-20261027';
 
 const app=document.getElementById('opfc-app');
 const STORAGE='opfc-v08-local-dev';
@@ -984,12 +984,16 @@ function render(){
  lastRenderedGuideCategory=v3HelpCategory;
  if(newStep){
   lastMatchStepKey=key;
-  if(key&&!v3HelpOpen&&!modal&&!onlineModal){
+  // En ligne, ne remonter QUE lorsqu'une action de CE joueur est disponible.
+  // Un changement d'étape côté adversaire ne doit jamais voler le scroll.
+  const ownTurn=(!onlineVisible||showingGame&&onlineOwnTurnHasAction(app,snapshot?.phase));
+  if(key&&ownTurn&&!v3HelpOpen&&!modal&&!onlineModal){
    requestAnimationFrame(()=>{if(lastMatchStepKey===key)scrollToMatchFocus(app);});
+  }else if(key){
+   window.scrollTo({top:oldScroll,behavior:'instant'});
   }
  }else if(key){
-  // Preserve the user's voluntary scroll (including the period while waiting
-  // for their opponent). This only restores, it never changes the target.
+  // Les mises à jour silencieuses (dont les validations adverses) ne bougent pas.
   window.scrollTo({top:oldScroll,behavior:'instant'});
  }
 }
