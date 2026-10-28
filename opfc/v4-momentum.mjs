@@ -77,7 +77,7 @@ export function renderMatchMomentum(match,{open=false,clubA='PSG',clubB='OM'}={}
   const x=e.x,height=LEVELS[e.outcome],up=e.club==='PSG';
   const fill=up?'#36C77A':'#8996F4',stroke=up?'#C2FBDD':'#D4DCFF',width=e.width;
   const caption=escape(e.minute+'e min. · '+(up?clubA:clubB)+' · '+OUTCOMES[e.outcome]);
-  return '<rect x="'+(x-width/2).toFixed(2)+'" y="'+(up?middle-height:middle)+'" width="'+width.toFixed(2)+'" height="'+height+
+  return '<rect class="opfc-momentum-bar '+(up?'opfc-momentum-bar-psg':'opfc-momentum-bar-om')+'" x="'+(x-width/2).toFixed(2)+'" y="'+(up?middle-height:middle)+'" width="'+width.toFixed(2)+'" height="'+height+
    '" rx="1.8" fill="'+fill+'" stroke="'+stroke+'" stroke-width="1.35"><title>'+caption+'</title></rect>';
  }).join('');
  const goals=entries.filter(e=>e.outcome==='goal');
@@ -101,7 +101,8 @@ export function renderMatchMomentum(match,{open=false,clubA='PSG',clubB='OM'}={}
   const up=g.club==='PSG',y=up?42:165,textY=up?24:190;
   const fill=up?'#36C77A':'#8996F4';
   const leader=Math.abs(real-x)>1?'<line x1="'+real.toFixed(2)+'" y1="'+(up?53:150)+'" x2="'+x.toFixed(2)+'" y2="'+y+'" stroke="'+fill+'" stroke-width="1" opacity=".8"/>':'';
-  return '<g>'+leader+'<circle cx="'+x.toFixed(2)+'" cy="'+y+'" r="10" fill="'+fill+'" stroke="#F4F7FA" stroke-width="1.4"/>'+
+  return '<g>'+leader+'<circle class="opfc-momentum-goal-ring '+(up?'opfc-momentum-goal-psg':'opfc-momentum-goal-om')+'" cx="'+x.toFixed(2)+'" cy="'+y+'" r="11.7" fill="none" stroke="'+fill+'" stroke-width="1.2"/>'+
+   '<circle class="opfc-momentum-goal-marker '+(up?'opfc-momentum-goal-psg':'opfc-momentum-goal-om')+'" cx="'+x.toFixed(2)+'" cy="'+y+'" r="10" fill="'+fill+'" stroke="#F4F7FA" stroke-width="1.4"/>'+
    '<text x="'+x.toFixed(2)+'" y="'+(y+4)+'" font-size="11" text-anchor="middle">⚽</text>'+
    '<text x="'+x.toFixed(2)+'" y="'+textY+'" fill="#F4F7FA" font-size="11" font-weight="800" text-anchor="middle">'+g.minute+'′</text></g>';
  }).join('');
@@ -110,14 +111,19 @@ export function renderMatchMomentum(match,{open=false,clubA='PSG',clubB='OM'}={}
   '<section id="opfc-momentum-panel" class="opfc-momentum-panel" aria-label="Momentum du match">'+
   '<div class="opfc-momentum-heading"><strong>DYNAMIQUE DU MATCH</strong><span>'+gameLabel+' · '+now+'e min.</span></div>'+
   (entries.length?'<svg class="opfc-momentum-svg" viewBox="0 0 360 210" role="img" aria-label="'+escape(gameLabel+' : '+goals.length+' but'+(goals.length===1?'':'s'))+'">'+
-    '<rect x="43" y="48" width="292" height="104" rx="4" fill="#152B3B"/>'+
+    '<defs><linearGradient id="opfc-momentum-bar-psg-gradient" x1="0" y1="0" x2="0" y2="1">'+
+    '<stop offset="0%" stop-color="#8AE6B9"/><stop offset="53%" stop-color="#36C77A"/><stop offset="100%" stop-color="#20895D"/>'+
+    '</linearGradient><linearGradient id="opfc-momentum-bar-om-gradient" x1="0" y1="0" x2="0" y2="1">'+
+    '<stop offset="0%" stop-color="#C5CCFF"/><stop offset="53%" stop-color="#8996F4"/><stop offset="100%" stop-color="#626DBB"/>'+
+    '</linearGradient></defs>'+
+    '<rect class="opfc-momentum-plot-base" x="43" y="48" width="292" height="104" rx="4" fill="#152B3B"/>'+
     '<rect x="43" y="48" width="'+Math.max(0,at(now)-left).toFixed(2)+'" height="52" fill="#1D423A" opacity=".62"/>'+
     '<rect x="43" y="100" width="'+Math.max(0,at(now)-left).toFixed(2)+'" height="52" fill="#2F3453" opacity=".62"/>'+
     '<rect x="'+at(now).toFixed(2)+'" y="48" width="'+Math.max(0,right-at(now)).toFixed(2)+'" height="104" fill="#0C1D2B" opacity=".60"/>'+
-    '<line x1="43" y1="100" x2="335" y2="100" stroke="#D2DBE4" stroke-width="1.4"/>'+
-    '<line x1="'+at(45).toFixed(2)+'" y1="46" x2="'+at(45).toFixed(2)+'" y2="154" stroke="#B9CBDA" stroke-width="1" stroke-dasharray="4 4"/>'+
+    '<line class="opfc-momentum-axis" x1="43" y1="100" x2="335" y2="100" stroke="#D2DBE4" stroke-width="1.4"/>'+
+    '<line class="opfc-momentum-halftime" x1="'+at(45).toFixed(2)+'" y1="46" x2="'+at(45).toFixed(2)+'" y2="154" stroke="#B9CBDA" stroke-width="1" stroke-dasharray="4 4"/>'+
     timingLeaders+bars+labels+
-    '<line x1="'+at(now).toFixed(2)+'" y1="45" x2="'+at(now).toFixed(2)+'" y2="154" stroke="#F4D18A" stroke-width="2" stroke-dasharray="3 3"/>'+
+    '<line class="opfc-momentum-now" x1="'+at(now).toFixed(2)+'" y1="45" x2="'+at(now).toFixed(2)+'" y2="154" stroke="#F4D18A" stroke-width="2" stroke-dasharray="3 3"/>'+
 
     '<text x="3" y="78" fill="#86F1B4" font-size="11" font-weight="800">'+escape(clubA)+'</text>'+
     '<text x="3" y="131" fill="#B8C0FF" font-size="11" font-weight="800">'+escape(clubB)+'</text>'+
