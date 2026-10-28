@@ -16,7 +16,7 @@ import {setDisplayedClubs,visualName,visualAbbr} from './club-identities.mjs';
 import {competitionName} from './club-honours.mjs?v=opfc-trophees-20261022';
 import {matchTacticalChoices,renderShotFaceOff,renderShotResult,renderReceiverCard,matchKeeperId} from './ui-match-widgets.mjs?v=opfc-immersive-score-20261026';
 import {recommendOpenShot} from './shot.mjs?v=opfc-openshot-20261025';
-import {renderMatchMomentum} from './v4-momentum.mjs?v=opfc-momentum-bars-20261028';
+import {renderMatchMomentum} from './v4-momentum.mjs?v=opfc-momentum-premium-v2-20261028';
 
 const html=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const name=id=>CARD_BY_ID.get(id)?.name??id??'—';

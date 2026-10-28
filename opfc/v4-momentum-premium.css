@@ -1,0 +1,99 @@
+/*
+ * OPFC Momentum Premium V2 — habillage uniquement.
+ * Le graphique SVG reste 360x210 : mêmes données, mêmes événements,
+ * mêmes minutes, mêmes hauteurs de barres et mêmes dimensions de panneau.
+ * La mise à jour locale/en ligne reste immédiate et inchangée.
+ * Hérite des huit palettes de stade déjà validées.
+ */
+#opfc-app[data-v3-phase] .opfc-momentum-toggle{
+  background:
+    radial-gradient(ellipse at 50% -30%,color-mix(in srgb,var(--v3-accent,#d3b779) 19%,transparent),transparent 78%),
+    linear-gradient(118deg,
+      color-mix(in srgb,var(--v3-primary,#1f506d) 40%,#122c3f),
+      color-mix(in srgb,var(--v3-secondary,#294156) 28%,#132c3f) 54%,#091e30)!important;
+  border-color:color-mix(in srgb,var(--v3-accent,#d3b779) 76%,var(--v3-primary,#1f506d))!important;
+  box-shadow:
+    inset 0 1px 0 #ffffff28,
+    inset 0 -2px 0 #0004,
+    0 4px 14px color-mix(in srgb,var(--v3-primary,#1f506d) 21%,transparent)!important;
+  color:#fff0c9;
+  text-shadow:0 1px 10px color-mix(in srgb,var(--v3-accent,#d3b779) 28%,transparent);
+}
+#opfc-app[data-v3-phase] .opfc-momentum-toggle:active{
+  background:
+    linear-gradient(118deg,
+      color-mix(in srgb,var(--v3-primary,#1f506d) 49%,#122b3e),
+      color-mix(in srgb,var(--v3-secondary,#294156) 37%,#102538))!important;
+  box-shadow:inset 0 2px 7px #0007,inset 0 1px 0 #ffffff14!important;
+}
+#opfc-app[data-v3-phase] .opfc-momentum-panel{
+  background:
+    radial-gradient(ellipse at 50% -22%,color-mix(in srgb,var(--v3-accent,#d3b779) 18%,transparent),transparent 72%),
+    radial-gradient(ellipse at 0% 65%,color-mix(in srgb,var(--v3-primary,#24536d) 28%,transparent),transparent 76%),
+    linear-gradient(142deg,
+      color-mix(in srgb,var(--v3-primary,#24536d) 24%,#102838),
+      color-mix(in srgb,var(--v3-secondary,#294156) 22%,#0c2335) 62%,#0a1d2d)!important;
+  border-color:color-mix(in srgb,var(--v3-accent,#d3b779) 64%,var(--v3-primary,#24536d))!important;
+  box-shadow:
+    inset 0 1px 0 #ffffff2b,
+    inset 0 3px 0 -1px color-mix(in srgb,var(--v3-accent,#d3b779) 58%,transparent),
+    0 8px 24px #0006,
+    0 0 16px color-mix(in srgb,var(--v3-primary,#24536d) 15%,transparent)!important;
+  animation:opfc-momentum-premium-appear .16s ease-out both;
+}
+#opfc-app[data-v3-phase] .opfc-momentum-heading strong{
+  color:#ffe7ab;
+  text-shadow:0 1px 9px color-mix(in srgb,var(--v3-accent,#d3b779) 26%,transparent);
+}
+#opfc-app[data-v3-phase] .opfc-momentum-heading span{color:#e1ebf2}
+#opfc-app[data-v3-phase] .opfc-momentum-svg .opfc-momentum-plot-base{
+  fill:color-mix(in srgb,var(--v3-primary,#24536d) 22%,#102735);
+}
+#opfc-app[data-v3-phase] .opfc-momentum-svg .opfc-momentum-axis{
+  stroke:#e7eff6;
+  opacity:.76;
+}
+#opfc-app[data-v3-phase] .opfc-momentum-svg .opfc-momentum-halftime{
+  stroke:color-mix(in srgb,var(--v3-accent,#d3b779) 55%,#b9cbda);
+  opacity:.62;
+}
+#opfc-app[data-v3-phase] .opfc-momentum-svg .opfc-momentum-now{
+  stroke:#ffdf9b;
+  filter:drop-shadow(0 0 2px #ecc16f);
+}
+/* Les dimensions et la collision des barres ne changent pas :
+   seuls leur remplissage et leur relief diffèrent. */
+#opfc-app[data-v3-phase] .opfc-momentum-svg .opfc-momentum-bar-psg{
+  fill:url(#opfc-momentum-bar-psg-gradient);
+  filter:drop-shadow(0 0 1.5px #36c77a5c);
+}
+#opfc-app[data-v3-phase] .opfc-momentum-svg .opfc-momentum-bar-om{
+  fill:url(#opfc-momentum-bar-om-gradient);
+  filter:drop-shadow(0 0 1.5px #8996f45c);
+}
+/* Double couronne et halo léger, les centres x/y restent ceux des vrais buts. */
+#opfc-app[data-v3-phase] .opfc-momentum-svg .opfc-momentum-goal-ring{
+  opacity:.8;
+}
+#opfc-app[data-v3-phase] .opfc-momentum-svg .opfc-momentum-goal-psg{
+  filter:drop-shadow(0 0 2px #36c77a85);
+}
+#opfc-app[data-v3-phase] .opfc-momentum-svg .opfc-momentum-goal-om{
+  filter:drop-shadow(0 0 2px #8996f485);
+}
+#opfc-app[data-v3-phase] .opfc-momentum-key.psg{
+  background:linear-gradient(180deg,#8ae6b9 0%,#36c77a 53%,#20895d 100%);
+  box-shadow:0 0 7px #36c77a42;
+}
+#opfc-app[data-v3-phase] .opfc-momentum-key.om{
+  background:linear-gradient(180deg,#c5ccff 0%,#8996f4 53%,#626dbb 100%);
+  box-shadow:0 0 7px #8996f442;
+}
+#opfc-app[data-v3-phase] .opfc-momentum-caption{color:#cddce7}
+@keyframes opfc-momentum-premium-appear{
+  from{opacity:.88}
+  to{opacity:1}
+}
+@media(prefers-reduced-motion:reduce){
+  #opfc-app[data-v3-phase] .opfc-momentum-panel{animation:none!important}
+}
