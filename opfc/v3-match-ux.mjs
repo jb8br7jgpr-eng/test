@@ -3,6 +3,28 @@
  */
 import {portraitFile} from './ui-portraits.mjs?v=opfc-75-roster-20261022';
 
+/**
+ * Evite une destruction/recreation du DOM quand une actualisation produit
+ * exactement le meme HTML. Le cache ne remplace PAS l'etat de jeu, et ne
+ * court-circuite jamais le calcul des phases ou les controles serveur.
+ *
+ * Important : les champs saisis, les images deja chargees et la position du
+ * curseur sont conserves quand l'interface visible n'a pas change.
+ * invalidate() signale les modifications DOM partielles (Momentum, etc.).
+ */
+export function createStableMarkupCommitter(){
+ let root=null,lastMarkup=null;
+ return {
+  commit(target,markup){
+   if(target===root&&markup===lastMarkup&&target.firstElementChild)return false;
+   target.innerHTML=markup;
+   root=target;lastMarkup=markup;
+   return true;
+  },
+  invalidate(){root=null;lastMarkup=null;}
+ };
+}
+
 const loadedPortraits=new Map();
 const portraitQueue=[];
 let runningPortraits=0;
