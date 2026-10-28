@@ -17,9 +17,11 @@ import {queueFinishedLocalGame,syncQueuedLocalResults,pendingLocalResultsCount} 
 import {prepareRematch} from './rematch.mjs?v=opfc-rematch-20261025';
 import {stadiumPicker,isStadium,preloadStadiumBackdrop} from './stadiums.mjs?v=opfc-finale-smooth-20261026';
 import {v3HelpUi,GUIDE_CATEGORIES,suggestedGuideCategory} from './v3-tactical-help.mjs?v=opfc-ux-20261027';
-import {preloadMatchPortraits,matchUiStepKey,scrollToMatchFocus,onlineOwnTurnHasAction} from './v3-match-ux.mjs?v=opfc-intelligent-scroll-20261028';
+import {preloadMatchPortraits,matchUiStepKey,scrollToMatchFocus,onlineOwnTurnHasAction,createStableMarkupCommitter,patchMomentumOnly} from './v3-match-ux.mjs?v=opfc-fluidity-20261028';
+import {renderMatchMomentum} from './v4-momentum.mjs?v=opfc-momentum-bars-20261028';
 
 const app=document.getElementById('opfc-app');
+const uiMarkupCommitter=createStableMarkupCommitter();
 const STORAGE='opfc-v08-local-dev';
 let v3HelpOpen=false,v3HelpCategory=null,headerMatchHelp=false;
 let momentumOpen=false,exitConfirmOpen=false;
@@ -972,11 +974,14 @@ function render(){
  const oldScroll=window.scrollY;
  const currentGuideScroll=app.querySelector('.v3-guide-body')?.scrollTop??0;
  const sameGuidePage=lastRenderedGuideCategory===v3HelpCategory;
- app.innerHTML=(onlineVisible?onlineDisplay:entryView==='modes'?modeChooser():entryView==='local'?welcome():game?
+ const nextMarkup=(onlineVisible?onlineDisplay:entryView==='modes'?modeChooser():entryView==='local'?welcome():game?
   (game.phase==='kickoff-ready'?endMercato():['mercato','lineup'].includes(game.phase)?playing():matchPage()):welcome())+
  (error?'<div class="alert" role="alert">'+esc(error)+'</div>':'')+
  (onlineVisible?onlineAnnouncementView():'')+popup()+
   (v3HelpVisible?v3HelpUi(v3HelpOpen,v3HelpCategory,suggestedGuideCategory(v3State)):'')+exitConfirmation();
+ // Les polls reseau sans difference visible ne detruisent plus tout le DOM.
+ // Conserver les champs saisis, portraits deja decoded et focus natif.
+ const domChanged=uiMarkupCommitter.commit(app,nextMarkup);
  if(sameGuidePage&&v3HelpOpen){
   const body=app.querySelector('.v3-guide-body');
   if(body)body.scrollTop=currentGuideScroll;
@@ -992,8 +997,9 @@ function render(){
   }else if(key){
    window.scrollTo({top:oldScroll,behavior:'instant'});
   }
- }else if(key){
-  // Les mises à jour silencieuses (dont les validations adverses) ne bougent pas.
+ }else if(key&&domChanged){
+  // Restaurer la position seulement si le DOM a vraiment ete remplace.
+  // Une mise a jour identique ne doit ni toucher au scroll ni au focus.
   window.scrollTo({top:oldScroll,behavior:'instant'});
  }
 }
@@ -1030,9 +1036,22 @@ function start(){
  modal=localRecruitmentMode==='random'?{type:'random-reveal',step:0}:{type:'dice'};
  error='';save();render();
 }
+function patchOpenedMomentum(){
+ const state=onlineVisible?onlineClient.game:game;
+ if(!state?.match)return false;
+ const markup=renderMatchMomentum(state.match,{open:momentumOpen,
+  clubA:visualAbbr('PSG'),clubB:visualAbbr('OM')});
+ if(!patchMomentumOnly(app,markup))return false;
+ uiMarkupCommitter.invalidate(); // Le prochain rendu complet repart du DOM reel.
+ return true;
+}
 function clicked(button){
  const action=button.dataset.action,club=button.dataset.club;
- if(action==='v4-momentum-toggle'){momentumOpen=!momentumOpen;render();return;}
+ if(action==='v4-momentum-toggle'){
+  momentumOpen=!momentumOpen;
+  if(!patchOpenedMomentum())render();
+  return;
+ }
  if(action==='v4-exit-request'){exitConfirmOpen=true;render();return;}
  if(action==='v4-exit-cancel'){exitConfirmOpen=false;render();return;}
  if(action==='v4-exit-confirm'&&exitConfirmOpen){window.location.assign('./');return;}

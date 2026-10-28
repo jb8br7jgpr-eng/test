@@ -3,6 +3,43 @@
  */
 import {portraitFile} from './ui-portraits.mjs?v=opfc-75-roster-20261022';
 
+/**
+ * Evite une destruction/recreation du DOM quand une actualisation produit
+ * exactement le meme HTML. Le cache ne remplace PAS l'etat de jeu, et ne
+ * court-circuite jamais le calcul des phases ou les controles serveur.
+ *
+ * Important : les champs saisis, les images deja chargees et la position du
+ * curseur sont conserves quand l'interface visible n'a pas change.
+ * invalidate() signale les modifications DOM partielles (Momentum, etc.).
+ */
+export function createStableMarkupCommitter(){
+ let root=null,lastMarkup=null;
+ return {
+  commit(target,markup){
+   if(target===root&&markup===lastMarkup&&target.firstElementChild)return false;
+   target.innerHTML=markup;
+   root=target;lastMarkup=markup;
+   return true;
+  },
+  invalidate(){root=null;lastMarkup=null;}
+ };
+}
+
+/**
+ * Met a jour uniquement le Momentum. Tous les autres elements du match
+ * (portraits, score, boutons tactiques, champs en cours de saisie) gardent
+ * leurs noeuds DOM et leur etat natif.
+ */
+export function patchMomentumOnly(root,html){
+ const previous=root?.querySelector?.('.opfc-momentum-wrap');
+ if(!previous)return false;
+ const active=typeof document==='undefined'?null:document.activeElement;
+ const retainFocus=!!active&&previous.contains?.(active);
+ previous.outerHTML=html;
+ if(retainFocus)root.querySelector('.opfc-momentum-toggle')?.focus({preventScroll:true});
+ return true;
+}
+
 const loadedPortraits=new Map();
 const portraitQueue=[];
 let runningPortraits=0;
