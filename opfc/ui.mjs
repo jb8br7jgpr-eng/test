@@ -8,17 +8,17 @@ import {DISPLAY_CLUBS,currentClubChoices,setDisplayedClubs,setDisplayedChoices,v
 import {renderCharacterPortrait,renderClubCrest,renderIdentityCrest} from './ui-portraits.mjs?v=opfc-75-roster-20261022';
 import {effectiveRating,lineupDetails} from './rules.mjs?v=opfc-half-balance-20261027';
 import {FORMATION_NAMES,uiAuction,uiTeam,uiRoster,cardStats,currentAuctionEnding,clubName} from './ui-model.mjs?v=opfc-75-roster-20261022';
-import {renderMatchScreen,matchRequiresPrivacy,dispatchOpenMatch} from './ui-match.mjs?v=opfc-momentum-bars-20261028';
+import {renderMatchScreen,matchRequiresPrivacy,dispatchOpenMatch} from './ui-match.mjs?v=opfc-momentum-premium-v2-20261028';
 import {createOnlineClient} from './online-client.mjs?v=opfc-integration-20261025';
 import {renderOnlineLobby,normalizeJoinCodeInput} from './ui-online.mjs?v=opfc-v2-20261023';
-import {renderOnlineGame} from './ui-online-game.mjs?v=opfc-momentum-bars-20261028';
+import {renderOnlineGame} from './ui-online-game.mjs?v=opfc-momentum-premium-v2-20261028';
 import {CLUB_TROPHIES,isCompetition,competitionName,renderCompetitionPicker} from './club-honours.mjs?v=opfc-trophees-20261022';
 import {queueFinishedLocalGame,syncQueuedLocalResults,pendingLocalResultsCount} from './trophy-service.mjs?v=opfc-v2-20261023';
 import {prepareRematch} from './rematch.mjs?v=opfc-rematch-20261025';
 import {stadiumPicker,isStadium,preloadStadiumBackdrop} from './stadiums.mjs?v=opfc-finale-smooth-20261026';
 import {v3HelpUi,GUIDE_CATEGORIES,suggestedGuideCategory} from './v3-tactical-help.mjs?v=opfc-ux-20261027';
 import {preloadMatchPortraits,matchUiStepKey,scrollToMatchFocus,onlineOwnTurnHasAction,createStableMarkupCommitter,patchMomentumOnly} from './v3-match-ux.mjs?v=opfc-fluidity-20261028';
-import {renderMatchMomentum} from './v4-momentum.mjs?v=opfc-momentum-bars-20261028';
+import {renderMatchMomentum} from './v4-momentum.mjs?v=opfc-momentum-premium-v2-20261028';
 
 const app=document.getElementById('opfc-app');
 const uiMarkupCommitter=createStableMarkupCommitter();
