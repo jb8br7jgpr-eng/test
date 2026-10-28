@@ -1,0 +1,145 @@
+/*
+ * OPFC — Première couche premium 100 % cosmétique.
+ * Aucun changement de taille / placement / clic / moteur / synchronisation.
+ * Le style n'agit que dans les écrans de match, et reprend les 8 palettes
+ * existantes de v3-match.css (aucune nouvelle couleur de stade inventée).
+ *
+ * La dimension des écrans, des duels et des portraits est contractuelle :
+ * ici exclusivement couleurs, fonds, bordures, ombres et micro-animations.
+ */
+
+/* Reflets basés sur les couleurs réelles de chaque stade. */
+#opfc-app[data-v3-phase]{
+ --opfc-premium-sheen:color-mix(in srgb,var(--v3-accent,#dbb879) 23%,transparent);
+ --opfc-premium-tint:color-mix(in srgb,var(--v3-secondary,#274357) 34%,#0b2537);
+ --opfc-premium-ink:color-mix(in srgb,var(--v3-primary,#1f516b) 30%,#071e30);
+ --opfc-premium-edge:color-mix(in srgb,var(--v3-accent,#dbb879) 48%,var(--v3-primary,#1f516b));
+}
+
+/* Les écrans d'action (jamais les résultats) gagnent du relief. */
+#opfc-app[data-v3-phase] .match-stage:not(.shot-result-panel):is(
+ :has(.match-faceoff-immersive),
+ :has(.match-tactical-choices)
+){
+ background:
+  radial-gradient(ellipse at 48% -12%,var(--opfc-premium-sheen),transparent 73%),
+  linear-gradient(140deg,
+   color-mix(in srgb,var(--v3-primary,#245976) 42%,#0a2436),
+   var(--opfc-premium-tint) 62%,
+   #071b2b 100%)!important;
+ border-color:var(--opfc-premium-edge)!important;
+ box-shadow:
+  inset 0 1px 0 #ffffff25,
+  inset 0 4px 0 -1px var(--v3-accent,#dbb879),
+  0 10px 26px color-mix(in srgb,var(--v3-primary,#28546b) 21%,transparent),
+  0 12px 30px #0005!important;
+}
+
+/* Le bandeau d'attaque conserve exactement sa géométrie et son contenu. */
+#opfc-app[data-v3-phase] .match-attack-banner{
+ background:
+  radial-gradient(ellipse at 14% 0%,var(--opfc-premium-sheen),transparent 70%),
+  linear-gradient(125deg,
+   color-mix(in srgb,var(--v3-primary,#245976) 40%,#0c2638),
+   var(--opfc-premium-tint) 77%,
+   #0a1c2d)!important;
+ border-color:var(--opfc-premium-edge)!important;
+ box-shadow:
+  inset 0 1px 0 #ffffff26,
+  inset 0 3px 0 -1px color-mix(in srgb,var(--v3-accent,#dbb879) 64%,transparent),
+  0 8px 23px #0005!important;
+}
+
+/* Les deux cartes du duel restent aux dimensions déjà validées. */
+#opfc-app[data-v3-phase] .match-faceoff.match-faceoff-immersive{
+ background:
+  radial-gradient(ellipse at 50% -8%,var(--opfc-premium-sheen),transparent 80%),
+  linear-gradient(117deg,var(--opfc-premium-ink),var(--opfc-premium-tint))!important;
+ border-color:var(--opfc-premium-edge)!important;
+ box-shadow:inset 0 1px 0 #ffffff20,0 9px 22px #0005!important;
+}
+#opfc-app[data-v3-phase] .match-faceoff-immersive .match-duelist{
+ background:linear-gradient(155deg,
+  color-mix(in srgb,var(--v3-primary,#28546b) 36%,#122c40),
+  color-mix(in srgb,var(--v3-secondary,#273b57) 30%,#071928) 85%)!important;
+ border-color:color-mix(in srgb,var(--v3-accent,#dbb879) 43%,var(--v3-primary,#28546b))!important;
+ box-shadow:inset 0 1px 0 #ffffff26,inset 0 -2px 0 #0005,0 5px 12px #0005;
+}
+
+/* Portrait du joueur actif : halo léger, sans changer son cadrage ni sa taille. */
+#opfc-app[data-v3-phase] .match-faceoff-immersive .match-duelist:first-child .character-portrait.faceoff-portrait{
+ box-shadow:
+  0 0 0 1px color-mix(in srgb,var(--v3-accent,#dbb879) 70%,transparent),
+  0 0 18px color-mix(in srgb,var(--v3-accent,#dbb879) 30%,transparent),
+  0 7px 18px #0008!important;
+}
+#opfc-app[data-v3-phase] .match-faceoff-immersive .match-duelist:last-child .character-portrait.faceoff-portrait{
+ box-shadow:0 0 12px color-mix(in srgb,var(--v3-primary,#28546b) 28%,transparent),0 6px 17px #0007!important;
+}
+
+/* VS = effet de médaille lumineuse peint à l'intérieur de l'espace actuel. */
+#opfc-app[data-v3-phase] .match-faceoff-immersive .faceoff-vs{
+ position:relative;
+ isolation:isolate;
+ color:#fff1cb;
+ text-shadow:0 1px 1px #000a,0 0 12px var(--v3-accent,#dbb879),0 0 20px var(--opfc-premium-sheen);
+}
+#opfc-app[data-v3-phase] .match-faceoff-immersive .faceoff-vs::before{
+ content:"";
+ position:absolute;
+ inset:-5px -3px;
+ z-index:-1;
+ border-radius:999px;
+ background:radial-gradient(ellipse at center,
+   color-mix(in srgb,var(--v3-accent,#dbb879) 25%,#152a3b),
+   color-mix(in srgb,var(--v3-primary,#28546b) 30%,transparent) 70%,transparent);
+ box-shadow:0 0 0 1px color-mix(in srgb,var(--v3-accent,#dbb879) 28%,transparent);
+ pointer-events:none;
+}
+
+/* L'identité du stade se poursuit à la mi-temps et dans les petits détails. */
+#opfc-app[data-v3-phase] :is(.halftime-stat-rows,.match-mini-stats>div,.v3-ready-card,.v3-half-ready-card){
+ border-color:var(--opfc-premium-edge)!important;
+ box-shadow:inset 0 1px 0 #ffffff18,0 4px 12px #0003;
+}
+#opfc-app[data-v3-phase] :is(.halftime-stats-heading,.halftime-tactics h3,.match-stage:not(.shot-result-panel)>.eyebrow){
+ text-shadow:0 1px 8px color-mix(in srgb,var(--v3-accent,#dbb879) 21%,transparent);
+}
+#opfc-app[data-v3-phase] .match-scoreboard{
+ background:
+  radial-gradient(ellipse at 50% -14%,color-mix(in srgb,var(--v3-accent,#dbb879) 17%,transparent),transparent 75%),
+  linear-gradient(130deg,var(--opfc-premium-ink),var(--opfc-premium-tint) 54%,#071b2b)!important;
+ border-color:var(--opfc-premium-edge)!important;
+ box-shadow:
+  inset 0 1px 0 #ffffff27,
+  inset 0 5px 0 -1px var(--v3-accent,#dbb879),
+  0 10px 27px color-mix(in srgb,var(--v3-primary,#28546b) 24%,transparent)!important;
+}
+
+/* Apparitions courtes, sans délai et sans changement de hauteur.
+ * À chaque vraie transition visuelle, le contenu reste immédiatement cliquable.
+ * Les résultats possèdent déjà leur propre animation, conservée telle quelle.
+ */
+@keyframes opfc-premium-action-enter{
+ from{opacity:.94;transform:translate3d(0,4px,0)}
+ to{opacity:1;transform:translate3d(0,0,0)}
+}
+#opfc-app[data-v3-phase] .match-stage:not(.shot-result-panel):is(
+ :has(.match-faceoff-immersive),
+ :has(.match-tactical-choices)
+){
+ animation:opfc-premium-action-enter .18s cubic-bezier(.22,1,.36,1) both;
+}
+#opfc-app[data-v3-phase] .match-attack-banner{
+ animation:opfc-premium-action-enter .16s cubic-bezier(.22,1,.36,1) both;
+}
+
+/* Respect des préférences d'accessibilité et des appareils sensibles. */
+@media(prefers-reduced-motion:reduce){
+ #opfc-app[data-v3-phase] .match-stage:not(.shot-result-panel):is(
+  :has(.match-faceoff-immersive),:has(.match-tactical-choices)
+ ),
+ #opfc-app[data-v3-phase] .match-attack-banner{
+  animation:none!important;
+ }
+}
