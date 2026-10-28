@@ -1,0 +1,65 @@
+name: OPFC Momentum Premium V2 - tests sans déploiement
+
+on:
+  push:
+    branches:
+      - feature/opfc-momentum-premium-v2-20261028
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  premium-momentum:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Bloquer toute modification hors de la présentation du Momentum
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git diff --name-only origin/main...HEAD | while IFS= read -r path; do
+            case "$path" in
+              "opfc.html" | "opfc/ui.mjs" | "opfc/ui-match.mjs" | \
+              "opfc/ui-online-game.mjs" | "opfc/v4-momentum.mjs" | \
+              "opfc/v4-momentum-premium.css" | \
+              "opfc/tests/momentum-premium-v2-20261028.test.mjs" | \
+              ".github/workflows/opfc-momentum-premium-v2-tests.yml") ;;
+              *) echo "::error::Non-Momentum file changed: $path"; exit 1 ;;
+            esac
+          done
+      - name: Vérifier la syntaxe des modules modifiés
+        shell: bash
+        run: |
+          node --check opfc/ui.mjs
+          node --check opfc/ui-match.mjs
+          node --check opfc/ui-online-game.mjs
+          node --check opfc/v4-momentum.mjs
+          node --check opfc/tests/momentum-premium-v2-20261028.test.mjs
+      - name: Contrôler les imports / absence de changement dans le moteur et les fonctions
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in opfc/ui.mjs opfc/ui-match.mjs opfc/ui-online-game.mjs; do
+            diff -u \
+              <(git show "origin/main:$file" | sed 's/opfc-momentum-bars-20261028/opfc-momentum-premium-v2-20261028/g') \
+              <(sed 's/opfc-momentum-bars-20261028/opfc-momentum-premium-v2-20261028/g' "$file") \
+              || { echo "::error::Unexpected non-import change in $file"; exit 1; }
+          done
+      - name: Tests Momentum premium et de géométrie
+        run: node --test opfc/tests/momentum-premium-v2-20261028.test.mjs
+      - name: Tests de non régression Momentum, OPFC local / en ligne, fluidité et premium
+        run: |
+          node --test \
+            opfc/tests/momentum-spacing-20261028.test.mjs \
+            opfc/tests/fluidity-20261028.test.mjs \
+            opfc/tests/premium-cosmetic-20261028.test.mjs \
+            opfc/tests/v2.test.mjs \
+            tests/opfc-v3.test.mjs
