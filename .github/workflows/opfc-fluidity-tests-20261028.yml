@@ -1,0 +1,51 @@
+name: OPFC - test de fluidite isole (sans deploiement)
+
+on:
+  push:
+    branches:
+      - feature/opfc-ui-fluidity-20261028
+    paths:
+      - 'opfc/ui.mjs'
+      - 'opfc/v3-match-ux.mjs'
+      - 'opfc.html'
+      - 'opfc/tests/fluidity-20261028.test.mjs'
+      - '.github/workflows/opfc-fluidity-tests-20261028.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ui-fluidity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntaxe de l'interface
+        run: |
+          node --check opfc/ui.mjs
+          node --check opfc/v3-match-ux.mjs
+          node --check opfc/tests/fluidity-20261028.test.mjs
+      - name: Aucun moteur ni serveur ni OPMERCATO modifie
+        run: |
+          git diff --exit-code origin/main...HEAD -- \
+            opfc/engine.mjs opfc/match.mjs opfc/match-actions.mjs \
+            opfc/player-performance.mjs opfc/open-play.mjs \
+            opfc/online-client.mjs opfc/online-match.mjs \
+            opfc/ui-match.mjs opfc/ui-online-game.mjs \
+            opfc/ui-portraits.mjs opfc/v4-momentum.mjs \
+            opfc/ui.css opfc/v3-match.css opfc/v4-action-compact.css \
+            index.html classique.html mercato-online.js \
+            supabase/
+      - name: Tests de fluidite, Momentum et non-regressions OPFC
+        run: |
+          node --test \
+            opfc/tests/fluidity-20261028.test.mjs \
+            opfc/tests/momentum-spacing-20261028.test.mjs \
+            opfc/tests/v2.test.mjs \
+            tests/opfc-v3.test.mjs
