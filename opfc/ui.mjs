@@ -981,7 +981,7 @@ function render(){
   (v3HelpVisible?v3HelpUi(v3HelpOpen,v3HelpCategory,suggestedGuideCategory(v3State)):'')+exitConfirmation();
  // Les polls reseau sans difference visible ne detruisent plus tout le DOM.
  // Conserver les champs saisis, portraits deja decoded et focus natif.
- uiMarkupCommitter.commit(app,nextMarkup);
+ const domChanged=uiMarkupCommitter.commit(app,nextMarkup);
  if(sameGuidePage&&v3HelpOpen){
   const body=app.querySelector('.v3-guide-body');
   if(body)body.scrollTop=currentGuideScroll;
@@ -997,8 +997,9 @@ function render(){
   }else if(key){
    window.scrollTo({top:oldScroll,behavior:'instant'});
   }
- }else if(key){
-  // Les mises à jour silencieuses (dont les validations adverses) ne bougent pas.
+ }else if(key&&domChanged){
+  // Restaurer la position seulement si le DOM a vraiment ete remplace.
+  // Une mise a jour identique ne doit ni toucher au scroll ni au focus.
   window.scrollTo({top:oldScroll,behavior:'instant'});
  }
 }
