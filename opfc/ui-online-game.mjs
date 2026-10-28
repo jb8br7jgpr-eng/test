@@ -3,13 +3,13 @@
  * d'attente réseau diffèrent : aucun moteur ni calcul d'action côté client.
  * Le mercato et les compositions réutilisent les composants locaux de ui.mjs.
  */
-import {renderOnlineMatchScreen} from './ui-match.mjs?v=opfc-arrow-premium-20261027';
+import {renderOnlineMatchScreen} from './ui-match.mjs?v=opfc-momentum-bars-20261028';
 import {renderOnlineShootoutScreen} from './ui-shootout.mjs?v=opfc-immersive-score-20261026';
-import {renderFinalResult} from './ui-final.mjs?v=opfc-momentum-20261027';
+import {renderFinalResult} from './ui-final.mjs?v=opfc-momentum-bars-20261028';
 import {renderClubCrest} from './ui-portraits.mjs?v=opfc-75-roster-20261022';
 import {visualAbbr,setDisplayedClubs} from './club-identities.mjs';
 import {competitionName} from './club-honours.mjs?v=opfc-trophees-20261022';
-import {renderMatchMomentum} from './v4-momentum.mjs?v=opfc-momentum-20261027';
+import {renderMatchMomentum} from './v4-momentum.mjs?v=opfc-momentum-bars-20261028';
 
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function scoreBoard(m,momentumOpen=false){

@@ -13,20 +13,69 @@ export function momentumEntries(match){
   Object.hasOwn(LEVELS,e.outcome)
  ).slice(0,12).map((e,index)=>({minute:e.minute,club:e.attacker,outcome:e.outcome,index}));
 }
-function barWidth(entries,index){
- const current=at(entries[index].minute);
- const near=Math.min(...entries.filter((_,i)=>i!==index).map(e=>Math.abs(at(e.minute)-current)),Infinity);
- // Barres épaisses dans l'espace disponible, jamais de superposition opaque.
- return Math.max(4,Math.min(18,near-2));
+/** Répartition exclusivement visuelle : les minutes et l'ordre des actions restent réels.
+ * On ne décale que les barres d'une MÊME équipe (les deux équipes sont sur
+ * des demi-graphiques différents). Les positions sont calculées en coordonnées
+ * SVG, donc le rendu reste identique sur les différentes tailles d'iPhone.
+ */
+export function momentumBarLayout(entries){
+ const bars=entries.map((e,pos)=>({
+  ...e,pos,realX:at(e.minute),x:at(e.minute),width:18
+ }));
+ const gap=2.5;
+ for(const club of ['PSG','OM']){
+  const group=bars.filter(b=>b.club===club).sort((a,b)=>a.minute-b.minute||a.pos-b.pos);
+  if(!group.length)continue;
+  for(const bar of group){
+   const nearest=Math.min(Infinity,...group.filter(b=>b!==bar).map(b=>Math.abs(b.realX-bar.realX)));
+   // Les actions isolées gardent leur largeur originelle, les grappes sont
+   // légèrement affinées mais jamais superposées ni invisibles.
+   bar.width=nearest<24?12:18;
+  }
+  let offset=0;
+  const offsets=[];
+  const blocks=[];
+  // Régression isotone : minimise le déplacement total autour des vraies
+  // minutes, en imposant des distances suffisantes entre rectangles.
+  for(let i=0;i<group.length;i++){
+   if(i)offset+=(group[i-1].width+group[i].width)/2+gap;
+   offsets.push(offset);
+   blocks.push({start:i,end:i,sum:group[i].realX-offset,count:1});
+   while(blocks.length>1){
+    const b=blocks[blocks.length-1],a=blocks[blocks.length-2];
+    if(a.sum/a.count<=b.sum/b.count)break;
+    a.end=b.end;a.sum+=b.sum;a.count+=b.count;
+    blocks.pop();
+   }
+  }
+  // Chaque rectangle reste entièrement dans les limites de l'histogramme,
+  // même si plusieurs actions surviennent à la 0e ou à la 90e minute.
+  const minX=left+group[0].width/2;
+  const maxX=right-group.at(-1).width/2-offset;
+  for(const b of blocks){
+   const base=Math.max(minX,Math.min(maxX,b.sum/b.count));
+   for(let i=b.start;i<=b.end;i++)group[i].x=base+offsets[i];
+  }
+ }
+ return bars;
 }
 export function renderMatchMomentum(match,{open=false,clubA='PSG',clubB='OM'}={}){
  const entries=momentumEntries(match),now=Math.max(0,Math.min(90,Number(match?.minute)||0));
  const toggle='<button type="button" class="opfc-momentum-toggle" data-action="v4-momentum-toggle" aria-expanded="'+(open?'true':'false')+'" aria-controls="opfc-momentum-panel">'+
   '<span>▥ '+(open?'Masquer le momentum':'Voir le momentum')+'</span><span aria-hidden="true">'+(open?'⌃':'⌄')+'</span></button>';
  if(!open)return '<div class="opfc-momentum-wrap">'+toggle+'</div>';
- const bars=entries.map((e,i)=>{
-  const x=at(e.minute),height=LEVELS[e.outcome],up=e.club==='PSG';
-  const fill=up?'#36C77A':'#8996F4',stroke=up?'#C2FBDD':'#D4DCFF',width=barWidth(entries,i);
+ const layout=momentumBarLayout(entries);
+ // Un petit trait au ras de l'axe montre la vraie minute lorsqu'une barre
+ // a dû être décalée ; il est dessiné DERRIÈRE les barres.
+ const timingLeaders=layout.filter(e=>Math.abs(e.x-e.realX)>1.5).map(e=>{
+  const up=e.club==='PSG',y=up?middle-2:middle+2;
+  const stroke=up?'#86F1B4':'#B8C0FF';
+  return '<line x1="'+e.realX.toFixed(2)+'" y1="'+y+'" x2="'+e.x.toFixed(2)+'" y2="'+y+
+   '" stroke="'+stroke+'" stroke-width="1" opacity=".65" stroke-dasharray="2 2"/>';
+ }).join('');
+ const bars=layout.map(e=>{
+  const x=e.x,height=LEVELS[e.outcome],up=e.club==='PSG';
+  const fill=up?'#36C77A':'#8996F4',stroke=up?'#C2FBDD':'#D4DCFF',width=e.width;
   const caption=escape(e.minute+'e min. · '+(up?clubA:clubB)+' · '+OUTCOMES[e.outcome]);
   return '<rect x="'+(x-width/2).toFixed(2)+'" y="'+(up?middle-height:middle)+'" width="'+width.toFixed(2)+'" height="'+height+
    '" rx="1.8" fill="'+fill+'" stroke="'+stroke+'" stroke-width="1.35"><title>'+caption+'</title></rect>';
@@ -67,7 +116,7 @@ export function renderMatchMomentum(match,{open=false,clubA='PSG',clubB='OM'}={}
     '<rect x="'+at(now).toFixed(2)+'" y="48" width="'+Math.max(0,right-at(now)).toFixed(2)+'" height="104" fill="#0C1D2B" opacity=".60"/>'+
     '<line x1="43" y1="100" x2="335" y2="100" stroke="#D2DBE4" stroke-width="1.4"/>'+
     '<line x1="'+at(45).toFixed(2)+'" y1="46" x2="'+at(45).toFixed(2)+'" y2="154" stroke="#B9CBDA" stroke-width="1" stroke-dasharray="4 4"/>'+
-    bars+labels+
+    timingLeaders+bars+labels+
     '<line x1="'+at(now).toFixed(2)+'" y1="45" x2="'+at(now).toFixed(2)+'" y2="154" stroke="#F4D18A" stroke-width="2" stroke-dasharray="3 3"/>'+
 
     '<text x="3" y="78" fill="#86F1B4" font-size="11" font-weight="800">'+escape(clubA)+'</text>'+

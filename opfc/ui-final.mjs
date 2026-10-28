@@ -8,7 +8,7 @@ import {renderCharacterPortrait,renderClubCrest} from './ui-portraits.mjs';
 import {setDisplayedClubs,visualName,visualAbbr} from './club-identities.mjs';
 import {matchPerformances} from './player-performance.mjs';
 import {CLUB_TROPHIES,competitionName} from './club-honours.mjs?v=opfc-trophies-20261022';
-import {renderMatchMomentum} from './v4-momentum.mjs?v=opfc-momentum-20261027';
+import {renderMatchMomentum} from './v4-momentum.mjs?v=opfc-momentum-bars-20261028';
 const h=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const player=id=>CARD_BY_ID.get(id)?.name??id??'—';
 

@@ -10,13 +10,13 @@ import {matchPublicView,kickoffMatch,continueMatch,resumeMatch} from './match.mj
 import {beginOpenPlayAction,lockOpenPlayChoice,revealOpenPlayDuel,continueOpenPlayDuel,revealOpenPlayShot} from './match-actions.mjs?v=opfc-integration-20261025';
 import {isSetPieceKind,setPieceTurnOwner,dispatchSetPieceMatch,renderSetPieceAction} from './ui-set-piece.mjs?v=opfc-immersive-score-20261026';
 import {shootoutTurnOwner,dispatchShootout,renderShootoutScreen} from './ui-shootout.mjs?v=opfc-immersive-score-20261026';
-import {renderFinalResult} from './ui-final.mjs?v=opfc-momentum-20261027';
+import {renderFinalResult} from './ui-final.mjs?v=opfc-momentum-bars-20261028';
 import {renderPrematch} from './prematch.mjs?v=opfc-palette-20261024';
 import {setDisplayedClubs,visualName,visualAbbr} from './club-identities.mjs';
 import {competitionName} from './club-honours.mjs?v=opfc-trophees-20261022';
 import {matchTacticalChoices,renderShotFaceOff,renderShotResult,renderReceiverCard,matchKeeperId} from './ui-match-widgets.mjs?v=opfc-immersive-score-20261026';
 import {recommendOpenShot} from './shot.mjs?v=opfc-openshot-20261025';
-import {renderMatchMomentum} from './v4-momentum.mjs?v=opfc-momentum-20261027';
+import {renderMatchMomentum} from './v4-momentum.mjs?v=opfc-momentum-bars-20261028';
 
 const html=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const name=id=>CARD_BY_ID.get(id)?.name??id??'—';
