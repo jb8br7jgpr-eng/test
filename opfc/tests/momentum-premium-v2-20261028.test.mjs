@@ -47,8 +47,8 @@ test('The original SVG 360x210, time anchors, stats and bar heights stay exactly
 test('Premium gradients have the same team colors and only decorate existing bar rectangles',()=>{
  assert.match(html,/id="opfc-momentum-bar-psg-gradient"/);
  assert.match(html,/id="opfc-momentum-bar-om-gradient"/);
- assert.match(html,/class="opfc-momentum-bar opfc-momentum-bar-psg"/);
- assert.match(html,/class="opfc-momentum-bar opfc-momentum-bar-om"/);
+ assert.match(html,/<rect[^>]+class="opfc-momentum-bar opfc-momentum-bar-psg"/);
+ assert.match(html,/<rect[^>]+class="opfc-momentum-bar opfc-momentum-bar-om"/);
  assert.ok(html.includes('fill="#36C77A"'));
  assert.ok(html.includes('fill="#8996F4"'));
  assert.ok(skin.includes('fill:url(#opfc-momentum-bar-psg-gradient)'));
