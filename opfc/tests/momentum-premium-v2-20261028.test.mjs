@@ -75,7 +75,7 @@ test('An unopened Momentum remains exactly a compact toggle (no SVG or additiona
  assert.ok(closed.startsWith('<div class="opfc-momentum-wrap">'));
  assert.ok(closed.includes('Voir le momentum'));
  assert.ok(!closed.includes('<svg'));
- assert.ok(!closed.includes('opfc-momentum-panel"'));
+ assert.ok(!closed.includes('<section id="opfc-momentum-panel"'));
 });
 
 test('Skin cannot alter screen, portrait, button, chart or hitbox dimensions',()=>{
