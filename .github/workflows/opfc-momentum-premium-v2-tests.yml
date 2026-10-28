@@ -31,6 +31,8 @@ jobs:
               "opfc/ui-online-game.mjs" | "opfc/v4-momentum.mjs" | \
               "opfc/v4-momentum-premium.css" | \
               "opfc/tests/momentum-premium-v2-20261028.test.mjs" | \
+              "opfc/tests/fluidity-20261028.test.mjs" | \
+              "opfc/tests/premium-cosmetic-20261028.test.mjs" | \
               ".github/workflows/opfc-momentum-premium-v2-tests.yml") ;;
               *) echo "::error::Non-Momentum file changed: $path"; exit 1 ;;
             esac
