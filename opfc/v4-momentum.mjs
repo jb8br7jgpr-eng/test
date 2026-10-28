@@ -77,8 +77,8 @@ export function renderMatchMomentum(match,{open=false,clubA='PSG',clubB='OM'}={}
   const x=e.x,height=LEVELS[e.outcome],up=e.club==='PSG';
   const fill=up?'#36C77A':'#8996F4',stroke=up?'#C2FBDD':'#D4DCFF',width=e.width;
   const caption=escape(e.minute+'e min. · '+(up?clubA:clubB)+' · '+OUTCOMES[e.outcome]);
-  return '<rect class="opfc-momentum-bar '+(up?'opfc-momentum-bar-psg':'opfc-momentum-bar-om')+'" x="'+(x-width/2).toFixed(2)+'" y="'+(up?middle-height:middle)+'" width="'+width.toFixed(2)+'" height="'+height+
-   '" rx="1.8" fill="'+fill+'" stroke="'+stroke+'" stroke-width="1.35"><title>'+caption+'</title></rect>';
+  return '<rect x="'+(x-width/2).toFixed(2)+'" y="'+(up?middle-height:middle)+'" width="'+width.toFixed(2)+'" height="'+height+
+   '" rx="1.8" fill="'+fill+'" stroke="'+stroke+'" stroke-width="1.35" class="opfc-momentum-bar '+(up?'opfc-momentum-bar-psg':'opfc-momentum-bar-om')+'"><title>'+caption+'</title></rect>';
  }).join('');
  const goals=entries.filter(e=>e.outcome==='goal');
  // Écarter les étiquettes des buts proches, mais conserver la vraie position de chaque barre.
