@@ -25,6 +25,21 @@ export function createStableMarkupCommitter(){
  };
 }
 
+/**
+ * Met a jour uniquement le Momentum. Tous les autres elements du match
+ * (portraits, score, boutons tactiques, champs en cours de saisie) gardent
+ * leurs noeuds DOM et leur etat natif.
+ */
+export function patchMomentumOnly(root,html){
+ const previous=root?.querySelector?.('.opfc-momentum-wrap');
+ if(!previous)return false;
+ const active=typeof document==='undefined'?null:document.activeElement;
+ const retainFocus=!!active&&previous.contains?.(active);
+ previous.outerHTML=html;
+ if(retainFocus)root.querySelector('.opfc-momentum-toggle')?.focus({preventScroll:true});
+ return true;
+}
+
 const loadedPortraits=new Map();
 const portraitQueue=[];
 let runningPortraits=0;
