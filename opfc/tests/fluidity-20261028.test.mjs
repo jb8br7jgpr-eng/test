@@ -121,7 +121,8 @@ test('Browser boot path cache-busts the fluidity helpers (local + online)',()=>{
  assert.ok(entry.includes('ui.mjs?v=opfc-fluidity-20261028'),'entry cache must refresh');
  assert.ok(ui.includes("v3-match-ux.mjs?v=opfc-fluidity-20261028"));
  assert.ok(ui.includes("const nextMarkup="));
- assert.ok(ui.includes('uiMarkupCommitter.commit(app,nextMarkup)'));
+ assert.ok(ui.includes('const domChanged=uiMarkupCommitter.commit(app,nextMarkup)'));
+ assert.ok(ui.includes('}else if(key&&domChanged){'),'avoid no-op scroll calls');
  assert.ok(ui.includes('if(!patchOpenedMomentum())render()'));
  assert.ok(!ui.includes('app.innerHTML='));
 });
