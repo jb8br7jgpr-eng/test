@@ -75,23 +75,23 @@ function simulate(phase,{tracker=true,result=true,final=true,viewportOffset=0,re
 test('Local penalty result: tracker top is placed directly below the sticky header',()=>{
  const r=simulate('shootout',{tracker:true,result:true});
  assert.equal(r.scrolls.length,1);
- assert.deepEqual(r.scrolls[0],{top:436,behavior:'instant'});
- // Viewport target: rect.top + original scrollY - target = 330+250-436=144+8.
- assert.equal(330+250-r.scrolls[0].top,144);
+ assert.deepEqual(r.scrolls[0],{top:428,behavior:'instant'});
+ // Viewport target: rect.top + original scrollY - target = 330+250-428=152.
+ assert.equal(330+250-r.scrolls[0].top,152);
 });
 
 test('Online penalty choices and results use the same tracker-first anchor',()=>{
  const r=simulate('shootout',{tracker:true,result:true,viewportOffset:11,reduced:false});
- assert.deepEqual(r.scrolls,[{top:425,behavior:'smooth'}]);
- assert.equal(330+250-r.scrolls[0].top,155);
+ assert.deepEqual(r.scrolls,[{top:417,behavior:'smooth'}]);
+ assert.equal(330+250-r.scrolls[0].top,163);
  assert.equal(r.select[0],'.shootout-tracker');
 });
 
 test('Shootout final confirmation keeps tracker on top, normal final still shows final screen',()=>{
- assert.deepEqual(simulate('finished',{tracker:true,result:true}).scrolls,[{top:436,behavior:'instant'}]);
+ assert.deepEqual(simulate('finished',{tracker:true,result:true}).scrolls,[{top:428,behavior:'instant'}]);
  const normal=simulate('finished',{tracker:false,result:false,final:true});
  assert.equal(normal.scrolls.length,1);
- assert.notEqual(normal.scrolls[0].top,436);
+ assert.notEqual(normal.scrolls[0].top,428);
  assert.ok(normal.select.some(x=>x.includes('.final-screen')));
 });
 
