@@ -17,7 +17,7 @@ import {queueFinishedLocalGame,syncQueuedLocalResults,pendingLocalResultsCount} 
 import {prepareRematch} from './rematch.mjs?v=opfc-rematch-20261025';
 import {stadiumPicker,isStadium,preloadStadiumBackdrop} from './stadiums.mjs?v=opfc-finale-smooth-20261026';
 import {v3HelpUi,GUIDE_CATEGORIES,suggestedGuideCategory} from './v3-tactical-help.mjs?v=opfc-ux-20261027';
-import {preloadMatchPortraits,matchUiStepKey,scrollToMatchFocus,onlineOwnTurnHasAction,createStableMarkupCommitter,patchMomentumOnly} from './v3-match-ux.mjs?v=opfc-fluidity-20261028';
+import {preloadMatchPortraits,matchUiStepKey,scrollToMatchFocus,onlineOwnTurnHasAction,createStableMarkupCommitter,patchMomentumOnly} from './v3-match-ux.mjs?v=opfc-shootout-scroll-20261029';
 import {renderMatchMomentum} from './v4-momentum.mjs?v=opfc-momentum-premium-v2-20261028';
 
 const app=document.getElementById('opfc-app');

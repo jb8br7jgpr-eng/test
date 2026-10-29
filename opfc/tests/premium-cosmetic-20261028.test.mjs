@@ -9,7 +9,7 @@ const basePalette=readFileSync(new URL('../v3-match.css',import.meta.url),'utf8'
 test('Premium skin is isolated AFTER compact and established palettes',()=>{
  const compact=entry.indexOf('v4-action-compact.css');
  const premium=entry.indexOf('v4-premium-skin.css?v=opfc-premium-cosmetic-20261028');
- const script=entry.search(/opfc\/ui\.mjs\?v=opfc-(?:fluidity|momentum-premium-v2)-20261028/);
+ const script=entry.search(/opfc\/ui\.mjs\?v=opfc-(?:fluidity-20261028|momentum-premium-v2-20261028|shootout-scroll-20261029)/);
  assert.ok(compact>=0&&premium>compact&&script>premium);
 });
 
