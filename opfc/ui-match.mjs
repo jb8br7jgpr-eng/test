@@ -97,8 +97,12 @@ function scoreBoard(m,animateClub=null,momentumOpen=false){
  '<div>'+renderClubCrest('OM','score-crest')+'<small>'+html(visualName('OM'))+'</small></div></div>'+
   renderMatchMomentum(m,{open:momentumOpen,clubA:visualAbbr('PSG'),clubB:visualAbbr('OM')});
 }
-function scoreStats(m){
- return '<div class="match-mini-stats">'+['PSG','OM'].map(id=>'<div><strong>'+html(visualAbbr(id))+'</strong><span>'+
+/** Les statistiques suivent l'ordre du bandeau : attaquant à gauche, défenseur à droite.
+ * Les nombres restent ceux du moteur (PSG/OM), seule la présentation change.
+ */
+export function scoreStats(m,attacker){
+ const order=[attacker,attacker==='PSG'?'OM':'PSG'];
+ return '<div class="match-mini-stats">'+order.map(id=>'<div><strong>'+html(visualAbbr(id))+'</strong><span>'+
  m.statistics[id].shots+' tir'+(m.statistics[id].shots===1?'':'s')+' · '+m.statistics[id].onTarget+' cadré'+(m.statistics[id].onTarget===1?'':'s')+'</span></div>').join('')+'</div>';
 }
 /** Le contexte de l'occasion provient du moteur existant, jamais d'une estimation UI. */
@@ -111,7 +115,7 @@ function attackBanner(attacker,context,kind,minute,m=null){
  '<div class="match-attack-teams"><div class="match-attacking-team"><span>⚽ À L’ATTAQUE</span><strong>'+html(visualAbbr(attacker))+'</strong></div>'+
  '<div class="match-attack-arrow" aria-hidden="true"><svg viewBox="0 0 64 64" focusable="false"><path d="M12 32H50 M36 18L50 32L36 46" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'+
  '<div class="match-defending-team"><span>🛡 EN DÉFENSE</span><strong>'+html(visualAbbr(defense))+'</strong></div></div>'+
- (m?.statistics?scoreStats(m):'')+
+ (m?.statistics?scoreStats(m,attacker):'')+
  '<div class="match-action-type '+(quality?'type-'+quality.tone:'type-neutral')+'">'+
  (quality?'<strong>'+quality.icon+' '+quality.label+'</strong>':
  '<strong>'+html(ACTION_LABEL[kind]??'Action en cours')+'</strong>')+

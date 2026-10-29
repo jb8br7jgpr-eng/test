@@ -110,7 +110,7 @@ test('Existing synchronization guards, show/hide and CSS sizes are unchanged',()
  assert.ok(ui.includes('onlineOwnTurnHasAction(app,snapshot?.phase)'));
  assert.ok(ui.includes('if(lastMatchStepKey===key)scrollToMatchFocus(app)'));
  assert.ok(ui.includes("if(action==='match-scroll-to-action'){scrollToMatchFocus(app);return;}"));
- assert.ok(html.includes('ui.mjs?v=opfc-shootout-scroll-20261029'));
+ assert.ok(html.includes('ui.mjs?v=opfc-shootout-scroll-20261029')||html.includes('ui.mjs?v=opfc-attack-stats-alignment-20261029'));
  assert.ok(ui.includes('v3-match-ux.mjs?v=opfc-shootout-scroll-20261029'));
  assert.ok(tracker.includes('<section class="panel shootout-tracker"'));
 });

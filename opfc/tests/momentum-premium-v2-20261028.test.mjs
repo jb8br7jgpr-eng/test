@@ -124,12 +124,12 @@ test('Only the graph markup in the visual module changes; historical calculation
 test('The local, online and standalone toggle share a fresh module and the new stylesheet',()=>{
  const key='v=opfc-momentum-premium-v2-20261028';
  assert.ok(entry.includes('v4-momentum-premium.css?'+key));
- assert.ok(entry.includes('opfc/ui.mjs?'+key)||entry.includes('opfc/ui.mjs?v=opfc-shootout-scroll-20261029'));
+ assert.ok(entry.includes('opfc/ui.mjs?'+key)||entry.includes('opfc/ui.mjs?v=opfc-shootout-scroll-20261029')||entry.includes('opfc/ui.mjs?v=opfc-attack-stats-alignment-20261029'));
  for(const [src,label] of [[appUI,'main UI'],[localUI,'local'],[onlineUI,'online']]){
   assert.ok(src.includes('v4-momentum.mjs?'+key),label+' uses same updated renderer');
  }
- assert.ok(appUI.includes('ui-match.mjs?'+key));
- assert.ok(appUI.includes('ui-online-game.mjs?'+key));
- assert.ok(onlineUI.includes('ui-match.mjs?'+key));
+ assert.ok(appUI.includes('ui-match.mjs?'+key)||appUI.includes('ui-match.mjs?v=opfc-attack-stats-alignment-20261029'));
+ assert.ok(appUI.includes('ui-online-game.mjs?'+key)||appUI.includes('ui-online-game.mjs?v=opfc-attack-stats-alignment-20261029'));
+ assert.ok(onlineUI.includes('ui-match.mjs?'+key)||onlineUI.includes('ui-match.mjs?v=opfc-attack-stats-alignment-20261029'));
  assert.ok(appUI.includes('if(!patchOpenedMomentum())render()'),'efficient toggle stays in place');
 });
