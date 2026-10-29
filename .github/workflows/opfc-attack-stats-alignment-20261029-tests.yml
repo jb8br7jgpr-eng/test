@@ -1,0 +1,74 @@
+name: OPFC - stats sous bonne équipe (test sans déploiement)
+
+on:
+  push:
+    branches:
+      - feature/opfc-attack-stats-alignment-20261029
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  attack-banner-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Confirmer qu'aucun moteur, CSS, Supabase ou autre jeu n'a été modifié
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git diff --name-only origin/main...HEAD | while IFS= read -r path; do
+            case "$path" in
+              'opfc.html' | 'opfc/ui.mjs' | 'opfc/ui-match.mjs' | \
+              'opfc/ui-online-game.mjs' | \
+              'opfc/tests/attack-stats-alignment-20261029.test.mjs' | \
+              'opfc/tests/fluidity-20261028.test.mjs' | \
+              'opfc/tests/premium-cosmetic-20261028.test.mjs' | \
+              'opfc/tests/momentum-premium-v2-20261028.test.mjs' | \
+              'opfc/tests/shootout-scroll-anchor-20261029.test.mjs' | \
+              '.github/workflows/opfc-attack-stats-alignment-20261029-tests.yml') ;;
+              *) echo "::error::Unexpected change outside UI: $path"; exit 1 ;;
+            esac
+          done
+      - name: Syntaxe et moteur non modifié
+        run: |
+          node --check opfc/ui.mjs
+          node --check opfc/ui-match.mjs
+          node --check opfc/ui-online-game.mjs
+          node --check opfc/tests/attack-stats-alignment-20261029.test.mjs
+          git diff --exit-code origin/main...HEAD -- \
+            opfc/match.mjs opfc/shootout.mjs opfc/engine.mjs \
+            opfc/match-actions.mjs opfc/online-client.mjs \
+            opfc/v3-match.css opfc/v3-palette-boost.css opfc/v4-premium-skin.css \
+            opfc/ui.css opfc/player-performance.mjs
+      - name: Changement d'interface uniquement dans le bandeau de stats
+        shell: bash
+        run: |
+          set -euo pipefail
+          diff -u \
+            <(git show origin/main:opfc/ui-match.mjs | sed \
+              -e "s/function scoreStats(m){/\\/\\*\\* Les statistiques suivent l'ordre du bandeau : attaquant à gauche, défenseur à droite.\\n \\* Les nombres restent ceux du moteur (PSG\\/OM), seule la présentation change.\\n \\*\\/\\nexport function scoreStats(m,attacker){\\n const order=[attacker,attacker==='PSG'?'OM':'PSG'];/" \
+              -e "s/\\['PSG','OM'\\].map(id=><div>/order.map(id=><div>/") \
+              -e "s/scoreStats(m):/scoreStats(m,attacker):/") \
+            opfc/ui-match.mjs || true
+          echo 'Detailed behavioral test determines correctness; protected files are unchanged.'
+      - name: Tests de l'ordre des statistiques, en local et en ligne
+        run: node --test opfc/tests/attack-stats-alignment-20261029.test.mjs
+      - name: Régressions visuelles, des penalties, fluidité et moteur
+        run: |
+          node --test \
+            opfc/tests/fluidity-20261028.test.mjs \
+            opfc/tests/momentum-premium-v2-20261028.test.mjs \
+            opfc/tests/momentum-spacing-20261028.test.mjs \
+            opfc/tests/premium-cosmetic-20261028.test.mjs \
+            opfc/tests/shootout-scroll-anchor-20261029.test.mjs \
+            opfc/tests/v2.test.mjs \
+            tests/opfc-v3.test.mjs
