@@ -20,7 +20,8 @@ const game=(attacker)=>({
  match:{
   minute:50,index:5,
   score:{PSG:0,OM:0},statistics:stats(),
-  history:[],currentMoment:{attacker,minute:50,type:'open'}
+  history:[],schedule:[{attacker,minute:50,type:'open',period:2}],
+  currentMoment:{attacker,minute:50,type:'open'}
  }
 });
 function verifyStatsOrder(markup,attackLabel,defenseLabel){
