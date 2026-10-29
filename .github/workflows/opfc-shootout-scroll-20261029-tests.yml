@@ -1,0 +1,67 @@
+name: OPFC - cadrage tirs au but local et en ligne (sans déploiement)
+
+on:
+  push:
+    branches:
+      - feature/opfc-shootout-scroll-anchor-20261029
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  shootout-scroll-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Refuser toute modification moteur, Supabase, style ou gameplay
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git diff --name-only origin/main...HEAD | while IFS= read -r path; do
+            case "$path" in
+              'opfc.html' | 'opfc/ui.mjs' | 'opfc/v3-match-ux.mjs' | \
+              'opfc/tests/shootout-scroll-anchor-20261029.test.mjs' | \
+              'opfc/tests/fluidity-20261028.test.mjs' | \
+              'opfc/tests/premium-cosmetic-20261028.test.mjs' | \
+              'opfc/tests/momentum-premium-v2-20261028.test.mjs' | \
+              '.github/workflows/opfc-shootout-scroll-20261029-tests.yml') ;;
+              *) echo "::error::Gameplay / unexpected file changed: $path"; exit 1 ;;
+            esac
+          done
+      - name: Syntaxe et source du moteur de match inchangées
+        shell: bash
+        run: |
+          node --check opfc/ui.mjs
+          node --check opfc/v3-match-ux.mjs
+          node --check opfc/tests/shootout-scroll-anchor-20261029.test.mjs
+          git diff --exit-code origin/main...HEAD -- \
+            opfc/match.mjs opfc/shootout.mjs opfc/match-actions.mjs \
+            opfc/ui-shootout.mjs opfc/online-client.mjs opfc/ui-online-game.mjs \
+            opfc/ui-match.mjs opfc/ui.css opfc/v3-palette-boost.css \
+            opfc/v4-momentum.mjs opfc/v4-momentum-premium.css
+      - name: Vérifier que le seul changement de ui.mjs est la version du helper visuel
+        shell: bash
+        run: |
+          set -euo pipefail
+          diff -u \
+            <(git show origin/main:opfc/ui.mjs | sed 's/v3-match-ux.mjs?v=opfc-fluidity-20261028/v3-match-ux.mjs?v=opfc-shootout-scroll-20261029/') \
+            opfc/ui.mjs
+      - name: Tests du cadrage du tableau, sans l'affichage du résultat
+        run: node --test opfc/tests/shootout-scroll-anchor-20261029.test.mjs
+      - name: Régressions fluidité, Momentum, tirs au but et match local/en ligne
+        run: |
+          node --test \
+            opfc/tests/fluidity-20261028.test.mjs \
+            opfc/tests/momentum-premium-v2-20261028.test.mjs \
+            opfc/tests/momentum-spacing-20261028.test.mjs \
+            opfc/tests/premium-cosmetic-20261028.test.mjs \
+            opfc/tests/v2.test.mjs \
+            tests/opfc-v3.test.mjs
