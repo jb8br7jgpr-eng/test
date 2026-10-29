@@ -122,6 +122,16 @@ export function matchFocusScrollTarget({
  return Math.max(0,Math.min(maxScrollY,Math.round(scrollY+offset)));
 }
 
+/** Pendant les tirs au but, afficher le HAUT du suivi directement sous
+ * l'en-tête sticky (et non centrer le bas du résultat du tir).
+ * Aucun impact sur les autres écrans ou sur l'ordre des événements.
+ */
+export function shootoutTrackerScrollTarget({
+ top,scrollY,viewportOffset=0,topInset=0,maxScrollY=Infinity
+}){
+ return Math.max(0,Math.min(maxScrollY,Math.round(scrollY+top-viewportOffset-topInset)));
+}
+
 /** Positionne chaque nouvelle étape ; jamais sur une simple validation réseau.
  * Le bouton manuel « Revenir à l'action » utilise la même logique.
  */
@@ -129,7 +139,12 @@ export function scrollToMatchFocus(root){
  if(!root)return;
  const phase=root.dataset.v3Phase;
  let focus=null;
- if(phase==='finished')focus=root.querySelector('.final-screen, .shootout-tracker');
+ // Local et en ligne : pendant la séance, le suivi précède toujours
+ // les résultats. La fin classique continue d'ouvrir sur la finale.
+ const tracker=root.querySelector('.shootout-tracker');
+ const anchorShootout=!!tracker&&(phase==='shootout'||phase==='finished');
+ if(anchorShootout)focus=tracker;
+ else if(phase==='finished')focus=root.querySelector('.final-screen, .shootout-tracker');
  else if(phase==='moment-result')focus=root.querySelector('.shot-result-unified, .match-stage');
  else if(phase==='half-time'||phase==='resume-ready')focus=root.querySelector('.halftime-screen');
  else if(phase==='kickoff-ready')focus=root.querySelector('.opfc-prematch, .match-stage');
@@ -152,7 +167,12 @@ export function scrollToMatchFocus(root){
  const bottomInset=Number.isFinite(rootBottom)?Math.max(16,rootBottom-12):16;
  const scrollArea=document.scrollingElement??document.documentElement;
  const maxScrollY=Math.max(0,scrollArea.scrollHeight-scrollArea.clientHeight);
- const target=matchFocusScrollTarget({
+ // Tirs au but uniquement : alignement sur le HAUT du tableau sous
+ // l'en-tête fixe, même lorsque le résultat est plus grand que l'écran.
+ // Les autres phases conservent leur cadrage habituel.
+ const target=anchorShootout?shootoutTrackerScrollTarget({
+  top:rect.top,scrollY:window.scrollY,viewportOffset,topInset,maxScrollY
+ }):matchFocusScrollTarget({
   top:rect.top,height:rect.height,scrollY:window.scrollY,
   viewportHeight,viewportOffset,topInset,bottomInset,maxScrollY
  });
