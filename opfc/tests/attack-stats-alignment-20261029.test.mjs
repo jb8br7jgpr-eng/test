@@ -18,7 +18,7 @@ const teams=[
 const game=(attacker)=>({
  phase:'match',teams,
  match:{
-  minute:50,index:5,
+  minute:50,index:0,
   score:{PSG:0,OM:0},statistics:stats(),
   history:[],schedule:[{attacker,minute:50,type:'open',period:2}],
   currentMoment:{attacker,minute:50,type:'open'}
