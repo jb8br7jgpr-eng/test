@@ -52,7 +52,7 @@ v52css.href='./opfc/penalty-lab-v5-2-net.css?v=opfc-v52-continuous-net-20261102'
 document.head.append(v52css);
 const v53css=document.createElement('link');
 v53css.rel='stylesheet';
-v53css.href='./opfc/penalty-lab-v5-3-backgrounds.css?v=opfc-v53-backgrounds-20261103';
+v53css.href='./opfc/penalty-lab-v5-3-backgrounds.css?v=opfc-v54-eight-backgrounds-20261103';
 document.head.append(v53css);
 root.classList.add('plab');
 root.classList.add('plab-v4');
