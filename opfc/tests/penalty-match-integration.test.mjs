@@ -239,3 +239,19 @@ test('Le tableau officiel des TAB et son historique restent au score précédent
  assert.ok(visible.includes(updatedLog));
  assert.ok(visible.includes('shot-result-unified'));
 });
+
+test('Fondu 0,2 seconde exclusivement entre les nouveaux tirs, jamais à chaque poll',()=>{
+ const animations=[];
+ const pitch={animate:(_frames,settings)=>animations.push(settings.duration)};
+ const root={querySelector:selector=>
+  selector==='.opfc-penalty-scene .plab-pitch'?pitch:null};
+ const ctrl=createPenaltySceneController();
+ const state={phase:'shootout',match:{shootout:{timeline:[],active:{shotNumber:1}}}};
+ ctrl.animate(root,state);
+ ctrl.animate(root,state);
+ assert.deepEqual(animations,[200]);
+ const next={phase:'shootout',match:{shootout:{timeline:[{club:'PSG'}],active:{shotNumber:1}}}};
+ ctrl.animate(root,next);
+ ctrl.animate(root,next);
+ assert.deepEqual(animations,[200,200]);
+});
