@@ -124,11 +124,7 @@ function officialHistory(){
 }
 /** Choix tactiques du jeu original ; seuls les événements sont routés localement. */
 function officialChoices(shooter){
- const items=(shooter?[
-  ['GAUCHE','Gauche'],['CENTRE','Centre'],['DROITE','Droite']
- ]:[
-  ['GAUCHE','Gauche'],['CENTRE','Centre'],['DROITE','Droite']
- ]);
+ const items=[['GAUCHE','Gauche'],['CENTRE','Centre'],['DROITE','Droite']];
  return matchTacticalChoices(items,'plab-choose');
 }
 function labTools(){
@@ -205,7 +201,7 @@ function renderFinished(){
  // Le laboratoire n'enregistre jamais d'historique réel. Cet état éphémère
  // sert uniquement à afficher le même écran final qu'OPFC.
  const statistics=()=>({sequences:0,shots:0,onTarget:0,saves:0});
- const mock={phase:'finished',teams:state.session.teams,
+ const mock={phase:'finished',teams:state.session.teams.map(t=>({...t,identityId:state.clubs[t.club]})),
   competition:'grandline',match:{
    winner:s.winner,victory:'shootout',score:{PSG:0,OM:0},
    goals:[],history:[],statistics:{PSG:statistics(),OM:statistics()},
