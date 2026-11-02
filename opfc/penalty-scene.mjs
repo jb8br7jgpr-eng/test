@@ -55,24 +55,36 @@ const TRANSITION_MS=1060;
  * One key per real kick; online polling and acknowledgements must not replay it.
  */
 export function createPenaltySceneController({onFinish,clock=()=>Date.now(),schedule=(fn,ms)=>setTimeout(fn,ms),cancel=clearTimeout}={}){
- let active=null,seen=new Set(),timer=null;
+ let active=null,seen=new Set(),timer=null,revealOnce=null;
+ const originalIntroPanels=new Map();
  function reset(){
   if(timer!==null){cancel(timer);timer=null;}
   active=null;
  }
  function decorate(markup,state){
   const kick=resolvedPenaltyForPresentation(state);
-  if(!kick){reset();return markup;}
+  if(!kick){reset();revealOnce=null;return markup;}
   if(!active||active.key!==kick.key){
    reset();
-   if(seen.has(kick.key))return markup;
+   if(seen.has(kick.key)){
+    if(revealOnce===kick.key){
+     revealOnce=null;
+     const panel=originalIntroPanels.get(kick.key);
+     return panel&&RESULT_PANEL.test(markup)?markup.replace(RESULT_PANEL,panel):markup;
+    }
+    return markup;
+   }
    if(seen.size>200)seen.clear();
    seen.add(kick.key);
+   const originalPanel=markup.match(RESULT_PANEL)?.[0];
+   if(originalPanel)originalIntroPanels.set(kick.key,originalPanel);
+   if(originalIntroPanels.size>200)originalIntroPanels.clear();
    active={...kick,started:clock()};
    timer=schedule(()=>{
     timer=null;
     if(active?.key===kick.key){
      active=null;
+     revealOnce=kick.key;
      if(typeof onFinish==='function')onFinish();
     }
    },TRANSITION_MS);
