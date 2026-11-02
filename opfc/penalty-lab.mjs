@@ -12,7 +12,7 @@ import {renderFinalResult} from './ui-final.mjs';
 import {labBallGraphic} from './penalty-lab-visual.mjs?v=lab-classicball-20261102';
 import {stadiumLight,potentiallyDecisive} from './penalty-lab-v4.mjs';
 import {labV51FlightFrames} from './penalty-lab-v5-1-flight.mjs';
-import {labV51PitchGraphic} from './penalty-lab-v5-1.mjs';
+import {labV52PitchGraphic,animateContinuousNet} from './penalty-lab-v5-2-net.mjs';
 import {
  LAB_POSITIONS,defaultLineups,validateLineups,createLabSession,
  labTurn,prepareLabKick,commitLabKick,trajectoryFor
@@ -46,10 +46,15 @@ const v51css=document.createElement('link');
 v51css.rel='stylesheet';
 v51css.href='./opfc/penalty-lab-v5-1.css?v=lab-v5-1-broadcast-20261102';
 document.head.append(v51css);
+const v52css=document.createElement('link');
+v52css.rel='stylesheet';
+v52css.href='./opfc/penalty-lab-v5-2-net.css?v=opfc-v52-continuous-net-20261102';
+document.head.append(v52css);
 root.classList.add('plab');
 root.classList.add('plab-v4');
 root.classList.add('plab-v5');
 root.classList.add('plab-v51');
+root.classList.add('plab-v52');
 // Garder exactement les bases de l'affichage OPFC : .app, .panel, .btn et leurs styles.
 root.classList.add('app');
 
@@ -157,7 +162,7 @@ function labTools(){
   (state.step==='result'?button('replay','↻ Rejouer sans compter'):'')+
   '</div><p class="plab-footnote">Uniquement des essais locaux, aucun match ni palmarès enregistré.</p></details>';
 }
-const pitchSvg=labV51PitchGraphic;
+const pitchSvg=labV52PitchGraphic;
 function pitch(turn){
  const stadium=stadiumById(state.stadium);
  const light=stadiumLight(state.stadium);
@@ -321,18 +326,23 @@ async function animateCurrent(id){
    {transform:'translate(-50%,-50%) translate('+round(directionX*.62)+'px,'+round(y*.42)+'px) scale(.65)',opacity:.24,offset:.57},
    {transform:'translate(-50%,-50%) translate('+round(x)+'px,'+round(y)+'px) scale(.4)',opacity:0,offset:1}
   ],{duration,fill:'forwards',easing:'ease-out'}));
-  // Même résultat officiel, seule la zone des filets réagit au point d'impact.
+  // Filet unique V5.2 : l'onde apparaît à la position RÉELLE du ballon
+  // et les mêmes intersections restent solidaires pendant tout le mouvement.
   await delay(Math.round(duration*(isGoal?.93:isSave?.88:.94)));
   if(id!==state.animationId)return;
-  if(isGoal)scene.classList.add('plab-goal-impact','plab-v4-impact-'+String(zone).toLowerCase()
-    .replace('gauche','left').replace('centre','center').replace('droite','right'));
-  else if(isSave)scene.classList.add('plab-v4-save-contact');
+  let netMotion=null;
+  if(isGoal){
+   const {impact}=labV51FlightFrames(attempt,w,height);
+   netMotion=animateContinuousNet(scene,impact,{
+    live:()=>id===state.animationId&&scene.isConnected
+   });
+  }else if(isSave)scene.classList.add('plab-v4-save-contact');
   else if(isMiss)scene.classList.add('plab-v4-miss-out');
-  try{await Promise.all(animations.map(anim=>anim.finished));}
+  try{await Promise.all([...animations.map(anim=>anim.finished),...(netMotion?[netMotion]:[])]);}
   catch{return;}
  }else await delay(duration);
  if(id!==state.animationId)return;
- await delay(reduced?0:(isGoal?370:90));
+ await delay(reduced?0:90);
  if(id!==state.animationId)return;
  state.step='result';render();
 }
