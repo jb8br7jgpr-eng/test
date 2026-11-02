@@ -1,0 +1,33 @@
+/* OPFC — labo V5.3, premiers décors des penaltys / TAB.
+ * Images 1536x480 (3.2:1) déposées dans le dépôt par l'utilisateur.
+ * Ne concerne que .plab, aucune modification d'OPFC en match.
+ * Les six autres stades continuent d'utiliser les tribunes CSS V5.2.
+ */
+.plab.plab-v52 .plab-v5-backdrop[data-stadium="mugiwara"],
+.plab.plab-v52 .plab-v5-backdrop[data-stadium="wanodrome"]{
+ background-color:#081827;
+ background-repeat:no-repeat;
+ background-size:cover;
+ /* Garde les panneaux publicitaires au bas de la bande si
+    l'écran demande un recadrage (sur iPhone ~aucune découpe). */
+ background-position:center bottom;
+ box-shadow:none;
+ border-bottom:0;
+}
+.plab.plab-v52 .plab-v5-backdrop[data-stadium="mugiwara"]{
+ background-image:url("./assets/penalty-backgrounds/mugiwara.webp");
+}
+.plab.plab-v52 .plab-v5-backdrop[data-stadium="wanodrome"]{
+ background-image:url("./assets/penalty-backgrounds/wanodrome.webp");
+}
+/* Supprimer les faux gradins et lampes V4 uniquement lorsque
+   l'illustration réelle a été choisie : aucune superposition. */
+.plab.plab-v52 .plab-v5-backdrop:is([data-stadium="mugiwara"],[data-stadium="wanodrome"])
+ :is(.plab-stadium-glow,.plab-v4-stands,.plab-v4-lights){
+ display:none;
+}
+/* Bandeaux CSS auparavant ajoutés au-dessus des publicités. */
+.plab.plab-v52 .plab-v5-backdrop:is([data-stadium="mugiwara"],[data-stadium="wanodrome"])::before,
+.plab.plab-v52 .plab-v5-backdrop:is([data-stadium="mugiwara"],[data-stadium="wanodrome"])::after{
+ content:none;
+}
