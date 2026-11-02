@@ -8,16 +8,17 @@ import {DISPLAY_CLUBS,currentClubChoices,setDisplayedClubs,setDisplayedChoices,v
 import {renderCharacterPortrait,renderClubCrest,renderIdentityCrest} from './ui-portraits.mjs?v=opfc-75-roster-20261022';
 import {effectiveRating,lineupDetails} from './rules.mjs?v=opfc-half-balance-20261027';
 import {FORMATION_NAMES,uiAuction,uiTeam,uiRoster,cardStats,currentAuctionEnding,clubName} from './ui-model.mjs?v=opfc-75-roster-20261022';
-import {renderMatchScreen,matchRequiresPrivacy,dispatchOpenMatch} from './ui-match.mjs?v=opfc-attack-stats-alignment-20261029';
+import {renderMatchScreen,matchRequiresPrivacy,dispatchOpenMatch} from './ui-match.mjs?v=opfc-penalty-scene-20261102';
 import {createOnlineClient} from './online-client.mjs?v=opfc-integration-20261025';
 import {renderOnlineLobby,normalizeJoinCodeInput} from './ui-online.mjs?v=opfc-v2-20261023';
-import {renderOnlineGame} from './ui-online-game.mjs?v=opfc-attack-stats-alignment-20261029';
+import {renderOnlineGame} from './ui-online-game.mjs?v=opfc-penalty-scene-20261102';
 import {CLUB_TROPHIES,isCompetition,competitionName,renderCompetitionPicker} from './club-honours.mjs?v=opfc-trophees-20261022';
 import {queueFinishedLocalGame,syncQueuedLocalResults,pendingLocalResultsCount} from './trophy-service.mjs?v=opfc-v2-20261023';
 import {prepareRematch} from './rematch.mjs?v=opfc-rematch-20261025';
 import {stadiumPicker,isStadium,preloadStadiumBackdrop} from './stadiums.mjs?v=opfc-finale-smooth-20261026';
 import {v3HelpUi,GUIDE_CATEGORIES,suggestedGuideCategory} from './v3-tactical-help.mjs?v=opfc-ux-20261027';
 import {preloadMatchPortraits,matchUiStepKey,scrollToMatchFocus,onlineOwnTurnHasAction,createStableMarkupCommitter,patchMomentumOnly} from './v3-match-ux.mjs?v=opfc-shootout-scroll-20261029';
+import {createPenaltySceneController} from './penalty-scene.mjs';
 import {renderMatchMomentum} from './v4-momentum.mjs?v=opfc-momentum-premium-v2-20261028';
 
 const app=document.getElementById('opfc-app');
@@ -911,6 +912,7 @@ function onlineAnnouncementView(){
   body+'<button type="button" class="btn primary full" data-action="online-modal-continue">'+
   (onlineModal.type==='dice'?'Commencer les enchères':'Continuer')+'</button></section></div>';
 }
+const penaltySceneController=createPenaltySceneController({onFinish:()=>render()});
 function render(){
  const showingGame=onlineVisible&&onlineStage==='room'&&
   onlineClient.room?.status==='ready'&&!!onlineClient.game;
@@ -974,14 +976,16 @@ function render(){
  const oldScroll=window.scrollY;
  const currentGuideScroll=app.querySelector('.v3-guide-body')?.scrollTop??0;
  const sameGuidePage=lastRenderedGuideCategory===v3HelpCategory;
- const nextMarkup=(onlineVisible?onlineDisplay:entryView==='modes'?modeChooser():entryView==='local'?welcome():game?
+ const matchMarkup=(onlineVisible?onlineDisplay:entryView==='modes'?modeChooser():entryView==='local'?welcome():game?
   (game.phase==='kickoff-ready'?endMercato():['mercato','lineup'].includes(game.phase)?playing():matchPage()):welcome())+
  (error?'<div class="alert" role="alert">'+esc(error)+'</div>':'')+
  (onlineVisible?onlineAnnouncementView():'')+popup()+
   (v3HelpVisible?v3HelpUi(v3HelpOpen,v3HelpCategory,suggestedGuideCategory(v3State)):'')+exitConfirmation();
  // Les polls reseau sans difference visible ne detruisent plus tout le DOM.
  // Conserver les champs saisis, portraits deja decoded et focus natif.
+ const nextMarkup=penaltySceneController.decorate(matchMarkup,v3State);
  const domChanged=uiMarkupCommitter.commit(app,nextMarkup);
+ penaltySceneController.animate(app);
  if(sameGuidePage&&v3HelpOpen){
   const body=app.querySelector('.v3-guide-body');
   if(body)body.scrollTop=currentGuideScroll;
