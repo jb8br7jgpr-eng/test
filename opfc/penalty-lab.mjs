@@ -290,7 +290,7 @@ function clickAction(action,button){
  }else if(action==='start')start();
  else if(action==='config')resetToStep('config');
  else if(action==='restart')restart();
- else if(action==='keeper-ready'&&state.step==='handover')resetToStep('keeper');
+ else if(action==='keeper-ready'&&state.step==='handover'){state.step='keeper';render();}
  else if(action==='choose'&&['shooter','keeper'].includes(state.step)){
   const dir=button.dataset.direction;
   if(!Object.hasOwn(labels,dir))return;
