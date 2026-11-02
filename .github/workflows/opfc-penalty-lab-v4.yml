@@ -36,7 +36,7 @@ jobs:
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/opfc-lab-v4-server.log 2>&1 &
           sleep 2
-      - name: Parcours iPhone : buts, arrêts, ratés et TAB
+      - name: 'Parcours iPhone : buts, arrêts, ratés et TAB'
         env:
           CHROME_BINARY: ${{ steps.chrome.outputs.chrome-path }}
         run: node opfc/tests/penalty-lab-v4-browser.mjs
