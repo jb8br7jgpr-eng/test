@@ -50,6 +50,8 @@ export function resolvedPenaltyForPresentation(state){
   kick.shotDirection,kick.keeperDirection,kick.outcome].join('|')};
 }
 const RESULT_PANEL=/<section class="panel match-stage shot-result-panel[^"]*"[^>]*>[\s\S]*?<\/section>/;
+const TRACKER_PANEL=/<section class="panel shootout-tracker"[\s\S]*?<\/section>/;
+const LOG_PANEL=/<section class="panel shootout-log"[\s\S]*?<\/section>/;
 const TRANSITION_MS=1060;
 /** UI-only transition: replace *rendered markup* temporarily, never underlying game state.
  * One key per real kick; online polling and acknowledgements must not replay it.
@@ -61,7 +63,7 @@ export function createPenaltySceneController({onFinish,clock=()=>Date.now(),sche
   if(timer!==null){cancel(timer);timer=null;}
   active=null;
  }
- function decorate(markup,state){
+ function decorate(markup,state,{previousTracker=null,previousLog=null}={}){
   const kick=resolvedPenaltyForPresentation(state);
   if(!kick){reset();revealOnce=null;return markup;}
   if(!active||active.key!==kick.key){
@@ -79,7 +81,7 @@ export function createPenaltySceneController({onFinish,clock=()=>Date.now(),sche
    const originalPanel=markup.match(RESULT_PANEL)?.[0];
    if(originalPanel)originalIntroPanels.set(kick.key,originalPanel);
    if(originalIntroPanels.size>200)originalIntroPanels.clear();
-   active={...kick,started:clock()};
+   active={...kick,started:clock(),previousTracker,previousLog};
    timer=schedule(()=>{
     timer=null;
     if(active?.key===kick.key){
@@ -92,6 +94,15 @@ export function createPenaltySceneController({onFinish,clock=()=>Date.now(),sche
   if(!active||active.key!==kick.key)return markup;
   const scene=renderMatchPenaltyScene(active);
   if(!scene||!RESULT_PANEL.test(markup)){reset();return markup;}
+  if(active.kind==='shootout'){
+   // Geler les VRAIS composants existants pour ne pas divulguer le résultat.
+   if(active.previousTracker)markup=markup.replace(TRACKER_PANEL,active.previousTracker);
+   else markup=markup.replace(TRACKER_PANEL,old=>old.replace(
+    'class="panel shootout-tracker"','class="panel shootout-tracker" style="visibility:hidden"'));
+   if(active.previousLog)markup=markup.replace(LOG_PANEL,active.previousLog);
+   else markup=markup.replace(LOG_PANEL,old=>old.replace(
+    'class="panel shootout-log"','class="panel shootout-log" style="visibility:hidden"'));
+  }
   return markup.replace(RESULT_PANEL,
    '<section class="panel match-stage opfc-penalty-animation" role="status" aria-label="Penalty en cours">'+
    '<span class="eyebrow">⚽ '+(kick.kind==='shootout'?'Tir au but':'Penalty')+'</span>'+
