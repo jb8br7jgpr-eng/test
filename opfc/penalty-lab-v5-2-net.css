@@ -1,0 +1,24 @@
+/* OPFC LAB V5.2 — filet MONOBLOC.
+ * Désactive toutes les anciennes animations CSS par tiers du filet.
+ * Les 33 lignes partagent les mêmes points SVG et suivent une onde amortie.
+ * Aucune règle de moteur, bouton, écran de résultat ou site OPFC touchée.
+ */
+.plab.plab-v52 .plab-pitch .plab-v52-net,
+.plab.plab-v52 .plab-pitch.plab-goal-impact .plab-v52-net{
+ transform:none!important;
+ animation:none!important;
+ clip-path:none!important;
+ transform-box:initial;
+ will-change:auto;
+}
+.plab.plab-v52 .plab-v52-net>path{
+ stroke-linecap:round;
+ stroke-linejoin:round;
+ vector-effect:non-scaling-stroke;
+}
+.plab.plab-v52 .plab-v52-net-active{
+ opacity:.76;
+}
+@media(prefers-reduced-motion:reduce){
+ .plab.plab-v52 .plab-v52-net{animation:none!important}
+}
