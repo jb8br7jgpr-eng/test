@@ -34,7 +34,7 @@ try{
   };
  });
  assert.ok(measured.backdropRatio>.324&&measured.backdropRatio<.335,'33% visible TV backdrop: '+JSON.stringify(measured));
- assert.ok(measured.goalRatio>.77&&measured.goalRatio<.82,'7% wider frontal goal frame: '+JSON.stringify(measured));
+ assert.ok(measured.goalRatio>.745&&measured.goalRatio<.78,'Front frame width (no V5 rear-net shadow): '+JSON.stringify(measured));
  assert.ok(measured.ballTop>.665&&measured.ballTop<.695,'Ball remains fixed: '+JSON.stringify(measured));
  assert.ok(measured.shooterTop>.83&&measured.shooterTop<.87,'Shooter remains fixed: '+JSON.stringify(measured));
  assert.ok(measured.keeperTop>.29&&measured.keeperTop<.312,'Keeper at lower TV camera: '+JSON.stringify(measured));
