@@ -1,0 +1,41 @@
+/* OPFC — LABORATOIRE V5.1, vue télé depuis une caméra plus basse.
+ * AUCUN style du vrai jeu, ni des boutons, scores et écrans de résultat.
+ */
+.plab.plab-v51 .plab-pitch{
+ --plab-v5-stand-height:33%;
+}
+/* Le ciel/les tribunes sont visibles sur 33 % réels après retrait du
+ * précédent calque d'herbe SVG placé devant le fond. */
+.plab.plab-v51 .plab-v5-backdrop{
+ height:33%;
+ background:
+  radial-gradient(ellipse 45% 29% at 13% 9%,color-mix(in srgb,var(--plab-v4-light) 16%,transparent),transparent),
+  radial-gradient(ellipse 45% 29% at 87% 9%,color-mix(in srgb,var(--plab-v4-light) 16%,transparent),transparent),
+  linear-gradient(180deg,#0b1622 0%,color-mix(in srgb,var(--plab-v4-secondary) 26%,#102739) 39%,#122f35 80%,#103b30 100%);
+}
+.plab.plab-v51 .plab-v5-backdrop .plab-v4-stands{
+ height:100%;
+ opacity:.71;
+}
+.plab.plab-v51 .plab-v5-backdrop .plab-v4-lights{
+ opacity:.87;
+}
+.plab.plab-v51 .plab-v5-backdrop::before{
+ content:"";position:absolute;z-index:3;inset:auto 0 0;
+ height:12%;pointer-events:none;
+ background:linear-gradient(180deg,#153e3578,#275d43ba);
+ border-top:1px solid color-mix(in srgb,var(--plab-v4-light) 31%,#d0e2df);
+}
+/* Gardien recentré dans la face plus haute de la cage. */
+.plab.plab-v51 .plab-keeper{
+ top:30.1%;
+}
+.plab.plab-v51 .plab-v4-contact{
+ top:30.1%;
+}
+/* Le tireur et le ballon gardent exactement leurs emplacements validés V4. */
+.plab.plab-v51 .plab-ball{top:68%}
+.plab.plab-v51 .plab-shooter{top:85%}
+@media(prefers-reduced-motion:reduce){
+ .plab.plab-v51 .plab-v5-backdrop::before{transition:none}
+}
