@@ -11,7 +11,7 @@ import {renderShootoutTracker,renderShootoutScreen} from './ui-shootout.mjs';
 import {renderFinalResult} from './ui-final.mjs';
 import {labBallGraphic} from './penalty-lab-visual.mjs?v=lab-classicball-20261102';
 import {stadiumLight,flightFrames,potentiallyDecisive} from './penalty-lab-v4.mjs';
-import {labV5PitchGraphic} from './penalty-lab-v5.mjs';
+import {labV51PitchGraphic} from './penalty-lab-v5-1.mjs';
 import {
  LAB_POSITIONS,defaultLineups,validateLineups,createLabSession,
  labTurn,prepareLabKick,commitLabKick,trajectoryFor
@@ -41,9 +41,14 @@ const v5css=document.createElement('link');
 v5css.rel='stylesheet';
 v5css.href='./opfc/penalty-lab-v5.css?v=lab-v5-framing-test-20261102';
 document.head.append(v5css);
+const v51css=document.createElement('link');
+v51css.rel='stylesheet';
+v51css.href='./opfc/penalty-lab-v5-1.css?v=lab-v5-1-broadcast-20261102';
+document.head.append(v51css);
 root.classList.add('plab');
 root.classList.add('plab-v4');
 root.classList.add('plab-v5');
+root.classList.add('plab-v51');
 // Garder exactement les bases de l'affichage OPFC : .app, .panel, .btn et leurs styles.
 root.classList.add('app');
 
@@ -151,7 +156,7 @@ function labTools(){
   (state.step==='result'?button('replay','↻ Rejouer sans compter'):'')+
   '</div><p class="plab-footnote">Uniquement des essais locaux, aucun match ni palmarès enregistré.</p></details>';
 }
-const pitchSvg=labV5PitchGraphic;
+const pitchSvg=labV51PitchGraphic;
 function pitch(turn){
  const stadium=stadiumById(state.stadium);
  const light=stadiumLight(state.stadium);
