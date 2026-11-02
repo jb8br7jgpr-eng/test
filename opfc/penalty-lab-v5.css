@@ -70,3 +70,9 @@
 @media(prefers-reduced-motion:reduce){
  .plab.plab-v5 .plab-v5-backdrop{transition:none}
 }
+
+/* Le rapprochement de la cage ne doit pas couper le nom du gardien. */
+.plab.plab-v5 .plab-keeper .plab-person-label,
+.plab.plab-v5 .plab-shooter .plab-person-label{
+ max-width:min(52vw,180px);
+}
