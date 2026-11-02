@@ -16,7 +16,7 @@ async function kick(shot,keeper){
  await visible('.shot-result-unified');
 }
 try{
- await page.goto('http://127.0.0.1:8765/opfc.html?dev=penalty',{waitUntil:'networkidle'});
+ await page.goto('http://127.0.0.1:8765/opfc-labo-penaltys.html',{waitUntil:'networkidle'});
  await visible('button[data-action="start"]');
  assert.equal(await page.locator('.plab-roster-slot').count(),14);
  assert.equal(await page.locator('select[data-role="club"] option').count(),40);
