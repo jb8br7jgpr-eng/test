@@ -11,6 +11,7 @@ on:
       - 'opfc/ui-set-piece.mjs'
       - 'opfc/tests/penalty-match-browser.mjs'
       - 'opfc/tests/penalty-match-local-browser.mjs'
+      - 'opfc/tests/penalty-match-online-browser.mjs'
       - 'opfc.html'
       - '.github/workflows/opfc-penalty-match-browser.yml'
 permissions:
@@ -40,6 +41,10 @@ jobs:
         env:
           CHROME_BINARY: ${{ steps.chrome.outputs.chrome-path }}
         run: node opfc/tests/penalty-match-local-browser.mjs
+      - name: Deux iPhone en ligne simulés avec moteur OPFC réel
+        env:
+          CHROME_BINARY: ${{ steps.chrome.outputs.chrome-path }}
+        run: node opfc/tests/penalty-match-online-browser.mjs
       - name: Capture de contrôle
         if: always()
         uses: actions/upload-artifact@v4
@@ -49,5 +54,6 @@ jobs:
             /tmp/opfc-penalty-integration-iphone.png
             /tmp/opfc-penalty-local-choice.png
             /tmp/opfc-penalty-local-animation.png
+            /tmp/opfc-two-phones-penalty.png
           if-no-files-found: ignore
           retention-days: 7
