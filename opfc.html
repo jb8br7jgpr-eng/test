@@ -22,7 +22,19 @@
 <link rel="stylesheet" href="./opfc/v4-premium-skin.css?v=opfc-premium-cosmetic-20261028">
 <!-- Momentum V2 : uniquement les reflets, couleurs et micro-animation du graphique. -->
 <link rel="stylesheet" href="./opfc/v4-momentum-premium.css?v=opfc-momentum-premium-v2-20261028">
-<script type="module" src="./opfc/ui.mjs?v=opfc-attack-stats-alignment-20261029"></script>
+<script type="module">
+// Entrée DEV strictement locale, jamais chargée par une partie OPFC normale.
+// La condition n'existe que sur la branche isolée avant toute validation de déploiement.
+const lab = new URLSearchParams(window.location.search).get('dev') === 'penalty';
+const entry = lab
+ ? './opfc/penalty-lab.mjs?v=opfc-penalty-lab-20261102'
+ : './opfc/ui.mjs?v=opfc-attack-stats-alignment-20261029';
+import(entry).catch(error => {
+ const app = document.getElementById('opfc-app');
+ if(app)app.textContent = 'Erreur de chargement : ' + (error?.message || 'module indisponible');
+ console.error(error);
+});
+</script>
 </head>
 <body>
 <div id="opfc-app" class="app" aria-live="polite">
