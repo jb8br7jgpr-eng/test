@@ -1,0 +1,50 @@
+name: OPFC — labo V5 cadrage caméra (sans déploiement)
+on:
+  push:
+    branches:
+      - feature/opfc-penalty-lab-v5-camera-20261102
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  camera:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+      - name: Protection totale OPFC, moteurs et anciens composants
+        run: |
+          git fetch origin main:refs/remotes/origin/main
+          git diff --exit-code origin/main...HEAD -- opfc.html opfc/ui.mjs opfc/ui-shootout.mjs opfc/ui-match.mjs opfc/penalty-scene.mjs opfc/penalty-scene.css opfc/penalty-lab-core.mjs opfc/penalty-lab-visual.mjs opfc/penalty-lab-v4.mjs opfc/penalty-lab-v4.css opfc/penalty.mjs opfc/shootout.mjs opfc/match.mjs supabase
+      - name: Syntaxe et géométrie V5
+        run: |
+          node --check opfc/penalty-lab-v5.mjs
+          node --check opfc/penalty-lab.mjs
+          node --test opfc/tests/penalty-lab-v5.test.mjs opfc/tests/penalty-lab-v4.test.mjs
+      - name: Installer le navigateur de contrôle
+        run: npm install --no-save playwright-core@1.57.0
+      - name: Démarrer le labo de branche sans publier
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/opfc-lab-v5-server.log 2>&1 &
+          sleep 2
+      - name: Test iPhone du nouveau cadrage et des animations V4
+        env:
+          CHROME_BINARY: ${{ steps.chrome.outputs.chrome-path }}
+        run: |
+          node opfc/tests/penalty-lab-v5-browser.mjs
+          node opfc/tests/penalty-lab-v4-browser.mjs
+      - name: Garder la capture V5 pour validation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: opfc-lab-v5-camera-iphone
+          path: /tmp/opfc-lab-v5-camera-iphone.png
+          if-no-files-found: ignore
+          retention-days: 7
