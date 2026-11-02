@@ -199,3 +199,19 @@ test('Vrai serveur TAB : un choix caché, un résultat après le second, scène 
  assert.equal(renderOnlineShootoutScreen({...view,teams}, {myClub:first,hostClub:'PSG'}).includes('shot-result-unified'),true);
  assert.equal(renderOnlineShootoutScreen({...view,teams}, {myClub:second,hostClub:'PSG'}).includes('shot-result-unified'),true);
 });
+
+test('La première apparition conserve exactement l animation premium originelle du résultat',()=>{
+ const actor=lab.teams[0].slots[5],goalie=lab.teams[1].slots[0];
+ const state={phase:'shootout',match:{shootout:{lastResult:{
+  club:'PSG',shotNumber:3,shooterId:actor,keeperId:goalie,
+  shotDirection:'DROITE',keeperDirection:'CENTRE',scored:true,result:'goal'
+ }}}};
+ const first=resultHTML.replace('shot-result-unified','shot-result-unified shot-result-intro');
+ const refreshed=resultHTML.replace('shot-result-intro','');
+ let callback;
+ const control=createPenaltySceneController({schedule:fn=>(callback=fn,1),cancel:()=>{},onFinish:()=>{}});
+ assert.ok(control.decorate(first,state).includes('opfc-penalty-animation'));
+ callback();
+ assert.equal(control.decorate(refreshed,state),first);
+ assert.equal(control.decorate(refreshed,state),refreshed);
+});
