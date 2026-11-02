@@ -131,7 +131,7 @@ test('Le module ne contient aucun appel de validation, calcul de hasard ou sauve
 const zeroStats=()=>({sequences:0,shots:0,onTarget:0,saves:0});
 function penaltyMatch(){
  return {
-  version:1,phase:'match',teams:structuredClone(teams),competition:'league',
+  version:1,phase:'match',teams:structuredClone(teams),competition:'league',dice:[2,3],
   match:{
    index:0,minute:36,score:{PSG:0,OM:0},goals:[],history:[],
    statistics:{PSG:zeroStats(),OM:zeroStats()},
