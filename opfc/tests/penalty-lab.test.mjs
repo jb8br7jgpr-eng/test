@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {CARDS} from '../catalog.mjs';
 import {PENALTY_DIRECTIONS} from '../penalty.mjs';
+import {renderFinalResult} from '../ui-final.mjs';
 import {
  defaultLineups,validateLineups,createLabSession,labTurn,
  prepareLabKick,commitLabKick,trajectoryFor
@@ -89,4 +90,32 @@ test('Un nouveau labo repart toujours à zéro et n expose aucun service distant
  assert.equal(next.shootout.timeline.length,1);
  assert.equal(b.shootout.timeline.length,0);
  assert.ok(!('room' in b)&&!('token' in b)&&!('matchRecordId' in b));
+});
+
+test('Fin du laboratoire : écran final officiel OPFC avec score TAB et aucune écriture',()=>{
+ let session=createLabSession({type:'shootout'});
+ const first=labTurn(session).club;
+ while(session.shootout.phase==='active'){
+  const turn=labTurn(session);
+  const prepared=prepareLabKick(session,{
+   shotDirection:'GAUCHE',keeperDirection:'DROITE',
+   mode:turn.club===first?'goal':'miss'
+  });
+  session=commitLabKick(session,prepared);
+ }
+ const zero=()=>({sequences:0,shots:0,onTarget:0,saves:0});
+ const html=renderFinalResult({
+  phase:'finished',competition:'grandline',
+  teams:session.teams.map(t=>({...t,identityId:t.club})),
+  match:{
+   winner:session.shootout.winner,victory:'shootout',
+   score:{PSG:0,OM:0},goals:[],history:[],
+   statistics:{PSG:zero(),OM:zero()},
+   competition:'grandline',shootout:session.shootout
+  }
+ });
+ assert.ok(html.includes('final-screen'));
+ assert.ok(html.includes('final-penalty-score'));
+ assert.ok(html.includes('final-shootout'));
+ assert.ok(html.includes('VICTOIRE'));
 });
