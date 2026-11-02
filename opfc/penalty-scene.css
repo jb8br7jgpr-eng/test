@@ -1,7 +1,48 @@
-/* SCENE OPFC V1 : styles strictement limités au nouveau terrain.
- * Les bandeaux, boutons et écrans de résultats de l'OPFC officiel sont intacts. */
-.opfc-penalty-scene{width:100%;max-width:100%;margin:12px auto;isolation:isolate}
+/* CSS restreint à la scène de tir : aucun style des écrans OPFC modifié. */
+.opfc-penalty-scene{position:relative;width:100%;max-width:100%;isolation:isolate;margin:12px auto}
 .opfc-penalty-scene *{box-sizing:border-box}
+.opfc-penalty-scene .plab-grass{position:absolute;inset:0;background:repeating-linear-gradient(0deg,#277a43 0%,#277a43 10%,#318649 10%,#318649 20%);filter:saturate(.93)}
+.opfc-penalty-scene .plab-stadium-glow{position:absolute;z-index:1;left:0;right:0;top:0;height:16%;background:linear-gradient(180deg,#102334,#0e213c 52%,#102c2e);box-shadow:inset 0 -2px 9px #ffffff38}
+.opfc-penalty-scene .plab-pitch svg.plab-lines{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
+.opfc-penalty-scene .plab-keeper{top:24%;left:50%}
+.opfc-penalty-scene .plab-pitch .character-portrait{width:clamp(44px,14vw,72px);height:clamp(44px,14vw,72px);border-radius:50%;border:3px solid #efdda9;box-shadow:0 4px 14px #001b14b3,0 0 0 2px #153f4c;flex:none;overflow:hidden}
+.opfc-penalty-scene .plab-pitch .plab-shooter .character-portrait{width:clamp(49px,15vw,76px);height:clamp(49px,15vw,76px)}
+.opfc-penalty-scene .plab-ball{position:absolute;z-index:7;left:50%;top:68%;width:clamp(19px,6.5vw,28px);aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle at 31% 20%,#fff 0 22%,#e6e7dc 58%,#a9bac0 98%);box-shadow:0 3px 8px #071f1b99,inset -3px -3px 4px #8d9e9a77;display:grid;place-items:center;will-change:transform}
+.opfc-penalty-scene .plab-pitch::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:8;background:linear-gradient(90deg,#061b2450,transparent 15%,transparent 85%,#05192150),linear-gradient(0deg,#06201a55,transparent 25%);border-radius:inherit}
+.opfc-penalty-scene .plab-grass::before{
+ background:
+  repeating-linear-gradient(83deg,transparent 0px,#c9f4ab09 1px,transparent 3px,transparent 7px),
+  repeating-linear-gradient(97deg,#0025150b 0px,transparent 1px,transparent 5px),
+  radial-gradient(ellipse at 50% 5%,#e9fbb612,transparent 65%),
+  linear-gradient(180deg,#061c2058,transparent 31%,#133e1928 73%,#021b133e);
+}
+.opfc-penalty-scene .plab-stadium-glow::before{
+ inset:5% 1%;
+ background:
+  repeating-linear-gradient(90deg,#edf7fb5c 0px,#c2dbe945 2px,transparent 4px,transparent 7px),
+  linear-gradient(90deg,#a8cbcc26,#effffd20,#b2dbcf26);
+ opacity:.5;
+ mask-image:linear-gradient(#000 0%,#000 36%,transparent 100%);
+}
+.opfc-penalty-scene .plab-ball-shadow{
+ position:absolute;
+ z-index:5;
+ top:70%;
+ left:50%;
+ width:clamp(24px,7.7vw,38px);
+ height:clamp(8px,2.5vw,13px);
+ border-radius:50%;
+ transform:translate(-50%,-50%);
+ background:radial-gradient(ellipse,#02180fe6 0%,#072a1a92 48%,transparent 76%);
+ filter:blur(2px);
+ opacity:.48;
+ pointer-events:none;
+}
+.opfc-penalty-scene .plab-ball::after{content:none;display:none}
+.opfc-penalty-scene .plab-net-mesh{
+ transform-origin:center 38%;
+ transform-box:fill-box;
+}
 .opfc-penalty-scene .plab-pitch{width:100%;max-height:480px;aspect-ratio:360/365}
 .opfc-penalty-scene .plab-keeper,.opfc-penalty-scene .plab-shooter{z-index:6}
 .opfc-penalty-scene .plab-keeper{top:24%;left:50%}
@@ -9,31 +50,6 @@
 .opfc-penalty-scene .plab-pitch .character-portrait{width:clamp(44px,14vw,72px);height:clamp(44px,14vw,72px);border-radius:50%;border:3px solid #efdda9;box-shadow:0 4px 14px #001b14b3,0 0 0 2px #153f4c;flex:none;overflow:hidden}
 .opfc-penalty-scene .plab-pitch .character-portrait img{width:100%;height:100%;object-fit:cover;object-position:center 24%}
 .opfc-penalty-scene .plab-pitch .plab-shooter .character-portrait{width:clamp(49px,15vw,76px);height:clamp(49px,15vw,76px)}
-.opfc-penalty-scene .plab-pitch{position:relative;width:100%;aspect-ratio:360/365;overflow:hidden;isolation:isolate;border-radius:13px;background:#246d40;border:1px solid #e8efeb55;box-shadow:inset 0 0 36px #092c22aa,0 10px 25px #0004;max-height:480px}
-.opfc-penalty-scene .plab-grass{position:absolute;inset:0;background:repeating-linear-gradient(0deg,#277a43 0%,#277a43 10%,#318649 10%,#318649 20%);filter:saturate(.93)}
-.opfc-penalty-scene .plab-grass::before{content:"";position:absolute;inset:0;background-image:repeating-linear-gradient(90deg,#ffffff08 0px,#ffffff03 1px,transparent 2px,transparent 6px),linear-gradient(180deg,#08201966,transparent 28%,#0d301724 65%,#063c2552);pointer-events:none}
-.opfc-penalty-scene .plab-stadium-glow{position:absolute;z-index:1;left:0;right:0;top:0;height:16%;background:linear-gradient(180deg,#102334,#0e213c 52%,#102c2e);box-shadow:inset 0 -2px 9px #ffffff38}
-.opfc-penalty-scene .plab-stadium-glow::before{content:"";position:absolute;inset:10% 3%;background:repeating-linear-gradient(90deg,#d5e4f444 0 2px,transparent 3px 6px);opacity:.44;mask-image:linear-gradient(#000,transparent)}
-.opfc-penalty-scene .plab-pitch svg.plab-lines{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
-.opfc-penalty-scene .plab-keeper,.opfc-penalty-scene .plab-shooter{position:absolute;z-index:6;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:4px}
-.opfc-penalty-scene .plab-keeper{top:24%;left:50%}.plab-shooter{top:85%;left:50%}
-.opfc-penalty-scene .plab-pitch .character-portrait{width:clamp(44px,14vw,72px);height:clamp(44px,14vw,72px);border-radius:50%;border:3px solid #efdda9;box-shadow:0 4px 14px #001b14b3,0 0 0 2px #153f4c;flex:none;overflow:hidden}
-.opfc-penalty-scene .plab-pitch .character-portrait img{width:100%;height:100%;object-fit:cover;object-position:center 24%}
-.opfc-penalty-scene .plab-pitch .plab-shooter .character-portrait{width:clamp(49px,15vw,76px);height:clamp(49px,15vw,76px)}
-.opfc-penalty-scene .plab-person-label{font-size:10px;font-weight:900;color:#fff;text-shadow:0 1px 3px #062019,0 0 5px #062019;max-width:110px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.opfc-penalty-scene .plab-ball{position:absolute;z-index:7;left:50%;top:68%;width:clamp(19px,6.5vw,28px);aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle at 31% 20%,#fff 0 22%,#e6e7dc 58%,#a9bac0 98%);box-shadow:0 3px 8px #071f1b99,inset -3px -3px 4px #8d9e9a77;display:grid;place-items:center;will-change:transform}
-.opfc-penalty-scene .plab-ball::after{content:"";width:44%;height:44%;background:#19232b;clip-path:polygon(50% 0%,100% 35%,80% 100%,20% 100%,0% 35%);box-shadow:0 0 0 2px #1d263a}
-.opfc-penalty-scene .plab-pitch::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:8;background:linear-gradient(90deg,#061b2450,transparent 15%,transparent 85%,#05192150),linear-gradient(0deg,#06201a55,transparent 25%);border-radius:inherit}
-.opfc-penalty-scene .plab-pitch.is-resetting{animation:plab-reset .2s ease-in-out}
-.opfc-penalty-scene .plab-pitch{
-.opfc-penalty-scene .plab-pitch svg.plab-lines{
-.opfc-penalty-scene .plab-ball-shadow{
-.opfc-penalty-scene .plab-ball{
-.opfc-penalty-scene .plab-ball::after{content:none;display:none}
-.opfc-penalty-scene .plab-ball .plab-ball-art{
-.opfc-penalty-scene .plab-net-mesh{
-.opfc-penalty-scene .plab-pitch.plab-goal-impact .plab-net-mesh{
-.opfc-penalty-scene .plab-pitch.plab-goal-impact .plab-net-mesh{animation:none}
 @keyframes plab-net-v2{0%{transform:scale(1,1)}43%{transform:scale(1.018,1.058)}100%{transform:scale(1,1)}}
 @media(max-width:420px){.opfc-penalty-scene .plab-pitch{aspect-ratio:360/340}}
 @media(prefers-reduced-motion:reduce){.opfc-penalty-scene .plab-pitch.plab-goal-impact .plab-net-mesh{animation:none}}
