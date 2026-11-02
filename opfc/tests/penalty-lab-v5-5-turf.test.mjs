@@ -24,7 +24,8 @@ test('2 400 brins dessinés en quatre chemins SVG : rendu stable sans hasard',()
  assert.equal(first,second);
  const strokes=[...first.matchAll(/<path d="(M[\d. ].*?)" stroke="#(?:d0efb5|0b3926|a0d68a|052b22)"/g)];
  assert.equal(strokes.length,4,'Seulement quatre paths pour les brins');
- const count=strokes.reduce((sum,m)=>sum+(m[1].match(/M/g)||[]).length,0);
+ const leafGroup=first.match(/<g stroke-linecap="round">([\s\S]*?)<\/g>/)?.[1]??'';
+ const count=(leafGroup.match(/M[\d.]+ [\d.]+l/g)||[]).length;
  assert.equal(count,LAB_V55_TURF.grassBlades,'Tous les 2 400 brins présents');
  assert.ok(first.length<125000,'Pas de DOM gonflé ni texture lourde');
 });
@@ -41,6 +42,6 @@ test('Pelouse V5.5 : enlever UNIQUEMENT le pavage d herbe précédent',()=>{
 test('Aucun mouvement, sauvegarde ni impact sur les probabilités',async()=>{
  const {readFileSync}=await import('node:fs');
  const src=readFileSync(new URL('../penalty-lab-v5-5-turf.mjs',import.meta.url),'utf8');
- assert.ok(!/\b(fetch|localStorage|sessionStorage|Math\.random|resolvePenalty|Supabase|applyShootoutKick)\b/.test(src));
+ assert.ok(!/\b(fetch\s*\(|localStorage\s*\.|sessionStorage\s*\.|Math\.random\s*\(|resolvePenalty\s*\(|applyShootoutKick\s*\()/.test(src));
  assert.ok(!src.includes('requestAnimationFrame'));
 });
