@@ -53,3 +53,18 @@
 @keyframes plab-net-v2{0%{transform:scale(1,1)}43%{transform:scale(1.018,1.058)}100%{transform:scale(1,1)}}
 @media(max-width:420px){.opfc-penalty-scene .plab-pitch{aspect-ratio:360/340}}
 @media(prefers-reduced-motion:reduce){.opfc-penalty-scene .plab-pitch.plab-goal-impact .plab-net-mesh{animation:none}}
+
+/* Valeurs finales V3 du laboratoire validées, restreintes au terrain. */
+.opfc-penalty-scene .plab-pitch{position:relative;overflow:hidden;isolation:isolate;border-radius:13px;background:#236a3d;border:1px solid #c6e2d57d;box-shadow:inset 0 0 35px #042019a0,0 12px 32px #0006,0 0 0 1px #14332f}
+.opfc-penalty-scene .plab-grass{position:absolute;inset:0;background:radial-gradient(ellipse 66% 48% at 50% 40%,#e7ffad12,transparent 100%),linear-gradient(90deg,#091f1644,transparent 18% 82%,#092b1d4d),repeating-linear-gradient(0deg,#2e8145 0%,#2e8145 8.5%,#398b4f 8.5%,#398b4f 17%);filter:saturate(1.08)}
+.opfc-penalty-scene .plab-stadium-glow{position:absolute;z-index:1;left:0;right:0;top:0;height:16%;background:radial-gradient(ellipse at 24% 9%,#d8e9db37,transparent 40%),linear-gradient(180deg,#071624,#162f3c 49%,#113430 76%,#153d2b);box-shadow:inset 0 -3px 6px #041e2080,0 5px 10px #04231450}
+.opfc-penalty-scene .plab-pitch svg.plab-lines{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none;filter:drop-shadow(0 1px 1px #0a372c34)}
+.opfc-penalty-scene .plab-keeper,.opfc-penalty-scene .plab-shooter{position:absolute;z-index:6;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:4px}
+.opfc-penalty-scene .plab-keeper{top:24%;left:50%}
+.opfc-penalty-scene .plab-shooter{top:85%;left:50%}
+.opfc-penalty-scene .plab-person-label{font-size:10px;font-weight:900;color:#fff;text-shadow:0 1px 3px #062019,0 0 5px #062019;max-width:110px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.opfc-penalty-scene .plab-ball{position:absolute;z-index:7;left:50%;top:68%;width:clamp(32px,9.4vw,43px);aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);background:transparent;box-shadow:none;overflow:visible;display:block;filter:drop-shadow(1px 3px 2px #001b146e) drop-shadow(-1px -1px 1px #ffffff3d)}
+.opfc-penalty-scene .plab-ball::after{display:none;content:none}
+.opfc-penalty-scene .plab-ball .plab-ball-art{width:100%;height:100%;display:block;overflow:visible;border-radius:50%;filter:drop-shadow(0 1px 1px #122c2c7b);transform-origin:center}
+.opfc-penalty-scene .plab-net-mesh{transform-origin:center 38%;transform-box:fill-box}
+.opfc-penalty-scene .plab-pitch.plab-goal-impact .plab-net-mesh{animation:plab-net-v2 190ms ease-out both}
