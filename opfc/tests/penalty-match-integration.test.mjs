@@ -215,3 +215,27 @@ test('La première apparition conserve exactement l animation premium originelle
  assert.equal(control.decorate(refreshed,state),first);
  assert.equal(control.decorate(refreshed,state),refreshed);
 });
+
+test('Le tableau officiel des TAB et son historique restent au score précédent pendant le tir',()=>{
+ const kick={club:'PSG',shotNumber:1,shooterId:a,keeperId:b,
+  shotDirection:'GAUCHE',keeperDirection:'DROITE',result:'goal',scored:true};
+ const state={phase:'shootout',match:{shootout:{lastResult:kick,timeline:[kick]}}};
+ const previousTracker='<section class="panel shootout-tracker"><strong>0</strong><span class="shootout-mark--pending">·</span></section>';
+ const updatedTracker='<section class="panel shootout-tracker"><strong>1</strong><span class="shootout-mark--goal">✓</span></section>';
+ const previousLog='<section class="panel shootout-log">Aucun tir</section>';
+ const updatedLog='<section class="panel shootout-log">✓ But</section>';
+ let timer;
+ const controller=createPenaltySceneController({schedule:fn=>(timer=fn,1),cancel:()=>{},onFinish:()=>{}});
+ const full=updatedTracker+resultHTML+updatedLog;
+ const animated=controller.decorate(full,state,{previousTracker,previousLog});
+ assert.ok(animated.includes(previousTracker));
+ assert.ok(animated.includes(previousLog));
+ assert.ok(!animated.includes('shootout-mark--goal'));
+ assert.ok(!animated.includes('✓ But'));
+ assert.ok(animated.includes('opfc-penalty-animation'));
+ timer();
+ const visible=controller.decorate(full,state);
+ assert.ok(visible.includes(updatedTracker));
+ assert.ok(visible.includes(updatedLog));
+ assert.ok(visible.includes('shot-result-unified'));
+});
