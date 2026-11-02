@@ -35,6 +35,11 @@ export function continuousNetPoints(impact={x:180,y:104},progress=0){
    // Courbure statique très légère; aucune couture entre les mailles.
    const baseX=x+(u-.5)*3.4*Math.sin(Math.PI*v);
    const baseY=y+1.6*Math.sin(Math.PI*u)*Math.sin(Math.PI*v);
+   // Les extrémités sont fixées EXACTEMENT au cadre, sans epsilon flottant.
+   if(i===0||i===c.columns-1||j===0||j===c.rows-1){
+    row.push(Object.freeze({x:baseX,y:baseY}));
+    continue;
+   }
    const distance=Math.hypot(x-centerX,y-centerY);
    const core=Math.exp(-(distance*distance)/(2*spread*spread));
    const ring=Math.exp(-Math.pow(distance-waveRadius,2)/(2*22*22))*
