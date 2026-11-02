@@ -68,6 +68,13 @@ export function labV51PitchGraphic(){
  const field=base.indexOf('<path d="'+OG_FIELD+'"');
  if(start<0||field<start)throw Error('Repères du but V4 non trouvés');
  let svg=base.slice(0,start)+goalFace()+base.slice(field);
+ // Le SVG V4 dessinait de l'herbe à partir de y=57. Cette texture masquait
+ // la tribune, malgré le rectangle V5 à 28 %. La démarrer après le décor :
+ // le fond V5.1 est réellement visible sur 33 % de la hauteur.
+ const grassV4='<rect x="0" y="57" width="360" height="308" fill="url(#plab-blades)"/>';
+ const grassV51='<rect x="0" y="120" width="360" height="245" fill="url(#plab-blades)"/>';
+ if(!svg.includes(grassV4))throw Error('Calque herbe V4 introuvable');
+ svg=svg.replace(grassV4,grassV51);
  const clips=[
   ['left','60','80','43','92'],
   ['center','140','80','135','90'],
