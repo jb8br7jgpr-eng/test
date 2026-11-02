@@ -8,6 +8,7 @@ import {lineupDetails} from './rules.mjs?v=opfc-match-balance-20261025';
 import {renderCharacterPortrait,renderClubCrest} from './ui-portraits.mjs?v=opfc-75-roster-20261022';
 import {matchPublicView,kickoffMatch,continueMatch,resumeMatch} from './match.mjs?v=opfc-half-balance-20261027';
 import {beginOpenPlayAction,lockOpenPlayChoice,revealOpenPlayDuel,continueOpenPlayDuel,revealOpenPlayShot} from './match-actions.mjs?v=opfc-integration-20261025';
+import {renderMatchPenaltyScene} from './penalty-scene.mjs';
 import {isSetPieceKind,setPieceTurnOwner,dispatchSetPieceMatch,renderSetPieceAction} from './ui-set-piece.mjs?v=opfc-penalty-scene-20261102';
 import {shootoutTurnOwner,dispatchShootout,renderShootoutScreen} from './ui-shootout.mjs?v=opfc-penalty-scene-20261102';
 import {renderFinalResult} from './ui-final.mjs?v=opfc-momentum-bars-20261028';
@@ -414,8 +415,15 @@ function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null,competit
   const action=m.action,owner=action.kind==='open'?
    (ACTOR[action.stage]?action[ACTOR[action.stage]]:action.attacker):
    action.stage==='defense-choice'?action.defender:action.attacker;
-  if(owner!==onlineClub&&action.stage!=='duel-revealed')
-   return out+onlineWaiting(owner,'Le choix de l’adversaire reste secret.');
+  if(owner!==onlineClub&&action.stage!=='duel-revealed'){
+   const waitingScene=action.kind==='penalty'&&
+    ['attack-choice','defense-choice'].includes(action.stage)&&
+    action.actors?.taker?.cardId&&action.keeper?.cardId?
+    '<section class="panel match-stage">'+renderMatchPenaltyScene({
+     shooterId:action.actors.taker.cardId,keeperId:action.keeper.cardId
+    })+'</section>':'';
+   return out+waitingScene+onlineWaiting(owner,'Le choix de l’adversaire reste secret.');
+  }
  }
  const rendered=renderAction(state,view,onlineClub?true:uncovered);
   const turn=matchTurnOwner(state);
