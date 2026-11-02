@@ -1,0 +1,49 @@
+name: OPFC — labo V5.2 filet continu (sans déploiement)
+on:
+  push:
+    branches:
+      - feature/opfc-penalty-lab-v5-2-continuous-net-20261102
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  net:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+      - name: Production OPFC et moteurs strictement intacts
+        run: |
+          git fetch origin main:refs/remotes/origin/main
+          git diff --exit-code origin/main...HEAD -- opfc.html opfc/ui.mjs opfc/ui-shootout.mjs opfc/ui-match.mjs opfc/penalty-scene.mjs opfc/penalty-scene.css opfc/penalty-lab-core.mjs opfc/penalty-lab-v4.mjs opfc/penalty-lab-v5-1.mjs opfc/penalty-lab-v5-1-flight.mjs opfc/penalty-lab-visual.mjs opfc/penalty.mjs opfc/shootout.mjs opfc/match.mjs opfc/ui-final.mjs opfc/ui-match-widgets.mjs supabase
+      - name: Syntaxe et tests de continuité du filet
+        run: |
+          node --check opfc/penalty-lab-v5-2-net.mjs
+          node --check opfc/penalty-lab.mjs
+          node --check opfc/tests/penalty-lab-v5-2-net-browser.mjs
+          node --test opfc/tests/penalty-lab-v5-2-net.test.mjs opfc/tests/penalty-lab-v5-1-flight.test.mjs opfc/tests/penalty-lab-v5-1.test.mjs
+      - name: Navigateur iPhone
+        run: npm install --no-save playwright-core@1.57.0
+      - name: Serveur isolé sans déploiement
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/opfc-lab-net-server.log 2>&1 &
+          sleep 2
+      - name: Buts, arrêts, ratés et TAB avec filet continu
+        env:
+          CHROME_BINARY: ${{ steps.chrome.outputs.chrome-path }}
+        run: node opfc/tests/penalty-lab-v5-2-net-browser.mjs
+      - name: Captures d'écran de la déformation des filets
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: opfc-v52-continuous-net-mobile
+          path: /tmp/opfc-v52-net-*.png
+          if-no-files-found: ignore
+          retention-days: 7
