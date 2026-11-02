@@ -3,7 +3,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {CARDS} from '../catalog.mjs';
 import {createLabSession} from '../penalty-lab-core.mjs';
-import {renderSetPieceAction} from '../ui-set-piece.mjs';
+import {renderSetPieceAction,dispatchSetPieceMatch} from '../ui-set-piece.mjs';
+import {onlineMatchView} from '../online-match.mjs';
+import {applyOnlineSetPieceTransition} from '../online-set-piece.mjs';
+import {applyOnlineEndgameTransition,onlineShootoutView} from '../online-endgame.mjs';
 import {renderShootoutScreen,renderOnlineShootoutScreen} from '../ui-shootout.mjs';
 import {renderShotResult} from '../ui-match-widgets.mjs';
 import {renderMatchPenaltyScene,resolvedPenaltyForPresentation,createPenaltySceneController} from '../penalty-scene.mjs';
@@ -65,6 +68,8 @@ test('TAB en ligne : mêmes portraits et scène, aucun choix secret envoyé aux 
  assert.ok(!owner.includes('shotDirection'));
  const other=renderOnlineShootoutScreen(publicState,{myClub:turn==='PSG'?'OM':'PSG',hostClub:'PSG'});
  assert.ok(other.includes('online-turn-wait'));
+ assert.ok(other.includes('opfc-penalty-scene'));
+ assert.ok(!other.includes('shotDirection'));
  assert.ok(!other.includes('data-action="online-choice"'));
 });
 test('Avant résolution : les directions de penalty ne sont jamais rendues',()=>{
@@ -121,4 +126,76 @@ test('Le module ne contient aucun appel de validation, calcul de hasard ou sauve
  const {readFileSync}=await import('node:fs');
  const code=readFileSync(new URL('../penalty-scene.mjs',import.meta.url),'utf8');
  assert.ok(!/\b(fetch|localStorage|sessionStorage|Math\.random|advanceShootout|resolvePenalty|Supabase)\b/.test(code));
+});
+
+const zeroStats=()=>({sequences:0,shots:0,onTarget:0,saves:0});
+function penaltyMatch(){
+ return {
+  version:1,phase:'match',teams:structuredClone(teams),competition:'league',
+  match:{
+   index:0,minute:36,score:{PSG:0,OM:0},goals:[],history:[],
+   statistics:{PSG:zeroStats(),OM:zeroStats()},
+   schedule:[{minute:36,period:1,attacker:'PSG',type:'penalty'}],
+   currentMoment:null,action:null,lastResult:null,competition:'league'
+  }
+ };
+}
+test('Vrai moteur en local : 2 choix confidentiels, 1 seul tir et animation avant résultat',()=>{
+ let state=penaltyMatch();
+ state=dispatchSetPieceMatch(state,'begin-setpiece');
+ state=dispatchSetPieceMatch(state,'select-taker',{takerId:a});
+ assert.ok(renderSetPieceAction(state,state.match.action,{uncovered:true}).includes('opfc-penalty-scene'));
+ state=dispatchSetPieceMatch(state,'choose',{choice:'GAUCHE'});
+ assert.equal(state.match.action.stage,'defense-choice');
+ assert.equal(resolvedPenaltyForPresentation(state),null);
+ const privateChoice=state.match.action.choices.attack;
+ const before=state.match.history.length;
+ state=dispatchSetPieceMatch(state,'choose',{choice:'DROITE',rng:()=>.99});
+ assert.equal(state.phase,'moment-result');
+ assert.equal(state.match.history.length,before+1);
+ assert.equal(state.match.lastResult.details.shot.calculation.shotDirection,privateChoice);
+ assert.ok(resolvedPenaltyForPresentation(state));
+ assert.ok(resultHTML.includes('shot-result-unified'));
+});
+test('Vrai serveur de penalty : aucune direction révélée après le 1er choix ; résultat partagé après le second',()=>{
+ const noRng=()=>.99;
+ let state=penaltyMatch();
+ state=applyOnlineSetPieceTransition(state,'PSG',{type:'begin-setpiece'},noRng);
+ state=applyOnlineSetPieceTransition(state,'PSG',{type:'select-taker',takerId:a},noRng);
+ state=applyOnlineSetPieceTransition(state,'PSG',{type:'choose',choice:'GAUCHE'},noRng);
+ const aView=onlineMatchView(state,'PSG'),bView=onlineMatchView(state,'OM');
+ assert.equal(aView.match.action.stage,'defense-choice');
+ assert.equal(aView.match.action.confirmed.attacker,true);
+ assert.ok(!JSON.stringify(aView.match.action).includes('"GAUCHE"'));
+ assert.ok(!JSON.stringify(bView.match.action).includes('"GAUCHE"'));
+ state=applyOnlineSetPieceTransition(state,'OM',{type:'choose',choice:'DROITE'},noRng);
+ assert.equal(state.phase,'moment-result');
+ assert.equal(state.match.history.length,1);
+ for(const club of ['PSG','OM']){
+  const view=onlineMatchView(state,club);
+  assert.equal(view.match.lastResult.details.shot.calculation.shotDirection,'GAUCHE');
+  assert.equal(view.match.lastResult.details.shot.calculation.keeperDirection,'DROITE');
+  assert.ok(resolvedPenaltyForPresentation(view));
+ }
+});
+test('Vrai serveur TAB : un choix caché, un résultat après le second, scène identique sur les deux téléphones',()=>{
+ const first=lab.shootout.firstClub;
+ const second=first==='PSG'?'OM':'PSG';
+ let state={phase:'shootout',teams:structuredClone(teams),match:{
+  score:{PSG:0,OM:0},shootout:structuredClone(lab.shootout),shootoutPending:null,shootoutLastResult:null
+ }};
+ state=applyOnlineEndgameTransition(state,first,{type:'shootout-choose',choice:'GAUCHE'},{hostClub:'PSG',rng:()=>.5});
+ const before=onlineShootoutView(state);
+ assert.equal(before.confirmed.shooter,true);
+ assert.equal(before.confirmed.keeper,false);
+ assert.ok(!JSON.stringify(before).includes('shotDirection'));
+ state=applyOnlineEndgameTransition(state,second,{type:'shootout-choose',choice:'DROITE'},{hostClub:'PSG',rng:()=>.99});
+ assert.equal(state.match.shootout.timeline.length,1);
+ const attempt=onlineShootoutView(state);
+ assert.equal(attempt.lastResult.shotDirection,'GAUCHE');
+ assert.equal(attempt.lastResult.keeperDirection,'DROITE');
+ const view={phase:'shootout',match:{shootout:attempt}};
+ assert.ok(resolvedPenaltyForPresentation(view));
+ assert.equal(renderOnlineShootoutScreen({...view,teams}, {myClub:first,hostClub:'PSG'}).includes('shot-result-unified'),true);
+ assert.equal(renderOnlineShootoutScreen({...view,teams}, {myClub:second,hostClub:'PSG'}).includes('shot-result-unified'),true);
 });
