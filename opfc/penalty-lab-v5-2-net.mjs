@@ -23,7 +23,8 @@ export function continuousNetPoints(impact={x:180,y:104},progress=0){
  const points=[];
  const centerX=clamp(impact.x,c.left+12,c.right-12);
  const centerY=clamp(impact.y,c.top+9,c.bottom-9);
- const rebound=Math.sin(elapsed*Math.PI*1.72)*Math.exp(-elapsed*1.55);
+ const settle=Math.pow(1-elapsed,1.45);
+ const rebound=Math.sin(elapsed*Math.PI*1.72)*Math.exp(-elapsed*1.15)*settle;
  const spread=21+elapsed*55;
  const waveRadius=elapsed*78;
  for(let j=0;j<c.rows;j++){
@@ -37,7 +38,7 @@ export function continuousNetPoints(impact={x:180,y:104},progress=0){
    const distance=Math.hypot(x-centerX,y-centerY);
    const core=Math.exp(-(distance*distance)/(2*spread*spread));
    const ring=Math.exp(-Math.pow(distance-waveRadius,2)/(2*22*22))*
-    Math.sin(elapsed*Math.PI*3.8)*Math.exp(-elapsed*2.5);
+    Math.sin(elapsed*Math.PI*3.8)*Math.exp(-elapsed*2.1)*settle;
    // Les 4 bords sont cousus à la structure (taper=0 aux extrémités).
    const pinned=Math.pow(Math.sin(Math.PI*u)*Math.sin(Math.PI*v),.7);
    const dx=pinned*(.108*(x-centerX)*core*rebound+
