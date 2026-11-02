@@ -57,7 +57,7 @@ const TRANSITION_MS=1060;
  * One key per real kick; online polling and acknowledgements must not replay it.
  */
 export function createPenaltySceneController({onFinish,clock=()=>Date.now(),schedule=(fn,ms)=>setTimeout(fn,ms),cancel=clearTimeout}={}){
- let active=null,seen=new Set(),timer=null,revealOnce=null;
+ let active=null,seen=new Set(),timer=null,revealOnce=null,lastSelectionKey=null;
  const originalIntroPanels=new Map();
  function reset(){
   if(timer!==null){cancel(timer);timer=null;}
@@ -109,8 +109,28 @@ export function createPenaltySceneController({onFinish,clock=()=>Date.now(),sche
    '<h2 class="match-shot-ready-heading">Le tir est déclenché</h2>'+
    scene+'<p class="caption">Le résultat sera affiché après la frappe.</p></section>');
  }
- function animate(root){
-  if(!active)return;
+ function animate(root,state=null){
+  if(!active){
+   // Retour naturel au point de penalty, 0,2 s, une seule fois par tir.
+   const scene=root.querySelector('.opfc-penalty-scene .plab-pitch');
+   if(!scene||!state?.match)return;
+   const match=state.match;
+   const shootout=match.shootout;
+   let key=null;
+   if(state.phase==='shootout'&&shootout&&!shootout.lastResult&&!match.shootoutLastResult){
+    const next=shootout.active;
+    const current=next?next.shotNumber:(shootout.timeline?.length??0)+1;
+    key='tab:'+(state.matchRecordId??'initial')+':'+current+':'+(shootout.timeline?.length??0);
+   }else if(state.phase==='match'&&match.action?.kind==='penalty'){
+    key='penalty:'+(state.matchRecordId??'initial')+':'+match.index;
+   }
+   if(!key||key===lastSelectionKey)return;
+   lastSelectionKey=key;
+   const reduced=typeof window!=='undefined'&&window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+   if(!reduced&&typeof scene.animate==='function')
+    scene.animate([{opacity:.64},{opacity:1}],{duration:200,easing:'ease-out'});
+   return;
+  }
   const scene=root.querySelector('.opfc-penalty-animation');
   if(!scene||scene.dataset.animationKey===active.key)return;
   scene.dataset.animationKey=active.key;
