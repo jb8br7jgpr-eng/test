@@ -57,7 +57,7 @@ function goalFace(){
   '<path d="M43 145 V67 H317 V145 Z" fill="url(#plab-goalshade)" stroke="none"/>'+
   regions+
   '<path d="M43 145 V67 H317 V145" fill="none" stroke="#092830" stroke-width="10" opacity=".72"/>'+
-  '<path d="M43 145 V67 H317 V145" fill="none" stroke="url(#plab-metal)" stroke-width="6.7" stroke-linejoin="round"/>'+
+  '<path class="plab-v51-front-frame" d="M43 145 V67 H317 V145" fill="none" stroke="url(#plab-metal)" stroke-width="6.7" stroke-linejoin="round"/>'+
   '<path d="M41.8 143 V65 H315.5" fill="none" stroke="#fff" stroke-width="1.2" opacity=".65"/>';
 }
 
