@@ -17,7 +17,10 @@ test('Ballon SVG aux panneaux noirs et blancs, courbure et couture',()=>{
  const svg=labBallGraphic();
  assert.ok(svg.includes('plab-ball-mat'));
  assert.ok(svg.includes('plab-ball-mask'));
- assert.ok(svg.includes('plab-ball-gloss'));
+ assert.ok(svg.includes('plab-ball-light'));
+ assert.ok(svg.includes('M33 21 L47 13 L67 22'));
+ assert.ok(svg.includes('M34 46 L65 46 L78 65'));
+ assert.ok(svg.includes('stroke-dasharray'));
  assert.ok((svg.match(/<path/g)||[]).length>=9);
  assert.ok(svg.includes('viewBox="0 0 100 100"'));
 });
