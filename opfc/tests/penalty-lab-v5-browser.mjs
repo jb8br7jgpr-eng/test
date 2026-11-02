@@ -34,7 +34,7 @@ try{
   };
  });
  assert.ok(measured.backdropRatio>.275&&measured.backdropRatio<.285,'Rectangular background 28% pitch: '+JSON.stringify(measured));
- assert.ok(measured.goalRatio>.69&&measured.goalRatio<.76,'Bigger goal: '+JSON.stringify(measured));
+ assert.ok(measured.goalRatio>.77&&measured.goalRatio<.84,'Bigger goal including rear net shadow: '+JSON.stringify(measured));
  assert.ok(measured.ballTop>.665&&measured.ballTop<.695,'Ball remains fixed: '+JSON.stringify(measured));
  assert.ok(measured.shooterTop>.83&&measured.shooterTop<.87,'Shooter remains fixed: '+JSON.stringify(measured));
  assert.ok(measured.keeperTop>.24&&measured.keeperTop<.27,'Keeper aligns with camera: '+JSON.stringify(measured));
