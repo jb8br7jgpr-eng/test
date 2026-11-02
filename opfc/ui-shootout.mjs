@@ -239,7 +239,9 @@ export function renderOnlineShootoutScreen(state,{myClub,hostClub}={}){
    const confirmed=s.confirmed??{shooter:false,keeper:false};
    const shooterTurn=!confirmed.shooter,keeperTurn=confirmed.shooter&&!confirmed.keeper;
    const owner=shooterTurn?p.club:keeperTurn?(p.club==='PSG'?'OM':'PSG'):p.club;
-   if(owner!==myClub)out+=guestWaiting(owner,'La direction précédente reste confidentielle.');
+   if(owner!==myClub)out+='<section class="panel match-stage">'+
+    renderMatchPenaltyScene({shooterId:p.shooterId,keeperId:p.keeperId})+
+    '</section>'+guestWaiting(owner,'La direction précédente reste confidentielle.');
    else if(shooterTurn||keeperTurn){
     out+='<section class="panel match-stage"><span class="eyebrow">'+
      (shooterTurn?'Tireur':'Gardien')+' · '+escape(visualAbbr(owner))+'</span>'+
