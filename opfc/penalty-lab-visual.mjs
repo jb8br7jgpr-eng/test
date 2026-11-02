@@ -29,24 +29,49 @@ export function labPitchGraphic(){
   '<path d="M0 345 H360" stroke="#edffed" stroke-width="1" opacity=".16"/>'+
  '</svg>';
 }
+/** Ballon noir et blanc classique conforme à la référence de l'utilisateur.
+ * Pentagone noir en haut au centre, large hexagone blanc sous celui-ci,
+ * coutures et autres pentagones noirs sur les bords. */
 export function labBallGraphic(){
  return '<svg class="plab-ball-art" viewBox="0 0 100 100" aria-hidden="true">'+
-  '<defs><radialGradient id="plab-ball-mat" cx="30%" cy="22%" r="82%"><stop stop-color="#fff"/><stop offset=".48" stop-color="#f6f8f5"/><stop offset=".78" stop-color="#d4dddc"/><stop offset="1" stop-color="#849aa1"/></radialGradient>'+
-  '<radialGradient id="plab-ball-gloss" cx="22%" cy="16%" r="64%"><stop stop-color="#fff" stop-opacity=".78"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>'+
-  '<clipPath id="plab-ball-mask"><circle cx="50" cy="50" r="47"/></clipPath></defs>'+
-  '<circle cx="50" cy="50" r="48" fill="#23343c"/><circle cx="50" cy="50" r="47" fill="url(#plab-ball-mat)"/>'+
-  '<g clip-path="url(#plab-ball-mask)" stroke="#5b737a" stroke-width="1.2" stroke-linejoin="round">'+
-  '<path d="M35 32 L55 24 L75 39 L71 60 L51 72 L30 60 L25 43Z" fill="#18262e" stroke="#233740" stroke-width="2"/>'+
-  '<path d="M25 43 L0 33 L8 10 L32 10 L55 24 L35 32Z" fill="#f4f6f3"/>'+
-  '<path d="M55 24 L74 5 L100 16 L100 42 L75 39Z" fill="#17252c"/>'+
-  '<path d="M75 39 L100 42 L100 71 L83 79 L71 60Z" fill="#edf1ee"/>'+
-  '<path d="M71 60 L83 79 L69 105 L45 100 L51 72Z" fill="#1d2c33"/>'+
-  '<path d="M51 72 L45 100 L17 100 L4 76 L30 60Z" fill="#e5ece8"/>'+
-  '<path d="M30 60 L4 76 L-5 57 L0 33 L25 43Z" fill="#202e34"/>'+
-  '<path d="M32 10 L41 -5 L74 5 L55 24Z" fill="#ecf1ed"/>'+
-  '<path d="M8 10 L-5 4 L-4 33 L0 33Z" fill="#2c3940"/>'+
-  '</g><circle cx="50" cy="50" r="47" fill="url(#plab-ball-gloss)"/>'+
-  '<circle cx="50" cy="50" r="46.5" stroke="#fff" stroke-opacity=".5" stroke-width="1.2" fill="none"/>'+
-  '<path d="M13 37 Q24 14 44 11" fill="none" stroke="#fff" opacity=".55" stroke-width="3" stroke-linecap="round"/>'+
+ '<defs>'+
+ '<radialGradient id="plab-ball-mat" cx="31%" cy="23%" r="85%">'+
+ '<stop offset="0" stop-color="#fff"/><stop offset=".48" stop-color="#f7f7f4"/>'+
+ '<stop offset=".78" stop-color="#d5d6d2"/><stop offset="1" stop-color="#969e9e"/></radialGradient>'+
+ '<linearGradient id="plab-ball-black" x1="0" y1="0" x2=".72" y2="1">'+
+ '<stop stop-color="#08090b"/><stop offset=".6" stop-color="#121416"/><stop offset="1" stop-color="#3a3b3b"/></linearGradient>'+
+ '<radialGradient id="plab-ball-light" cx="28%" cy="19%" r="75%">'+
+ '<stop stop-color="#fff" stop-opacity=".74"/><stop offset=".58" stop-color="#fff" stop-opacity=".06"/>'+
+ '<stop offset="1" stop-color="#17252d" stop-opacity=".28"/></radialGradient>'+
+ '<clipPath id="plab-ball-mask"><circle cx="50" cy="50" r="48"/></clipPath>'+
+ '</defs>'+
+ '<circle cx="50" cy="50" r="49" fill="#d7dedc"/>'+
+ '<circle cx="50" cy="50" r="48" fill="url(#plab-ball-mat)"/>'+
+ '<g clip-path="url(#plab-ball-mask)" stroke="#b6bcb8" stroke-width=".9" stroke-linejoin="round">'+
+ // Bottom large white hexagon, authentic black pentagons above and at bottom sides.
+ '<path d="M34 46 L65 46 L78 65 L65 84 L40 84 L24 65 Z" fill="#f2f2ef"/>'+
+ '<path d="M33 21 L47 13 L67 22 L66 46 L34 46 L29 30 Z" fill="url(#plab-ball-black)" stroke="#3e4242" stroke-width="1"/>'+
+ '<path d="M3 39 L10 18 L25 8 L25 13 L17 41 L8 47 Z" fill="url(#plab-ball-black)"/>'+
+ '<path d="M73 8 L87 17 L100 41 L91 48 L83 40 L77 19 Z" fill="url(#plab-ball-black)"/>'+
+ '<path d="M1 62 L24 65 L40 84 L27 99 L9 88 Z" fill="url(#plab-ball-black)"/>'+
+ '<path d="M78 65 L100 63 L100 87 L78 99 L65 84 Z" fill="url(#plab-ball-black)"/>'+
+ '<path d="M25 8 L47 2 L73 8 L67 22 L47 13 L33 21 L25 13 Z" fill="#f2f3f0"/>'+
+ '<path d="M3 39 L17 41 L29 30 L34 46 L24 65 L1 62 Z" fill="#e9eae7"/>'+
+ '<path d="M67 22 L77 19 L83 40 L91 48 L100 63 L78 65 L65 46 Z" fill="#f8f8f6"/>'+
+ '<path d="M9 88 L27 99 L78 99 L65 84 L40 84 Z" fill="#e2e5e0"/>'+
+ '</g>'+
+ // Fine stitched seams along the panel edges, not a hexagon decoration.
+ '<g clip-path="url(#plab-ball-mask)" fill="none" stroke="#939b99" stroke-width=".56" stroke-linecap="round" stroke-linejoin="round">'+
+ '<path d="M34 46 L65 46 L78 65 L65 84 L40 84 L24 65 Z"/>'+
+ '<path d="M33 21 L47 13 L67 22 L66 46 L34 46 L29 30 Z"/>'+
+ '<path d="M24 65 L1 62 M78 65 L100 63 M40 84 L27 99 M65 84 L78 99"/>'+
+ '<path d="M17 41 L3 39 M83 40 L91 48 M25 13 L25 8 M73 8 L77 19"/>'+
+ '</g>'+
+ '<g clip-path="url(#plab-ball-mask)" fill="none" stroke="#5d696b" stroke-width=".34" stroke-dasharray=".9 1.1" opacity=".62">'+
+ '<path d="M34 45 L65 45 L77 65 L64 83 L41 83 L25 65 Z"/>'+
+ '<path d="M34 22 L47 14 L66 23 L65 45 L35 45 L30 30 Z"/>'+
+ '</g>'+
+ '<circle cx="50" cy="50" r="48" fill="url(#plab-ball-light)"/>'+
+ '<circle cx="50" cy="50" r="47.5" stroke="#fdfefe" stroke-opacity=".48" stroke-width=".8" fill="none"/>'+
  '</svg>';
 }
