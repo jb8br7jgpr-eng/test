@@ -21,11 +21,11 @@ export function labV4PitchGraphic(){
  const pattern=/(<g class="plab-net-mesh"[^>]*>)([\s\S]*?)(<\/g>)/;
  const match=original.match(pattern);
  if(!match)throw Error('Filet V3 introuvable');
- const clips='<defs>'+
+ const clips=''+
   '<clipPath id="plab-v4-net-left"><rect x="60" y="26" width="80" height="87"/></clipPath>'+
   '<clipPath id="plab-v4-net-center"><rect x="140" y="26" width="80" height="87"/></clipPath>'+
   '<clipPath id="plab-v4-net-right"><rect x="220" y="26" width="80" height="87"/></clipPath>'+
-  '</defs>';
+  '';
  const regions=['left','center','right'].map(region=>
   '<g class="plab-net-mesh plab-v4-net-'+region+'" fill="none" stroke="#e8f4f8" '+
   'stroke-width=".68" stroke-opacity=".58" clip-path="url(#plab-v4-net-'+region+')">'+
