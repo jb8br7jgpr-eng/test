@@ -9,7 +9,8 @@ import {renderCharacterPortrait,renderClubCrest} from './ui-portraits.mjs';
 import {renderShotResult,matchTacticalChoices} from './ui-match-widgets.mjs';
 import {renderShootoutTracker,renderShootoutScreen} from './ui-shootout.mjs';
 import {renderFinalResult} from './ui-final.mjs';
-import {labPitchGraphic,labBallGraphic} from './penalty-lab-visual.mjs?v=lab-classicball-20261102';
+import {labBallGraphic} from './penalty-lab-visual.mjs?v=lab-classicball-20261102';
+import {labV4PitchGraphic,stadiumLight,flightFrames,potentiallyDecisive} from './penalty-lab-v4.mjs';
 import {
  LAB_POSITIONS,defaultLineups,validateLineups,createLabSession,
  labTurn,prepareLabKick,commitLabKick,trajectoryFor
@@ -24,14 +25,19 @@ const state={
  type:'penalty',clubs:{PSG:'PSG',OM:'BDW'},stadium:'mugiwara',
  lineups:defaultLineups(),mode:'engine',attacker:'PSG',firstClub:'PSG',
  shooterId:null,session:null,step:'config',shotDirection:null,
- prepared:null,animationId:0,error:''
+ prepared:null,animationId:0,error:'',v4Decisive:false
 };
 
 const css=document.createElement('link');
 css.rel='stylesheet';
 css.href='./opfc/penalty-lab.css?v=lab-v3-20261102';
 document.head.append(css);
+const v4css=document.createElement('link');
+v4css.rel='stylesheet';
+v4css.href='./opfc/penalty-lab-v4.css?v=lab-v4-draft-20261102';
+document.head.append(v4css);
 root.classList.add('plab');
+root.classList.add('plab-v4');
 // Garder exactement les bases de l'affichage OPFC : .app, .panel, .btn et leurs styles.
 root.classList.add('app');
 
@@ -139,13 +145,17 @@ function labTools(){
   (state.step==='result'?button('replay','↻ Rejouer sans compter'):'')+
   '</div><p class="plab-footnote">Uniquement des essais locaux, aucun match ni palmarès enregistré.</p></details>';
 }
-const pitchSvg=labPitchGraphic;
+const pitchSvg=labV4PitchGraphic;
 function pitch(turn){
  const stadium=stadiumById(state.stadium);
- return '<div class="plab-pitch" role="img" aria-label="Pelouse de football avec surface de réparation, but détaillé et filets. Portrait du gardien dans la cage, ballon au point de penalty, portrait du tireur immobile.">'+
-  '<div class="plab-grass"></div><div class="plab-stadium-glow"></div>'+pitchSvg()+
+ const light=stadiumLight(state.stadium);
+ const tension=state.step==='animating'&&state.v4Decisive?' plab-v4-decisive plab-v4-tension':'';
+ return '<div class="plab-pitch'+tension+'" style="--plab-v4-light:'+light.light+';--plab-v4-secondary:'+light.secondary+'" role="img" aria-label="Pelouse de football avec surface de réparation, but détaillé et filets. Portrait du gardien dans la cage, ballon au point de penalty, portrait du tireur immobile.">'+
+  '<div class="plab-grass"></div><div class="plab-stadium-glow"></div>'+
+  '<div class="plab-v4-stands" aria-hidden="true"></div><div class="plab-v4-lights" aria-hidden="true"></div>'+pitchSvg()+
   '<div class="plab-keeper" id="plab-keeper">'+renderCharacterPortrait(turn.keeperId,'plab-keeper-portrait')+
   '<span class="plab-person-label">'+h(name(turn.keeperId))+'</span></div>'+
+  '<div class="plab-v4-contact" aria-hidden="true"></div>'+ 
   '<div class="plab-ball-shadow" id="plab-ball-shadow" aria-hidden="true"></div>'+
   '<div class="plab-ball" id="plab-ball" aria-hidden="true">'+labBallGraphic()+'</div>'+
   '<div class="plab-shooter">'+renderCharacterPortrait(turn.shooterId,'plab-shooter-portrait')+
@@ -240,11 +250,11 @@ function start(){
  state.session=createLabSession({
   type:state.type,lineups:state.lineups,attacker:state.attacker,firstClub:state.firstClub
  });
- state.prepared=null;state.shotDirection=null;state.step='shooter';
+ state.prepared=null;state.shotDirection=null;state.v4Decisive=false;state.step='shooter';
  state.error='';state.animationId++;render();
 }
 function resetToStep(step){
- state.animationId++;state.prepared=null;state.shotDirection=null;
+ state.animationId++;state.prepared=null;state.shotDirection=null;state.v4Decisive=false;
  state.step=step;render();
  const element=root.querySelector('.plab-pitch');
  if(element)element.classList.add('is-resetting');
@@ -264,51 +274,48 @@ async function animateCurrent(id){
  const shadow=root.querySelector('#plab-ball-shadow');
  const art=ball?.querySelector('.plab-ball-art');
  if(!scene||!keeper||!ball||!art)return;
- const trajectory=trajectoryFor(attempt);
- const w=scene.clientWidth,height=scene.clientHeight;
- const bx=w*(trajectory.ballX-50)/100;
- const by=height*(trajectory.ballY-68)/100;
- const kx=w*(trajectory.keeperX-50)/100;
  const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
- const duration=reduced?40:1020;
+ const decisive=state.v4Decisive;
+ // Suspension minime et SEULEMENT sur un tir potentiellement décisif.
+ if(decisive&&!reduced){
+  await delay(95);
+  if(id!==state.animationId)return;
+ }
+ const w=scene.clientWidth,height=scene.clientHeight;
+ const {frames,x,y,keeperX,zone}=flightFrames(attempt,w,height);
+ const duration=reduced?40:1020+(decisive?135:0);
+ const round=n=>Math.round(n*10)/10;
  const isSave=attempt.outcome==='save';
  const isGoal=attempt.outcome==='goal';
- // Le ballon part systématiquement dans la direction choisie.
- // Un arrêt improbable du mauvais côté n'altère jamais le résultat officiel.
- const directionX={GAUCHE:-.19,CENTRE:0,DROITE:.19}[attempt.shotDirection]*w;
- const ballFrames=[
-  {transform:'translate(-50%,-50%) translate(0px,0px) scale(1)',offset:0},
-  {transform:'translate(-50%,-50%) translate('+directionX.toFixed(1)+'px,'+(by*.58).toFixed(1)+'px) scale(.78)',offset:.57},
-  {transform:'translate(-50%,-50%) translate('+bx.toFixed(1)+'px,'+by.toFixed(1)+'px) scale(.49)',offset:isSave?.86:1}
- ];
- if(isSave)ballFrames.push({transform:'translate(-50%,-50%) translate('+(bx+directionX*.08).toFixed(1)+'px,'+(by+height*.045).toFixed(1)+'px) scale(.50)',offset:1});
- // Le gardien glisse sans rotation ; seul le ballon tourne.
+ const isMiss=attempt.outcome==='miss';
  const keeperFrames=[
   {transform:'translate(-50%,-50%) translateX(0px)',offset:0},
   {transform:'translate(-50%,-50%) translateX(0px)',offset:.09},
-  {transform:'translate(-50%,-50%) translateX('+kx.toFixed(1)+'px)',offset:1}
+  {transform:'translate(-50%,-50%) translateX('+round(keeperX)+'px)',offset:1}
  ];
- if(typeof ball.animate==='function'){
+ const directionX={GAUCHE:-.19,CENTRE:0,DROITE:.19}[attempt.shotDirection]*w;
+ if(typeof ball.animate==='function'&&!reduced){
   const animations=[
-   ball.animate(ballFrames,{duration,fill:'forwards',easing:'cubic-bezier(.28,.02,.29,1)'}),
+   ball.animate(frames,{duration,fill:'forwards',easing:'cubic-bezier(.38,.05,.76,.76)'}),
    keeper.animate(keeperFrames,{duration,fill:'forwards',easing:'cubic-bezier(.25,.1,.23,1)'}),
-   art.animate([
-    {transform:'rotate(-16deg)',offset:0},
-    {transform:'rotate(115deg)',offset:.5},
-    {transform:'rotate(315deg)',offset:1}
-   ],{duration,fill:'forwards',easing:'ease-in'})
+   art.animate([{transform:'rotate(-16deg)',offset:0},
+    {transform:'rotate(80deg)',offset:.33},
+    {transform:'rotate(190deg)',offset:.66},
+    {transform:'rotate(315deg)',offset:1}],
+    {duration,fill:'forwards',easing:'ease-in'})
   ];
   if(shadow)animations.push(shadow.animate([
    {transform:'translate(-50%,-50%) scale(1)',opacity:.48,offset:0},
-   {transform:'translate(-50%,-50%) translate('+directionX*.62+'px,'+by*.42+'px) scale(.65)',opacity:.24,offset:.57},
-   {transform:'translate(-50%,-50%) translate('+bx+'px,'+by+'px) scale(.4)',opacity:0,offset:1}
+   {transform:'translate(-50%,-50%) translate('+round(directionX*.62)+'px,'+round(y*.42)+'px) scale(.65)',opacity:.24,offset:.57},
+   {transform:'translate(-50%,-50%) translate('+round(x)+'px,'+round(y)+'px) scale(.4)',opacity:0,offset:1}
   ],{duration,fill:'forwards',easing:'ease-out'}));
-  // L'impact filet est discret et ne modifie pas l'écran du résultat.
-  if(isGoal&&!reduced){
-   await delay(Math.round(duration*.84));
-   if(id!==state.animationId)return;
-   scene.classList.add('plab-goal-impact');
-  }
+  // Même résultat officiel, seule la zone des filets réagit au point d'impact.
+  await delay(Math.round(duration*(isSave?.80:isGoal?.80:.89)));
+  if(id!==state.animationId)return;
+  if(isGoal)scene.classList.add('plab-goal-impact','plab-v4-impact-'+String(zone).toLowerCase()
+    .replace('gauche','left').replace('centre','center').replace('droite','right'));
+  else if(isSave)scene.classList.add('plab-v4-save-contact');
+  else if(isMiss)scene.classList.add('plab-v4-miss-out');
   try{await Promise.all(animations.map(anim=>anim.finished));}
   catch{return;}
  }else await delay(duration);
@@ -318,6 +325,7 @@ async function animateCurrent(id){
  state.step='result';render();
 }
 function resolve(){
+ state.v4Decisive=potentiallyDecisive(state.session);
  state.prepared=prepareLabKick(state.session,{
   shotDirection:state.shotDirection,keeperDirection:state.keeperChoice,
   shooterId:state.shooterId,mode:state.mode
