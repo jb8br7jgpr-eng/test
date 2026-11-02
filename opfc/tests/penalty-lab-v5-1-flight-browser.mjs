@@ -45,6 +45,11 @@ try{
    const keeper=document.querySelector('.plab-keeper .character-portrait');
    const a=ball.getAnimations().find(anim=>anim.effect?.getKeyframes?.().length===5);
    a.pause();a.currentTime=a.effect.getTiming().duration*.997;
+   // Avance aussi le gardien au même instant : ses animations sont synchrones.
+   // Sinon on comparerait un ballon en fin de course à un gardien encore au départ.
+   for(const anim of document.querySelector('.plab-keeper')?.getAnimations()??[]){
+    anim.pause();anim.currentTime=anim.effect.getTiming().duration*.997;
+   }
    const rect=el=>{
     const r=el.getBoundingClientRect();
     return {x:r.x,y:r.y,left:r.left,right:r.right,top:r.top,bottom:r.bottom,
