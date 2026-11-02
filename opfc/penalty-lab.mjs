@@ -27,7 +27,7 @@ const state={
 
 const css=document.createElement('link');
 css.rel='stylesheet';
-css.href='./opfc/penalty-lab.css?v=lab-20261102';
+css.href='./opfc/penalty-lab.css?v=lab-v2-20261102';
 document.head.append(css);
 root.classList.add('plab');
 root.classList.remove('app');
