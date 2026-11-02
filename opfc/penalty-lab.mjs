@@ -7,6 +7,7 @@ import {DISPLAY_CLUBS,displayClub,clubLogoFile,chooseClubPair,setDisplayedChoice
 import {STADIUMS,stadiumById} from './stadiums.mjs';
 import {renderCharacterPortrait} from './ui-portraits.mjs';
 import {renderShotResult} from './ui-match-widgets.mjs';
+import {labPitchGraphic,labBallGraphic} from './penalty-lab-visual.mjs';
 import {
  LAB_POSITIONS,defaultLineups,validateLineups,createLabSession,
  labTurn,prepareLabKick,commitLabKick,trajectoryFor
@@ -103,39 +104,15 @@ function scoreboard(){
     '" title="'+h(name(t.shooterId))+'">'+(t.scored?'✓':'×')+'</span>').join('')+'</div>':
    '<div class="plab-note">Penalty classique · Tir d’entraînement sans score</div>');
 }
-function pitchSvg(){
- let nets='';
- for(let i=0;i<=12;i++){
-  const x=64+i*232/12;
-  nets+='<line x1="'+x+'" y1="42" x2="'+(60+i*240/12)+'" y2="103"/>';
- }
- for(let i=0;i<=8;i++){
-  const y=43+i*60/8;
-  const x1=64-(y-43)*4/60,x2=296+(y-43)*4/60;
-  nets+='<line x1="'+x1+'" y1="'+y+'" x2="'+x2+'" y2="'+y+'"/>';
- }
- return '<svg class="plab-lines" viewBox="0 0 360 365" preserveAspectRatio="none" aria-hidden="true">'+
-  '<defs><linearGradient id="plab-net-grad" x1="0" y1="0" x2="0" y2="1">'+
-  '<stop offset="0%" stop-color="#e5edf1" stop-opacity=".25"/>'+
-  '<stop offset="100%" stop-color="#d5eaf0" stop-opacity=".045"/></linearGradient></defs>'+
-  '<path d="M61 103 L299 103 L294 43 L66 43 Z" fill="url(#plab-net-grad)" stroke="#f5f7f9" stroke-opacity=".6" stroke-width="1"/>'+
-  '<g stroke="#e4ecf1" stroke-opacity=".5" stroke-width=".6">'+nets+'</g>'+
-  '<path d="M66 102 L66 43 L294 43 L294 102" stroke="#fbfdff" stroke-width="5" stroke-linejoin="round" fill="none"/>'+
-  '<path d="M66 43 L59 30 L301 30 L294 43" fill="none" stroke="#c2d4d7" stroke-width="1.5" stroke-opacity=".6"/>'+
-  '<path d="M66 103 L294 103 M116 103 L244 103 L260 165 L100 165 Z" stroke="#fff" stroke-opacity=".78" stroke-width="1.6" fill="none"/>'+
-  '<path d="M66 103 L10 296 L350 296 L294 103" stroke="#fff" stroke-opacity=".79" stroke-width="2" fill="none"/>'+
-  '<circle cx="180" cy="248" r="3.5" fill="#fff" opacity=".87"/>'+
-  '<path d="M135 296 Q180 350 225 296" stroke="#fff" stroke-opacity=".7" stroke-width="2" fill="none"/>'+
-  '<path d="M0 345 L360 345" stroke="#fff" stroke-opacity=".25" stroke-width="1"/>'+
-  '</svg>';
-}
+const pitchSvg=labPitchGraphic;
 function pitch(turn){
  const stadium=stadiumById(state.stadium);
  return '<div class="plab-pitch" role="img" aria-label="Pelouse de football avec surface de réparation, but détaillé et filets. Portrait du gardien dans la cage, ballon au point de penalty, portrait du tireur immobile.">'+
   '<div class="plab-grass"></div><div class="plab-stadium-glow"></div>'+pitchSvg()+
   '<div class="plab-keeper" id="plab-keeper">'+renderCharacterPortrait(turn.keeperId,'plab-keeper-portrait')+
   '<span class="plab-person-label">'+h(name(turn.keeperId))+'</span></div>'+
-  '<div class="plab-ball" id="plab-ball" aria-hidden="true"></div>'+
+  '<div class="plab-ball-shadow" id="plab-ball-shadow" aria-hidden="true"></div>'+
+  '<div class="plab-ball" id="plab-ball" aria-hidden="true">'+labBallGraphic()+'</div>'+
   '<div class="plab-shooter">'+renderCharacterPortrait(turn.shooterId,'plab-shooter-portrait')+
   '<span class="plab-person-label">'+h(name(turn.shooterId))+'</span></div>'+
   '</div><p class="plab-footnote" style="text-align:center">🏟 '+h(stadium.name)+
@@ -243,30 +220,59 @@ async function animateCurrent(id){
  const scene=root.querySelector('.plab-pitch');
  const keeper=root.querySelector('#plab-keeper');
  const ball=root.querySelector('#plab-ball');
- if(!scene||!keeper||!ball)return;
+ const shadow=root.querySelector('#plab-ball-shadow');
+ const art=ball?.querySelector('.plab-ball-art');
+ if(!scene||!keeper||!ball||!art)return;
  const trajectory=trajectoryFor(attempt);
- const w=scene.clientWidth,hgt=scene.clientHeight;
+ const w=scene.clientWidth,height=scene.clientHeight;
  const bx=w*(trajectory.ballX-50)/100;
- const by=hgt*(trajectory.ballY-68)/100;
+ const by=height*(trajectory.ballY-68)/100;
  const kx=w*(trajectory.keeperX-50)/100;
  const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
- const duration=reduced?40:940;
+ const duration=reduced?40:1020;
+ const isSave=attempt.outcome==='save';
+ const isGoal=attempt.outcome==='goal';
+ // Le ballon part systématiquement dans la direction choisie.
+ // Un arrêt improbable du mauvais côté n'altère jamais le résultat officiel.
+ const directionX={GAUCHE:-.19,CENTRE:0,DROITE:.19}[attempt.shotDirection]*w;
+ const ballFrames=[
+  {transform:'translate(-50%,-50%) translate(0px,0px) scale(1)',offset:0},
+  {transform:'translate(-50%,-50%) translate('+directionX.toFixed(1)+'px,'+(by*.58).toFixed(1)+'px) scale(.78)',offset:.57},
+  {transform:'translate(-50%,-50%) translate('+bx.toFixed(1)+'px,'+by.toFixed(1)+'px) scale(.49)',offset:isSave?.86:1}
+ ];
+ if(isSave)ballFrames.push({transform:'translate(-50%,-50%) translate('+(bx+directionX*.08).toFixed(1)+'px,'+(by+height*.045).toFixed(1)+'px) scale(.50)',offset:1});
+ // Le gardien glisse sans rotation ; seul le ballon tourne.
+ const keeperFrames=[
+  {transform:'translate(-50%,-50%) translateX(0px)',offset:0},
+  {transform:'translate(-50%,-50%) translateX(0px)',offset:.09},
+  {transform:'translate(-50%,-50%) translateX('+kx.toFixed(1)+'px)',offset:1}
+ ];
  if(typeof ball.animate==='function'){
-  const ballAnim=ball.animate([
-   {transform:'translate(-50%,-50%) translate(0px,0px) scale(1) rotate(0deg)',offset:0},
-   {transform:'translate(-50%,-50%) translate('+bx*.38+'px,'+by*.44+'px) scale(.83) rotate(95deg)',offset:.44},
-   {transform:'translate(-50%,-50%) translate('+bx+'px,'+by+'px) scale(.58) rotate(260deg)',offset:1}
-  ],{duration,fill:'forwards',easing:'cubic-bezier(.34,.04,.29,1)'});
-  const keeperAnim=keeper.animate([
-   {transform:'translate(-50%,-50%) translateX(0px)',offset:0},
-   {transform:'translate(-50%,-50%) translateX(0px)',offset:.10},
-   {transform:'translate(-50%,-50%) translateX('+kx+'px)',offset:1}
-  ],{duration,fill:'forwards',easing:'cubic-bezier(.25,.1,.22,1)'});
-  try{await Promise.all([ballAnim.finished,keeperAnim.finished]);}
+  const animations=[
+   ball.animate(ballFrames,{duration,fill:'forwards',easing:'cubic-bezier(.28,.02,.29,1)'}),
+   keeper.animate(keeperFrames,{duration,fill:'forwards',easing:'cubic-bezier(.25,.1,.23,1)'}),
+   art.animate([
+    {transform:'rotate(-16deg)',offset:0},
+    {transform:'rotate(115deg)',offset:.5},
+    {transform:'rotate(315deg)',offset:1}
+   ],{duration,fill:'forwards',easing:'ease-in'})
+  ];
+  if(shadow)animations.push(shadow.animate([
+   {transform:'translate(-50%,-50%) scale(1)',opacity:.48,offset:0},
+   {transform:'translate(-50%,-50%) translate('+directionX*.62+'px,'+by*.42+'px) scale(.65)',opacity:.24,offset:.57},
+   {transform:'translate(-50%,-50%) translate('+bx+'px,'+by+'px) scale(.4)',opacity:0,offset:1}
+  ],{duration,fill:'forwards',easing:'ease-out'}));
+  // L'impact filet est discret et ne modifie pas l'écran du résultat.
+  if(isGoal&&!reduced){
+   await delay(Math.round(duration*.84));
+   if(id!==state.animationId)return;
+   scene.classList.add('plab-goal-impact');
+  }
+  try{await Promise.all(animations.map(anim=>anim.finished));}
   catch{return;}
  }else await delay(duration);
  if(id!==state.animationId)return;
- await delay(reduced?0:110);
+ await delay(reduced?0:90);
  if(id!==state.animationId)return;
  state.step='result';render();
 }
