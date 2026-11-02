@@ -983,7 +983,10 @@ function render(){
   (v3HelpVisible?v3HelpUi(v3HelpOpen,v3HelpCategory,suggestedGuideCategory(v3State)):'')+exitConfirmation();
  // Les polls reseau sans difference visible ne detruisent plus tout le DOM.
  // Conserver les champs saisis, portraits deja decoded et focus natif.
- const nextMarkup=penaltySceneController.decorate(matchMarkup,v3State);
+ const nextMarkup=penaltySceneController.decorate(matchMarkup,v3State,{
+  previousTracker:app.querySelector('.shootout-tracker')?.outerHTML??null,
+  previousLog:app.querySelector('.shootout-log')?.outerHTML??null
+ });
  const domChanged=uiMarkupCommitter.commit(app,nextMarkup);
  penaltySceneController.animate(app);
  if(sameGuidePage&&v3HelpOpen){
