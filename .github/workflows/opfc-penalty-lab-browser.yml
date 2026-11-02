@@ -1,0 +1,41 @@
+name: OPFC — Labo Penaltys, vérification navigateur iPhone isolée
+on:
+  push:
+    branches:
+      - feature/opfc-penalty-lab-20261102
+    paths:
+      - 'opfc/penalty-lab*'
+      - 'opfc/tests/penalty-lab-browser.mjs'
+      - 'opfc.html'
+      - '.github/workflows/opfc-penalty-lab-browser.yml'
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+      - name: Installer le client navigateur de test
+        run: npm install --no-save playwright-core@1.57.0
+      - name: Servir exclusivement la branche de test sur localhost
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/opfc-lab-server.log 2>&1 &
+          sleep 2
+      - name: Tester le parcours complet comme sur iPhone
+        env:
+          CHROME_BINARY: ${{ steps.chrome.outputs.chrome-path }}
+        run: node opfc/tests/penalty-lab-browser.mjs
+      - name: Enregistrer une capture temporaire pour audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: opfc-penalty-lab-iphone-preview
+          path: /tmp/opfc-penalty-lab-iphone.png
+          if-no-files-found: ignore
+          retention-days: 7
