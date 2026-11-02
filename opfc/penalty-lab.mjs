@@ -3,11 +3,13 @@
  * Zéro storage, fetch, serveur, statistiques, historique ou écriture.
  */
 import {CARDS,CARD_BY_ID} from './catalog.mjs';
-import {DISPLAY_CLUBS,displayClub,clubLogoFile,chooseClubPair,setDisplayedChoices} from './club-identities.mjs';
+import {DISPLAY_CLUBS,displayClub,clubLogoFile,chooseClubPair,setDisplayedChoices,visualName} from './club-identities.mjs';
 import {STADIUMS,stadiumById} from './stadiums.mjs';
-import {renderCharacterPortrait} from './ui-portraits.mjs';
-import {renderShotResult} from './ui-match-widgets.mjs';
-import {labPitchGraphic,labBallGraphic} from './penalty-lab-visual.mjs';
+import {renderCharacterPortrait,renderClubCrest} from './ui-portraits.mjs';
+import {renderShotResult,matchTacticalChoices} from './ui-match-widgets.mjs';
+import {renderShootoutTracker,renderShootoutScreen} from './ui-shootout.mjs';
+import {renderFinalResult} from './ui-final.mjs';
+import {labPitchGraphic,labBallGraphic} from './penalty-lab-visual.mjs?v=lab-classicball-20261102';
 import {
  LAB_POSITIONS,defaultLineups,validateLineups,createLabSession,
  labTurn,prepareLabKick,commitLabKick,trajectoryFor
@@ -27,10 +29,11 @@ const state={
 
 const css=document.createElement('link');
 css.rel='stylesheet';
-css.href='./opfc/penalty-lab.css?v=lab-v2-20261102';
+css.href='./opfc/penalty-lab.css?v=lab-v3-20261102';
 document.head.append(css);
 root.classList.add('plab');
-root.classList.remove('app');
+// Garder exactement les bases de l'affichage OPFC : .app, .panel, .btn et leurs styles.
+root.classList.add('app');
 
 function selectHtml(key,current,items,role,extra=''){
  return '<select data-role="'+role+'" '+extra+' aria-label="'+h(key)+'">'+
@@ -91,18 +94,50 @@ function renderConfig(){
   (state.error?'<p role="alert" class="plab-note">'+h(state.error)+'</p>':'')+
   button('start','Lancer le laboratoire ⚽','primary full')+'</section>';
 }
+/** Bandeau de score : les mêmes éléments et classes que scoreBoard() d'OPFC,
+ * le labo ne contient aucun tableau de score personnalisé. */
 function scoreboard(){
- if(!state.session)return '';
- const a=displayClub(state.clubs.PSG),b=displayClub(state.clubs.OM);
- const s=state.session.shootout;
- return '<div class="plab-identity"><div>'+clubImage(a.id)+'<strong>'+h(a.name)+'</strong></div>'+
-  '<span class="plab-vs">VS</span><div>'+clubImage(b.id)+'<strong>'+h(b.name)+'</strong></div></div>'+
-  (s?'<div class="plab-score"><div class="plab-score-team"><small>'+h(a.name)+'</small>'+
-   '<strong>'+s.score.PSG+'</strong></div><span class="plab-score-mid">TAB</span>'+
-   '<div class="plab-score-team"><small>'+h(b.name)+'</small><strong>'+s.score.OM+'</strong></div></div>'+
-   '<div class="plab-shootout-history">'+s.timeline.map(t=>'<span class="plab-dot '+(t.scored?'goal':'fail')+
-    '" title="'+h(name(t.shooterId))+'">'+(t.scored?'✓':'×')+'</span>').join('')+'</div>':
-   '<div class="plab-note">Penalty classique · Tir d’entraînement sans score</div>');
+ const score={PSG:0,OM:0};
+ return '<div class="match-scoreboard"><div>'+
+  renderClubCrest('PSG','score-crest')+'<small>'+h(visualName('PSG'))+'</small></div>'+
+  '<div class="match-score"><strong>'+['PSG','OM'].map(id=>
+   '<span class="score-digit">'+score[id]+'</span>').join(' – ')+
+  '</strong><span>90e minute</span></div>'+
+  '<div>'+renderClubCrest('OM','score-crest')+'<small>'+h(visualName('OM'))+'</small></div></div>';
+}
+/** Le tracker ET l'historique sont générés par le module d'affichage officiel.
+ * Les tirs en attente n'y figurent pas avant "Continuer", conformément au labo. */
+function officialTracker(){
+ const s=state.session?.shootout;
+ if(!s)return '';
+ return renderShootoutTracker(s);
+}
+function officialHistory(){
+ const s=state.session?.shootout;
+ if(!s)return '';
+ const tracker=renderShootoutTracker(s);
+ const entire=renderShootoutScreen({
+  phase:'finished',teams:state.session.teams,match:{shootout:s,shootoutLastResult:null}
+ });
+ if(!entire.startsWith(tracker))throw Error('Historique officiel indisponible');
+ return entire.slice(tracker.length);
+}
+/** Choix tactiques du jeu original ; seuls les événements sont routés localement. */
+function officialChoices(shooter){
+ const items=state.session?.type==='shootout'?
+  [['GAUCHE','Gauche'],['CENTRE','Centre'],['DROITE','Droite']]:
+  shooter?
+   [['GAUCHE','Tirer à gauche'],['CENTRE','Tirer au centre'],['DROITE','Tirer à droite']]:
+   [['GAUCHE','Plonger à gauche'],['CENTRE','Rester au centre'],['DROITE','Plonger à droite']];
+ return matchTacticalChoices(items,'plab-choose');
+}
+function labTools(){
+ return '<details class="plab-tools"><summary>🧪 Commandes du laboratoire</summary>'+
+  '<div class="plab-actions">'+
+  button('config','⚙️ Configuration')+
+  (state.session.type==='shootout'?button('restart','↻ Nouvelle séance'):'')+
+  (state.step==='result'?button('replay','↻ Rejouer sans compter'):'')+
+  '</div><p class="plab-footnote">Uniquement des essais locaux, aucun match ni palmarès enregistré.</p></details>';
 }
 const pitchSvg=labPitchGraphic;
 function pitch(turn){
@@ -122,61 +157,67 @@ function renderPlay(){
  const turn=labTurn(state.session,{shooterId:state.shooterId});
  if(!turn)return renderFinished();
  let controls='';
+ const club=state.step==='keeper'?other(turn.club):turn.club;
  if(state.step==='shooter'||state.step==='keeper'){
-  const isShooter=state.step==='shooter';
-  controls='<div class="plab-stage-heading">'+(isShooter?'⚽ Au tireur de choisir':'🧤 Au gardien de choisir')+
-   '<small>Choix confidentiel : la direction adverse reste invisible.</small></div>'+
-   '<div class="plab-buttons">'+Object.keys(labels).map(dir=>
-   button('choose',labels[dir],isShooter?'':'','data-direction="'+dir+'"')).join('')+'</div>';
+  const shooter=state.step==='shooter';
+  controls='<p>'+(shooter?'Choisis secrètement où tirer.':'Choisis secrètement où plonger.')+'</p>'+
+   officialChoices(shooter);
  }else if(state.step==='handover'){
-  controls='<div class="plab-note">🔒 Direction du tireur enregistrée et masquée. Passe le téléphone au gardien.</div>'+
-    button('keeper-ready','Je suis le gardien · choisir','primary full');
- }else if(state.step==='animating'){
-  controls='<p class="plab-note" role="status">⚽ Tir en cours…</p>';
- }
- return heading()+'<section class="plab-card">'+scoreboard()+
-  '<div class="plab-stage-heading">'+(state.session.type==='shootout'?
-   'Tir n° '+turn.shotNumber+' · '+h(displayClub(state.clubs[turn.club]).name):
-   'Penalty · '+h(displayClub(state.clubs[turn.club]).name))+'</div>'+
-  pitch(turn)+controls+
-  '<div class="plab-actions">'+button('config','⚙️ Configuration')+
-  (state.session.type==='shootout'?button('restart','↻ Nouvelle séance'):'')+'</div></section>';
+  controls='<div class="match-handover"><div class="match-handover-icon">🔒</div>'+
+   '<h2>À toi de jouer, '+h(visualName(other(turn.club)))+'</h2>'+
+   '<p>Passe le téléphone au joueur adverse. La direction précédente reste masquée.</p>'+
+   '<button type="button" class="btn primary full" data-action="keeper-ready">Je suis '+
+    h(visualName(other(turn.club)))+' · afficher mon choix</button></div>';
+ }else if(state.step==='animating')controls='<p class="caption" role="status">Tir en cours…</p>';
+ const label=state.session.type==='shootout'?'Tirs au but':'Penalty';
+ return heading()+scoreboard()+officialTracker()+
+  '<section class="panel match-stage"><span class="eyebrow">'+label+
+  ' · '+h(visualName(club))+'</span>'+
+  '<h2 class="match-shot-ready-heading">'+(state.step==='shooter'?'Choisis ta frappe':
+    state.step==='keeper'?'Réaction du gardien':
+    state.step==='handover'?'Choix confidentiel':'Le tir est déclenché')+'</h2>'+
+  pitch(turn)+controls+'</section>'+
+  officialHistory()+labTools();
 }
 function renderResult(){
  const attempt=state.prepared?.attempt;
  if(!attempt)return renderPlay();
- const score=state.session.type==='shootout'?state.session.shootout.score:null;
+ const s=state.session.shootout;
+ const score=s?s.score:{PSG:0,OM:0};
  const viewState={teams:state.session.teams,phase:'moment-result',match:{index:0,score}};
  const result=renderShotResult(viewState,{
   outcome:attempt.outcome,attacker:attempt.club,
   shooterId:attempt.shooterId,keeperId:attempt.keeperId,
-  score,context:state.session.type==='shootout'?'Labo · Séance de tirs au but':'Labo · Penalty classique',
-  detailExtra:'Tir : '+labels[attempt.shotDirection]+' · Gardien : '+labels[attempt.keeperDirection],
-  action:state.session.type==='shootout'?'plab-next':'plab-replay',
-  continueLabel:state.session.type==='shootout'?'Valider et passer au tir suivant':'Rejouer le penalty',
-  goalInfo:state.session.type==='penalty'&&attempt.scored?{kind:'penalty'}:null
+  score,context:s?'Séance de tirs au but':'Penalty',
+  scoreLabel:s?'Score de la séance de tirs au but':'Score après la frappe',
+  detailExtra:s?
+   'Direction de la frappe : '+attempt.shotDirection+' · Gardien : '+attempt.keeperDirection:
+   'Direction de la frappe : '+attempt.shotDirection+' · Gardien : '+attempt.keeperDirection,
+  action:s?'plab-next':'plab-replay',
+  continueLabel:s&&state.prepared.nextShootout?.phase==='finished'?'Voir le résultat final':'Continuer',
+  goalInfo:!s&&attempt.scored?{kind:'penalty'}:null
  });
- return heading()+'<section class="plab-card">'+scoreboard()+
-  '<p class="plab-result-state">Résultat d’essai — '+(state.session.type==='shootout'?
-   'le score ne change qu’après validation.':'aucun score enregistré.')+'</p>'+
-   result+'<div class="plab-actions">'+
-   (state.session.type==='shootout'?button('replay','↻ Rejouer (sans compter)'):'')+
-   button('config','⚙️ Configuration')+
-   (state.session.type==='shootout'?button('restart','Nouvelle séance'):'')+
-   '</div></section>';
+ return heading()+scoreboard()+officialTracker()+result+
+  officialHistory()+labTools();
 }
 function renderFinished(){
  const s=state.session.shootout;
- const winner=displayClub(state.clubs[s.winner]);
- return heading()+'<section class="plab-card">'+scoreboard()+
-  '<div class="plab-summary"><div style="font-size:36px">🏆</div>'+
-  '<h2>Victoire de '+h(winner.name)+' !</h2><p>Fin de la séance simulée. Aucune finale ni statistique sauvegardée.</p></div>'+
-  '<div class="plab-actions">'+button('restart','Nouvelle séance','primary')+
-  button('config','Modifier les équipes')+'</div></section>';
+ // Le laboratoire n'enregistre jamais d'historique réel. Cet état éphémère
+ // sert uniquement à afficher le même écran final qu'OPFC.
+ const statistics=()=>({sequences:0,shots:0,onTarget:0,saves:0});
+ const mock={phase:'finished',teams:state.session.teams.map(t=>({...t,identityId:state.clubs[t.club]})),
+  competition:'grandline',match:{
+   winner:s.winner,victory:'shootout',score:{PSG:0,OM:0},
+   goals:[],history:[],statistics:{PSG:statistics(),OM:statistics()},
+   competition:'grandline',shootout:s
+  }};
+ return heading()+renderFinalResult(mock)+labTools();
 }
 function render(){
  try{
   setDisplayedChoices(chooseClubPair(state.clubs.PSG,state.clubs.OM));
+  root.dataset.v3Phase=state.step==='config'?'':state.session?.type==='shootout'?'shootout':'match';
+  root.dataset.v3Stadium=state.stadium;
   root.innerHTML=state.step==='config'?renderConfig():state.step==='result'?renderResult():
    state.step==='finished'?renderFinished():renderPlay();
  }catch(err){
@@ -297,8 +338,8 @@ function clickAction(action,button){
  else if(action==='config')resetToStep('config');
  else if(action==='restart')restart();
  else if(action==='keeper-ready'&&state.step==='handover'){state.step='keeper';render();}
- else if(action==='choose'&&['shooter','keeper'].includes(state.step)){
-  const dir=button.dataset.direction;
+ else if(action==='plab-choose'&&['shooter','keeper'].includes(state.step)){
+  const dir=button.dataset.choice;
   if(!Object.hasOwn(labels,dir))return;
   if(state.step==='shooter'){
    state.shotDirection=dir;state.step='handover';render();
