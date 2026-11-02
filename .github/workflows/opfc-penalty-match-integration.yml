@@ -1,0 +1,35 @@
+name: OPFC — intégration scènes de penalty local + en ligne (SANS déploiement)
+on:
+  push:
+    branches:
+      - feature/opfc-penalty-match-integration-20261102
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier les nouveaux modules et interfaces
+        run: |
+          node --check opfc/penalty-scene.mjs
+          node --check opfc/ui.mjs
+          node --check opfc/ui-match.mjs
+          node --check opfc/ui-online-game.mjs
+          node --check opfc/ui-shootout.mjs
+          node --check opfc/ui-set-piece.mjs
+          node --check opfc/tests/penalty-match-integration.test.mjs
+      - name: Moteur, règles, serveur, stats et écrans résultat strictement identiques
+        run: |
+          git fetch origin main:refs/remotes/origin/main
+          git diff --exit-code origin/main...HEAD -- opfc/engine.mjs opfc/rules.mjs opfc/penalty.mjs opfc/shootout.mjs opfc/match.mjs opfc/set-piece-actions.mjs opfc/online-match.mjs opfc/online-set-piece.mjs opfc/online-endgame.mjs opfc/online-client.mjs opfc/ui-match-widgets.mjs opfc/ui-final.mjs opfc/player-performance.mjs supabase/functions/opfc-online
+      - name: Tests nouveaux penaltys/TAB, moteurs et affichages existants
+        run: |
+          node --test opfc/tests/penalty-match-integration.test.mjs opfc/tests/penalty-lab.test.mjs opfc/tests/penalty-lab-visual.test.mjs opfc/tests/v2.test.mjs tests/opfc-v3.test.mjs tests/opfc-v3-visual.test.mjs
