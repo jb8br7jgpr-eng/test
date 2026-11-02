@@ -1,0 +1,105 @@
+/* OPFC — V4 EXPÉRIMENTALE, strictement limitée au laboratoire .plab-v4.
+   Aucun moteur, score, bouton, bandeau ou panneau officiel n'est redessiné. */
+.plab.plab-v4 .plab-pitch{
+ --plab-v4-light:#e3b454;
+ --plab-v4-secondary:#185b88;
+}
+.plab.plab-v4 .plab-pitch .plab-stadium-glow{
+ height:19%;
+ background:
+  radial-gradient(ellipse at 16% -30%,color-mix(in srgb,var(--plab-v4-light) 30%,transparent),transparent 44%),
+  radial-gradient(ellipse at 83% -30%,color-mix(in srgb,var(--plab-v4-light) 28%,transparent),transparent 44%),
+  linear-gradient(180deg,#081726,#0c2033 28%,color-mix(in srgb,var(--plab-v4-secondary) 39%,#0b2230) 75%,#153d2b 100%);
+}
+.plab.plab-v4 .plab-v4-stands{
+ position:absolute;inset:0 0 auto;z-index:1;height:16%;pointer-events:none;
+ background:
+  repeating-linear-gradient(0deg,#08111b80 0 2px,transparent 2px 7px),
+  repeating-linear-gradient(89deg,color-mix(in srgb,var(--plab-v4-light) 12%,transparent) 0px,#dce8ef26 2px,transparent 3px,transparent 8px);
+ mask-image:linear-gradient(to bottom,#000 2%,#000 60%,transparent 100%);
+ opacity:.64;
+}
+.plab.plab-v4 .plab-v4-lights{
+ position:absolute;inset:0;z-index:2;pointer-events:none;
+ background:
+  radial-gradient(ellipse 12% 6% at 13% 2%,#ffffffa8 0%,#ffffff3d 28%,transparent 90%),
+  radial-gradient(ellipse 12% 6% at 87% 2%,#ffffffb2 0%,#ffffff3d 28%,transparent 90%),
+  linear-gradient(167deg,transparent 7%,color-mix(in srgb,var(--plab-v4-light) 6%,transparent) 27%,transparent 48%),
+  linear-gradient(193deg,transparent 7%,color-mix(in srgb,var(--plab-v4-light) 6%,transparent) 27%,transparent 48%);
+}
+.plab.plab-v4 .plab-pitch svg.plab-lines{
+ filter:drop-shadow(0 1px 1px #0a372c34) drop-shadow(0 0 2px #f8ffff12);
+}
+.plab.plab-v4 .plab-pitch .plab-v4-net-left,
+.plab.plab-v4 .plab-pitch .plab-v4-net-center,
+.plab.plab-v4 .plab-pitch .plab-v4-net-right{
+ transform-box:fill-box;
+ transform-origin:center 34%;
+ will-change:transform;
+}
+.plab.plab-v4 .plab-pitch.plab-goal-impact .plab-v4-net-left,
+.plab.plab-v4 .plab-pitch.plab-goal-impact .plab-v4-net-center,
+.plab.plab-v4 .plab-pitch.plab-goal-impact .plab-v4-net-right{animation:none}
+/* Une maillage peut déborder légèrement, mais reste clipé par son tiers d'origine.
+   L'onde secondaire est créée par un deuxième keyframe, pas un effet cartoon. */
+@keyframes plab-v4-net-left{
+ 0%{transform:translateX(0) scaleX(1)}
+ 35%{transform:translate(-5px,2px) scaleX(1.035)}
+ 62%{transform:translate(2px,-1px) scaleX(.993)}
+ 82%{transform:translate(-1px,1px)}
+ 100%{transform:translate(0) scaleX(1)}
+}
+@keyframes plab-v4-net-center{
+ 0%{transform:translateY(0) scale(1)}
+ 35%{transform:translateY(5px) scale(1.023,1.075)}
+ 62%{transform:translateY(-2px) scale(.996,.984)}
+ 82%{transform:translateY(1px) scale(1.004)}
+ 100%{transform:translate(0) scale(1)}
+}
+@keyframes plab-v4-net-right{
+ 0%{transform:translateX(0) scaleX(1)}
+ 35%{transform:translate(5px,2px) scaleX(1.035)}
+ 62%{transform:translate(-2px,-1px) scaleX(.993)}
+ 82%{transform:translate(1px,1px)}
+ 100%{transform:translate(0) scaleX(1)}
+}
+.plab.plab-v4 .plab-pitch.plab-v4-impact-left .plab-v4-net-left{animation:plab-v4-net-left 430ms cubic-bezier(.2,.7,.2,1) both}
+.plab.plab-v4 .plab-pitch.plab-v4-impact-center .plab-v4-net-center{animation:plab-v4-net-center 430ms cubic-bezier(.2,.7,.2,1) both}
+.plab.plab-v4 .plab-pitch.plab-v4-impact-right .plab-v4-net-right{animation:plab-v4-net-right 430ms cubic-bezier(.2,.7,.2,1) both}
+.plab.plab-v4 .plab-pitch.plab-v4-impact-left :is(.plab-v4-net-center,.plab-v4-net-right),
+.plab.plab-v4 .plab-pitch.plab-v4-impact-right :is(.plab-v4-net-center,.plab-v4-net-left),
+.plab.plab-v4 .plab-pitch.plab-v4-impact-center :is(.plab-v4-net-left,.plab-v4-net-right){
+ animation:plab-v4-net-center 270ms ease-out 45ms both;
+ animation-direction:normal;
+ animation-duration:300ms;
+}
+/* Petit choc seulement au niveau du ballon, sans toucher au portrait du gardien. */
+.plab.plab-v4 .plab-v4-contact{
+ position:absolute;z-index:7;left:50%;top:29%;width:24px;height:24px;
+ transform:translate(-50%,-50%) scale(.2);
+ border-radius:50%;border:2px solid #efffff9c;
+ opacity:0;pointer-events:none;
+ box-shadow:0 0 9px 3px #f8fbf655;
+}
+.plab.plab-v4 .plab-pitch.plab-v4-save-contact .plab-v4-contact{
+ animation:plab-v4-contact 180ms ease-out both;
+}
+@keyframes plab-v4-contact{
+ 0%{opacity:.8;transform:translate(-50%,-50%) scale(.45)}
+ 100%{opacity:0;transform:translate(-50%,-50%) scale(1.65)}
+}
+.plab.plab-v4 .plab-pitch.plab-v4-miss-out .plab-ball{
+ filter:drop-shadow(1px 3px 2px #001b146e) brightness(.90);
+}
+.plab.plab-v4 .plab-pitch.plab-v4-decisive{
+ box-shadow:inset 0 0 36px #042019b0,0 0 0 1px color-mix(in srgb,var(--plab-v4-light) 35%,#14332f),0 12px 32px #0006;
+}
+.plab.plab-v4 .plab-pitch.plab-v4-decisive.plab-v4-tension .plab-v4-lights{
+ animation:plab-v4-tension-light 230ms ease-in-out both;
+}
+@keyframes plab-v4-tension-light{0%{opacity:.68}50%{opacity:.9}100%{opacity:1}}
+@media(prefers-reduced-motion:reduce){
+ .plab.plab-v4 .plab-pitch [class*="plab-v4-net-"]{animation:none!important}
+ .plab.plab-v4 .plab-pitch .plab-v4-contact{animation:none!important}
+ .plab.plab-v4 .plab-pitch.plab-v4-decisive .plab-v4-lights{animation:none!important}
+}
