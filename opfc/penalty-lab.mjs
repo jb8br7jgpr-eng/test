@@ -10,7 +10,8 @@ import {renderShotResult,matchTacticalChoices} from './ui-match-widgets.mjs';
 import {renderShootoutTracker,renderShootoutScreen} from './ui-shootout.mjs';
 import {renderFinalResult} from './ui-final.mjs';
 import {labBallGraphic} from './penalty-lab-visual.mjs?v=lab-classicball-20261102';
-import {stadiumLight,flightFrames,potentiallyDecisive} from './penalty-lab-v4.mjs';
+import {stadiumLight,potentiallyDecisive} from './penalty-lab-v4.mjs';
+import {labV51FlightFrames} from './penalty-lab-v5-1-flight.mjs';
 import {labV51PitchGraphic} from './penalty-lab-v5-1.mjs';
 import {
  LAB_POSITIONS,defaultLineups,validateLineups,createLabSession,
@@ -293,7 +294,7 @@ async function animateCurrent(id){
   if(id!==state.animationId)return;
  }
  const w=scene.clientWidth,height=scene.clientHeight;
- const {frames,x,y,keeperX,zone}=flightFrames(attempt,w,height);
+ const {frames,x,y,keeperX,zone}=labV51FlightFrames(attempt,w,height);
  const duration=reduced?40:1020+(decisive?135:0);
  const round=n=>Math.round(n*10)/10;
  const isSave=attempt.outcome==='save';
@@ -321,7 +322,7 @@ async function animateCurrent(id){
    {transform:'translate(-50%,-50%) translate('+round(x)+'px,'+round(y)+'px) scale(.4)',opacity:0,offset:1}
   ],{duration,fill:'forwards',easing:'ease-out'}));
   // Même résultat officiel, seule la zone des filets réagit au point d'impact.
-  await delay(Math.round(duration*(isSave?.80:isGoal?.80:.89)));
+  await delay(Math.round(duration*(isGoal?.93:isSave?.88:.94)));
   if(id!==state.animationId)return;
   if(isGoal)scene.classList.add('plab-goal-impact','plab-v4-impact-'+String(zone).toLowerCase()
     .replace('gauche','left').replace('centre','center').replace('droite','right'));
@@ -331,7 +332,7 @@ async function animateCurrent(id){
   catch{return;}
  }else await delay(duration);
  if(id!==state.animationId)return;
- await delay(reduced?0:(isGoal?245:90));
+ await delay(reduced?0:(isGoal?370:90));
  if(id!==state.animationId)return;
  state.step='result';render();
 }
