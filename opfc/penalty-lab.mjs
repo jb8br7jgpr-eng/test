@@ -124,7 +124,11 @@ function officialHistory(){
 }
 /** Choix tactiques du jeu original ; seuls les événements sont routés localement. */
 function officialChoices(shooter){
- const items=[['GAUCHE','Gauche'],['CENTRE','Centre'],['DROITE','Droite']];
+ const items=state.session?.type==='shootout'?
+  [['GAUCHE','Gauche'],['CENTRE','Centre'],['DROITE','Droite']]:
+  shooter?
+   [['GAUCHE','Tirer à gauche'],['CENTRE','Tirer au centre'],['DROITE','Tirer à droite']]:
+   [['GAUCHE','Plonger à gauche'],['CENTRE','Rester au centre'],['DROITE','Plonger à droite']];
  return matchTacticalChoices(items,'plab-choose');
 }
 function labTools(){
