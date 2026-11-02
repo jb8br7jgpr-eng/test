@@ -9,7 +9,7 @@ import {renderCharacterPortrait,renderClubCrest} from './ui-portraits.mjs';
 import {renderShotResult,matchTacticalChoices} from './ui-match-widgets.mjs';
 import {renderShootoutTracker,renderShootoutScreen} from './ui-shootout.mjs';
 import {renderFinalResult} from './ui-final.mjs';
-import {labPitchGraphic,labBallGraphic} from './penalty-lab-visual.mjs';
+import {labPitchGraphic,labBallGraphic} from './penalty-lab-visual.mjs?v=lab-classicball-20261102';
 import {
  LAB_POSITIONS,defaultLineups,validateLineups,createLabSession,
  labTurn,prepareLabKick,commitLabKick,trajectoryFor
