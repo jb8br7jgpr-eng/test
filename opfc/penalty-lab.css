@@ -77,3 +77,91 @@ body:has(.plab){background:#06121f}
 .plab-result-state{font-size:12px;color:#ecce91;text-align:center;margin-top:9px}
 @media(max-width:420px){.plab{padding-left:9px;padding-right:9px}.plab-card{padding:11px}.plab-roster{gap:6px}.plab-team-head strong{font-size:10px}.plab .plab-btn{font-size:11px;padding:9px 7px}.plab-roster-slot select{font-size:10px}.plab-pitch{aspect-ratio:360/340}}
 @media(prefers-reduced-motion:reduce){.plab-pitch.is-resetting{animation:none}}
+
+
+/* V2 VISUELLE — pelouse, cage et ballon uniquement. Aucun sélecteur des écrans OPFC. */
+.plab .plab-pitch{
+ background:#236a3d;
+ border:1px solid #c6e2d57d;
+ box-shadow:inset 0 0 35px #042019a0,0 12px 32px #0006,0 0 0 1px #14332f;
+}
+.plab .plab-grass{
+ background:
+  radial-gradient(ellipse 66% 48% at 50% 40%,#e7ffad12,transparent 100%),
+  linear-gradient(90deg,#091f1644,transparent 18% 82%,#092b1d4d),
+  repeating-linear-gradient(0deg,#2e8145 0%,#2e8145 8.5%,#398b4f 8.5%,#398b4f 17%);
+ filter:saturate(1.08);
+}
+.plab .plab-grass::before{
+ background:
+  repeating-linear-gradient(83deg,transparent 0px,#c9f4ab09 1px,transparent 3px,transparent 7px),
+  repeating-linear-gradient(97deg,#0025150b 0px,transparent 1px,transparent 5px),
+  radial-gradient(ellipse at 50% 5%,#e9fbb612,transparent 65%),
+  linear-gradient(180deg,#061c2058,transparent 31%,#133e1928 73%,#021b133e);
+}
+.plab .plab-stadium-glow{
+ height:16%;
+ background:
+  radial-gradient(ellipse at 24% 9%,#d8e9db37,transparent 40%),
+  linear-gradient(180deg,#071624,#162f3c 49%,#113430 76%,#153d2b);
+ box-shadow:inset 0 -3px 6px #041e2080,0 5px 10px #04231450;
+}
+.plab .plab-stadium-glow::before{
+ inset:5% 1%;
+ background:
+  repeating-linear-gradient(90deg,#edf7fb5c 0px,#c2dbe945 2px,transparent 4px,transparent 7px),
+  linear-gradient(90deg,#a8cbcc26,#effffd20,#b2dbcf26);
+ opacity:.5;
+ mask-image:linear-gradient(#000 0%,#000 36%,transparent 100%);
+}
+.plab .plab-pitch svg.plab-lines{
+ z-index:3;
+ filter:drop-shadow(0 1px 1px #0a372c34);
+}
+.plab .plab-ball-shadow{
+ position:absolute;
+ z-index:5;
+ top:70%;
+ left:50%;
+ width:clamp(24px,7.7vw,38px);
+ height:clamp(8px,2.5vw,13px);
+ border-radius:50%;
+ transform:translate(-50%,-50%);
+ background:radial-gradient(ellipse,#02180fe6 0%,#072a1a92 48%,transparent 76%);
+ filter:blur(2px);
+ opacity:.48;
+ pointer-events:none;
+}
+.plab .plab-ball{
+ width:clamp(32px,9.4vw,43px);
+ background:transparent;
+ box-shadow:none;
+ overflow:visible;
+ display:block;
+ filter:drop-shadow(1px 3px 2px #001b146e) drop-shadow(-1px -1px 1px #ffffff3d);
+}
+.plab .plab-ball::after{content:none;display:none}
+.plab .plab-ball .plab-ball-art{
+ width:100%;
+ height:100%;
+ display:block;
+ overflow:visible;
+ border-radius:50%;
+ filter:drop-shadow(0 1px 1px #122c2c7b);
+ transform-origin:center;
+}
+.plab .plab-net-mesh{
+ transform-origin:center 38%;
+ transform-box:fill-box;
+}
+.plab .plab-pitch.plab-goal-impact .plab-net-mesh{
+ animation:plab-net-v2 190ms ease-out both;
+}
+@keyframes plab-net-v2{
+ 0%{transform:scale(1,1)}
+ 43%{transform:scale(1.018,1.058)}
+ 100%{transform:scale(1,1)}
+}
+@media(prefers-reduced-motion:reduce){
+ .plab .plab-pitch.plab-goal-impact .plab-net-mesh{animation:none}
+}
