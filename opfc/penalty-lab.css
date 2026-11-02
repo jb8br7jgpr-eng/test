@@ -165,3 +165,28 @@ body:has(.plab){background:#06121f}
 @media(prefers-reduced-motion:reduce){
  .plab .plab-pitch.plab-goal-impact .plab-net-mesh{animation:none}
 }
+
+
+/* Les affichages de match viennent directement des composants OPFC, sans
+ * reproduire ni recolorer le score, le tracker, les boutons ou les résultats. */
+.plab .plab-tools{
+ margin:17px 0 0;
+ border:1px dashed #c6ac7b66;
+ border-radius:12px;
+ padding:10px 11px;
+ background:#081d2b8a;
+}
+.plab .plab-tools>summary{
+ cursor:pointer;
+ color:#d3c09b;
+ font-size:11px;
+ font-weight:800;
+ min-height:30px;
+ display:flex;
+ align-items:center;
+}
+.plab .plab-tools .plab-actions{padding:8px 0 2px}
+/* Le terrain seul conserve les décorations du labo ; il ne modifie aucun
+ * élément des écrans normaux d'OPFC. */
+.plab .match-stage>.plab-pitch{margin-top:12px}
+.plab .match-stage .plab-footnote{font-size:10px}
