@@ -45,6 +45,7 @@ try{
  assert.equal(await page.locator('.shot-result-unified .btn.primary.full').innerText(),'Continuer');
  await page.locator('button[data-action="plab-replay"]').click();
  assert.equal(await page.locator('.plab-ball').count(),1);
+ await page.locator('.plab-tools summary').click();
  await page.locator('button[data-action="config"]').click();
  await page.locator('button[data-action="type-shootout"]').click();
  await page.locator('button[data-action="start"]').click();
