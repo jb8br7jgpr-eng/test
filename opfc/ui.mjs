@@ -988,7 +988,7 @@ function render(){
   previousLog:app.querySelector('.shootout-log')?.outerHTML??null
  });
  const domChanged=uiMarkupCommitter.commit(app,nextMarkup);
- penaltySceneController.animate(app);
+ penaltySceneController.animate(app,v3State);
  if(sameGuidePage&&v3HelpOpen){
   const body=app.querySelector('.v3-guide-body');
   if(body)body.scrollTop=currentGuideScroll;
