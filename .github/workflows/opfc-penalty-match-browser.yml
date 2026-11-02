@@ -1,0 +1,45 @@
+name: OPFC — intégration penaltys test navigateur iPhone (SANS déploiement)
+on:
+  push:
+    branches:
+      - feature/opfc-penalty-match-integration-20261102
+    paths:
+      - 'opfc/penalty-scene*'
+      - 'opfc/ui.mjs'
+      - 'opfc/ui-match.mjs'
+      - 'opfc/ui-shootout.mjs'
+      - 'opfc/ui-set-piece.mjs'
+      - 'opfc/tests/penalty-match-browser.mjs'
+      - 'opfc.html'
+      - '.github/workflows/opfc-penalty-match-browser.yml'
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+      - name: Installer client navigateur
+        run: npm install --no-save playwright-core@1.57.0
+      - name: Démarrer serveur local de la branche
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/opfc-match-browser.log 2>&1 &
+          sleep 2
+      - name: Vérifier scène et résultat sur iPhone simulé
+        env:
+          CHROME_BINARY: ${{ steps.chrome.outputs.chrome-path }}
+        run: node opfc/tests/penalty-match-browser.mjs
+      - name: Capture de contrôle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: opfc-penalty-match-integration-preview
+          path: /tmp/opfc-penalty-integration-iphone.png
+          if-no-files-found: ignore
+          retention-days: 7
