@@ -11,9 +11,24 @@ async function kick(shot,keeper,cls){
  await choose(shot);
  await visible('button[data-action="keeper-ready"]');
  await page.locator('button[data-action="keeper-ready"]').click();
+ await page.evaluate(()=>{
+   window.__labObserved=[];
+   window.__labClassWatch?.disconnect();
+   window.__labClassWatch=new MutationObserver(list=>{
+    for(const mutation of list){
+     if(mutation.target?.classList?.contains('plab-pitch'))
+      window.__labObserved.push(mutation.target.className);
+    }
+   });
+   window.__labClassWatch.observe(document.getElementById('opfc-app'),{
+    attributes:true,subtree:true,attributeFilter:['class']
+   });
+  });
  await choose(keeper);
- await visible('.plab-pitch.'+cls);
  await visible('.shot-result-unified');
+ const observed=await page.evaluate(()=>window.__labObserved??[]);
+ assert.ok(observed.some(value=>String(value).includes(cls)),
+  'Effet visuel attendu '+cls+' ; classes vues : '+observed.join(' | '));
 }
 async function configure(mode,stadium,type='penalty'){
  await page.locator('select[data-role="mode"]').selectOption(mode);
