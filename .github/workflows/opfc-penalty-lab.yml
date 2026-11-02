@@ -1,0 +1,35 @@
+name: OPFC — Labo Penaltys et TAB (branche isolée, sans déploiement)
+on:
+  push:
+    branches:
+      - feature/opfc-penalty-lab-20261102
+    paths:
+      - 'opfc/penalty-lab*'
+      - 'opfc/tests/penalty-lab.test.mjs'
+      - 'opfc.html'
+      - '.github/workflows/opfc-penalty-lab.yml'
+permissions:
+  contents: read
+jobs:
+  lab-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Valider la syntaxe du labo
+        run: |
+          node --check opfc/penalty-lab-core.mjs
+          node --check opfc/penalty-lab.mjs
+          node --check opfc/tests/penalty-lab.test.mjs
+      - name: Confirmer que le moteur, le serveur et le jeu classique sont intacts
+        run: |
+          git fetch origin main:refs/remotes/origin/main
+          git diff --exit-code origin/main...HEAD -- opfc/engine.mjs opfc/penalty.mjs opfc/shootout.mjs opfc/match.mjs opfc/shot.mjs opfc/rules.mjs opfc/ui.mjs opfc/ui-match.mjs opfc/ui-shootout.mjs opfc/ui-set-piece.mjs supabase/functions/opfc-online classical.html
+      - name: Tests du laboratoire et régressions officielles OPFC
+        run: |
+          node --test opfc/tests/penalty-lab.test.mjs opfc/tests/v2.test.mjs tests/opfc-match-balance-v4.test.mjs tests/opfc-v3.test.mjs
