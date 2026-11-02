@@ -1,0 +1,34 @@
+/* OPFC — LAB V5.5 : pelouse réaliste, limitée au terrain des penaltys.
+ * Le sol est placé ENTRE les panoramas de tribunes et le SVG du but.
+ * Les marquages officiels, leurs cotes, les portraits et le filet sont intacts.
+ */
+.plab.plab-v55 .plab-pitch{
+ background:#184d31;
+}
+.plab.plab-v55 .plab-pitch .plab-grass{
+ /* Couche profonde sous le tapis SVG : ne pas réintroduire le damier V2. */
+ background:
+  linear-gradient(180deg,#091d20 0 32.7%,#285f3c 33%,#346f3e 73%,#3b7947);
+ filter:none;
+}
+.plab.plab-v55 .plab-pitch .plab-grass::before{
+ background:none;
+}
+.plab.plab-v55 .plab-pitch .plab-v55-turf{
+ position:absolute;
+ inset:0;
+ width:100%;
+ height:100%;
+ z-index:2;
+ overflow:hidden;
+ pointer-events:none;
+ display:block;
+ /* Pas de blur : les micro-brins restent nets sur écran Retina. */
+ shape-rendering:geometricPrecision;
+}
+.plab.plab-v55 .plab-pitch svg.plab-lines{
+ z-index:3;
+}
+@media(prefers-reduced-motion:reduce){
+ .plab.plab-v55 .plab-v55-turf{animation:none;transition:none}
+}
