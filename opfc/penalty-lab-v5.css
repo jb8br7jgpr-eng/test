@@ -1,0 +1,72 @@
+/* OPFC laboratoire V5 — cadrage légèrement plus bas, cage plus présente,
+ * et rectangle de décor agrandi derrière le but.
+ * Strictement limité à .plab-v5 : aucun impact sur les matchs ou le labo V4.
+ */
+.plab.plab-v5 .plab-pitch{
+ --plab-v5-stand-height:28%;
+ isolation:isolate;
+}
+.plab.plab-v5 .plab-v5-backdrop{
+ position:absolute;
+ inset:0 0 auto;
+ width:100%;
+ height:var(--plab-v5-stand-height);
+ z-index:1;
+ overflow:hidden;
+ isolation:isolate;
+ pointer-events:none;
+ background:linear-gradient(
+  180deg,
+  color-mix(in srgb,var(--plab-v4-secondary) 36%,#071829),
+  #0c2234 56%,
+  #103b32 100%
+ );
+ box-shadow:inset 0 -14px 17px -12px #001b1980;
+ border-bottom:1px solid color-mix(in srgb,var(--plab-v4-light) 18%,#b8e0db55);
+}
+/* Emplacement commun qui recevra plus tard l'image propre à chaque stade.
+   Pour le moment, on conserve les mêmes palettes et tribunes V4. */
+.plab.plab-v5 .plab-v5-backdrop .plab-stadium-glow{
+ position:absolute;
+ inset:0;
+ height:100%;
+}
+.plab.plab-v5 .plab-v5-backdrop .plab-v4-stands{
+ position:absolute;
+ inset:0 0 auto;
+ width:100%;
+ height:91%;
+ opacity:.65;
+}
+.plab.plab-v5 .plab-v5-backdrop .plab-v4-lights{
+ position:absolute;
+ inset:0;
+ height:100%;
+}
+.plab.plab-v5 .plab-v5-backdrop::after{
+ content:"";
+ position:absolute;
+ inset:auto 0 0;
+ height:30%;
+ z-index:4;
+ pointer-events:none;
+ background:linear-gradient(180deg,transparent,#062c2a35);
+}
+/* Le but reste au-dessus du décor et les filets conservent les trois zones V4.
+   La cage est agrandie via le SVG V5, pas via un zoom CSS qui décalerait le ballon. */
+.plab.plab-v5 .plab-pitch svg.plab-lines{
+ z-index:3;
+}
+.plab.plab-v5 .plab-keeper{
+ top:25.5%;
+}
+/* Point de penalty et tireur inchangés : animations et choix V4 conservés. */
+.plab.plab-v5 .plab-ball{
+ top:68%;
+}
+.plab.plab-v5 .plab-shooter{
+ top:85%;
+}
+@media(prefers-reduced-motion:reduce){
+ .plab.plab-v5 .plab-v5-backdrop{transition:none}
+}
