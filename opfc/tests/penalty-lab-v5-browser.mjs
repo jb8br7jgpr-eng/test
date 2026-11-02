@@ -40,6 +40,8 @@ try{
  assert.ok(measured.keeperTop>.24&&measured.keeperTop<.27,'Keeper aligns with camera: '+JSON.stringify(measured));
  assert.ok(measured.overflow<=2,'No iPhone horizontal overflow');
  assert.equal(measured.stadium,'dressrosa');
+ assert.ok(await page.locator('.plab-keeper .plab-person-label').evaluate(el=>el.scrollWidth<=el.clientWidth+1),
+  'Le nom du gardien doit rester lisible avec le nouveau cadrage');
  assert.equal(await page.locator('.plab-v4-net-left').count(),1);
  assert.equal(await page.locator('.plab-v4-net-center').count(),1);
  assert.equal(await page.locator('.plab-v4-net-right').count(),1);
