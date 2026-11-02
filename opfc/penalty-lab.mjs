@@ -320,7 +320,7 @@ async function animateCurrent(id){
   catch{return;}
  }else await delay(duration);
  if(id!==state.animationId)return;
- await delay(reduced?0:90);
+ await delay(reduced?0:(isGoal?245:90));
  if(id!==state.animationId)return;
  state.step='result';render();
 }
