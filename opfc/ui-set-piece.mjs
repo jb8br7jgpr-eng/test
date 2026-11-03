@@ -5,7 +5,7 @@
  */
 import {CARD_BY_ID} from './catalog.mjs?v=opfc-75-roster-20261022';
 import {renderCharacterPortrait} from './ui-portraits.mjs';
-import {renderMatchPenaltyScene} from './penalty-scene.mjs';
+import {renderMatchPenaltyScene} from './penalty-scene.mjs?v=opfc-v55-scene-20261103';
 import {visualAbbr} from './club-identities.mjs';
 import {matchTacticalChoices,renderShotFaceOff,renderReceiverCard,renderShotResult} from './ui-match-widgets.mjs?v=opfc-immersive-score-20261026';
 import {beginSetPieceAction,selectSetPieceTaker,lockSetPieceChoice,
