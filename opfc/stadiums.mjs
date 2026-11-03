@@ -30,6 +30,26 @@ export function preloadStadiumBackdrop(id){
  resultBackdropPreloads.set(id,image);
  image.src=src;
 }
+/** Décors derrière le but : WebP exacts de la caméra V5.5.
+ * Préchargement INDÉPENDANT du décor de résultat et sans effet sur le match.
+ * Les chemins sont identiques aux url() de penalty-scene-v5-5.css.
+ * Début de match / reprise : uniquement le stade sélectionné est demandé.
+ */
+export const PENALTY_STADIUM_BACKDROPS=Object.freeze(Object.fromEntries(
+ STADIUMS.map(({id})=>[id,'./opfc/assets/penalty-backgrounds/'+id+'.webp'])
+));
+const penaltyBackdropPreloads=new Map();
+export function preloadPenaltyBackdrop(id){
+ const src=PENALTY_STADIUM_BACKDROPS[id];
+ if(!src||penaltyBackdropPreloads.has(id)||typeof Image!=='function')return;
+ const image=new Image();
+ image.decoding='async';
+ // Le gazon et la scène peuvent n'apparaître qu'en fin de rencontre :
+ // ne pas pénaliser les images de mercato/compositions prioritaires.
+ image.fetchPriority='low';
+ penaltyBackdropPreloads.set(id,image);
+ image.src=src;
+}
 export const STADIUM_BY_ID=new Map(STADIUMS.map(x=>[x.id,x]));
 export function stadiumById(id){return STADIUM_BY_ID.get(id)??STADIUMS[0];}
 export const isStadium=id=>STADIUM_BY_ID.has(id);
