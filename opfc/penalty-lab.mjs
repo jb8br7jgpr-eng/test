@@ -12,7 +12,8 @@ import {renderFinalResult} from './ui-final.mjs';
 import {labBallGraphic} from './penalty-lab-visual.mjs?v=lab-classicball-20261102';
 import {stadiumLight,potentiallyDecisive} from './penalty-lab-v4.mjs';
 import {labV51FlightFrames} from './penalty-lab-v5-1-flight.mjs';
-import {labV52PitchGraphic,animateContinuousNet} from './penalty-lab-v5-2-net.mjs';
+import {animateContinuousNet} from './penalty-lab-v5-2-net.mjs';
+import {labV55PitchGraphic,labV55TurfGraphic} from './penalty-lab-v5-5-turf.mjs';
 import {
  LAB_POSITIONS,defaultLineups,validateLineups,createLabSession,
  labTurn,prepareLabKick,commitLabKick,trajectoryFor
@@ -54,11 +55,16 @@ const v53css=document.createElement('link');
 v53css.rel='stylesheet';
 v53css.href='./opfc/penalty-lab-v5-3-backgrounds.css?v=opfc-v54-eight-backgrounds-20261103';
 document.head.append(v53css);
+const v55css=document.createElement('link');
+v55css.rel='stylesheet';
+v55css.href='./opfc/penalty-lab-v5-5-turf.css?v=lab-v55-realistic-turf-20261103';
+document.head.append(v55css);
 root.classList.add('plab');
 root.classList.add('plab-v4');
 root.classList.add('plab-v5');
 root.classList.add('plab-v51');
 root.classList.add('plab-v52');
+root.classList.add('plab-v55');
 // Garder exactement les bases de l'affichage OPFC : .app, .panel, .btn et leurs styles.
 root.classList.add('app');
 
@@ -166,14 +172,14 @@ function labTools(){
   (state.step==='result'?button('replay','↻ Rejouer sans compter'):'')+
   '</div><p class="plab-footnote">Uniquement des essais locaux, aucun match ni palmarès enregistré.</p></details>';
 }
-const pitchSvg=labV52PitchGraphic;
+const pitchSvg=labV55PitchGraphic;
 function pitch(turn){
  const stadium=stadiumById(state.stadium);
  const light=stadiumLight(state.stadium);
  const tension=state.step==='animating'&&state.v4Decisive?' plab-v4-decisive plab-v4-tension':'';
  return '<div class="plab-pitch'+tension+'" style="--plab-v4-light:'+light.light+';--plab-v4-secondary:'+light.secondary+'" role="img" aria-label="Pelouse de football avec surface de réparation, but détaillé et filets. Portrait du gardien dans la cage, ballon au point de penalty, portrait du tireur immobile.">'+
   '<div class="plab-grass"></div><div class="plab-v5-backdrop" data-stadium="'+h(state.stadium)+'" aria-hidden="true">'+
-  '<div class="plab-stadium-glow"></div><div class="plab-v4-stands"></div><div class="plab-v4-lights"></div></div>'+pitchSvg()+
+  '<div class="plab-stadium-glow"></div><div class="plab-v4-stands"></div><div class="plab-v4-lights"></div></div>'+labV55TurfGraphic()+pitchSvg()+
   '<div class="plab-keeper" id="plab-keeper">'+renderCharacterPortrait(turn.keeperId,'plab-keeper-portrait')+
   '<span class="plab-person-label">'+h(name(turn.keeperId))+'</span></div>'+
   '<div class="plab-v4-contact" aria-hidden="true"></div>'+ 
