@@ -1,0 +1,72 @@
+name: OPFC — intégration visuelle penaltys V5.5 local et en ligne (sans déploiement)
+on:
+  push:
+    branches:
+      - feature/opfc-v55-match-penalty-local-online-20261103
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+      - name: Aucun moteur, règle, serveur, palmarès, sauvegarde ni écran de résultat modifié
+        run: |
+          git fetch origin main:refs/remotes/origin/main
+          git diff --exit-code origin/main...HEAD -- \
+            opfc/engine.mjs opfc/match.mjs opfc/shootout.mjs opfc/penalty.mjs \
+            opfc/shot.mjs opfc/online-match.mjs opfc/online-set-piece.mjs \
+            opfc/online-endgame.mjs opfc/online-client.mjs opfc/online-protocol.mjs \
+            opfc/ui-final.mjs opfc/ui-match-widgets.mjs opfc/v3-match.css \
+            opfc/v4-premium-skin.css opfc/v4-momentum-premium.css \
+            opfc/penalty-lab-core.mjs opfc/penalty-lab-v5-1.mjs \
+            opfc/penalty-lab-v5-1-flight.mjs opfc/penalty-lab-v5-2-net.mjs \
+            opfc/penalty-lab-v5-5-turf.mjs opfc/penalty-lab-v5-5-turf.css \
+            opfc/penalty-lab.mjs opfc-labo-penaltys.html supabase
+      - name: Syntaxe et tests des vrais moteurs contre la nouvelle interface
+        run: |
+          node --check opfc/penalty-scene.mjs
+          node --check opfc/ui.mjs
+          node --check opfc/ui-shootout.mjs
+          node --check opfc/ui-set-piece.mjs
+          node --check opfc/ui-match.mjs
+          node --check opfc/ui-online-game.mjs
+          node --check opfc/tests/penalty-match-v5-5-browser.mjs
+          node --test \
+            opfc/tests/penalty-match-v5-5-integration.test.mjs \
+            opfc/tests/penalty-match-integration.test.mjs \
+            opfc/tests/penalty-lab-v5-2-net.test.mjs \
+            opfc/tests/penalty-lab-v5-5-turf.test.mjs
+      - name: Installer navigateur iPhone
+        run: npm install --no-save playwright-core@1.57.0
+      - name: Serveur HTTP local de la branche (aucune publication)
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/opfc-integration-v55.log 2>&1 &
+          sleep 2
+      - name: Parcours réels de penalty local et tirs au but sur 2 téléphones
+        env:
+          CHROME_BINARY: ${{ steps.chrome.outputs.chrome-path }}
+        run: |
+          node opfc/tests/penalty-match-v5-5-browser.mjs
+          node opfc/tests/penalty-match-local-browser.mjs
+          node opfc/tests/penalty-match-online-browser.mjs
+      - name: Captures iPhone en environnement de test
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: opfc-v55-match-penalty-eight-stadiums-iphone
+          path: |
+            /tmp/opfc-v55-match-*-iphone.png
+            /tmp/opfc-penalty-local-*.png
+            /tmp/opfc-two-phones-penalty.png
+          if-no-files-found: ignore
+          retention-days: 7
