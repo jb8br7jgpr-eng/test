@@ -420,7 +420,10 @@ function matchCore(state,{uncovered=false,onlineClub=null,hostClub=null,competit
     ['attack-choice','defense-choice'].includes(action.stage)&&
     action.actors?.taker?.cardId&&action.keeper?.cardId?
     '<section class="panel match-stage">'+renderMatchPenaltyScene({
-     shooterId:action.actors.taker.cardId,keeperId:action.keeper.cardId
+     shooterId:action.actors.taker.cardId,keeperId:action.keeper.cardId,
+     // Vue d'attente de l'autre téléphone : utiliser le MÊME stade
+     // public du match que la vue du tireur et la scène de résultat.
+     stadiumId:state.stadiumId
     })+'</section>':'';
    return out+waitingScene+onlineWaiting(owner,'Le choix de l’adversaire reste secret.');
   }
