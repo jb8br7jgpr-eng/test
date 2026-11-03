@@ -5,7 +5,7 @@
  */
 import {CARD_BY_ID} from './catalog.mjs?v=opfc-75-roster-20261022';
 import {renderCharacterPortrait} from './ui-portraits.mjs';
-import {renderMatchPenaltyScene} from './penalty-scene.mjs';
+import {renderMatchPenaltyScene} from './penalty-scene.mjs?v=opfc-v55-scene-20261103';
 import {visualAbbr} from './club-identities.mjs';
 import {matchTacticalChoices,renderShotFaceOff,renderReceiverCard,renderShotResult} from './ui-match-widgets.mjs?v=opfc-immersive-score-20261026';
 import {beginSetPieceAction,selectSetPieceTaker,lockSetPieceChoice,
@@ -31,7 +31,7 @@ const options={
 const choices=arr=>matchTacticalChoices(arr);
 const section=(heading,content,tag='Phase arrêtée')=>'<section class="panel match-stage"><span class="eyebrow">'+escape(tag)+'</span><h2>'+heading+'</h2>'+content+'</section>';
 const actorsFaceOff=(state,a,{receiver=false}={})=>a.kind==='penalty'?
- renderMatchPenaltyScene({shooterId:a.actors?.taker?.cardId,keeperId:a.keeper?.cardId}):
+ renderMatchPenaltyScene({shooterId:a.actors?.taker?.cardId,keeperId:a.keeper?.cardId,stadiumId:state.stadiumId}):
  renderShotFaceOff(state,{
  shooterId:receiver?a.actors?.receiver?.cardId:a.actors?.taker?.cardId,
  keeperId:a.keeper?.cardId,attacker:a.attacker,defender:a.defender,

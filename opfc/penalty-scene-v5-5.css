@@ -1,0 +1,94 @@
+/* OPFC MATCH — façade visuelle EXACTEMENT dérivée du labo V5.5.
+ * Exclusivement .opfc-penalty-scene : aucun style de résultat, autre écran,
+ * moteur local/online ou élément général de jeu n'est modifié.
+ * Les fonctions de dessin V5.5, V5.2 sont partagées, pas recopiées ici.
+ */
+.opfc-penalty-scene .plab-pitch{
+ --plab-v5-stand-height:33%;
+ --plab-v4-light:#e3b454;
+ --plab-v4-secondary:#185b88;
+ background:#184d31;
+}
+.opfc-penalty-scene .plab-grass{
+ background:linear-gradient(180deg,#091d20 0 32.7%,#285f3c 33%,#346f3e 73%,#3b7947);
+ filter:none;
+}
+.opfc-penalty-scene .plab-grass::before{background:none}
+/* Image 3.2:1 — 33% de la scène, complète, derrière le but et l'herbe. */
+.opfc-penalty-scene .plab-v5-backdrop{
+ position:absolute;inset:0 0 auto;width:100%;height:33%;
+ z-index:1;overflow:hidden;isolation:isolate;pointer-events:none;
+ background-color:#081827;background-repeat:no-repeat;
+ background-size:cover;background-position:center bottom;
+ box-shadow:none;border:0;
+}
+.opfc-penalty-scene .plab-v5-backdrop[data-stadium="mugiwara"]{
+ background-image:url("./assets/penalty-backgrounds/mugiwara.webp");
+}
+.opfc-penalty-scene .plab-v5-backdrop[data-stadium="wanodrome"]{
+ background-image:url("./assets/penalty-backgrounds/wanodrome.webp");
+}
+.opfc-penalty-scene .plab-v5-backdrop[data-stadium="erbaf"]{
+ background-image:url("./assets/penalty-backgrounds/erbaf.webp");
+}
+.opfc-penalty-scene .plab-v5-backdrop[data-stadium="skypiea"]{
+ background-image:url("./assets/penalty-backgrounds/skypiea.webp");
+}
+.opfc-penalty-scene .plab-v5-backdrop[data-stadium="alabasta"]{
+ background-image:url("./assets/penalty-backgrounds/alabasta.webp");
+}
+.opfc-penalty-scene .plab-v5-backdrop[data-stadium="marineford"]{
+ background-image:url("./assets/penalty-backgrounds/marineford.webp");
+}
+.opfc-penalty-scene .plab-v5-backdrop[data-stadium="dressrosa"]{
+ background-image:url("./assets/penalty-backgrounds/dressrosa.webp");
+}
+.opfc-penalty-scene .plab-v5-backdrop[data-stadium="whole-cake"]{
+ background-image:url("./assets/penalty-backgrounds/whole-cake.webp");
+}
+.opfc-penalty-scene .plab-v55-turf{
+ position:absolute;inset:0;width:100%;height:100%;z-index:2;
+ overflow:hidden;pointer-events:none;display:block;
+ shape-rendering:geometricPrecision;
+}
+.opfc-penalty-scene .plab-pitch svg.plab-lines{
+ z-index:3;
+}
+/* Même garde-fou que le labo V5.2 : filet monobloc, pas la vieille
+ * animation de déformation globale V2 déclenchée par plab-goal-impact. */
+.opfc-penalty-scene .plab-pitch .plab-v52-net,
+.opfc-penalty-scene .plab-pitch.plab-goal-impact .plab-v52-net{
+ transform:none!important;animation:none!important;clip-path:none!important;
+ transform-box:initial;will-change:auto;
+}
+.opfc-penalty-scene .plab-v52-net>path{
+ stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;
+}
+.opfc-penalty-scene .plab-v52-net-active{opacity:.76}
+/* La cage et le gardien adoptent la même caméra basse de la V5.1.
+ * Aucun changement de dimensions du but, du gardien ou du ballon en logique. */
+.opfc-penalty-scene .plab-keeper{top:30.1%}
+.opfc-penalty-scene .plab-shooter{top:85%}
+.opfc-penalty-scene .plab-ball{top:68%}
+.opfc-penalty-scene .plab-person-label{max-width:min(52vw,180px)}
+.opfc-penalty-scene .plab-v4-contact{
+ position:absolute;z-index:7;left:50%;top:30.1%;width:24px;height:24px;
+ transform:translate(-50%,-50%) scale(.2);
+ border-radius:50%;border:2px solid #efffff9c;
+ opacity:0;pointer-events:none;box-shadow:0 0 9px 3px #f8fbf655;
+}
+.opfc-penalty-scene .plab-pitch.plab-v4-save-contact .plab-v4-contact{
+ animation:opfc-v55-contact 180ms ease-out both;
+}
+@keyframes opfc-v55-contact{
+ 0%{opacity:.8;transform:translate(-50%,-50%) scale(.45)}
+ 100%{opacity:0;transform:translate(-50%,-50%) scale(1.65)}
+}
+.opfc-penalty-scene .plab-pitch.plab-v4-miss-out .plab-ball{
+ filter:drop-shadow(1px 3px 2px #001b146e) brightness(.9);
+}
+@media(prefers-reduced-motion:reduce){
+ .opfc-penalty-scene .plab-v55-turf{animation:none;transition:none}
+ .opfc-penalty-scene .plab-pitch .plab-v52-net{animation:none!important}
+ .opfc-penalty-scene .plab-v4-contact{animation:none!important}
+}

@@ -84,7 +84,9 @@ export function matchUiStepKey(state){
  const m=state.match||{},a=m.action||{},s=m.shootout||{},r=m.lastResult||{};
  return [state.phase,m.index??'',a.kind??'',a.stage??'',a.minute??'',
   r.outcome??'',r.minute??'',r.scorerId??'',
-  s.active?.shotNumber??'',s.lastResult?.shotNumber??'',s.stage??''].join(':');
+  s.active?.shotNumber??'',s.lastResult?.shotNumber??'',
+   m.shootoutLastResult?.shotNumber??'',
+   m.shootoutLastResult?.club??s.lastResult?.club??'',s.stage??''].join(':');
 }
 
 /** En ligne, seuls les boutons d'action réellement disponibles pour CE

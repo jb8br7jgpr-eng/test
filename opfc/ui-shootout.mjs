@@ -9,7 +9,7 @@ import {nextShootoutShooter} from './shootout.mjs?v=opfc-match-balance-20261025'
 import {CARD_BY_ID} from './catalog.mjs?v=opfc-75-roster-20261022';
 import {visualAbbr} from './club-identities.mjs';
 import {renderCharacterPortrait} from './ui-portraits.mjs';
-import {renderMatchPenaltyScene} from './penalty-scene.mjs';
+import {renderMatchPenaltyScene} from './penalty-scene.mjs?v=opfc-v55-scene-20261103';
 import {matchTacticalChoices,renderShotFaceOff,renderShotResult} from './ui-match-widgets.mjs?v=opfc-immersive-score-20261026';
 
 const fail=m=>{throw Error(m);};
@@ -92,7 +92,8 @@ function buttonChoices(){
   'match-shootout-choose');
 }
 const shootoutFaceOff=(state,p)=>renderMatchPenaltyScene({
- shooterId:p.cardId,keeperId:state.match.shootout.keepers[p.club==='PSG'?'OM':'PSG']?.cardId
+ shooterId:p.cardId,keeperId:state.match.shootout.keepers[p.club==='PSG'?'OM':'PSG']?.cardId,
+ stadiumId:state.stadiumId
 });
 function history(s){
  const timeline=s?.timeline??[];
@@ -240,21 +241,21 @@ export function renderOnlineShootoutScreen(state,{myClub,hostClub}={}){
    const shooterTurn=!confirmed.shooter,keeperTurn=confirmed.shooter&&!confirmed.keeper;
    const owner=shooterTurn?p.club:keeperTurn?(p.club==='PSG'?'OM':'PSG'):p.club;
    if(owner!==myClub)out+='<section class="panel match-stage">'+
-    renderMatchPenaltyScene({shooterId:p.shooterId,keeperId:p.keeperId})+
+    renderMatchPenaltyScene({shooterId:p.shooterId,keeperId:p.keeperId,stadiumId:state.stadiumId})+
     '</section>'+guestWaiting(owner,'La direction précédente reste confidentielle.');
    else if(shooterTurn||keeperTurn){
     out+='<section class="panel match-stage"><span class="eyebrow">'+
      (shooterTurn?'Tireur':'Gardien')+' · '+escape(visualAbbr(owner))+'</span>'+
      '<h2 class="match-shot-ready-heading">'+
      (shooterTurn?'Choisis ta frappe':'Réaction du gardien')+'</h2>'+
-     renderMatchPenaltyScene({shooterId:p.shooterId,keeperId:p.keeperId})+
+     renderMatchPenaltyScene({shooterId:p.shooterId,keeperId:p.keeperId,stadiumId:state.stadiumId})+
      '<p>'+(shooterTurn?'Choisis secrètement où tirer.':'Choisis secrètement où plonger.')+
      '</p>'+buttonChoices().replaceAll('data-action="match-shootout-choose"',
       'data-action="online-choice" data-shootout="true"')+'</section>';
    }else{
     out+='<section class="panel match-stage"><span class="eyebrow">Tirs au but</span>'+
      '<h2 class="match-shot-ready-heading">Les deux directions sont verrouillées</h2>'+
-     renderMatchPenaltyScene({shooterId:p.shooterId,keeperId:p.keeperId})+
+     renderMatchPenaltyScene({shooterId:p.shooterId,keeperId:p.keeperId,stadiumId:state.stadiumId})+
      '<p>Le tir et le plongeon vont être révélés ensemble.</p>'+
      btn('match-shootout-reveal','Révéler et tirer')
       .replace('data-action="match-shootout-reveal"',

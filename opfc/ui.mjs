@@ -8,17 +8,17 @@ import {DISPLAY_CLUBS,currentClubChoices,setDisplayedClubs,setDisplayedChoices,v
 import {renderCharacterPortrait,renderClubCrest,renderIdentityCrest} from './ui-portraits.mjs?v=opfc-75-roster-20261022';
 import {effectiveRating,lineupDetails} from './rules.mjs?v=opfc-half-balance-20261027';
 import {FORMATION_NAMES,uiAuction,uiTeam,uiRoster,cardStats,currentAuctionEnding,clubName} from './ui-model.mjs?v=opfc-75-roster-20261022';
-import {renderMatchScreen,matchRequiresPrivacy,dispatchOpenMatch} from './ui-match.mjs?v=opfc-penalty-scene-20261102';
+import {renderMatchScreen,matchRequiresPrivacy,dispatchOpenMatch} from './ui-match.mjs?v=opfc-v55-match-local-online-20261103';
 import {createOnlineClient} from './online-client.mjs?v=opfc-integration-20261025';
 import {renderOnlineLobby,normalizeJoinCodeInput} from './ui-online.mjs?v=opfc-v2-20261023';
-import {renderOnlineGame} from './ui-online-game.mjs?v=opfc-penalty-scene-20261102';
+import {renderOnlineGame} from './ui-online-game.mjs?v=opfc-v55-match-local-online-20261103';
 import {CLUB_TROPHIES,isCompetition,competitionName,renderCompetitionPicker} from './club-honours.mjs?v=opfc-trophees-20261022';
 import {queueFinishedLocalGame,syncQueuedLocalResults,pendingLocalResultsCount} from './trophy-service.mjs?v=opfc-v2-20261023';
 import {prepareRematch} from './rematch.mjs?v=opfc-rematch-20261025';
-import {stadiumPicker,isStadium,preloadStadiumBackdrop} from './stadiums.mjs?v=opfc-finale-smooth-20261026';
+import {stadiumPicker,isStadium,preloadStadiumBackdrop,preloadPenaltyBackdrop} from './stadiums.mjs?v=opfc-v55-match-penalty-preload-20261103';
 import {v3HelpUi,GUIDE_CATEGORIES,suggestedGuideCategory} from './v3-tactical-help.mjs?v=opfc-ux-20261027';
-import {preloadMatchPortraits,matchUiStepKey,scrollToMatchFocus,onlineOwnTurnHasAction,createStableMarkupCommitter,patchMomentumOnly} from './v3-match-ux.mjs?v=opfc-shootout-scroll-20261029';
-import {createPenaltySceneController} from './penalty-scene.mjs';
+import {preloadMatchPortraits,matchUiStepKey,scrollToMatchFocus,onlineOwnTurnHasAction,createStableMarkupCommitter,patchMomentumOnly} from './v3-match-ux.mjs?v=opfc-v55-shootout-scroll-20261103';
+import {createPenaltySceneController} from './penalty-scene.mjs?v=opfc-v55-scene-20261103';
 import {renderMatchMomentum} from './v4-momentum.mjs?v=opfc-momentum-premium-v2-20261028';
 
 const app=document.getElementById('opfc-app');
@@ -932,6 +932,7 @@ function render(){
  if(hasTheme){
   app.dataset.v3Stadium=v3State.stadiumId;app.dataset.v3Phase=v3State.phase;
   preloadStadiumBackdrop(v3State.stadiumId);
+  preloadPenaltyBackdrop(v3State.stadiumId); // Local ou en ligne, dès la composition, et après reprise.
  }
  else{delete app.dataset.v3Stadium;delete app.dataset.v3Phase;}
  const v3HelpVisible=Boolean(v3State)&&['kickoff-ready','match','moment-result','half-time','resume-ready','shootout-ready','shootout','finished'].includes(v3State.phase);
@@ -998,7 +999,13 @@ function render(){
   lastMatchStepKey=key;
   // En ligne, ne remonter QUE lorsqu'une action de CE joueur est disponible.
   // Un changement d'étape côté adversaire ne doit jamais voler le scroll.
-  const ownTurn=(!onlineVisible||showingGame&&onlineOwnTurnHasAction(app,snapshot?.phase));
+  // Les résultats déjà résolus doivent ramener le haut de l'encart TAB en vue
+  // sur les deux téléphones. L'animation V5.5 cache temporairement le bouton
+  // « Continuer » : ne pas la confondre avec une attente passive adverse.
+  const animatedKickResult=!!app.querySelector('.opfc-penalty-animation')&&
+   !!(onlineVisible?snapshot?.match?.shootout?.lastResult:game?.match?.shootoutLastResult);
+  const ownTurn=(!onlineVisible||showingGame&&
+   (onlineOwnTurnHasAction(app,snapshot?.phase)||animatedKickResult));
   if(key&&ownTurn&&!v3HelpOpen&&!modal&&!onlineModal){
    requestAnimationFrame(()=>{if(lastMatchStepKey===key)scrollToMatchFocus(app);});
   }else if(key){
@@ -1039,6 +1046,7 @@ function start(){
   for(const id of ['PSG','OM'])if(beforeForm[id]!=='2-2-2')Object.assign(s,chooseFormation(s,id,beforeForm[id]));
  }
  preloadStadiumBackdrop(localStadium);
+ preloadPenaltyBackdrop(localStadium); // Début de rencontre, cache rempli avant la première frappe.
  game=s;entryView='playing';selection=null;placement=null;teamsVisible=false;pitchClub=null;momentumOpen=false;exitConfirmOpen=false;
  modal=localRecruitmentMode==='random'?{type:'random-reveal',step:0}:{type:'dice'};
  error='';save();render();
