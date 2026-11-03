@@ -998,7 +998,13 @@ function render(){
   lastMatchStepKey=key;
   // En ligne, ne remonter QUE lorsqu'une action de CE joueur est disponible.
   // Un changement d'étape côté adversaire ne doit jamais voler le scroll.
-  const ownTurn=(!onlineVisible||showingGame&&onlineOwnTurnHasAction(app,snapshot?.phase));
+  // Les résultats déjà résolus doivent ramener le haut de l'encart TAB en vue
+  // sur les deux téléphones. L'animation V5.5 cache temporairement le bouton
+  // « Continuer » : ne pas la confondre avec une attente passive adverse.
+  const animatedKickResult=!!app.querySelector('.opfc-penalty-animation')&&
+   !!(snapshot?.match?.shootout?.lastResult||game?.match?.shootoutLastResult);
+  const ownTurn=(!onlineVisible||showingGame&&
+   (onlineOwnTurnHasAction(app,snapshot?.phase)||animatedKickResult));
   if(key&&ownTurn&&!v3HelpOpen&&!modal&&!onlineModal){
    requestAnimationFrame(()=>{if(lastMatchStepKey===key)scrollToMatchFocus(app);});
   }else if(key){
