@@ -1,0 +1,64 @@
+name: OPFC — fond du bon stade sur les deux iPhone (sans déploiement)
+on:
+  push:
+    branches:
+      - feature/opfc-online-penalty-correct-stadium-20261103
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  online-stadium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+      - name: Protéger moteurs, règles, serveur et écrans de résultat
+        run: |
+          git fetch origin main:refs/remotes/origin/main
+          git diff --exit-code origin/main...HEAD -- \
+            opfc/engine.mjs opfc/match.mjs opfc/penalty.mjs opfc/shootout.mjs \
+            opfc/online-client.mjs opfc/online-match.mjs opfc/online-endgame.mjs \
+            opfc/online-set-piece.mjs opfc/ui-set-piece.mjs opfc/ui-shootout.mjs \
+            opfc/penalty-scene.mjs opfc/penalty-scene-v5-5.css opfc/stadiums.mjs \
+            opfc/ui-final.mjs opfc/ui-match-widgets.mjs opfc/v3-match-ux.mjs \
+            opfc/penalty-lab.mjs opfc/penalty-lab-v5-5-turf.mjs \
+            opfc-labo-penaltys.html supabase
+      - name: Syntaxe et vrais affichages des deux joueurs sur huit stades
+        run: |
+          node --check opfc/ui-match.mjs
+          node --check opfc/ui-online-game.mjs
+          node --check opfc/ui.mjs
+          node --check opfc/tests/online-penalty-stadium-v55-browser.mjs
+          node --test \
+            opfc/tests/online-penalty-stadium-v55.test.mjs \
+            opfc/tests/penalty-match-integration.test.mjs \
+            opfc/tests/penalty-match-v5-5-integration.test.mjs \
+            opfc/tests/penalty-match-v5-5-preload.test.mjs
+      - name: Installer le navigateur mobile
+        run: npm install --no-save playwright-core@1.57.0
+      - name: Servir la branche de correctif localement
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/opfc-online-stadium-fix.log 2>&1 &
+          sleep 2
+      - name: Vérifier deux téléphones et les matchs existants
+        env:
+          CHROME_BINARY: ${{ steps.chrome.outputs.chrome-path }}
+        run: |
+          node opfc/tests/online-penalty-stadium-v55-browser.mjs
+          node opfc/tests/penalty-match-local-browser.mjs
+          node opfc/tests/penalty-match-online-browser.mjs
+      - name: Captures iPhone du penalty des deux côtés
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: opfc-online-penalty-stadium-wanodrome-two-phones
+          path: /tmp/opfc-online-penalty-*.png
+          if-no-files-found: ignore
+          retention-days: 7
