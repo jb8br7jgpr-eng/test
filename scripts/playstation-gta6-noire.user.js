@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PlayStation GTA VI noire - Essais precommande
 // @namespace    https://www.playstation.com/
-// @version      1.0.0
+// @version      1.1.0
 // @description  Essais espaces de precommande, sans commande ni paiement.
 // @match        https://www.playstation.com/*
 // @match        https://direct.playstation.com/*
@@ -16,7 +16,7 @@
   window.__psGtaRetry = true;
   const product = 'grand-theft-auto-vi-black-limited-edition';
   if (!location.href.includes(product)) return;
-  let running = false, tries = 0, timer = null;
+  let running = false, tries = 0, timer = null, lastClick = 0, busy = false;
   const normalize = s => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const shown = el => !!el.getClientRects().length;
   const candidates = () => [...document.querySelectorAll('button,a,[role="button"]')].filter(shown);
@@ -30,7 +30,26 @@
     const b = document.getElementById('psgta-toggle');
     if (b) b.textContent = 'Demarrer';
   }
-  function retry() { clearTimeout(timer); if (running) timer = setTimeout(tick, 15000); }
+  function retry(delay = 3000) { clearTimeout(timer); if (running) timer = setTimeout(tick, delay); }
+  function closeError() {
+    const dialog = [...document.querySelectorAll('[role="dialog"],[aria-modal="true"],dialog')].find(shown);
+    const scope = dialog || document;
+    const elems = [...scope.querySelectorAll('button,[role="button"],a')].filter(shown);
+    const close = elems.find(el => /^(fermer|close|retour|back|precedent|×|✕)$/.test(name(el).trim()))
+      || elems.find(el => /close|back|retour|chevron-left|arrow-left/i.test(
+        [el.getAttribute('data-testid'),el.getAttribute('aria-label'),el.className?.baseVal || el.className].join(' ')));
+    if (close) { close.click(); return true; }
+    return false;
+  }
+  const observer = new MutationObserver(() => {
+    if (!running || busy) return;
+    if (!/une erreur s.est produite|something went wrong|an error occurred/.test(normalize(document.body.innerText))) return;
+    busy = true;
+    if (closeError()) { status('Erreur fermee automatiquement'); retry(3000); }
+    else status('Fleche non detectee : fermeture manuelle necessaire');
+    setTimeout(() => { busy = false; }, 600);
+  });
+  observer.observe(document.documentElement, {childList:true,subtree:true});
   function tick() {
     if (!running) return;
     const body = normalize(document.body.innerText);
@@ -40,20 +59,22 @@
       return;
     }
     if (/une erreur s.est produite|something went wrong|an error occurred/.test(body)) {
-      const close = find(/^(fermer|close|retour|back|×|✕)$/);
-      if (close) {
-        close.click();
-        status('Erreur fermee, prochain essai dans 15 s');
-        retry();
-      } else stop('Erreur : fermeture manuelle necessaire');
+      if (closeError()) {
+        status('Erreur fermee - nouvel essai dans 3 s');
+        retry(3000);
+      } else {
+        status('Fleche non detectee - fermeture manuelle necessaire');
+        retry(3000);
+      }
       return;
     }
     const button = find(/precommander|précommander|pre-order|preorder/);
     if (button && !button.disabled && button.getAttribute('aria-disabled') !== 'true') {
       tries++;
-      status('Tentative ' + tries + ' - attente 15 s');
+      lastClick = Date.now();
+      status('Tentative ' + tries + ' - attente 3 s');
       button.click();
-    } else status('Bouton introuvable ou indisponible - nouvelle verification dans 15 s');
+    } else status('Bouton introuvable ou indisponible - nouvelle verification dans 3 s');
     retry();
   }
   function mount() {
